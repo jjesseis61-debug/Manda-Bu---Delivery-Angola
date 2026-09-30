@@ -1,0 +1,147 @@
+-- Utilitários partilhados pelos testes (incluído com \ir dentro da transacção
+-- de cada ficheiro; desaparece no rollback). Extensão .psql para o pg_prove
+-- não o tratar como teste.
+
+create extension if not exists pgtap with schema extensions;
+
+create schema testes;
+grant usage on schema testes to authenticated;
+
+-- Cliente com utilizador autenticado associado
+create function testes.cliente(p_nome text, p_tipo text default 'Particular', p_telefone text default null)
+returns uuid language plpgsql as $$
+declare
+  u uuid := gen_random_uuid();
+  c uuid;
+begin
+  insert into auth.users (id, phone) values (u, p_telefone);
+  insert into clientes (nome, tipo, telefone, auth_user_id)
+  values (p_nome, p_tipo, p_telefone, u) returning id into c;
+  return c;
+end $$;
+
+-- Funcionário com uma direcção que tem as permissões indicadas
+create function testes.funcionario(p_nome text, p_permissoes text[])
+returns uuid language plpgsql as $$
+declare
+  u uuid := gen_random_uuid();
+  d uuid;
+  f uuid;
+begin
+  insert into auth.users (id) values (u);
+  insert into direcoes (nome, permissoes)
+  values ('Direcção de ' || p_nome,
+          coalesce((select jsonb_object_agg(x, true) from unnest(p_permissoes) x), '{}'))
+  returning id into d;
+  insert into funcionarios (nome, direcao_id, auth_user_id) values (p_nome, d, u) returning id into f;
+  return f;
+end $$;
+
+-- Sessão: define as claims do JWT (auth.uid()) para o resto da transacção
+create function testes.entrar(p_cliente uuid) returns void language sql as $$
+  select set_config('request.jwt.claims',
+    json_build_object('sub', (select auth_user_id from clientes where id = p_cliente),
+                      'role', 'authenticated')::text, true);
+$$;
+
+create function testes.entrar_funcionario(p_funcionario uuid) returns void language sql as $$
+  select set_config('request.jwt.claims',
+    json_build_object('sub', (select auth_user_id from funcionarios where id = p_funcionario),
+                      'role', 'authenticated')::text, true);
+$$;
+
+create function testes.sair() returns void language sql as $$
+  select set_config('request.jwt.claims', '', true);
+$$;
+
+create function testes.codigo(p_cliente uuid) returns text language sql as $$
+  select codigo from codigos_indicacao where cliente_id = p_cliente;
+$$;
+
+-- O indicado liga-se ao código do indicador (como faria a app)
+create function testes.ligar(p_indicado uuid, p_indicador uuid) returns text
+language plpgsql as $$
+declare
+  r text;
+begin
+  perform testes.entrar(p_indicado);
+  r := ligar_indicacao(testes.codigo(p_indicador));
+  perform testes.sair();
+  return r;
+end $$;
+
+create function testes.funcionalidade(p_chave text, p_activa boolean default true) returns void
+language sql as $$
+  update funcionalidades set activa = p_activa where chave = p_chave;
+$$;
+
+-- Local de entrega (por defeito num ponto aleatório de Luanda, longe dos outros)
+create function testes.local(p_tipo text, p_lat float8 default null, p_lng float8 default null,
+                             p_zona uuid default null)
+returns uuid language sql as $$
+  insert into locais_entrega (tipo, lat, lng, zona_id)
+  values (p_tipo,
+          coalesce(p_lat, -8.95 + random() * 0.25),
+          coalesce(p_lng, 13.10 + random() * 0.25),
+          p_zona)
+  returning id;
+$$;
+
+create function testes.pedido(p_cliente uuid, p_local uuid default null,
+                              p_dispositivo text default null, p_desconto int default 0)
+returns uuid language sql as $$
+  insert into pedidos (cliente_id, local_id, dispositivo_id, subtotal, desconto_indicacao)
+  values (p_cliente, p_local, p_dispositivo, 3000, p_desconto)
+  returning id;
+$$;
+
+create function testes.pagar(p_pedido uuid) returns void language sql as $$
+  update pedidos set estado = 'entregue_pago' where id = p_pedido;
+$$;
+
+create function testes.ganho_de(p_pedido uuid) returns ganhos_indicacao language sql as $$
+  select * from ganhos_indicacao where pedido_id = p_pedido;
+$$;
+
+-- Cria n amigos (indicados) do indicador, cada um com um ganho do valor dado,
+-- confirmado agora (ou em minutos crescentes a partir de p_desde)
+create function testes.ganhos(p_indicador uuid, p_n int, p_valor int default 100,
+                              p_desde timestamptz default null)
+returns void language plpgsql as $$
+declare
+  i int;
+  c uuid;
+  ped uuid;
+begin
+  for i in 1..p_n loop
+    c := testes.cliente('Amigo ' || i);
+    ped := testes.pedido(c);
+    update pedidos set estado = 'entregue_pago' where id = ped;
+    insert into ganhos_indicacao (pedido_id, indicador_id, indicado_id, valor, estado, confirmado_em)
+    values (ped, p_indicador, c, p_valor, 'confirmado',
+            coalesce(p_desde + make_interval(mins => i), now()));
+  end loop;
+end $$;
+
+-- Executa SQL e devolve 'sem_erro' ou 'SQLSTATE:mensagem'. Serve para testar
+-- como papel "authenticated" (as funções do pgTAP escrevem numa tabela temporária
+-- do postgres, por isso as asserções correm depois de "reset role").
+create function testes.erro(p_sql text) returns text language plpgsql as $$
+begin
+  execute p_sql;
+  return 'sem_erro';
+exception when others then
+  return sqlstate || ':' || sqlerrm;
+end $$;
+
+-- Cliente novo já ligado ao indicador
+create function testes.indicado(p_indicador uuid, p_nome text default 'Indicado',
+                                p_tipo text default 'Particular')
+returns uuid language plpgsql as $$
+declare
+  c uuid := testes.cliente(p_nome, p_tipo);
+  r text := testes.ligar(c, p_indicador);
+begin
+  if r <> 'ok' then raise exception 'ligação falhou: %', r; end if;
+  return c;
+end $$;
