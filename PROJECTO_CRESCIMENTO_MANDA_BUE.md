@@ -288,8 +288,8 @@ O SQL definitivo está nas migrações em `supabase/migrations/` (aplicadas por 
 | `20260930165537_modelo_base.sql` | Tabelas do `MODELO_DE_DADOS.md` (incluindo `pedidos`), índices recomendados, RLS activo por defeito |
 | `20260930173725_crescimento_i1.sql` | Modelo do programa (5.1–5.9), Cozinha da Alexandra, funções, triggers, vistas, RLS |
 | `20260930173922_crescimento_i1_ajustes.sql` | Nomes finais (`pontos_entrega`), estado do pedido só no servidor, venda gerada, campos de sincronização em todas as tabelas, valores garantidos na ligação |
-| `20260930180000_crescimento_i1_endurecimento.sql` | `search_path` fixo, funções de trigger não expostas, índices nas chaves estrangeiras |
-| `20260930190000_crescimento_i1_decisoes.sql` | Duração garantida, vendas por item (regra 7), caixa na entrega (regra 8), estorno sem stock (regra 3), catálogo de permissões |
+| `20260930183237_crescimento_i1_decisoes.sql` | Duração garantida, vendas por item (regra 7), caixa na entrega (regra 8), estorno sem stock (regra 3), catálogo de permissões |
+| `20260930190000_crescimento_i1_endurecimento.sql` | `search_path` fixo, funções de trigger não expostas, índices nas chaves estrangeiras |
 
 **Nomes reais.** Os nomes assumidos na versão 1.0 foram substituídos pelos do `MODELO_DE_DADOS.md`:
 

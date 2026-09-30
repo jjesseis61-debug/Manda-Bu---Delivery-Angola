@@ -15,7 +15,7 @@ import pathlib, re, sys
 RAIZ = pathlib.Path(__file__).resolve().parent.parent
 TESTES = RAIZ / "supabase" / "tests"
 PGTAP = re.compile(r"^select\s+(\*\s+from\s+finish\(\)|(plan|is|isnt|ok|matches|results_eq|throws_ok|lives_ok|"
-                   r"col_not_null|col_type_is|has_table|hasnt_table|has_column)\()", re.I | re.S)
+                   r"col_not_null|col_type_is|has_table|hasnt_table|has_column|has_index)\()", re.I | re.S)
 
 
 def instrucoes(sql):

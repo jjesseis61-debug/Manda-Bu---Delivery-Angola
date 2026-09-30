@@ -9,8 +9,8 @@ Aplicadas por esta ordem. **Uma migração já aplicada nunca se edita:** qualqu
 | `20260930165537_modelo_base.sql` | Tabelas do `MODELO_DE_DADOS.md`, incluindo `pedidos` (pedidos da app). 6 campos de sincronização, índices recomendados, RLS activo e fechado por defeito. Não cria o programa de indicação antigo. | aplicada |
 | `20260930173725_crescimento_i1.sql` | Programa de Crescimento, fase I1: modelo (secção 5), Cozinha da Alexandra, funções e triggers (6), vistas (7), RLS e permissões (8), fila de notificações, jobs. | aplicada |
 | `20260930173922_crescimento_i1_ajustes.sql` | `pontos_entrega`/`ponto_entrega_id`; estado do pedido só no servidor; venda gerada em `entregue_pago`; 6 campos de sincronização em `parametros` e `funcionalidades`; escrita só pelo servidor; valores garantidos na ligação. | aplicada |
-| `20260930180000_crescimento_i1_endurecimento.sql` | Correcções aos avisos do Supabase: `search_path` fixo, funções de trigger não expostas, índices nas chaves estrangeiras, nome do índice de `vendas.local`. | **por aplicar** (a aguardar confirmação) |
-| `20260930190000_crescimento_i1_decisoes.sql` | `duracao_dias_garantida`; uma venda por item (taxa na 1.ª, desconto e parcelas proporcionais, soma = valor final — regra 7); caixa obrigatória em `entregue_pago` e registada na venda (regra 8); estorno sem reposição de stock (regra 3); catálogo `permissoes`. | **por aplicar** (a aguardar confirmação) |
+| `20260930183237_crescimento_i1_decisoes.sql` | `duracao_dias_garantida`; uma venda por item (taxa na 1.ª, desconto e parcelas proporcionais, soma = valor final — regra 7); caixa obrigatória em `entregue_pago` e registada na venda (regra 8); estorno sem reposição de stock (regra 3); catálogo `permissoes`. | aplicada |
+| `20260930190000_crescimento_i1_endurecimento.sql` | Correcções aos avisos do Supabase: `search_path` fixo, funções de trigger não expostas, índices nas chaves estrangeiras, nome do índice de `vendas.local`. | **por aplicar** (a aguardar confirmação) |
 
 Os números de versão dos ficheiros são os que o Supabase registou ao aplicar, para `supabase migration list` e
 `supabase db push` não voltarem a aplicá-las.
@@ -61,16 +61,24 @@ base de dados.
 
 ### Resultados (30 de Setembro de 2026)
 
-| Onde | 00–08 | 09 | 10 |
-|---|---|---|---|
-| Postgres 16 local, 5 migrações | 188/188 | 5/5 | 29/29 |
-| Supabase `laruvuambdovnkojwrzp`, 3 migrações aplicadas | 188/188 (antes das decisões) | — | — |
+| Teste | Postgres 16 local, 5 migrações | Supabase `laruvuambdovnkojwrzp`, 4 migrações aplicadas |
+|---|---|---|
+| 00 estrutura | 19/19 | 19/19 |
+| 01 ligação | 9/9 | 9/9 |
+| 02 desconto | 12/12 | 12/12 |
+| 03 ganho | 30/30 | 30/30 |
+| 04 pagamentos | 22/22 | 22/22 |
+| 05 destaques | 16/16 | 16/16 |
+| 06 RLS | 29/29 | 29/29 |
+| 07 funções de apoio | 19/19 | 19/19 |
+| 08 ajustes I1 | 32/32 | 32/32 |
+| 09 endurecimento | 5/5 | 0/5 (esperado: a migração de endurecimento ainda não foi aplicada) |
+| 10 decisões I1 | 29/29 | 29/29 |
 
-Os testes 00–08 foram ajustados às decisões (a entrega passa a indicar a caixa); no Supabase só voltam a correr
-depois de aplicar as migrações 4 e 5.
+No fim, o esquema `testes` e a extensão `pgtap` foram removidos do Supabase e não ficou nenhum dado de teste.
 
 A comparação do esquema (funções, colunas, restrições, índices, políticas, triggers, vistas, comentários e
-privilégios) entre o Supabase e a base local construída a partir destes ficheiros deu resultados idênticos.
+privilégios) entre o Supabase e uma base local construída com as mesmas 4 migrações deu resultados idênticos.
 
 ### Dependências nas tabelas base
 
