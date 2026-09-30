@@ -4,7 +4,7 @@
 -- Especificação: PROJECTO_CRESCIMENTO_MANDA_BUE.md, secções 5 a 8.
 --
 -- Ajustes ao SQL do projecto (acordados antes da implementação):
---   pedidos            -> tabela nova (vendas continua append-only e ganha pedido_id)
+--   pedidos            -> tabela do esquema base; aqui só os campos novos (5.4)
 --   locais (geo)       -> locais_entrega (locais já existe: pontos de venda)
 --   zonas_entrega      -> zonas
 --   pratos             -> pratos_base
@@ -161,43 +161,21 @@ create index on enderecos_cliente (cliente_id);
 create index on enderecos_cliente (local_id);
 
 -- -----------------------------------------------------------------------------
--- 5.4 Pedidos (tabela nova; o estado é validado no servidor)
+-- 5.4 Campos novos em pedidos (tabela criada no esquema base)
 -- -----------------------------------------------------------------------------
-create table pedidos (
-  id                        uuid primary key default gen_random_uuid(),
-  dispositivo_id            text,          -- instalação da app; usado no sinal anti-fraude
-  criado_em                 timestamptz not null default now(),
-  atualizado_em             timestamptz not null default now(),
-  sincronizado_em           timestamptz,
-  deletado_em               timestamptz,
-  cliente_id                uuid not null references clientes(id),
-  cozinha_id                uuid not null default cozinha_padrao() references cozinhas(id),
-  local_id                  uuid references locais_entrega(id),
-  estado                    text not null default 'pendente'
-                            check (estado in ('pendente','confirmado','em_preparacao','em_entrega',
-                                              'entregue_pago','cancelado','estornado')),
-  itens                     jsonb not null default '[]',   -- [{prato_base_id, nome, qtd, preco_unitario}]
-  subtotal                  int not null default 0 check (subtotal >= 0),
-  taxa_entrega              int not null default 0 check (taxa_entrega >= 0),
-  desconto_indicacao        int not null default 0,        -- só o servidor escreve
-  credito_indicacao_usado   int not null default 0,        -- só o servidor escreve
-  parcelas                  jsonb not null default '[]',   -- [{metodo, valor, cliente_id, titular}]
-  observacoes               text,
-  motivo_cancelamento       text,
-  grupo_id                  uuid,                          -- FK adicionada em 5.8
-  hora_prometida            timestamptz,
-  entregue_em               timestamptz,                   -- só o servidor escreve
-  pagador_distinto          boolean                        -- marcado pelo entregador
-);
-create index on pedidos (cliente_id, estado);
+alter table pedidos
+  add column cozinha_id               uuid references cozinhas(id),
+  add column local_id                 uuid references locais_entrega(id),
+  add column desconto_indicacao       int not null default 0,   -- só o servidor escreve
+  add column credito_indicacao_usado  int not null default 0,   -- só o servidor escreve
+  add column grupo_id                 uuid,                     -- FK adicionada em 5.8
+  add column pagador_distinto         boolean;                  -- marcado pelo entregador
+update pedidos set cozinha_id = cozinha_padrao() where cozinha_id is null;
+alter table pedidos alter column cozinha_id set default cozinha_padrao();
+alter table pedidos alter column cozinha_id set not null;
 create index on pedidos (local_id);
-create index on pedidos (estado, entregue_em);
-create index on pedidos (dispositivo_id);
 create index on pedidos (grupo_id);
 create index on pedidos (cozinha_id, criado_em);
-
-alter table vendas add column if not exists pedido_id uuid references pedidos(id);
-create index if not exists vendas_pedido_idx on vendas (pedido_id);
 
 -- -----------------------------------------------------------------------------
 -- 5.5 Convida e Ganha

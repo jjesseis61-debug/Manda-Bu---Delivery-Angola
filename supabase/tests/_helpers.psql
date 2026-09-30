@@ -1,11 +1,23 @@
 -- Utilitários partilhados pelos testes (incluído com \ir dentro da transacção
 -- de cada ficheiro; desaparece no rollback). Extensão .psql para o pg_prove
--- não o tratar como teste.
+-- não o tratar como teste. Só SQL puro (sem variáveis psql), para os testes
+-- correrem também pelo SQL editor / API do Supabase (scripts/bundle_testes.py).
 
 create extension if not exists pgtap with schema extensions;
 
 create schema testes;
 grant usage on schema testes to authenticated;
+
+-- Variáveis de teste (guardadas na transacção com set_config)
+create function testes.def(p_nome text, p_valor anyelement) returns void language sql as $$
+  select set_config('testes.' || p_nome, coalesce(p_valor::text, ''), true);
+$$;
+create function testes.v(p_nome text) returns text language sql stable as $$
+  select nullif(current_setting('testes.' || p_nome, true), '');
+$$;
+create function testes.u(p_nome text) returns uuid language sql stable as $$
+  select testes.v(p_nome)::uuid;
+$$;
 
 -- Cliente com utilizador autenticado associado
 create function testes.cliente(p_nome text, p_tipo text default 'Particular', p_telefone text default null)
@@ -75,11 +87,11 @@ language sql as $$
   update funcionalidades set activa = p_activa where chave = p_chave;
 $$;
 
--- Local de entrega (por defeito num ponto aleatório de Luanda, longe dos outros)
-create function testes.local(p_tipo text, p_lat float8 default null, p_lng float8 default null,
+-- Ponto de entrega (por defeito num ponto aleatório de Luanda, longe dos outros)
+create function testes.ponto(p_tipo text, p_lat float8 default null, p_lng float8 default null,
                              p_zona uuid default null)
 returns uuid language sql as $$
-  insert into locais_entrega (tipo, lat, lng, zona_id)
+  insert into pontos_entrega (tipo, lat, lng, zona_id)
   values (p_tipo,
           coalesce(p_lat, -8.95 + random() * 0.25),
           coalesce(p_lng, 13.10 + random() * 0.25),
@@ -87,11 +99,11 @@ returns uuid language sql as $$
   returning id;
 $$;
 
-create function testes.pedido(p_cliente uuid, p_local uuid default null,
+create function testes.pedido(p_cliente uuid, p_ponto uuid default null,
                               p_dispositivo text default null, p_desconto int default 0)
 returns uuid language sql as $$
-  insert into pedidos (cliente_id, local_id, dispositivo_id, subtotal, desconto_indicacao)
-  values (p_cliente, p_local, p_dispositivo, 3000, p_desconto)
+  insert into pedidos (cliente_id, ponto_entrega_id, dispositivo_id, subtotal, desconto_indicacao)
+  values (p_cliente, p_ponto, p_dispositivo, 3000, p_desconto)
   returning id;
 $$;
 

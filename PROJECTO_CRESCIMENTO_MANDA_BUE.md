@@ -1,7 +1,12 @@
 # Projecto Completo: Programa de Crescimento
 ## Manda Bué — Delivery Angola
 
-Versão 1.0 · Setembro de 2026
+Versão 1.1 · Setembro de 2026
+
+> **Alterações da versão 1.1** (fase I1 implementada): nomes reais do `MODELO_DE_DADOS.md` (`pontos_entrega`, `zonas`,
+> `pratos_base`, `caixa`, `estoque_diario`/`estoque_longo_prazo`); tabela `pedidos` com estado alterado só no servidor
+> e venda gerada na entrega; campos de sincronização em todas as tabelas; valores garantidos na ligação; programa de
+> indicação antigo substituído. Secções 3, 4, 5–8, 12, 13, 15 e 16 actualizadas.
 
 Este documento **substitui** as adendas anteriores (`REGRAS_DE_NEGOCIO_ADENDA.md`, `MODELO_DE_DADOS_ADENDA.md`, `TELAS_ADENDA.md`, `PLANO_DE_FASES_ADENDA.md`). É a especificação única para o Claude Code implementar, na versão Expo/React Native + Supabase, tudo o que diz respeito a:
 
@@ -60,7 +65,8 @@ O modelo de dados é desenhado **completo desde o início**. As funcionalidades 
 | Embaixador | Indicador de alto volume com acordo próprio |
 | Ligação | Relação permanente indicado → indicador |
 | Ganho | 100 Kz por pedido pago do indicado, durante o período |
-| Local | Ponto físico de entrega (coordenadas + referência), partilhável por vários clientes |
+| Ponto de entrega | Local físico de entrega (coordenadas + referência), partilhável por vários clientes (`pontos_entrega`). Não confundir com `locais`, os postos de venda |
+| Valor garantido | Ganho por pedido e desconto em vigor no momento da ligação, que valem para toda a ligação |
 | Interruptor | Registo em `funcionalidades` que liga ou desliga uma funcionalidade |
 
 ---
@@ -77,6 +83,8 @@ O modelo de dados é desenhado **completo desde o início**. As funcionalidades 
 - Tabelas **escritas pelo cliente:** pedidos (estado inicial), participação em grupos, avaliações, pedidos de levantamento (estado `pedido`), definições de privacidade.
 - Tabelas **só de leitura no telemóvel:** ganhos, saldos, destaques, contadores, parâmetros, interruptores, métricas.
 - Pedidos criados offline sincronizam normalmente. Os efeitos do programa (ganhos, desconto confirmado) só acontecem no servidor quando o pedido chega com o estado correspondente.
+- Tabelas **escritas só pelo servidor** (nunca pela fila de saída do dispositivo, nem da app do operador): ganhos, pagamentos, ligações, códigos, parâmetros, interruptores, fila de notificações, contadores. O **estado dos pedidos** também só muda no servidor (funções `mudar_estado_pedido` e `cancelar_pedido`).
+- Todas as tabelas têm os 6 campos de sincronização do `MODELO_DE_DADOS.md` e uma estratégia de conflito definida.
 
 ### Interruptores (`funcionalidades`)
 
@@ -108,10 +116,10 @@ Valores entre `[ ]` são parâmetros (tabela `parametros`) com o valor inicial i
 - Pratos, stock, turnos, caixas e pedidos pertencem a uma cozinha.
 - O programa de indicação é da plataforma: o indicador ganha o mesmo, seja qual for a cozinha que preparou o pedido.
 
-### 4.2 Locais e endereços
-- Cada endereço de cliente aponta para um **local** (`locais`): coordenadas (pin no mapa), zona de entrega, referência escrita e **tipo** (`residencial` ou `empresa`).
-- Dois endereços são o **mesmo local** se estiverem a menos de `[raio_mesmo_local_m = 25]` metros e tiverem o mesmo tipo. A app sugere um local existente quando o pin cai dentro desse raio, para evitar duplicados.
-- Clientes do tipo Empresa (com NIF) usam locais do tipo `empresa`. Um cliente Particular pode marcar um endereço como "trabalho" (`empresa`).
+### 4.2 Pontos de entrega e endereços
+- Cada endereço de cliente aponta para um **ponto de entrega** (`pontos_entrega`): coordenadas (pin no mapa), zona de entrega (`zonas`), referência escrita e **tipo** (`residencial` ou `empresa`).
+- Dois endereços são o **mesmo ponto** se estiverem a menos de `[raio_mesmo_local_m = 25]` metros e tiverem o mesmo tipo. A app sugere um ponto existente quando o pin cai dentro desse raio, para evitar duplicados (sem mostrar a referência escrita de pontos residenciais de outros clientes).
+- Clientes do tipo Empresa (com NIF) usam pontos do tipo `empresa`. Um cliente Particular pode marcar um endereço como "trabalho" (`empresa`).
 
 ### 4.3 Convida e Ganha
 
@@ -122,12 +130,14 @@ Valores entre `[ ]` são parâmetros (tabela `parametros`) com o valor inicial i
 **Ligação**
 - O indicado insere o código no registo ou no checkout do primeiro pedido (ou chega pelo link de convite, que o pré-preenche).
 - Única e permanente. Não se troca de indicador.
-- Bloqueios: próprio código; cliente que já tem um pedido `entregue_pago`; código inexistente.
+- Bloqueios: próprio código; cliente que já tem um pedido `entregue_pago` ou compras registadas em `vendas` (sistema anterior); código inexistente.
+- **Valores garantidos:** no momento da ligação, o `ganho_por_pedido` e o `desconto_indicado` em vigor ficam guardados na ligação (`ganho_por_pedido_garantido`, `desconto_garantido`). O desconto e todos os ganhos dessa ligação usam estes valores. Mudar os parâmetros só afecta novas ligações.
 
 **Ganho do indicado**
 - `[desconto_indicado = 500 Kz]` no primeiro pedido.
 - Validado no servidor. Se o primeiro pedido for cancelado, o desconto fica disponível para o seguinte.
-- Limite por local residencial: no máximo `[max_descontos_por_local = 3]` descontos de primeiro pedido. A partir daí, a app informa "Este convite já foi usado o número máximo de vezes nesta morada" e o pedido segue sem desconto. Locais `empresa` não têm este limite.
+- Limite por ponto residencial: no máximo `[max_descontos_por_local = 3]` descontos de primeiro pedido. A partir daí, a app informa "Este convite já foi usado o número máximo de vezes nesta morada" e o pedido segue sem desconto. Pontos `empresa` não têm este limite.
+- Só um pedido em curso de cada vez pode levar o desconto.
 
 **Ganho do indicador**
 - `[ganho_por_pedido = 100 Kz]` por cada pedido do indicado que chegue a `entregue_pago`.
@@ -176,7 +186,8 @@ Informação de apoio para o operador (não decide sozinha):
 A anulação por verificação exige motivo escrito e fica na auditoria.
 
 ### 4.5 Saldo e pagamentos
-- **Saldo disponível** = ganhos `confirmado` − pagamentos em curso (`pedido`, `aprovado`).
+- **Saldo disponível** = ganhos `confirmado` e `pago` − pagamentos `pedido`, `aprovado` e `pago` (equivale a "ganhos confirmados − pagamentos em curso", mas é exacto mesmo quando o crédito usado não coincide com ganhos inteiros).
+- Se um pedido pago com crédito for cancelado ou estornado, o crédito volta ao saldo.
 - `[levantamento_minimo = 2000 Kz]`.
 - **Crédito:** usado como forma de pagamento nos próprios pedidos. Imediato. Soma-se aos métodos mistos de pagamento que a app já suporta.
 - **Levantamento:** Multicaixa Express ou Unitel Money, para um número indicado pelo cliente. Manual na fase inicial.
@@ -211,7 +222,7 @@ A anulação por verificação exige motivo escrito e fica na auditoria.
 - Partilha por link/WhatsApp. Cada participante faz o **seu próprio pedido** dentro do grupo.
 - Modo de pagamento: `individual` (cada um paga o seu na entrega) ou `empresa` (cliente Empresa paga tudo, com NIF na factura).
 - Uma só entrega; a taxa de entrega é dividida pelos participantes ou coberta pela empresa, conforme `[regra_taxa_grupo = dividir]`.
-- Cada pedido do grupo conta normalmente para o programa de indicação. Pedidos de grupo acontecem em locais `empresa`, por isso não activam o limite por local.
+- Cada pedido do grupo conta normalmente para o programa de indicação. Pedidos de grupo acontecem em pontos de entrega `empresa`, por isso não activam o limite por ponto residencial.
 - Participantes novos podem usar o código de quem os convidou para o grupo.
 
 ### 4.10 Reconhecimento de equipa
@@ -238,6 +249,8 @@ A anulação por verificação exige motivo escrito e fica na auditoria.
 | `cozinhas.gerir` | Criar e editar cozinhas e perfis |
 | `equipa.reconhecer` | Registar reconhecimentos de turno |
 | `relatorios.exportar` | Exportar relatórios de cozinha |
+| `pedidos.gerir` | Mudar o estado dos pedidos da app (confirmar, preparar, cancelar, estornar) |
+| `entregas.registar` | Marcar pedidos em entrega e entregues e pagos; marcar "pago por outra pessoa" |
 
 ### 4.13 Texto das regras para o cliente
 
@@ -247,542 +260,236 @@ A anulação por verificação exige motivo escrito e fica na auditoria.
 > Ganhos de contas falsas ou pedidos não pagos são anulados.
 > Os teus ganhos podem aparecer na lista de destaques com um nome fictício. Podes sair da lista quando quiseres.
 
-Os valores são preenchidos a partir de `parametros`.
+Os valores são preenchidos a partir de `parametros` (e, para cada amigo, a partir dos valores garantidos na ligação).
+
+### 4.14 Pedidos da app e vendas
+- Os pedidos da app do cliente ficam em `pedidos` (o `MODELO_DE_DADOS.md` não tinha pedidos da app, e `vendas` é append-only).
+- Ciclo: `pendente → confirmado → em_preparacao → em_entrega → entregue_pago`; `cancelado` antes da entrega; `entregue_pago → estornado`.
+- O estado **só muda no servidor**. O cliente cancela enquanto o pedido está `pendente`; o operador muda o estado com `pedidos.gerir`; o entregador marca a entrega com `entregas.registar`.
+- Quando o pedido chega a `entregue_pago`, o servidor **gera a venda** correspondente (origem `App cliente`). Um estorno gera uma venda de compensação com valores negativos (origem `App cliente (estorno)`). *A correspondência exacta dos campos deve ser confirmada com a regra 8 do `REGRAS_DE_NEGOCIO.md` (ver 16.7).*
+- Os ganhos de indicação são calculados em `pedidos`.
+
+### 4.15 Programa de indicação antigo
+As tabelas `indicacoes`, `recompensas_indicacao` e `config_indicacao` do protótipo são **substituídas** pelo Programa de Crescimento e não são criadas. A base de dados de desenvolvimento não tinha dados a arquivar.
 
 ---
 
 ## 5. Modelo de dados
 
-> **Antes de aplicar:** os nomes `clientes`, `pedidos`, `pratos`, `turnos`, `caixas`, `movimentos_stock`, `zonas_entrega` e o estado `entregue_pago` são assumidos. Confirmar no `MODELO_DE_DADOS.md` existente e ajustar. Assume-se também uma função `cliente_actual()` que devolve o `clientes.id` do utilizador autenticado.
+O SQL definitivo está nas migrações em `supabase/migrations/` (aplicadas por esta ordem):
 
-Valores monetários em **kwanzas inteiros** (`int`). Datas em `timestamptz`.
+| Migração | Conteúdo |
+|---|---|
+| `20260930165537_modelo_base.sql` | Tabelas do `MODELO_DE_DADOS.md` (incluindo `pedidos`), índices recomendados, RLS activo por defeito |
+| `20260930173725_crescimento_i1.sql` | Modelo do programa (5.1–5.9), Cozinha da Alexandra, funções, triggers, vistas, RLS |
+| `20260930173922_crescimento_i1_ajustes.sql` | Nomes finais (`pontos_entrega`), estado do pedido só no servidor, venda gerada, campos de sincronização em todas as tabelas, valores garantidos na ligação |
+| `20260930180000_crescimento_i1_endurecimento.sql` | `search_path` fixo, funções de trigger não expostas, índices nas chaves estrangeiras |
+
+**Nomes reais.** Os nomes assumidos na versão 1.0 foram substituídos pelos do `MODELO_DE_DADOS.md`:
+
+| Versão 1.0 | Nome real |
+|---|---|
+| `pratos` | `pratos_base` |
+| `caixas` | `caixa` |
+| `movimentos_stock` | `estoque_diario`, `estoque_longo_prazo` (e `distribuicoes`) |
+| `zonas_entrega` | `zonas` |
+| `locais` (pontos de entrega) | **`pontos_entrega`** — `locais` já existe e são os postos de venda |
+| `local_id` | **`ponto_entrega_id`** |
+| `credito_usado` | `credito_indicacao_usado` |
+| `pagamentos_indicacao.grupo_id` | `lote_id` (parcelas do mesmo levantamento) |
+| `actualizado_em` / `actualizado_por` | `atualizado_em` / `atualizado_por` |
+
+**Campos de sincronização.** Todas as tabelas (base e novas, incluindo `parametros` e `funcionalidades`) têm
+`id` (UUID), `dispositivo_id`, `criado_em`, `atualizado_em`, `sincronizado_em`, `deletado_em`. O servidor preenche
+`sincronizado_em` em cada escrita; as linhas criadas pelo servidor têm `dispositivo_id = 'servidor'`.
+A estratégia de conflito de cada tabela está no `MODELO_DE_DADOS.md` e registada na própria tabela (`comment on table`).
+
+Valores monetários em **kwanzas inteiros** (`int`). Datas em `timestamptz`. Fuso para dias, semanas e meses: `Africa/Luanda`.
 
 ### 5.1 Configuração
-
-```sql
-create table parametros (
-  id                          int primary key default 1 check (id = 1),
-  -- indicação
-  ganho_por_pedido            int not null default 100,
-  duracao_dias                int not null default 60,
-  desconto_indicado           int not null default 500,
-  limite_verificacao_semanal  int not null default 10000,
-  levantamento_minimo         int not null default 2000,
-  limite_parcelamento         int not null default 20000,
-  limiar_embaixador           int not null default 30,
-  -- anti-fraude
-  raio_mesmo_local_m          int not null default 25,
-  max_indicados_por_local     int not null default 3,
-  max_descontos_por_local     int not null default 3,
-  -- prova social
-  tamanho_top                 int not null default 10,
-  limiar_intervalos           int not null default 20,
-  pessoas_como_tu_min         int not null default 3,
-  pessoas_como_tu_max         int not null default 10,
-  contador_minimo             int not null default 10,
-  -- avaliações
-  prazo_avaliacao_dias        int not null default 3,
-  avaliacoes_minimo           int not null default 5,
-  -- grupos e equipa
-  regra_taxa_grupo            text not null default 'dividir'
-                              check (regra_taxa_grupo in ('dividir','empresa')),
-  tolerancia_entrega_min      int not null default 15,
-  actualizado_em              timestamptz not null default now(),
-  actualizado_por             uuid
-);
-insert into parametros (id) values (1);
-
-create table funcionalidades (
-  chave            text primary key,
-  activa           boolean not null default false,
-  actualizado_em   timestamptz not null default now(),
-  actualizado_por  uuid
-);
-insert into funcionalidades (chave) values
-  ('indicacao'),('destaques'),('pessoas_como_tu'),('contadores_zona'),
-  ('perfil_cozinha'),('avaliacoes'),('avaliacoes_fotos'),
-  ('reconhecimento_equipa'),('pedidos_grupo'),('multi_cozinha');
-```
+- **`parametros`** — registo único (`unico = true`, chave `id` UUID). Todos os valores do programa com os valores
+  iniciais da secção 4, mais `tamanho_intervalo = 10000` (intervalos da lista de destaques). Só o servidor escreve:
+  alteração por `alterar_parametros(jsonb)`, com `plataforma.parametros`, auditada.
+- **`funcionalidades`** — `chave` única, `activa` (todas `false` no fim de I1). Alteração por
+  `alterar_funcionalidade(chave, activa)`, com `plataforma.parametros`, auditada.
 
 ### 5.2 Cozinhas
+- **`cozinhas`** — `nome`, `responsavel`, `foto_url`, `historia`, `estado` (activa/pausada/inactiva),
+  `consentimento_publico` (false até decisão 16.1). A migração cria a **Cozinha da Alexandra**.
+- `cozinha_id` obrigatório (por defeito `cozinha_padrao()`, a cozinha activa mais antiga) em `pratos_base`, `turnos`,
+  `caixa`, `estoque_diario`, `estoque_longo_prazo`, `distribuicoes`, `vendas`, `pre_encomendas`, `pedidos_especiais`
+  e `pedidos`. As linhas existentes são preenchidas com a Cozinha da Alexandra.
+- `turnos.periodo` (manha/tarde/noite): turno de cozinha para o reconhecimento de equipa.
 
-```sql
-create table cozinhas (
-  id                     uuid primary key default gen_random_uuid(),
-  nome                   text not null,              -- 'Cozinha da Alexandra'
-  responsavel            text not null,
-  foto_url               text,
-  historia               text,
-  estado                 text not null default 'activa'
-                         check (estado in ('activa','pausada','inactiva')),
-  consentimento_publico  boolean not null default false,
-  criado_em              timestamptz not null default now()
-);
+### 5.3 Pontos de entrega e endereços
+- **`pontos_entrega`** — `tipo` (residencial/empresa), `lat`, `lng`, `zona_id` → `zonas`, `referencia`,
+  `criado_por_cliente`.
+- **`enderecos_cliente`** — `cliente_id`, `ponto_entrega_id`, `nome` (Casa/Trabalho), `principal`.
+  Clientes Empresa só usam pontos do tipo `empresa`.
 
--- Tabelas operacionais existentes passam a pertencer a uma cozinha
-alter table pratos           add column cozinha_id uuid references cozinhas(id);
-alter table turnos           add column cozinha_id uuid references cozinhas(id);
-alter table caixas           add column cozinha_id uuid references cozinhas(id);
-alter table movimentos_stock add column cozinha_id uuid references cozinhas(id);
--- Migração: criar a Cozinha da Alexandra e preencher cozinha_id em todas as linhas existentes;
--- depois tornar a coluna not null.
-```
+### 5.4 Pedidos da app do cliente
+**`pedidos`** (tabela do esquema base, porque `vendas` é append-only e não tem estado):
+`cliente_id`, `zona_id`, `estado`, `itens` (`[{prato_base_id, nome, qtd, preco_unitario}]`), `subtotal`,
+`taxa_entrega`, `parcelas`, `observacoes`, `motivo_cancelamento`, `hora_prometida`, `entregue_em`; e, do programa,
+`cozinha_id`, `ponto_entrega_id`, `desconto_indicacao`, `credito_indicacao_usado`, `grupo_id`, `pagador_distinto`.
 
-### 5.3 Locais e endereços
+Ciclo de estados: `pendente → confirmado → em_preparacao → em_entrega → entregue_pago`; `cancelado` a partir de
+qualquer estado antes da entrega; `entregue_pago → estornado`. Só avança; pode saltar etapas.
 
-```sql
-create table locais (
-  id          uuid primary key default gen_random_uuid(),
-  tipo        text not null check (tipo in ('residencial','empresa')),
-  lat         double precision not null,
-  lng         double precision not null,
-  zona_id     uuid references zonas_entrega(id),
-  referencia  text,                         -- 'Prédio azul, 3.º andar, porta 12'
-  criado_em   timestamptz not null default now()
-);
-create index on locais (zona_id);
-
-create table enderecos_cliente (
-  id          uuid primary key default gen_random_uuid(),
-  cliente_id  uuid not null references clientes(id),
-  local_id    uuid not null references locais(id),
-  nome        text not null default 'Casa',  -- 'Casa', 'Trabalho'
-  principal   boolean not null default false
-);
-```
-
-### 5.4 Campos novos em `pedidos`
-
-```sql
-alter table pedidos
-  add column cozinha_id          uuid references cozinhas(id),
-  add column local_id            uuid references locais(id),
-  add column dispositivo_id      text,          -- identificador de instalação da app
-  add column desconto_indicacao  int not null default 0,   -- só o servidor escreve
-  add column credito_usado       int not null default 0,   -- saldo de indicação usado
-  add column grupo_id            uuid,           -- FK adicionada em 5.8
-  add column hora_prometida      timestamptz,
-  add column entregue_em         timestamptz,
-  add column pagador_distinto    boolean;        -- marcado pelo entregador
-```
+`vendas.pedido_id` liga a venda gerada ao pedido (ver 6.9).
 
 ### 5.5 Convida e Ganha
-
-```sql
-create table codigos_indicacao (
-  cliente_id  uuid primary key references clientes(id),
-  codigo      text not null unique,
-  nivel       text not null default 'normal' check (nivel in ('normal','embaixador')),
-  criado_em   timestamptz not null default now()
-);
-
-create table ligacoes_indicacao (
-  indicado_id         uuid primary key references clientes(id),
-  indicador_id        uuid not null references clientes(id),
-  ligado_em           timestamptz not null default now(),
-  primeiro_pedido_id  uuid references pedidos(id),
-  expira_em           timestamptz,     -- null até ao 1.º pedido entregue e pago
-  desconto_usado      boolean not null default false,
-  check (indicado_id <> indicador_id)
-);
-create index on ligacoes_indicacao (indicador_id);
-
-create table ganhos_indicacao (
-  id               uuid primary key default gen_random_uuid(),
-  pedido_id        uuid not null unique references pedidos(id),
-  indicador_id     uuid not null references clientes(id),
-  indicado_id      uuid not null references clientes(id),
-  valor            int not null,
-  estado           text not null
-                   check (estado in ('em_verificacao','confirmado','pago','anulado')),
-  motivo           text,   -- verificação: 'limite_semanal','limite_local','numero_pagamento_partilhado'
-                           -- anulação: 'mesmo_dispositivo','pedido_estornado','rejeitado_verificacao'
-  revisto_por      uuid,
-  revisto_em       timestamptz,
-  pagamento_id     uuid,
-  criado_em        timestamptz not null default now(),
-  confirmado_em    timestamptz
-);
-create index on ganhos_indicacao (indicador_id, estado);
-create index on ganhos_indicacao (confirmado_em);
-
-create table pagamentos_indicacao (
-  id              uuid primary key default gen_random_uuid(),
-  indicador_id    uuid not null references clientes(id),
-  valor           int not null check (valor > 0),
-  tipo            text not null check (tipo in ('credito','levantamento')),
-  metodo          text check (metodo in ('multicaixa_express','unitel_money')),
-  numero_destino  text,           -- telefone da carteira; usado nos sinais anti-fraude
-  pedido_id       uuid references pedidos(id),   -- quando tipo = 'credito'
-  grupo_id        uuid,           -- liga parcelas do mesmo levantamento
-  parcela         int not null default 1,
-  total_parcelas  int not null default 1,
-  estado          text not null default 'pedido'
-                  check (estado in ('pedido','aprovado','pago','rejeitado')),
-  referencia      text,
-  aprovado_por    uuid,
-  pago_em         timestamptz,
-  criado_em       timestamptz not null default now()
-);
-create index on pagamentos_indicacao (indicador_id, estado);
-create index on pagamentos_indicacao (numero_destino);
-
-create table perfil_destaques (
-  cliente_id         uuid primary key references clientes(id),
-  pseudonimo         text not null unique,
-  mostrar_nome_real  boolean not null default false,
-  sair_da_lista      boolean not null default false
-);
-```
+- **`codigos_indicacao`** — `cliente_id` (único), `codigo` (`MB-` + 4 dígitos), `nivel` (normal/embaixador),
+  `ultima_partilha_em`.
+- **`ligacoes_indicacao`** — `indicado_id` (único), `indicador_id`, `ligado_em`, `primeiro_pedido_id`, `expira_em`
+  (vazio até ao 1.º pedido entregue e pago), `desconto_usado`, **`ganho_por_pedido_garantido`**,
+  **`desconto_garantido`** (copiados de `parametros` no momento da ligação).
+- **`ganhos_indicacao`** — `pedido_id` (único), `indicador_id`, `indicado_id`, `valor`, `estado`, `motivo`,
+  `nota_revisao`, `revisto_por`, `revisto_em`, `pagamento_id`, `confirmado_em`.
+- **`pagamentos_indicacao`** — `indicador_id`, `valor`, `tipo` (credito/levantamento), `metodo`, `numero_destino`,
+  `pedido_id`, `lote_id`, `parcela`, `total_parcelas`, `estado` (pedido/aprovado/pago/rejeitado), `referencia`,
+  `motivo_rejeicao`, `aprovado_por`, `pago_em`.
+- **`perfil_destaques`** — `cliente_id`, `pseudonimo`, `mostrar_nome_real`, `sair_da_lista`.
+- **`preferencias_notificacao`** — `cliente_id`, `lembrete_almoco` (N5), `destaques` (N7).
 
 ### 5.6 Avaliações
-
-```sql
-create table avaliacoes (
-  id              uuid primary key default gen_random_uuid(),
-  pedido_id       uuid not null unique references pedidos(id),
-  cliente_id      uuid not null references clientes(id),
-  cozinha_id      uuid not null references cozinhas(id),
-  estrelas        int not null check (estrelas between 1 and 5),
-  comentario      text check (char_length(comentario) <= 200),
-  oculta          boolean not null default false,
-  ocultada_por    uuid,
-  usar_pseudonimo boolean not null default false,
-  criado_em       timestamptz not null default now()
-);
-
-create table avaliacoes_pratos (   -- estrelas por prato dentro do pedido (opcional)
-  avaliacao_id  uuid references avaliacoes(id) on delete cascade,
-  prato_id      uuid references pratos(id),
-  estrelas      int not null check (estrelas between 1 and 5),
-  primary key (avaliacao_id, prato_id)
-);
-
-create table fotos_avaliacao (
-  id            uuid primary key default gen_random_uuid(),
-  avaliacao_id  uuid not null references avaliacoes(id) on delete cascade,
-  caminho       text not null,        -- Supabase Storage, bucket privado até aprovação
-  estado        text not null default 'pendente'
-                check (estado in ('pendente','aprovada','rejeitada')),
-  moderado_por  uuid,
-  moderado_em   timestamptz
-);
-```
+`avaliacoes` (uma por pedido; `cozinha_id` vem do pedido), `avaliacoes_pratos` (estrelas por prato),
+`fotos_avaliacao` (máx. 2, `pendente` até moderação), `palavras_filtradas` (filtro de comentários, começa vazio).
 
 ### 5.7 Reconhecimento de equipa
-
-```sql
-create table reconhecimentos_turno (
-  id          uuid primary key default gen_random_uuid(),
-  turno_id    uuid not null references turnos(id),
-  cozinha_id  uuid not null references cozinhas(id),
-  semana      date not null,          -- segunda-feira da semana
-  tipo        text not null check (tipo in ('menos_desperdicio','entregas_a_horas','caixa_certa','outro')),
-  nota        text,
-  criado_por  uuid not null,
-  criado_em   timestamptz not null default now()
-);
-```
+`reconhecimentos_turno` — `cozinha_id`, `semana` (segunda-feira), `periodo`, `tipo`, `nota`, `criado_por`.
+Reconhece o turno da cozinha, nunca uma pessoa (uma linha de `turnos` é o turno de um funcionário).
 
 ### 5.8 Pedidos de grupo
+`pedidos_grupo` — `organizador_id`, `empresa_id`, `ponto_entrega_id`, `cozinha_id`, `hora_entrega`, `prazo_adesao`,
+`modo_pagamento`, `codigo_convite` (`G-` + 6 caracteres, gerado no servidor), `estado`.
 
-```sql
-create table pedidos_grupo (
-  id               uuid primary key default gen_random_uuid(),
-  organizador_id   uuid not null references clientes(id),
-  empresa_id       uuid references clientes(id),       -- cliente Empresa, quando paga
-  local_id         uuid not null references locais(id),
-  cozinha_id       uuid not null references cozinhas(id),
-  hora_entrega     timestamptz not null,
-  prazo_adesao     timestamptz not null,
-  modo_pagamento   text not null check (modo_pagamento in ('individual','empresa')),
-  codigo_convite   text not null unique,              -- para o link de adesão
-  estado           text not null default 'aberto'
-                   check (estado in ('aberto','fechado','em_preparacao','entregue','cancelado')),
-  criado_em        timestamptz not null default now()
-);
-alter table pedidos add constraint pedidos_grupo_fk
-  foreign key (grupo_id) references pedidos_grupo(id);
-```
-
-### 5.9 Fila de notificações
-
-```sql
-create table notificacoes_fila (
-  id          uuid primary key default gen_random_uuid(),
-  cliente_id  uuid not null references clientes(id),
-  codigo      text not null,        -- 'N2','N3',... ver secção 11
-  dados       jsonb not null default '{}',
-  enviada_em  timestamptz,
-  criado_em   timestamptz not null default now()
-);
-```
-
-Uma Edge Function lê a fila e envia as notificações push (Expo Push), respeitando os interruptores e as preferências do cliente.
+### 5.9 Fila de notificações e contadores
+`notificacoes_fila` (`cliente_id`, `codigo` N1–N12, `dados`, `enviada_em`) e `contadores_zona` (cache horária de
+pedidos pagos por zona e dia). Não sincronizam para o telemóvel.
 
 ---
 
 ## 6. Funções e triggers
 
 ### 6.1 Utilitários
+`distancia_m`, `mesmo_ponto_entrega(a, b)` (mesmo tipo e a ≤ `raio_mesmo_local_m`), `funcionalidade_activa(chave)`,
+`inicio_dia_luanda()`, `inicio_semana_luanda()`, `inicio_mes_luanda()`, `hoje_luanda()`, `normalizar_telefone`.
 
-```sql
-create or replace function distancia_m(lat1 float8, lng1 float8, lat2 float8, lng2 float8)
-returns float8 language sql immutable as $$
-  select 6371000 * 2 * asin(sqrt(
-    power(sin(radians(lat2 - lat1) / 2), 2) +
-    cos(radians(lat1)) * cos(radians(lat2)) * power(sin(radians(lng2 - lng1) / 2), 2)
-  ));
-$$;
+Identidade: `clientes.auth_user_id` e `funcionarios.auth_user_id` ligam ao utilizador do Supabase Auth.
+`cliente_actual()`, `funcionario_actual()`, `tem_permissao(p)` (administrador principal tem tudo;
+`permissoes_extra` prevalece sobre as permissões da direcção).
 
-create or replace function mesmo_local(a uuid, b uuid)
-returns boolean language sql stable as $$
-  select a = b or exists (
-    select 1 from locais la, locais lb, parametros p
-    where la.id = a and lb.id = b and p.id = 1
-      and la.tipo = lb.tipo
-      and distancia_m(la.lat, la.lng, lb.lat, lb.lng) <= p.raio_mesmo_local_m
-  );
-$$;
-
-create or replace function funcionalidade_activa(k text)
-returns boolean language sql stable as $$
-  select coalesce((select activa from funcionalidades where chave = k), false);
-$$;
-
-create or replace function inicio_semana_luanda()
-returns timestamptz language sql stable as $$
-  select date_trunc('week', now() at time zone 'Africa/Luanda') at time zone 'Africa/Luanda';
-$$;
-```
+Auditoria: `registar_auditoria(acao, ref_tipo, ref_id, detalhe)` escreve em `auditoria`; sem funcionário,
+`funcionario_nome = 'sistema'`. A tabela recusa UPDATE, DELETE e TRUNCATE (só o servidor pode marcar `sincronizado_em`).
 
 ### 6.2 Registo de cliente
-Trigger `after insert on clientes`:
-1. Gerar código `MB-` + 4 dígitos aleatórios; repetir em colisão.
-2. Gerar pseudónimo único a partir de listas de palavras (animais, árvores, lugares e símbolos angolanos + cor ou número). Nunca usar dados do cliente.
-3. Inserir em `codigos_indicacao` e `perfil_destaques`.
+Trigger `after insert on clientes`: gera o código `MB-dddd` (passa a 5 dígitos quando se esgotar), o pseudónimo
+(palavra angolana + qualidade ou número, sem dados do cliente) e as preferências de notificação.
 
-### 6.3 `ligar_indicacao(p_codigo text)`
-`security definer`, usa `cliente_actual()`. Valida por esta ordem e devolve um código de erro legível pela app:
-- `programa_inactivo` se `indicacao` desligado;
-- `codigo_inexistente`;
-- `proprio_codigo`;
-- `ja_ligado`;
-- `cliente_nao_novo` se já existe pedido `entregue_pago`.
-Se tudo passar, cria a linha em `ligacoes_indicacao` e enfileira `N2` para o indicador.
+### 6.3 `ligar_indicacao(p_codigo)`
+Devolve `programa_inactivo`, `sem_sessao`, `codigo_inexistente`, `proprio_codigo`, `ja_ligado`, `cliente_nao_novo`
+ou `ok`. "Cliente não novo" = tem um pedido `entregue_pago` **ou compras em `vendas`** (sistema anterior).
+Ao ligar, copia `ganho_por_pedido` e `desconto_indicado` para a ligação (valores garantidos), enfileira N2 e audita.
 
 ### 6.4 Desconto no pedido (`before insert on pedidos`)
-O servidor ignora qualquer valor enviado pela app em `desconto_indicacao` e recalcula:
+O servidor ignora o valor enviado pela app e recalcula com `avaliar_desconto_indicacao`:
+- 0 se o programa estiver desligado, sem ligação, desconto já usado, cliente não novo, ou já houver um pedido
+  em curso com desconto;
+- 0 se o ponto for residencial e já tiver `max_descontos_por_local` descontos pagos (mesmo ponto = até 25 m);
+- senão, **`desconto_garantido` da ligação** (não o parâmetro actual).
 
-```sql
-create or replace function calcular_desconto_indicacao()
-returns trigger language plpgsql security definer as $$
-declare
-  p parametros; lig ligacoes_indicacao; loc locais; usados int;
-begin
-  new.desconto_indicacao := 0;
-  if not funcionalidade_activa('indicacao') then return new; end if;
-
-  select * into p from parametros where id = 1;
-  select * into lig from ligacoes_indicacao where indicado_id = new.cliente_id;
-  if not found or lig.desconto_usado then return new; end if;
-
-  if exists (select 1 from pedidos
-             where cliente_id = new.cliente_id and estado = 'entregue_pago') then
-    return new;
-  end if;
-
-  select * into loc from locais where id = new.local_id;
-  if loc.tipo = 'residencial' then
-    select count(*) into usados
-      from pedidos x
-     where x.desconto_indicacao > 0 and x.estado = 'entregue_pago'
-       and mesmo_local(x.local_id, new.local_id);
-    if usados >= p.max_descontos_por_local then return new; end if;
-  end if;
-
-  new.desconto_indicacao := p.desconto_indicado;
-  return new;
-end $$;
-
-create trigger trg_desconto_indicacao
-before insert on pedidos
-for each row execute function calcular_desconto_indicacao();
-```
+`meu_desconto_indicacao(p_ponto)` devolve `(valor, motivo)` para o ecrã C2 mostrar "−500 Kz" ou a mensagem de limite.
 
 ### 6.5 Ganho do indicador (`after update of estado on pedidos`)
-
-```sql
-create or replace function processar_ganho_indicacao()
-returns trigger language plpgsql security definer as $$
-declare
-  p            parametros;
-  lig          ligacoes_indicacao;
-  loc          locais;
-  nivel_ind    text;
-  total_sem    int;
-  indicados_local int;
-  v_estado     text := 'confirmado';
-  v_motivo     text := null;
-begin
-  -- Estorno de um pedido já pago
-  if old.estado = 'entregue_pago' and new.estado <> 'entregue_pago' then
-    update ganhos_indicacao
-       set estado = 'anulado', motivo = 'pedido_estornado'
-     where pedido_id = new.id and estado <> 'pago';
-    return new;
-  end if;
-
-  if new.estado <> 'entregue_pago' or old.estado = 'entregue_pago' then
-    return new;
-  end if;
-  if not funcionalidade_activa('indicacao') then return new; end if;
-
-  select * into p from parametros where id = 1;
-  select * into lig from ligacoes_indicacao where indicado_id = new.cliente_id;
-  if not found then return new; end if;
-
-  -- 1.º pedido pago: arranca o período
-  if lig.expira_em is null then
-    update ligacoes_indicacao
-       set primeiro_pedido_id = new.id,
-           expira_em = now() + make_interval(days => p.duracao_dias),
-           desconto_usado = (new.desconto_indicacao > 0)
-     where indicado_id = new.cliente_id
-    returning * into lig;
-  end if;
-
-  if now() > lig.expira_em then return new; end if;
-  if exists (select 1 from ganhos_indicacao where pedido_id = new.id) then
-    return new;
-  end if;
-
-  -- Sinal forte: mesmo dispositivo
-  if exists (
-    select 1 from pedidos a
-     where a.cliente_id = lig.indicador_id and a.dispositivo_id is not null
-       and a.dispositivo_id in (select b.dispositivo_id from pedidos b
-                                 where b.cliente_id = new.cliente_id
-                                   and b.dispositivo_id is not null)) then
-    v_estado := 'anulado'; v_motivo := 'mesmo_dispositivo';
-  end if;
-
-  -- Sinal médio: mesmo número de levantamento
-  if v_estado = 'confirmado' and exists (
-    select 1 from pagamentos_indicacao a
-     where a.indicador_id = lig.indicador_id and a.numero_destino is not null
-       and a.numero_destino in (select b.numero_destino from pagamentos_indicacao b
-                                 where b.indicador_id = new.cliente_id
-                                   and b.numero_destino is not null)) then
-    v_estado := 'em_verificacao'; v_motivo := 'numero_pagamento_partilhado';
-  end if;
-
-  -- Limite por local residencial
-  select * into loc from locais where id = new.local_id;
-  if v_estado = 'confirmado' and loc.tipo = 'residencial' then
-    select count(distinct g.indicado_id) into indicados_local
-      from ganhos_indicacao g join pedidos x on x.id = g.pedido_id
-     where g.estado <> 'anulado'
-       and g.indicado_id <> new.cliente_id
-       and mesmo_local(x.local_id, new.local_id);
-    if indicados_local >= p.max_indicados_por_local then
-      v_estado := 'em_verificacao'; v_motivo := 'limite_local';
-    end if;
-  end if;
-
-  -- Limite semanal (não se aplica a Embaixadores)
-  if v_estado = 'confirmado' then
-    select nivel into nivel_ind from codigos_indicacao where cliente_id = lig.indicador_id;
-    if nivel_ind <> 'embaixador' then
-      select coalesce(sum(valor), 0) into total_sem
-        from ganhos_indicacao
-       where indicador_id = lig.indicador_id
-         and estado in ('confirmado','pago')
-         and confirmado_em >= inicio_semana_luanda();
-      if total_sem >= p.limite_verificacao_semanal then
-        v_estado := 'em_verificacao'; v_motivo := 'limite_semanal';
-      end if;
-    end if;
-  end if;
-
-  insert into ganhos_indicacao
-    (pedido_id, indicador_id, indicado_id, valor, estado, motivo, confirmado_em)
-  values
-    (new.id, lig.indicador_id, new.cliente_id, p.ganho_por_pedido, v_estado, v_motivo,
-     case when v_estado = 'confirmado' then now() end);
-
-  -- Auditoria (sistema existente) e notificações
-  -- perform registar_auditoria('ganho_indicacao', new.id, v_estado, v_motivo);
-  if v_estado = 'confirmado' then
-    insert into notificacoes_fila (cliente_id, codigo, dados)
-    values (lig.indicador_id, 'N3', jsonb_build_object('pedido_id', new.id));
-  elsif v_estado = 'em_verificacao' and v_motivo = 'limite_semanal'
-        and not exists (select 1 from ganhos_indicacao
-                         where indicador_id = lig.indicador_id
-                           and motivo = 'limite_semanal'
-                           and criado_em >= inicio_semana_luanda()
-                           and pedido_id <> new.id) then
-    insert into notificacoes_fila (cliente_id, codigo, dados)
-    values (lig.indicador_id, 'N4', '{}');
-  end if;
-
-  return new;
-end $$;
-
-create trigger trg_ganho_indicacao
-after update of estado on pedidos
-for each row execute function processar_ganho_indicacao();
-```
+Como na versão 1.0 (período a partir do 1.º pedido pago, sinais anti-fraude, limite por local, limite semanal,
+embaixadores, estorno, N3/N4), com duas diferenças:
+- o valor do ganho é **`ganho_por_pedido_garantido`** da ligação: mudar os parâmetros só afecta novas ligações;
+- o sinal "mesmo dispositivo" usa o campo comum `dispositivo_id` dos pedidos e ignora linhas criadas pelo servidor.
 
 ### 6.6 Revisão de ganhos
-`rever_ganho(p_ganho uuid, p_decisao text, p_motivo text)`: exige `indicacoes.verificar`. `confirmar` → `confirmado` com `confirmado_em = now()`; `anular` → `anulado`, `motivo = 'rejeitado_verificacao'`, motivo escrito obrigatório guardado na auditoria.
+`rever_ganho(ganho, 'confirmar'|'anular', motivo)`, com `indicacoes.verificar`; anular exige motivo escrito
+(guardado em `nota_revisao` e na auditoria). `definir_nivel_indicador(cliente, nivel)` com `plataforma.parametros`.
 
 ### 6.7 Pagamentos
-- `pedir_levantamento(p_valor, p_metodo, p_numero)`: valida saldo, mínimo e interruptor; cria 1 ou 2 parcelas (acima de `limite_parcelamento`) com o mesmo `grupo_id`.
-- `usar_credito(p_pedido, p_valor)`: valida saldo; cria pagamento `tipo = 'credito'`, `estado = 'pago'`; actualiza `pedidos.credito_usado`.
-- `marcar_pago(p_pagamento, p_referencia)`: exige `indicacoes.aprovar_pagamentos` e referência; passa ganhos `confirmado` mais antigos a `pago` até ao valor; enfileira `N8`.
+- **Saldo** = ganhos `confirmado` + `pago` − pagamentos `pedido` + `aprovado` + `pago` (igual a "confirmado − em curso",
+  mas exacto mesmo quando o crédito usado não é múltiplo de um ganho).
+- `pedir_levantamento(valor, metodo, numero)`: mínimo, saldo, método e número válidos; acima de `limite_parcelamento`
+  cria 2 parcelas com o mesmo `lote_id`.
+- `usar_credito(pedido, valor)`: pagamento `credito` já `pago`; soma a `pedidos.credito_indicacao_usado`.
+  Se o pedido for cancelado ou estornado, o crédito volta ao saldo.
+- `aprovar_levantamento`, `rejeitar_levantamento` (motivo obrigatório), `marcar_pago` (referência obrigatória):
+  com `indicacoes.aprovar_pagamentos`. Os ganhos confirmados mais antigos cobertos pelo total pago passam a `pago`. N8.
 
-### 6.8 Jobs agendados (pg_cron ou Edge Function agendada)
-- **De hora a hora:** recalcular contadores por zona.
-- **Diariamente às 08h:** enfileirar `N6` para indicados que expiram em 5 dias.
-- **Dias úteis às 11h:** enfileirar `N5` (máx. 2 por semana por cliente, só quem já partilhou, respeitando preferências).
-- **Semanalmente:** enfileirar `N7` para quem está a até 3 amigos do top; calcular métricas de turno.
+### 6.8 Jobs agendados
+`job_contadores_zona` (de hora a hora), `job_n6_expiracao` (08h), `job_n5_lembrete` (dias úteis 11h, máx. 2/semana,
+só quem partilhou e não desligou), `job_n7_destaques` (segundas 08h). Respeitam os interruptores.
+`agendar_jobs()` agenda-os com `pg_cron` quando a extensão está activa (horas em UTC; Luanda = UTC+1).
+
+### 6.9 Estado do pedido e venda gerada
+- O estado **só muda no servidor**: `mudar_estado_pedido(pedido, estado, motivo)` (`pedidos.gerir`; o entregador,
+  com `entregas.registar`, só marca `em_entrega` e `entregue_pago`) e `cancelar_pedido(pedido, motivo)` (o cliente,
+  enquanto `pendente`). Nenhuma escrita directa de `estado` é aceite, nem da fila de saída do operador.
+- `marcar_pagador_distinto(pedido, valor)` com `entregas.registar`.
+- Ao chegar a `entregue_pago`, o servidor grava `entregue_em` e **gera a venda** (origem `App cliente`,
+  `pedido_id`, `cozinha_id`, `cliente_id`, itens, `valor_antes_desconto` = subtotal + taxa, `desconto_aplicado` =
+  desconto de indicação, `valor_total` = subtotal + taxa − desconto, `taxa_entrega`, `zona_nome`, `parcelas` do
+  pedido mais "Crédito indicação" quando houver). Um estorno gera a venda de compensação `App cliente (estorno)`
+  com valores negativos. No máximo uma venda de cada tipo por pedido.
 
 ---
 
 ## 7. Vistas e funções de leitura
 
-- **`saldo_indicacao`** (por indicador): `saldo_disponivel` = soma `confirmado` − soma pagamentos `pedido`/`aprovado`; `em_verificacao` = soma `em_verificacao`; ganhos de hoje e da semana.
-- **`destaques_mes()`**: devolve posição, nome exibido (pseudónimo ou primeiro nome), n.º de amigos com ganho no mês, valor do mês ou intervalo (se participantes < `limiar_intervalos`). Exclui `sair_da_lista`. **Nunca** devolve ids nem telefones.
-- **`minha_posicao()`**: posição do cliente autenticado e amigos em falta para o top.
-- **`pessoas_como_tu()`**: 2–3 entradas reais entre `pessoas_como_tu_min` e `pessoas_como_tu_max` amigos; devolve vazio se houver menos de 2.
-- **`total_pago_mes()`**: soma dos pagamentos `pago` no mês.
-- **`contador_zona(p_zona)`**: pedidos `entregue_pago` hoje na zona; devolve `null` abaixo de `contador_minimo`.
-- **`media_avaliacoes`**: média de estrelas por prato e por cozinha, só com `avaliacoes_minimo` ou mais (excluindo ocultas).
-- **`metricas_turno`**: por turno e semana — desperdício (reconciliação de stock), % entregas a horas (`entregue_em <= hora_prometida + tolerancia_entrega_min`), diferença de caixa.
-- **`relatorio_cozinha(p_cozinha, p_inicio, p_fim)`**: pedidos por dia, clientes novos, clientes vindos de indicação, retenção 30/60/90 dias, média de avaliação, prato mais pedido.
+- **`saldo_indicacao`** (vista, respeita RLS): `saldo_disponivel`, `em_verificacao`, `ganho_hoje`, `ganho_semana`,
+  `total_recebido` por indicador.
+- **`destaques_mes()`**: posição, nome exibido, amigos, valor (ou `valor_min`/`valor_max` abaixo de
+  `limiar_intervalos`), `sou_eu`. Exclui `sair_da_lista`. Nunca devolve ids nem telefones. Vazia com `destaques` desligado.
+- **`minha_posicao()`**: posição, amigos, `amigos_em_falta` para o top, `no_top`.
+- **`pessoas_como_tu()`**: 2–3 exemplos reais entre `pessoas_como_tu_min` e `_max` amigos; vazio se houver menos de 2.
+- **`total_pago_mes()`**, **`contador_zona(zona)`** (null abaixo de `contador_minimo`).
+- **`media_avaliacoes_cozinha`**, **`media_avaliacoes_prato`** (vistas; só com `avaliacoes_minimo`, sem ocultas).
+- **`metricas_turno(cozinha, semana)`**: por período — quebras registadas em `distribuicoes`, entregas a horas,
+  diferença de caixa (`caixa.fechamento->>'diferenca'`). Com `equipa.reconhecer` ou para membros da cozinha.
+- **`relatorio_cozinha(cozinha, início, fim)`**: pedidos por dia, clientes novos, vindos de indicação, retenção
+  30/60/90, média de avaliação, prato mais pedido. Com `relatorios.exportar`.
+- Apoio às apps: `pontos_entrega_proximos(lat, lng, tipo)` (não devolve a referência de pontos residenciais),
+  `grupo_por_codigo(codigo)`, `avaliacao_permitida(pedido)`, `registar_partilha()`.
 
 ---
 
 ## 8. Segurança (RLS) e permissões
 
+RLS está activo em **todas** as tabelas. As tabelas base sem políticas só são acessíveis ao servidor até as
+políticas das apps do operador serem definidas.
+
 | Tabela | Cliente | Operador |
 |---|---|---|
-| `parametros`, `funcionalidades` | Ler | Escrever com `plataforma.parametros` |
-| `cozinhas` | Ler activas com `consentimento_publico` | Escrever com `cozinhas.gerir` |
-| `locais`, `enderecos_cliente` | Ler/escrever os seus | Ler |
-| `codigos_indicacao` | Ler o seu | Ler; mudar `nivel` com `plataforma.parametros` |
-| `ligacoes_indicacao` | Ler onde é indicador ou indicado; criar só via `ligar_indicacao` | Ler |
-| `ganhos_indicacao` | Ler onde é indicador | Ler com `indicacoes.ver`; rever com `indicacoes.verificar` |
-| `pagamentos_indicacao` | Ler os seus; criar só via funções | Aprovar com `indicacoes.aprovar_pagamentos` |
+| `parametros`, `funcionalidades` | Ler | Ler; alterar só por `alterar_parametros` / `alterar_funcionalidade` (`plataforma.parametros`) |
+| `cozinhas` | Ler activas com `consentimento_publico` | Ler; escrever com `cozinhas.gerir` |
+| `pontos_entrega`, `enderecos_cliente` | Ler/escrever os seus | Ler |
+| `pedidos` | Criar (estado `pendente`); ler os seus; cancelar só por `cancelar_pedido` | Ler; estado só por `mudar_estado_pedido`; `hora_prometida`/`observacoes` com `pedidos.gerir` |
+| `codigos_indicacao` | Ler o seu | Ler com `indicacoes.ver`; nível por `definir_nivel_indicador` |
+| `ligacoes_indicacao` | Ler onde é indicador ou indicado | Ler com `indicacoes.ver` |
+| `ganhos_indicacao` | Ler onde é indicador | Ler com `indicacoes.ver`/`verificar`; rever por `rever_ganho` |
+| `pagamentos_indicacao` | Ler os seus; criar só por funções | Ler; aprovar/pagar por funções |
 | `perfil_destaques` | Ler o seu; actualizar só `mostrar_nome_real` e `sair_da_lista` | Ler |
-| `avaliacoes` | Criar para pedido próprio entregue dentro do prazo; ler não ocultas | Ocultar com `avaliacoes.moderar` |
-| `fotos_avaliacao` | Enviar para avaliação própria; ler aprovadas | Moderar com `avaliacoes.moderar` |
-| `pedidos_grupo` | Criar; ler os grupos em que participa ou com código válido | Ler |
+| `preferencias_notificacao` | Ler/actualizar as suas | — |
+| `avaliacoes` | Criar para pedido próprio entregue dentro do prazo; ler não ocultas | Ocultar por `ocultar_avaliacao` |
+| `fotos_avaliacao` | Enviar para avaliação própria (com `avaliacoes_fotos`); ler aprovadas | Moderar por `moderar_foto` |
+| `pedidos_grupo` | Criar; ler os seus ou por `grupo_por_codigo` | Ler |
 | `reconhecimentos_turno` | — | Criar com `equipa.reconhecer`; membros da cozinha lêem |
-| `notificacoes_fila` | — | Só serviço |
+| `notificacoes_fila`, `contadores_zona` | — | Só serviço |
 
-Campos que **só o servidor** escreve em `pedidos`: `desconto_indicacao`, `credito_usado`, `entregue_em`. `pagador_distinto` só por utilizadores com papel de entrega.
+**Escrita só pelo servidor.** `parametros`, `funcionalidades`, `codigos_indicacao`, `ligacoes_indicacao`,
+`ganhos_indicacao`, `pagamentos_indicacao`, `notificacoes_fila` e `contadores_zona` recusam qualquer escrita vinda de
+uma sessão de dispositivo (trigger `bloquear_escrita_dispositivo`), mesmo que um privilégio seja concedido por engano.
+Nunca entram na fila de saída do telemóvel.
+
+**Campos de `pedidos` só do servidor:** `estado`, `desconto_indicacao`, `credito_indicacao_usado`, `entregue_em`,
+`pagador_distinto`.
+
+As funções de trigger e as auxiliares internas não são chamáveis pelas apps; todas as funções têm `search_path` fixo.
 
 ---
 
@@ -855,7 +562,7 @@ Todos os valores e nomes são preenchidos a partir dos dados e parâmetros.
 | Fase | Conteúdo | Interruptores ligados no fim | Critério para avançar |
 |---|---|---|---|
 | **P0. Piloto manual** | 10–20 clientes habituais, códigos à mão, registo em folha, pagamentos manuais. Não depende de código novo. | — | 2–4 semanas; valores validados ou ajustados |
-| **I1. Fundações** | Todo o modelo de dados (secção 5), migração da Cozinha da Alexandra, locais e endereços, funções e triggers (6), vistas (7), RLS e permissões (8), fila de notificações, jobs. Testes da secção 13. | — (tudo desligado) | Todos os testes de I1 passam |
+| **I1. Fundações** | Esquema base com `pedidos`, todo o modelo de dados (secção 5), migração da Cozinha da Alexandra, pontos de entrega e endereços, funções e triggers (6), venda gerada na entrega, vistas (7), RLS e permissões (8), fila de notificações, jobs. Testes da secção 13. | — (tudo desligado) | Todos os testes de I1 passam |
 | **I2. App do cliente** | C1, C2, C4, C6, C7, C8, C11; deep link; N1–N4, N8 | `indicacao`, `pessoas_como_tu`, `contadores_zona`, `perfil_cozinha` (com consentimento) | — (liga só em I4) |
 | **I3. App do operador** | O1–O6, O9, E1 | — | Operador consegue verificar e pagar ponta a ponta |
 | **I4. Lançamento aberto** | Activar para todos; C3, C5; N5–N7; primeiros Embaixadores | `destaques` | 1 mês estável |
@@ -912,7 +619,31 @@ A revisão de parâmetros (custo por cliente conquistado, retenção, % anulados
 
 **RLS**
 31. Cliente A não lê ganhos, pagamentos, ligações nem endereços do cliente B.
-32. Cliente não consegue escrever `desconto_indicacao`, `credito_usado` nem ganhos.
+32. Cliente não consegue escrever `desconto_indicacao`, `credito_indicacao_usado` nem ganhos.
+
+**Acrescentados na versão 1.1**
+
+*Valores garantidos na ligação*
+33. A ligação guarda o `ganho_por_pedido` e o `desconto_indicado` em vigor.
+34. Parâmetros alterados depois da ligação → o desconto e o ganho usam os valores garantidos.
+35. Valor alterado a meio dos 60 dias → os ganhos de ligações já existentes não mudam.
+36. Nova ligação depois da alteração → usa os valores novos.
+
+*Pedidos e vendas*
+37. Cliente e operador não escrevem o estado do pedido directamente; o operador muda-o por `mudar_estado_pedido`.
+38. Entregador marca `entregue_pago`, mas não cancela.
+39. `entregue_pago` gera uma venda `App cliente` com total = subtotal + taxa − desconto; repetir o estado não a duplica.
+40. Estorno gera uma venda de compensação com valores negativos.
+41. Crédito de indicação aparece como parcela da venda; pedido cancelado devolve o crédito ao saldo.
+
+*Sincronização e segurança*
+42. Todas as tabelas novas têm os 6 campos de sincronização e uma estratégia de conflito registada.
+43. Tabelas escritas só pelo servidor recusam escritas de dispositivos, mesmo com privilégio concedido por engano.
+44. `dispositivo_id = 'servidor'` não dispara o sinal de mesmo dispositivo.
+45. Parâmetros e interruptores só mudam pelas funções do servidor (auditadas).
+46. Todas as funções têm `search_path` fixo; funções de trigger não são chamáveis pelas apps; todas as chaves estrangeiras têm índice.
+
+Os testes estão em `supabase/tests/` (pgTAP) e correm com `supabase test db`, `scripts/testar_bd.sh` ou, no SQL editor do Supabase, com os scripts gerados por `scripts/bundle_testes.py`.
 
 ---
 
@@ -940,7 +671,7 @@ Acrescentar ao `PROMPT_INICIAL.md`:
 
 > Implementa o **Programa de Crescimento** conforme `PROJECTO_CRESCIMENTO_MANDA_BUE.md`, que substitui o programa de referência/incentivos do protótipo web e as adendas anteriores.
 >
-> 1. Começa pela fase **I1**: confirma os nomes reais das tabelas e campos existentes no `MODELO_DE_DADOS.md` e ajusta o SQL; cria a migração completa (secção 5), incluindo a criação da Cozinha da Alexandra e o preenchimento de `cozinha_id` nas linhas existentes; implementa as funções, triggers, vistas e RLS (secções 6–8); escreve os testes da secção 13 e garante que passam.
+> 1. A fase **I1** está implementada em `supabase/migrations/` (esquema base → crescimento I1 → ajustes I1 → endurecimento), com os testes da secção 13 em `supabase/tests/`. Migrações já aplicadas nunca se editam: qualquer alteração é uma migração nova.
 > 2. Todos os interruptores ficam **desligados** no fim de I1.
 > 3. Segue as fases I2 a I8 pela ordem da secção 12, uma de cada vez, e pára no fim de cada fase para revisão.
 > 4. Regras invioláveis: o servidor calcula todos os valores; nenhum valor fixo no código (tudo de `parametros`); nenhum dado fictício na interface; ids e telefones nunca expostos em listas públicas; toda a acção de verificação, pagamento e alteração de parâmetros é auditada.
@@ -956,3 +687,7 @@ Acrescentar ao `PROMPT_INICIAL.md`:
 4. **Regra da taxa de entrega em grupo** (`dividir` ou `empresa`): valor inicial `dividir`.
 5. **Integração automática** com Multicaixa Express / Unitel Money: fora do âmbito; avaliar após I5.
 6. **Registo de marca** "Manda Bué" no INAPI.
+7. **Regra 8 do `REGRAS_DE_NEGOCIO.md`** (venda gerada a partir do pedido): o documento não está no repositório; a correspondência de campos em 6.9 é provisória até ser confirmada.
+8. **`pg_cron`**: activar a extensão no Supabase e correr `select agendar_jobs();` antes de ligar interruptores que dependem de jobs (I2/I4).
+9. **Políticas RLS das tabelas base** (`clientes`, `vendas`, `turnos`, …): estão fechadas por defeito; definir na fase da app do operador (I3).
+10. **`duracao_dias`** não é garantido na ligação (só o ganho e o desconto): mudar a duração afecta ligações cujo 1.º pedido ainda não foi pago.

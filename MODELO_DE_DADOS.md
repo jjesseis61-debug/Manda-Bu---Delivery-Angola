@@ -27,12 +27,15 @@ Além dos campos próprios de cada entidade (listados abaixo), toda tabela deve 
 | `produtos` / `pratos_base` | **Last-write-wins** | Cadastro raramente editado em simultâneo por dois postos |
 | `direcoes` / `funcionarios` (organograma) | **Last-write-wins, só sincronizado por Administrador Principal** | Organograma é gerido centralmente, não por posto |
 | `pagamentos_credito` (incl. notas de crédito) | **Append-only** | Cada pagamento é um evento; saldo do cliente é sempre a soma de tudo |
-| `indicacoes` / `recompensas_indicacao` | **Append-only para criação; last-write-wins no campo `status`** | Confirmação de indicação é uma transição de estado, rara colisão |
-| `pedidos` | **Criação pelo cliente (estado `pendente`); estado validado pelo servidor** | O ciclo de estados só avança; ganhos e descontos dependem dele |
-| `locais_entrega` / `enderecos_cliente` / `perfil_destaques` / `preferencias_notificacao` | **Last-write-wins** com `atualizado_em` (o servidor ignora escritas mais antigas) | Dados do próprio cliente, raramente editados em simultâneo |
-| `codigos_indicacao` / `ligacoes_indicacao` / `ganhos_indicacao` / `pagamentos_indicacao` | **Só o servidor escreve** (funções); o telemóvel só lê | O servidor calcula todos os valores do programa |
-| `parametros` / `funcionalidades` / `cozinhas` | **Só o servidor / operador com permissão**; o telemóvel só lê | Configuração central, auditada |
+| `pedidos` | **Criação pelo dispositivo (estado `pendente`); `estado` e campos de valor só no servidor** | O estado muda por `mudar_estado_pedido`/`cancelar_pedido`; a venda e os ganhos dependem dele |
+| `pontos_entrega` / `enderecos_cliente` / `perfil_destaques` / `preferencias_notificacao` | **Last-write-wins** com `atualizado_em` (o servidor ignora escritas mais antigas) | Dados do próprio cliente, raramente editados em simultâneo |
+| `codigos_indicacao` / `ligacoes_indicacao` / `ganhos_indicacao` / `pagamentos_indicacao` | **Só o servidor escreve** (funções); nunca entram na fila de saída do dispositivo | O servidor calcula todos os valores do programa |
+| `parametros` / `funcionalidades` | **Só o servidor** (`alterar_parametros`, `alterar_funcionalidade`); o telemóvel só lê | Configuração central, auditada |
+| `cozinhas` | **Last-write-wins**, escrita só com `cozinhas.gerir` | Cadastro central |
 | `avaliacoes` / `avaliacoes_pratos` / `fotos_avaliacao` | **Append-only**; moderação só por funções | Uma avaliação por pedido |
+| `palavras_filtradas` | **Last-write-wins**, só moderadores | Lista curta, gerida por uma pessoa |
+| `reconhecimentos_turno` | **Append-only** | Cada reconhecimento é um evento |
+| `pedidos_grupo` | **Append-only na criação; last-write-wins no estado** | Só o organizador ou o operador mudam o grupo |
 | `notificacoes_fila` / `contadores_zona` | **Só servidor**, não sincronizam para o telemóvel | Fila interna e cache |
 
 ## Entidades (campos próprios, além dos campos de sincronização)
@@ -71,7 +74,7 @@ Além dos campos próprios de cada entidade (listados abaixo), toda tabela deve 
 `cliente_id`, `valor`, `origem` (pagamento normal / nota de crédito)
 
 ### `locais`
-`nome` — ponto de venda / posto (não confundir com `locais_entrega`)
+`nome` — ponto de venda / posto (não confundir com `pontos_entrega`)
 
 ### `zonas`
 `nome`, `taxa`, `tipo` (Própria/Terceirizada), `modo_calculo` (Fixo/Distância — visível só a Administrador),
@@ -104,15 +107,9 @@ Além dos campos próprios de cada entidade (listados abaixo), toda tabela deve 
 `recebido_por`, `hora_recebimento`, `quantidade_devolvida`, `historico_devolucoes`,
 `quantidade_quebra`, `historico_quebras`
 
-### `indicacoes`
-`cliente_indicador_id`, `nome_indicado`, `telefone_indicado`, `status`, `cliente_indicado_id`,
-`confirmado_por`, `data_confirmacao`
-
-### `recompensas_indicacao`
-`cliente_id`, `tipo`, `descricao`, `valor_desconto`, `usado`
-
-### `config_indicacao` (registo único, sem lista)
-`numero_necessario`, `tipo_recompensa`, `descricao_recompensa`, `valor_desconto`
+### Programa de indicação antigo — substituído
+`indicacoes`, `recompensas_indicacao` e `config_indicacao` foram **substituídas** pelo Programa de Crescimento
+(`codigos_indicacao`, `ligacoes_indicacao`, `ganhos_indicacao`, …) e não são criadas.
 
 ### `auditoria`
 `funcionario_id`, `funcionario_nome`, `acao`, `detalhe`, `ref_id` (liga ao registo a que se refere),
@@ -120,23 +117,27 @@ Além dos campos próprios de cada entidade (listados abaixo), toda tabela deve 
 
 ## Programa de Crescimento (fase I1)
 
-Especificação completa em `PROJECTO_CRESCIMENTO_MANDA_BUE.md`; SQL em
-`supabase/migrations/20260930120100_crescimento_i1.sql`. Todas as tabelas abaixo têm os
-campos de sincronização comuns. Valores monetários em kwanzas inteiros.
+Especificação completa em `PROJECTO_CRESCIMENTO_MANDA_BUE.md`; SQL em `supabase/migrations/`
+(`…_crescimento_i1.sql`, `…_crescimento_i1_ajustes.sql`, `…_crescimento_i1_endurecimento.sql`).
+Todas as tabelas abaixo têm os 6 campos de sincronização comuns — incluindo `parametros` e
+`funcionalidades` — e a estratégia de conflito da tabela no início deste documento (também registada em
+cada tabela com `comment on table`). Valores monetários em kwanzas inteiros.
 
 **Tabelas existentes que passam a ter `cozinha_id`** (preenchido com a Cozinha da Alexandra,
 obrigatório, por defeito `cozinha_padrao()`): `pratos_base`, `turnos`, `caixa`,
 `estoque_diario`, `estoque_longo_prazo`, `distribuicoes`, `vendas`, `pre_encomendas`,
 `pedidos_especiais`.
 
-**Programa antigo** (`indicacoes`, `recompensas_indicacao`, `config_indicacao`): mantido
-intacto como legado; não é usado pelo Programa de Crescimento.
+**Programa antigo** (`indicacoes`, `recompensas_indicacao`, `config_indicacao`): substituído; não é criado.
 
-### `parametros` (registo único, `id = 1`)
+**Esquema base.** `supabase/migrations/20260930165537_modelo_base.sql` cria todas as tabelas acima, com os 6 campos
+de sincronização, os índices recomendados e RLS activo (fechado por defeito).
+
+### `parametros` (registo único: `unico = true`)
 Todos os valores do programa: ganhos, prazos, limites, anti-fraude, prova social, avaliações,
 grupos e equipa. Nenhum valor fica fixo no código.
 
-### `funcionalidades` (chave → `activa`)
+### `funcionalidades` (`chave` única → `activa`)
 Interruptores: `indicacao`, `destaques`, `pessoas_como_tu`, `contadores_zona`, `perfil_cozinha`,
 `avaliacoes`, `avaliacoes_fotos`, `reconhecimento_equipa`, `pedidos_grupo`, `multi_cozinha`.
 Todos desligados no fim de I1.
@@ -144,23 +145,27 @@ Todos desligados no fim de I1.
 ### `cozinhas`
 `nome`, `responsavel`, `foto_url`, `historia`, `estado` (activa/pausada/inactiva), `consentimento_publico`
 
-### `locais_entrega`
+### `pontos_entrega`
 `tipo` (residencial/empresa), `lat`, `lng`, `zona_id` → `zonas`, `referencia`, `criado_por_cliente`
 
 ### `enderecos_cliente`
-`cliente_id`, `local_id` → `locais_entrega`, `nome` (Casa/Trabalho), `principal`
+`cliente_id`, `ponto_entrega_id` → `pontos_entrega`, `nome` (Casa/Trabalho), `principal`
 
-### `pedidos`
-`cliente_id`, `cozinha_id`, `local_id`, `estado` (pendente → confirmado → em_preparacao → em_entrega →
-entregue_pago; cancelado; estornado), `itens`, `subtotal`, `taxa_entrega`, `desconto_indicacao`*,
-`credito_indicacao_usado`*, `parcelas`, `observacoes`, `motivo_cancelamento`, `grupo_id`,
-`hora_prometida`, `entregue_em`*, `pagador_distinto` (só entregador). *só o servidor escreve.
+### `pedidos` (pedidos da app do cliente; tabela do esquema base)
+`cliente_id`, `zona_id`, `estado` (pendente → confirmado → em_preparacao → em_entrega → entregue_pago; cancelado;
+estornado), `itens`, `subtotal`, `taxa_entrega`, `parcelas`, `observacoes`, `motivo_cancelamento`, `hora_prometida`,
+`entregue_em`*; do programa: `cozinha_id`, `ponto_entrega_id`, `desconto_indicacao`*, `credito_indicacao_usado`*,
+`grupo_id`, `pagador_distinto`*. *só o servidor escreve; o `estado` também.
+Ao chegar a `entregue_pago`, o servidor gera a `venda` (origem `App cliente`, `vendas.pedido_id`); um estorno gera a
+venda de compensação (origem `App cliente (estorno)`, valores negativos).
 
 ### `codigos_indicacao`
 `cliente_id` (único), `codigo` (`MB-` + 4 dígitos), `nivel` (normal/embaixador), `ultima_partilha_em`
 
 ### `ligacoes_indicacao`
-`indicado_id` (único), `indicador_id`, `ligado_em`, `primeiro_pedido_id`, `expira_em`, `desconto_usado`
+`indicado_id` (único), `indicador_id`, `ligado_em`, `primeiro_pedido_id`, `expira_em`, `desconto_usado`,
+`ganho_por_pedido_garantido`, `desconto_garantido` (copiados de `parametros` na ligação; mudar os parâmetros só
+afecta novas ligações)
 
 ### `ganhos_indicacao`
 `pedido_id` (único), `indicador_id`, `indicado_id`, `valor`, `estado` (em_verificacao/confirmado/pago/anulado),
@@ -185,7 +190,7 @@ lista de palavras do filtro de comentários.
 `cozinha_id`, `semana` (segunda-feira), `periodo`, `tipo`, `nota`, `criado_por` — sempre por turno, nunca por pessoa.
 
 ### `pedidos_grupo`
-`organizador_id`, `empresa_id`, `local_id`, `cozinha_id`, `hora_entrega`, `prazo_adesao`, `modo_pagamento`,
+`organizador_id`, `empresa_id`, `ponto_entrega_id`, `cozinha_id`, `hora_entrega`, `prazo_adesao`, `modo_pagamento`,
 `codigo_convite`, `estado`
 
 ### `notificacoes_fila` / `contadores_zona`
@@ -197,7 +202,8 @@ Fila de notificações push (lida por uma Edge Function) e cache horária de ped
 - `estoque_longo_prazo(produto_id, tipo, data)`
 - `auditoria(data)`, `auditoria(ref_id)`
 - `caixa(posto, data)`
-- `pedidos(cliente_id, estado)`, `pedidos(local_id)`, `pedidos(estado, entregue_em)`, `pedidos(dispositivo_id)`
+- `pedidos(cliente_id, estado)`, `pedidos(ponto_entrega_id)`, `pedidos(estado, entregue_em)`, `pedidos(dispositivo_id)`
 - `ganhos_indicacao(indicador_id, estado)`, `ganhos_indicacao(confirmado_em)`
 - `pagamentos_indicacao(indicador_id, estado)`, `pagamentos_indicacao(numero_destino)`
-- `ligacoes_indicacao(indicador_id)`, `locais_entrega(zona_id)`, `locais_entrega(lat, lng)`
+- `ligacoes_indicacao(indicador_id)`, `pontos_entrega(zona_id)`, `pontos_entrega(lat, lng)`
+- Todas as chaves estrangeiras têm índice (migração de endurecimento)
