@@ -107,8 +107,35 @@ returns uuid language sql as $$
   returning id;
 $$;
 
+-- Caixa aberta de hoje (posto de teste) na cozinha indicada
+create function testes.caixa(p_cozinha uuid default null, p_posto text default 'Posto de teste')
+returns uuid language plpgsql as $$
+declare
+  v uuid;
+  v_cozinha uuid := coalesce(p_cozinha, cozinha_padrao());
+begin
+  select id into v from caixa
+   where posto = p_posto and cozinha_id = v_cozinha and data = current_date
+     and fechamento is null and deletado_em is null
+   limit 1;
+  if v is null then
+    insert into caixa (posto, cozinha_id, troco_inicial) values (p_posto, v_cozinha, 0) returning id into v;
+  end if;
+  return v;
+end $$;
+
+-- Entregue e pago (como o servidor faz): caixa aberta e, se o pedido não tiver
+-- parcelas, uma parcela em dinheiro com o valor em falta (regras 7 e 8)
 create function testes.pagar(p_pedido uuid) returns void language sql as $$
-  update pedidos set estado = 'entregue_pago' where id = p_pedido;
+  update pedidos
+     set caixa_id = coalesce(caixa_id, testes.caixa(cozinha_id)),
+         parcelas = case when parcelas = '[]'::jsonb
+                              and subtotal + taxa_entrega - desconto_indicacao - credito_indicacao_usado > 0
+                         then jsonb_build_array(jsonb_build_object('metodo', 'Dinheiro', 'valor',
+                                subtotal + taxa_entrega - desconto_indicacao - credito_indicacao_usado))
+                         else parcelas end,
+         estado = 'entregue_pago'
+   where id = p_pedido;
 $$;
 
 create function testes.ganho_de(p_pedido uuid) returns ganhos_indicacao language sql as $$
@@ -128,7 +155,7 @@ begin
   for i in 1..p_n loop
     c := testes.cliente('Amigo ' || i);
     ped := testes.pedido(c);
-    update pedidos set estado = 'entregue_pago' where id = ped;
+    perform testes.pagar(ped);
     insert into ganhos_indicacao (pedido_id, indicador_id, indicado_id, valor, estado, confirmado_em)
     values (ped, p_indicador, c, p_valor, 'confirmado',
             coalesce(p_desde + make_interval(mins => i), now()));

@@ -37,6 +37,7 @@ Além dos campos próprios de cada entidade (listados abaixo), toda tabela deve 
 | `reconhecimentos_turno` | **Append-only** | Cada reconhecimento é um evento |
 | `pedidos_grupo` | **Append-only na criação; last-write-wins no estado** | Só o organizador ou o operador mudam o grupo |
 | `notificacoes_fila` / `contadores_zona` | **Só servidor**, não sincronizam para o telemóvel | Fila interna e cache |
+| `permissoes` | **Só servidor**; o telemóvel só lê | Catálogo central |
 
 ## Entidades (campos próprios, além dos campos de sincronização)
 
@@ -48,7 +49,8 @@ Além dos campos próprios de cada entidade (listados abaixo), toda tabela deve 
 `nome`, `componentes` (lista de `{produto_id, quantidade, unidade}`)
 
 ### `vendas`
-`pedido_id` (quando a venda resulta de um pedido da app), `cozinha_id`, `produto`, `qtd`, `valor_total`, `valor_antes_desconto`, `desconto_aplicado`, `local`, `parcelas`
+`pedido_id`, `linha_pedido` (quando a venda resulta de um pedido da app; único com `origem`), `caixa_id`,
+`movimenta_stock` (false nas vendas de compensação), `cozinha_id`, `produto`, `qtd`, `valor_total`, `valor_antes_desconto`, `desconto_aplicado`, `local`, `parcelas`
 (lista de `{metodo, valor, cliente_id, titular}`), `credito`, `cliente_id`, `entrega`, `zona_nome`,
 `tipo_entrega`, `taxa_entrega`, `prato_base_id`, `componentes_excluidos`, `componentes_ajustados`,
 `registado_por`, `aprovado_por`, `entregue_por`, `origem` (Venda direta / Pré-encomenda / Pedido especial)
@@ -94,6 +96,12 @@ Além dos campos próprios de cada entidade (listados abaixo), toda tabela deve 
 
 ### `direcoes`
 `nome`, `permissoes` (mapa de permissão → sim/não)
+
+### `permissoes` (catálogo, só o servidor escreve)
+`chave` (única), `grupo`, `descricao`. Lista as permissões que podem ser atribuídas em `direcoes.permissoes` e
+`funcionarios.permissoes_extra`: `indicacoes.ver`, `indicacoes.verificar`, `indicacoes.aprovar_pagamentos`,
+`plataforma.parametros`, `avaliacoes.moderar`, `cozinhas.gerir`, `equipa.reconhecer`, `relatorios.exportar`,
+`pedidos.gerir`, `entregas.registar`.
 
 ### `refeicoes_funcionarios`
 `funcionario_id`, `prato`, `valor_custo`, `valor_desconto`
@@ -155,17 +163,20 @@ Todos desligados no fim de I1.
 `cliente_id`, `zona_id`, `estado` (pendente → confirmado → em_preparacao → em_entrega → entregue_pago; cancelado;
 estornado), `itens`, `subtotal`, `taxa_entrega`, `parcelas`, `observacoes`, `motivo_cancelamento`, `hora_prometida`,
 `entregue_em`*; do programa: `cozinha_id`, `ponto_entrega_id`, `desconto_indicacao`*, `credito_indicacao_usado`*,
-`grupo_id`, `pagador_distinto`*. *só o servidor escreve; o `estado` também.
-Ao chegar a `entregue_pago`, o servidor gera a `venda` (origem `App cliente`, `vendas.pedido_id`); um estorno gera a
-venda de compensação (origem `App cliente (estorno)`, valores negativos).
+`grupo_id`, `pagador_distinto`*, `caixa_id`* (caixa onde o dinheiro entrou; obrigatória em `entregue_pago`).
+*só o servidor escreve; o `estado` também.
+Ao chegar a `entregue_pago`, o servidor gera **uma venda por item** (origem `App cliente`, `pedido_id`,
+`linha_pedido`); a taxa fica na primeira venda, desconto e parcelas repartidos proporcionalmente (arredondamento na
+última), soma = valor final. Um estorno gera, por venda, a compensação `App cliente (estorno)` com valores negativos,
+`qtd = 0` e `movimenta_stock = false` (não repõe stock).
 
 ### `codigos_indicacao`
 `cliente_id` (único), `codigo` (`MB-` + 4 dígitos), `nivel` (normal/embaixador), `ultima_partilha_em`
 
 ### `ligacoes_indicacao`
 `indicado_id` (único), `indicador_id`, `ligado_em`, `primeiro_pedido_id`, `expira_em`, `desconto_usado`,
-`ganho_por_pedido_garantido`, `desconto_garantido` (copiados de `parametros` na ligação; mudar os parâmetros só
-afecta novas ligações)
+`ganho_por_pedido_garantido`, `desconto_garantido`, `duracao_dias_garantida` (copiados de `parametros` na ligação;
+mudar os parâmetros só afecta novas ligações)
 
 ### `ganhos_indicacao`
 `pedido_id` (único), `indicador_id`, `indicado_id`, `valor`, `estado` (em_verificacao/confirmado/pago/anulado),

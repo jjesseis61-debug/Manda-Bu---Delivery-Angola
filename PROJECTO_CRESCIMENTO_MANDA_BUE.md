@@ -131,7 +131,7 @@ Valores entre `[ ]` são parâmetros (tabela `parametros`) com o valor inicial i
 - O indicado insere o código no registo ou no checkout do primeiro pedido (ou chega pelo link de convite, que o pré-preenche).
 - Única e permanente. Não se troca de indicador.
 - Bloqueios: próprio código; cliente que já tem um pedido `entregue_pago` ou compras registadas em `vendas` (sistema anterior); código inexistente.
-- **Valores garantidos:** no momento da ligação, o `ganho_por_pedido` e o `desconto_indicado` em vigor ficam guardados na ligação (`ganho_por_pedido_garantido`, `desconto_garantido`). O desconto e todos os ganhos dessa ligação usam estes valores. Mudar os parâmetros só afecta novas ligações.
+- **Valores garantidos:** no momento da ligação, o `ganho_por_pedido`, o `desconto_indicado` e a `duracao_dias` em vigor ficam guardados na ligação (`ganho_por_pedido_garantido`, `desconto_garantido`, `duracao_dias_garantida`). O desconto, todos os ganhos e o cálculo de `expira_em` dessa ligação usam estes valores. Mudar os parâmetros só afecta novas ligações.
 
 **Ganho do indicado**
 - `[desconto_indicado = 500 Kz]` no primeiro pedido.
@@ -250,7 +250,9 @@ A anulação por verificação exige motivo escrito e fica na auditoria.
 | `equipa.reconhecer` | Registar reconhecimentos de turno |
 | `relatorios.exportar` | Exportar relatórios de cozinha |
 | `pedidos.gerir` | Mudar o estado dos pedidos da app (confirmar, preparar, cancelar, estornar) |
-| `entregas.registar` | Marcar pedidos em entrega e entregues e pagos; marcar "pago por outra pessoa" |
+| `entregas.registar` | Marcar pedidos em entrega e entregues e pagos (indicando a caixa); marcar "pago por outra pessoa" |
+
+Todas estas permissões estão no catálogo `permissoes` (usado pela app do operador para montar o organograma). A atribuição continua em `direcoes.permissoes` e `funcionarios.permissoes_extra`.
 
 ### 4.13 Texto das regras para o cliente
 
@@ -266,7 +268,10 @@ Os valores são preenchidos a partir de `parametros` (e, para cada amigo, a part
 - Os pedidos da app do cliente ficam em `pedidos` (o `MODELO_DE_DADOS.md` não tinha pedidos da app, e `vendas` é append-only).
 - Ciclo: `pendente → confirmado → em_preparacao → em_entrega → entregue_pago`; `cancelado` antes da entrega; `entregue_pago → estornado`.
 - O estado **só muda no servidor**. O cliente cancela enquanto o pedido está `pendente`; o operador muda o estado com `pedidos.gerir`; o entregador marca a entrega com `entregas.registar`.
-- Quando o pedido chega a `entregue_pago`, o servidor **gera a venda** correspondente (origem `App cliente`). Um estorno gera uma venda de compensação com valores negativos (origem `App cliente (estorno)`). *A correspondência exacta dos campos deve ser confirmada com a regra 8 do `REGRAS_DE_NEGOCIO.md` (ver 16.7).*
+- **Regra 8:** marcar `entregue_pago` exige a **caixa** (posto) onde o dinheiro entrou: uma caixa aberta da mesma cozinha. A venda regista esse local (`vendas.local` = posto da caixa, `vendas.caixa_id`).
+- **Regra 7:** as parcelas do pedido mais o crédito de indicação têm de somar o **valor final** (subtotal + taxa − desconto). O entregador pode registar as parcelas efectivamente recebidas ao marcar a entrega.
+- Quando o pedido chega a `entregue_pago`, o servidor **gera uma venda por item** (origem `App cliente`, `linha_pedido` = 1, 2, …): a taxa de entrega fica só na primeira venda; o desconto e cada parcela são repartidos proporcionalmente, com o arredondamento na última venda; a soma das vendas é o valor final e as parcelas de cada venda somam o total dessa venda.
+- **Regra 3:** um estorno gera, para cada venda, uma venda de compensação (origem `App cliente (estorno)`) com valores negativos, `qtd = 0` e `movimenta_stock = false`: **não repõe stock**.
 - Os ganhos de indicação são calculados em `pedidos`.
 
 ### 4.15 Programa de indicação antigo
@@ -284,6 +289,7 @@ O SQL definitivo está nas migrações em `supabase/migrations/` (aplicadas por 
 | `20260930173725_crescimento_i1.sql` | Modelo do programa (5.1–5.9), Cozinha da Alexandra, funções, triggers, vistas, RLS |
 | `20260930173922_crescimento_i1_ajustes.sql` | Nomes finais (`pontos_entrega`), estado do pedido só no servidor, venda gerada, campos de sincronização em todas as tabelas, valores garantidos na ligação |
 | `20260930180000_crescimento_i1_endurecimento.sql` | `search_path` fixo, funções de trigger não expostas, índices nas chaves estrangeiras |
+| `20260930190000_crescimento_i1_decisoes.sql` | Duração garantida, vendas por item (regra 7), caixa na entrega (regra 8), estorno sem stock (regra 3), catálogo de permissões |
 
 **Nomes reais.** Os nomes assumidos na versão 1.0 foram substituídos pelos do `MODELO_DE_DADOS.md`:
 
@@ -331,19 +337,20 @@ Valores monetários em **kwanzas inteiros** (`int`). Datas em `timestamptz`. Fus
 **`pedidos`** (tabela do esquema base, porque `vendas` é append-only e não tem estado):
 `cliente_id`, `zona_id`, `estado`, `itens` (`[{prato_base_id, nome, qtd, preco_unitario}]`), `subtotal`,
 `taxa_entrega`, `parcelas`, `observacoes`, `motivo_cancelamento`, `hora_prometida`, `entregue_em`; e, do programa,
-`cozinha_id`, `ponto_entrega_id`, `desconto_indicacao`, `credito_indicacao_usado`, `grupo_id`, `pagador_distinto`.
+`cozinha_id`, `ponto_entrega_id`, `desconto_indicacao`, `credito_indicacao_usado`, `grupo_id`, `pagador_distinto`,
+`caixa_id` (caixa onde o dinheiro entrou, obrigatória em `entregue_pago`).
 
 Ciclo de estados: `pendente → confirmado → em_preparacao → em_entrega → entregue_pago`; `cancelado` a partir de
 qualquer estado antes da entrega; `entregue_pago → estornado`. Só avança; pode saltar etapas.
 
-`vendas.pedido_id` liga a venda gerada ao pedido (ver 6.9).
+`vendas` ganha `pedido_id`, `linha_pedido`, `caixa_id` e `movimenta_stock` (ver 6.9).
 
 ### 5.5 Convida e Ganha
 - **`codigos_indicacao`** — `cliente_id` (único), `codigo` (`MB-` + 4 dígitos), `nivel` (normal/embaixador),
   `ultima_partilha_em`.
 - **`ligacoes_indicacao`** — `indicado_id` (único), `indicador_id`, `ligado_em`, `primeiro_pedido_id`, `expira_em`
   (vazio até ao 1.º pedido entregue e pago), `desconto_usado`, **`ganho_por_pedido_garantido`**,
-  **`desconto_garantido`** (copiados de `parametros` no momento da ligação).
+  **`desconto_garantido`**, **`duracao_dias_garantida`** (copiados de `parametros` no momento da ligação).
 - **`ganhos_indicacao`** — `pedido_id` (único), `indicador_id`, `indicado_id`, `valor`, `estado`, `motivo`,
   `nota_revisao`, `revisto_por`, `revisto_em`, `pagamento_id`, `confirmado_em`.
 - **`pagamentos_indicacao`** — `indicador_id`, `valor`, `tipo` (credito/levantamento), `metodo`, `numero_destino`,
@@ -390,7 +397,7 @@ Trigger `after insert on clientes`: gera o código `MB-dddd` (passa a 5 dígitos
 ### 6.3 `ligar_indicacao(p_codigo)`
 Devolve `programa_inactivo`, `sem_sessao`, `codigo_inexistente`, `proprio_codigo`, `ja_ligado`, `cliente_nao_novo`
 ou `ok`. "Cliente não novo" = tem um pedido `entregue_pago` **ou compras em `vendas`** (sistema anterior).
-Ao ligar, copia `ganho_por_pedido` e `desconto_indicado` para a ligação (valores garantidos), enfileira N2 e audita.
+Ao ligar, copia `ganho_por_pedido`, `desconto_indicado` e `duracao_dias` para a ligação (valores garantidos), enfileira N2 e audita.
 
 ### 6.4 Desconto no pedido (`before insert on pedidos`)
 O servidor ignora o valor enviado pela app e recalcula com `avaliar_desconto_indicacao`:
@@ -404,7 +411,7 @@ O servidor ignora o valor enviado pela app e recalcula com `avaliar_desconto_ind
 ### 6.5 Ganho do indicador (`after update of estado on pedidos`)
 Como na versão 1.0 (período a partir do 1.º pedido pago, sinais anti-fraude, limite por local, limite semanal,
 embaixadores, estorno, N3/N4), com duas diferenças:
-- o valor do ganho é **`ganho_por_pedido_garantido`** da ligação: mudar os parâmetros só afecta novas ligações;
+- o valor do ganho é **`ganho_por_pedido_garantido`** e o período é **`duracao_dias_garantida`** da ligação: mudar os parâmetros só afecta novas ligações;
 - o sinal "mesmo dispositivo" usa o campo comum `dispositivo_id` dos pedidos e ignora linhas criadas pelo servidor.
 
 ### 6.6 Revisão de ganhos
@@ -427,15 +434,27 @@ só quem partilhou e não desligou), `job_n7_destaques` (segundas 08h). Respeita
 `agendar_jobs()` agenda-os com `pg_cron` quando a extensão está activa (horas em UTC; Luanda = UTC+1).
 
 ### 6.9 Estado do pedido e venda gerada
-- O estado **só muda no servidor**: `mudar_estado_pedido(pedido, estado, motivo)` (`pedidos.gerir`; o entregador,
-  com `entregas.registar`, só marca `em_entrega` e `entregue_pago`) e `cancelar_pedido(pedido, motivo)` (o cliente,
-  enquanto `pendente`). Nenhuma escrita directa de `estado` é aceite, nem da fila de saída do operador.
+- O estado **só muda no servidor**: `mudar_estado_pedido(pedido, estado, motivo, caixa, parcelas)` (`pedidos.gerir`;
+  o entregador, com `entregas.registar`, só marca `em_entrega` e `entregue_pago`) e `cancelar_pedido(pedido, motivo)`
+  (o cliente, enquanto `pendente`). Nenhuma escrita directa de `estado` é aceite, nem da fila de saída do operador.
 - `marcar_pagador_distinto(pedido, valor)` com `entregas.registar`.
-- Ao chegar a `entregue_pago`, o servidor grava `entregue_em` e **gera a venda** (origem `App cliente`,
-  `pedido_id`, `cozinha_id`, `cliente_id`, itens, `valor_antes_desconto` = subtotal + taxa, `desconto_aplicado` =
-  desconto de indicação, `valor_total` = subtotal + taxa − desconto, `taxa_entrega`, `zona_nome`, `parcelas` do
-  pedido mais "Crédito indicação" quando houver). Um estorno gera a venda de compensação `App cliente (estorno)`
-  com valores negativos. No máximo uma venda de cada tipo por pedido.
+- **Entregue e pago** exige `caixa` (aberta, da mesma cozinha — regra 8) e parcelas + crédito = valor final (regra 7).
+  O servidor grava `entregue_em` e **gera uma venda por item**:
+
+  | Campo da venda | Valor |
+  |---|---|
+  | `origem`, `pedido_id`, `linha_pedido` | `App cliente`, o pedido, n.º do item |
+  | `produto`, `qtd`, `prato_base_id` | do item |
+  | `valor_antes_desconto` | parte do subtotal do item (qtd × preço, repartido para somar o subtotal) + taxa só na linha 1 |
+  | `desconto_aplicado` | desconto de indicação proporcional; arredondamento na última linha |
+  | `valor_total` | `valor_antes_desconto − desconto_aplicado`; soma de todas as linhas = valor final |
+  | `parcelas` | cada parcela do pedido (e "Crédito indicação") repartida proporcionalmente; somam o total da linha; arredondamento na última linha |
+  | `local`, `caixa_id` | posto e caixa onde o dinheiro entrou |
+  | `zona_nome`, `tipo_entrega`, `entrega`, `movimenta_stock` | zona do ponto de entrega, `true`, `true` |
+
+- **Estorno:** uma venda `App cliente (estorno)` por linha, com valores e parcelas negativos, `qtd = 0` e
+  `movimenta_stock = false` — não repõe stock (regra 3). Qualquer cálculo de consumo a partir de vendas usa só
+  `movimenta_stock = true`.
 
 ---
 
@@ -480,14 +499,15 @@ políticas das apps do operador serem definidas.
 | `pedidos_grupo` | Criar; ler os seus ou por `grupo_por_codigo` | Ler |
 | `reconhecimentos_turno` | — | Criar com `equipa.reconhecer`; membros da cozinha lêem |
 | `notificacoes_fila`, `contadores_zona` | — | Só serviço |
+| `permissoes` (catálogo) | Ler | Ler (só o servidor escreve) |
 
 **Escrita só pelo servidor.** `parametros`, `funcionalidades`, `codigos_indicacao`, `ligacoes_indicacao`,
-`ganhos_indicacao`, `pagamentos_indicacao`, `notificacoes_fila` e `contadores_zona` recusam qualquer escrita vinda de
+`ganhos_indicacao`, `pagamentos_indicacao`, `notificacoes_fila`, `contadores_zona` e `permissoes` recusam qualquer escrita vinda de
 uma sessão de dispositivo (trigger `bloquear_escrita_dispositivo`), mesmo que um privilégio seja concedido por engano.
 Nunca entram na fila de saída do telemóvel.
 
 **Campos de `pedidos` só do servidor:** `estado`, `desconto_indicacao`, `credito_indicacao_usado`, `entregue_em`,
-`pagador_distinto`.
+`pagador_distinto`, `caixa_id`.
 
 As funções de trigger e as auxiliares internas não são chamáveis pelas apps; todas as funções têm `search_path` fixo.
 
@@ -643,6 +663,13 @@ A revisão de parâmetros (custo por cliente conquistado, retenção, % anulados
 45. Parâmetros e interruptores só mudam pelas funções do servidor (auditadas).
 46. Todas as funções têm `search_path` fixo; funções de trigger não são chamáveis pelas apps; todas as chaves estrangeiras têm índice.
 
+*Decisões (duração, vendas por item, caixa, estorno, permissões)*
+47. A ligação guarda `duracao_dias`; alterar a duração não muda o `expira_em` de ligações existentes; novas ligações usam a nova.
+48. Entregue e pago sem caixa, com caixa fechada ou com parcelas que não somam o valor final → recusado.
+49. Uma venda por item: taxa só na primeira, desconto e parcelas proporcionais com arredondamento na última, soma = valor final; cada venda regista o posto e a caixa.
+50. Estorno: compensação por linha com valores negativos, `qtd = 0`, `movimenta_stock = false`; nenhum movimento de stock.
+51. `pedidos.gerir` e `entregas.registar` estão no catálogo de permissões.
+
 Os testes estão em `supabase/tests/` (pgTAP) e correm com `supabase test db`, `scripts/testar_bd.sh` ou, no SQL editor do Supabase, com os scripts gerados por `scripts/bundle_testes.py`.
 
 ---
@@ -687,7 +714,6 @@ Acrescentar ao `PROMPT_INICIAL.md`:
 4. **Regra da taxa de entrega em grupo** (`dividir` ou `empresa`): valor inicial `dividir`.
 5. **Integração automática** com Multicaixa Express / Unitel Money: fora do âmbito; avaliar após I5.
 6. **Registo de marca** "Manda Bué" no INAPI.
-7. **Regra 8 do `REGRAS_DE_NEGOCIO.md`** (venda gerada a partir do pedido): o documento não está no repositório; a correspondência de campos em 6.9 é provisória até ser confirmada.
+7. **`REGRAS_DE_NEGOCIO.md`** não está no repositório. As regras 3, 7 e 8 foram aplicadas como descritas pelo responsável (6.9). Confirmar: "caixa aberta" = `caixa.fechamento` vazio.
 8. **`pg_cron`**: activar a extensão no Supabase e correr `select agendar_jobs();` antes de ligar interruptores que dependem de jobs (I2/I4).
 9. **Políticas RLS das tabelas base** (`clientes`, `vendas`, `turnos`, …): estão fechadas por defeito; definir na fase da app do operador (I3).
-10. **`duracao_dias`** não é garantido na ligação (só o ganho e o desconto): mudar a duração afecta ligações cujo 1.º pedido ainda não foi pago.

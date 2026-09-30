@@ -32,8 +32,8 @@ select col_type_is('parametros', 'id', 'uuid', 'parametros.id é UUID');
 select col_type_is('funcionalidades', 'id', 'uuid', 'funcionalidades.id é UUID');
 select is((select count(*)::int from pg_description d join pg_class c on c.oid = d.objoid
             where c.relnamespace = 'public'::regnamespace and d.objsubid = 0
-              and d.description like 'Sincronização:%'), 20,
-          'estratégia de conflito registada nas 20 tabelas novas');
+              and d.description like 'Sincronização:%'), 21,
+          'estratégia de conflito registada nas 21 tabelas novas');
 
 -- ---------------------------------------------------------------------------
 -- Parâmetros e interruptores só por funções do servidor
@@ -115,7 +115,7 @@ select testes.def('gerente', testes.funcionario('Gerente', array['pedidos.gerir'
 select testes.entrar_funcionario(testes.u('entregador'));
 select throws_ok(format($$select mudar_estado_pedido(%L, 'cancelado')$$, testes.u('pv')), '42501', 'sem_permissao',
                  'entregador não cancela pedidos');
-select lives_ok(format($$select mudar_estado_pedido(%L, 'entregue_pago')$$, testes.u('pv')),
+select lives_ok(format($$select mudar_estado_pedido(%L, 'entregue_pago', null, %L)$$, testes.u('pv'), testes.caixa()),
                 'entregador marca entregue e pago');
 select lives_ok(format($$select marcar_pagador_distinto(%L, true)$$, testes.u('pv')),
                 'entregador marca "pago por outra pessoa"');
