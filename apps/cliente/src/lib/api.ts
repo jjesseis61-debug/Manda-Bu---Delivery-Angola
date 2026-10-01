@@ -15,6 +15,7 @@ import type {
   Pedido,
   Perfil,
   PerfilDestaques,
+  PreferenciasNotificacao,
   PessoaComoTu,
   Saldo,
   Zona,
@@ -237,6 +238,28 @@ export async function alterarPerfilDestaques(
   verificar(
     await supabase
       .from('perfil_destaques')
+      .update({ ...valores, atualizado_em: new Date().toISOString() })
+      .eq('cliente_id', clienteId),
+  );
+}
+
+// ---------------------------------------------------------------- notificações (C14)
+export async function lerPreferenciasNotificacao(clienteId: string): Promise<PreferenciasNotificacao | null> {
+  const r = await supabase
+    .from('preferencias_notificacao')
+    .select('lembrete_almoco, destaques')
+    .eq('cliente_id', clienteId)
+    .maybeSingle();
+  return verificar(r) as PreferenciasNotificacao | null;
+}
+
+export async function alterarPreferenciasNotificacao(
+  clienteId: string,
+  valores: Partial<PreferenciasNotificacao>,
+): Promise<void> {
+  verificar(
+    await supabase
+      .from('preferencias_notificacao')
       .update({ ...valores, atualizado_em: new Date().toISOString() })
       .eq('cliente_id', clienteId),
   );

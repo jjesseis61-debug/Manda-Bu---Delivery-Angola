@@ -601,8 +601,8 @@ Todos os valores e nomes são preenchidos a partir dos dados e parâmetros.
 | **I1. Fundações** | Esquema base com `pedidos`, todo o modelo de dados (secção 5), migração da Cozinha da Alexandra, pontos de entrega e endereços, funções e triggers (6), venda gerada na entrega, vistas (7), RLS e permissões (8), fila de notificações, jobs. Testes da secção 13. | — (tudo desligado) | Todos os testes de I1 passam |
 | **I2. App do cliente** | C1, C2, C4, C6, C7, C8, C11; deep link; N1–N4, N8 | `indicacao`, `pessoas_como_tu`, `contadores_zona`, `perfil_cozinha` (com consentimento) | — (liga só em I4) |
 | **I3. App do operador** | O1–O6, O9, E1 | — | Operador consegue verificar e pagar ponta a ponta |
-| **I4. Lançamento aberto** | Activar para todos; C3, C5; N5–N7; primeiros Embaixadores | `destaques` | 1 mês estável |
-| **I5. Avaliações e equipa** | C9, C10 (sem fotos), C14, O7 (comentários), O8; N9, N12 | `avaliacoes`, `reconhecimento_equipa` | Métricas de turno aceites pela equipa |
+| **I4. Lançamento aberto** | Activar para todos; C3, C5, C14; N5–N7; primeiros Embaixadores | `destaques` | 1 mês estável |
+| **I5. Avaliações e equipa** | C9, C10 (sem fotos), O7 (comentários), O8; N9, N12 | `avaliacoes`, `reconhecimento_equipa` | Métricas de turno aceites pela equipa |
 | **I6. Pedidos de grupo** | C12, C13, O10; N10, N11 | `pedidos_grupo` | Testado com 2–3 escritórios |
 | **I7. Fotos nas avaliações** | Envio de fotos, bucket privado, moderação em O7 | `avaliacoes_fotos` | Existe moderador designado |
 | **I8. Rede de cozinhas** | Selector de cozinha no cliente, gestão multi-cozinha no operador, relatórios comparativos | `multi_cozinha` | Primeira cozinha parceira assinada |
@@ -657,7 +657,8 @@ promovem-se no O4.
 e da I3 (fornecedor de SMS, projecto EAS e push, `ENVIO_SEGREDO`, `pg_cron`/`pg_net` com `agendar_jobs()` e
 `agendar_envio_notificacoes(...)`, cardápio e zonas preenchidos, telefones dos funcionários). Ordem sugerida:
 `indicacao`, `pessoas_como_tu`, `contadores_zona`, `perfil_cozinha` (com consentimento) e por fim `destaques`.
-O C14 (desligar N5 e N7 na app) é da I5; até lá as preferências ficam ligadas por defeito.
+O C14 (desligar N5 e N7 na app, em Conta → Notificações) foi antecipado da I5 para a I4, para os clientes
+poderem desligar estes avisos desde o lançamento; usa as permissões já existentes (sem migração).
 
 A revisão de parâmetros (custo por cliente conquistado, retenção, % anulados) é feita 1–2 meses após I4 e depois trimestralmente, sempre no painel, sem alterar código.
 

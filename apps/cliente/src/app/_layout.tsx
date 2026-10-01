@@ -51,6 +51,7 @@ export default function LayoutRaiz() {
           <Stack.Screen name="cozinha" options={{ title: 'A cozinha' }} />
           <Stack.Screen name="destaques" options={{ title: 'Destaques do mês' }} />
           <Stack.Screen name="privacidade" options={{ title: 'Privacidade na lista' }} />
+          <Stack.Screen name="notificacoes" options={{ title: 'Notificações' }} />
           <Stack.Screen name="enderecos/index" options={{ title: 'Endereços' }} />
           <Stack.Screen name="enderecos/novo" options={{ title: 'Novo endereço' }} />
         </Stack>

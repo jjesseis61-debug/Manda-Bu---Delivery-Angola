@@ -65,6 +65,7 @@ base de dados.
 | `13_app_cliente.test.sql` | I2: registo e ligação ao cliente do balcão, cardápio e preço no servidor, ponto/zona, desconto no orçamento, amigos, tokens de push, textos e fila de notificações |
 | `14_desconto_limite.test.sql` | Desconto limitado ao valor do pedido (com e sem taxa), orçamento, entrega com valor final 0, uso único |
 | `16_lancamento.test.sql` | I4: esconder ganhos na lista (C5), textos N5–N7, N5 com prato do dia, envio com preferências e interruptor |
+| `17_preferencias_notificacao.test.sql` | C14: o cliente desliga N5 e N7 pela app, só no seu perfil e só essas colunas; N5 não é enfileirada |
 | `15_app_operador.test.sql` | I3: telefone e ligação dos funcionários, painel (O1), verificação e "Confirmar todos" com N3 (O2), levantamentos (O3), embaixadores (O4), fila de entregas e caixas (E1), auditoria de cozinhas e cardápio (O6) |
 
 ### Como correr
@@ -98,7 +99,8 @@ base de dados.
 | 14 desconto limitado | 11/11 | 11/11 |
 | 15 app do operador | 28/28 | 28/28 (em partes, ver abaixo) |
 | 16 lançamento (I4) | 16/16 | 16/16 |
-| **Total** | **357/357** | |
+| 17 preferências de notificação (C14) | 6/6 | 6/6 |
+| **Total** | **363/363** | |
 
 Na I2 voltaram a correr no Supabase os testes afectados por cada migração (app do cliente: 06, 08, 09, 12 e 13;
 desconto limitado: 02, 09 e 14); os restantes não dependem delas (e todos passam localmente).

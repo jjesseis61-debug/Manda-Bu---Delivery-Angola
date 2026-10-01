@@ -17,6 +17,9 @@ export default function Conta() {
         {ligada('indicacao') && perfil?.codigo && <Linha esquerda="Código de convite" direita={perfil.codigo} />}
       </Cartao>
       <Botao titulo="Endereços" variante="secundario" aoCarregar={() => router.push('/enderecos')} />
+      {(ligada('indicacao') || ligada('destaques')) && (
+        <Botao titulo="Notificações" variante="secundario" aoCarregar={() => router.push('/notificacoes')} />
+      )}
       {ligada('indicacao') && <Botao titulo="Como funciona o Convida e Ganha" variante="texto" aoCarregar={() => router.push('/como-funciona')} />}
       <Paragrafo suave>Manda Bué — Delivery Angola</Paragrafo>
       <Botao

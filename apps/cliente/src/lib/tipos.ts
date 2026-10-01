@@ -143,6 +143,8 @@ export type MinhaPosicao = {
   no_top: boolean;
 };
 
+export type PreferenciasNotificacao = { lembrete_almoco: boolean; destaques: boolean };
+
 export type PerfilDestaques = {
   pseudonimo: string;
   mostrar_nome_real: boolean;
