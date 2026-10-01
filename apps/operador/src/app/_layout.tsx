@@ -1,12 +1,29 @@
-import { Stack } from 'expo-router';
+import * as Notifications from 'expo-notifications';
+import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { useEffect } from 'react';
 
+import { rotaDaNotificacao } from '@/lib/push';
 import { SessaoProvider } from '@/lib/sessao';
 import { cores } from '@/lib/tema';
+
+/** Abre o ecrã certo ao tocar numa notificação (N12 -> Equipa) */
+function AbrirNotificacoes() {
+  const router = useRouter();
+  useEffect(() => {
+    const sub = Notifications.addNotificationResponseReceivedListener((resposta) => {
+      const rota = rotaDaNotificacao(resposta.notification.request.content.data);
+      if (rota) router.push(rota);
+    });
+    return () => sub.remove();
+  }, [router]);
+  return null;
+}
 
 export default function LayoutRaiz() {
   return (
     <SessaoProvider>
+      <AbrirNotificacoes />
       <Stack
         screenOptions={{
           headerTintColor: cores.marca,
@@ -26,6 +43,8 @@ export default function LayoutRaiz() {
         <Stack.Screen name="cozinhas/[id]" options={{ title: 'Cozinha' }} />
         <Stack.Screen name="relatorios" options={{ title: 'Relatórios de cozinha' }} />
         <Stack.Screen name="entregas" options={{ title: 'Pedidos e entregas' }} />
+        <Stack.Screen name="moderacao" options={{ title: 'Moderação' }} />
+        <Stack.Screen name="equipa" options={{ title: 'Equipa' }} />
       </Stack>
       <StatusBar style="dark" />
     </SessaoProvider>

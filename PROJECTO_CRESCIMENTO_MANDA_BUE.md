@@ -660,6 +660,22 @@ e da I3 (fornecedor de SMS, projecto EAS e push, `ENVIO_SEGREDO`, `pg_cron`/`pg_
 O C14 (desligar N5 e N7 na app, em Conta → Notificações) foi antecipado da I5 para a I4, para os clientes
 poderem desligar estes avisos desde o lançamento; usa as permissões já existentes (sem migração).
 
+**Estado da I5 (avaliações e equipa):** código pronto, interruptores `avaliacoes` e `reconhecimento_equipa`
+desligados. App do cliente: C9 (avaliar até 3 dias após a entrega: estrelas, comentário até 200 caracteres,
+estrelas por prato, pseudónimo; botão no pedido e N9), C10 (lista na cozinha e em cada prato do cardápio, média só
+com o mínimo; autor com primeiro nome e inicial ou pseudónimo). App do operador: O7 (comentários recentes com
+Ocultar/Mostrar e palavras filtradas; as fotos ficam para a I7) e O8 (métricas da semana por turno, registar
+reconhecimento, histórico; visível para quem tem `equipa.reconhecer` e para os membros da cozinha). N9 uma hora
+depois da entrega se o pedido não foi avaliado; N12 por push para os membros do turno reconhecido (a app do
+operador também regista o telemóvel). Para não expor ids, os clientes deixam de ler as avaliações dos outros
+directamente: a lista e as médias vêm de funções do servidor.
+
+**Pendente para pôr a I5 em uso:**
+1. Aplicar a migração `20261001500000_crescimento_i5_avaliacoes_equipa.sql` no Supabase (precisa da tua confirmação) e publicar de novo a Edge Function `enviar-notificacoes`.
+2. Projecto EAS também para a app do operador (`extra.eas.projectId`) para o N12 chegar por push.
+3. Turnos registados com `periodo` (manhã/tarde/noite) e `hora_prometida` nos pedidos, para as métricas de turno terem dados.
+4. Critério da fase: métricas de turno aceites pela equipa.
+
 A revisão de parâmetros (custo por cliente conquistado, retenção, % anulados) é feita 1–2 meses após I4 e depois trimestralmente, sempre no painel, sem alterar código.
 
 ---

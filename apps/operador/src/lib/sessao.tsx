@@ -3,6 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { AppState } from 'react-native';
 
 import { entrarComoFuncionario } from './api';
+import { activarPush, desactivarPush } from './push';
 import { supabase } from './supabase';
 import type { Funcionario, Permissao } from './tipos';
 
@@ -29,7 +30,9 @@ export function SessaoProvider({ children }: { children: ReactNode }) {
       return;
     }
     try {
-      setFuncionario(await entrarComoFuncionario());
+      const f = await entrarComoFuncionario();
+      setFuncionario(f);
+      if (f) void activarPush().catch(() => undefined);
     } catch {
       // Sem rede: mantém o que já tinha
     }
@@ -64,6 +67,7 @@ export function SessaoProvider({ children }: { children: ReactNode }) {
       pode: (p) => funcionario?.permissoes.includes(p) ?? false,
       actualizar: () => carregar(sessao),
       sair: async () => {
+        await desactivarPush();
         await supabase.auth.signOut();
       },
     }),

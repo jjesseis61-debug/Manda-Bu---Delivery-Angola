@@ -1,5 +1,5 @@
 /// <reference types="jest" />
-import { diaLuanda, formatarDia, formatarKz, formatarPercentagem, inicioMesLuanda, mensagemErro, paraCsv } from '../formatar';
+import { segundaFeira, diaLuanda, formatarDia, formatarKz, formatarPercentagem, inicioMesLuanda, mensagemErro, paraCsv } from '../formatar';
 
 describe('formatar (operador)', () => {
   it('formata kwanzas', () => {
@@ -37,5 +37,12 @@ describe('formatar (operador)', () => {
   it('mensagens de erro do servidor', () => {
     expect(mensagemErro({ message: 'sem_permissao' })).toBe('Não tens permissão para esta acção.');
     expect(mensagemErro({ message: 'parcelas_nao_somam_valor_final' })).toBe('Os pagamentos não somam o valor a receber.');
+  });
+
+  it('segunda-feira da semana', () => {
+    expect(segundaFeira('2026-10-01')).toBe('2026-09-28'); // quinta-feira
+    expect(segundaFeira('2026-09-28')).toBe('2026-09-28');
+    expect(segundaFeira('2026-10-04')).toBe('2026-09-28'); // domingo
+    expect(segundaFeira('2026-10-01', -1)).toBe('2026-09-21');
   });
 });

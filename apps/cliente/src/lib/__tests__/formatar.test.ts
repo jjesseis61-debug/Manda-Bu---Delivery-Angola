@@ -2,6 +2,7 @@
 
 import {
   formatarKz,
+  formatarMedia,
   mensagemCodigo,
   mensagemConvite,
   mensagemErro,
@@ -121,5 +122,12 @@ describe('destaques (C3)', () => {
   it('amigos em falta para o top, no singular e no plural', () => {
     expect(textoAmigosEmFalta(1, 10)).toBe('Falta 1 amigo para entrares no top 10.');
     expect(textoAmigosEmFalta(3, 10)).toBe('Faltam 3 amigos para entrares no top 10.');
+  });
+});
+
+describe('avaliações (C10)', () => {
+  it('média com vírgula e plural', () => {
+    expect(formatarMedia(4.5, 12)).toBe('★ 4,5 · 12 avaliações');
+    expect(formatarMedia(5, 1)).toBe('★ 5,0 · 1 avaliação');
   });
 });

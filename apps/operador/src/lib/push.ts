@@ -6,7 +6,7 @@ import { Platform } from 'react-native';
 
 import { registarTokenPush, removerTokenPush } from './api';
 
-const CHAVE = 'manda-bue:token-push';
+const CHAVE = 'manda-bue-operador:token-push';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -22,7 +22,7 @@ function projectId(): string | undefined {
 }
 
 /**
- * Pede autorização e regista o token Expo deste telemóvel no servidor.
+ * Regista o token Expo deste telemóvel para o funcionário (N12).
  * Sem projectId do EAS (app.json → extra.eas.projectId), num simulador ou na web, não faz nada.
  */
 export async function activarPush(): Promise<void> {
@@ -31,7 +31,7 @@ export async function activarPush(): Promise<void> {
 
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', {
-      name: 'Manda Bué',
+      name: 'Manda Bué Operador',
       importance: Notifications.AndroidImportance.DEFAULT,
     });
   }
@@ -44,7 +44,7 @@ export async function activarPush(): Promise<void> {
   await AsyncStorage.setItem(CHAVE, token);
 }
 
-/** Ao sair da conta: este telemóvel deixa de receber as notificações da conta */
+/** Ao sair: este telemóvel deixa de receber as notificações do funcionário */
 export async function desactivarPush(): Promise<void> {
   const token = await AsyncStorage.getItem(CHAVE);
   if (!token) return;
@@ -52,13 +52,8 @@ export async function desactivarPush(): Promise<void> {
   await AsyncStorage.removeItem(CHAVE);
 }
 
-/** Ecrã a abrir quando o cliente toca numa notificação */
-export function rotaDaNotificacao(dados: unknown): string | null {
-  const d = (dados ?? {}) as { codigo?: unknown; pedido_id?: unknown };
-  const codigo = d.codigo;
-  if (codigo === 'N2' || codigo === 'N3' || codigo === 'N4' || codigo === 'N5' || codigo === 'N6') return '/convida';
-  if (codigo === 'N7') return '/destaques';
-  if (codigo === 'N8') return '/levantar';
-  if (codigo === 'N9' && typeof d.pedido_id === 'string') return `/avaliar/${d.pedido_id}`;
-  return null;
+/** Ecrã a abrir quando o funcionário toca numa notificação */
+export function rotaDaNotificacao(dados: unknown): '/equipa' | null {
+  const codigo = (dados as { codigo?: unknown } | null | undefined)?.codigo;
+  return codigo === 'N12' ? '/equipa' : null;
 }

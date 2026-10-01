@@ -17,6 +17,7 @@ Aplicadas por esta ordem. **Uma migração já aplicada nunca se edita:** qualqu
 | `20261001052738_crescimento_i2_desconto_limite.sql` | O desconto de indicação nunca passa o valor do pedido (subtotal + taxa): valor final nunca negativo, no pedido e no orçamento. Uso único (o que sobra não passa para o pedido seguinte). | aplicada |
 | `20261001091617_crescimento_i3_app_operador.sql` | I3: `funcionarios.telefone` e entrada por SMS (`definir_telefone_funcionario`, `ligar_funcionario`, `meu_funcionario`); leituras do operador com permissão do organograma: `painel_programa` (O1), `ganhos_em_verificacao` e `confirmar_ganhos_indicador` (O2), `levantamentos_operador` (O3), `embaixadores` (O4), `pedidos_operador` (E1); RLS de leitura em `caixa`; N3 vinda da verificação com o nome do amigo e o saldo da semana; auditoria das escritas em `cozinhas` e `cardapio` (O6). | aplicada |
 | `20261001144534_crescimento_i4_lancamento.sql` | I4: C5 "Não mostrar os meus ganhos" (`perfil_destaques.ocultar_ganhos`; valores escondidos para os outros em `destaques_mes`); N5 com o prato do dia; textos de N5, N6 e N7 e envio pela Edge Function, respeitando no envio as preferências do cliente. Não liga interruptores. | aplicada |
+| `20261001500000_crescimento_i5_avaliacoes_equipa.sql` | I5: avaliações lidas pelos clientes só pelas suas linhas; lista pública e médias por funções sem ids (`avaliacoes_publicas`, `medias_avaliacoes`); estrelas por prato só de pratos do pedido; O7 (`avaliacoes_moderacao`); N9 (`job_n9_avaliacao`, de 15 em 15 minutos); N12 e push para funcionários (`notificacoes_fila.funcionario_id`, `dispositivos_push.funcionario_id`, `registar_token_push_funcionario`, destino em `notificacoes_pendentes`); `meu_funcionario().cozinhas_equipa`. | **por aplicar** (o ambiente pediu confirmação: apaga e recria uma política e uma função e altera duas tabelas) |
 
 Os números de versão dos ficheiros são os que o Supabase registou ao aplicar, para `supabase migration list` e
 `supabase db push` não voltarem a aplicá-las.
@@ -40,7 +41,7 @@ Os jobs respeitam os interruptores: com tudo desligado não enfileiram nada.
 
 | Função | O que faz | Configuração |
 |---|---|---|
-| `functions/enviar-notificacoes` | Envia a fila (N2, N3, N4, N8) pelo push da Expo; desactiva tokens rejeitados; marca como enviadas | Publicada sem verificação de JWT, com autenticação própria: segredo `ENVIO_SEGREDO` (obrigatório) no cabeçalho `x-envio-segredo`. Agendar com `select agendar_envio_notificacoes('<url da função>', '<segredo>');` depois de activar `pg_cron` e `pg_net`. |
+| `functions/enviar-notificacoes` | Envia a fila (clientes N2–N9; equipa N12) pelo push da Expo, um pedido por app (a Expo recusa tokens de projectos diferentes no mesmo pedido); desactiva tokens rejeitados; marca como enviadas | Publicada sem verificação de JWT, com autenticação própria: segredo `ENVIO_SEGREDO` (obrigatório) no cabeçalho `x-envio-segredo`. Agendar com `select agendar_envio_notificacoes('<url da função>', '<segredo>');` depois de activar `pg_cron` e `pg_net`. |
 
 ## Testes
 
@@ -64,6 +65,7 @@ base de dados.
 | `12_privilegios.test.sql` | Funções SECURITY DEFINER chamáveis pelas apps (lista fechada), nenhuma para `anon`; grupo criado pela app; guarda do consumo com sessão do telemóvel |
 | `13_app_cliente.test.sql` | I2: registo e ligação ao cliente do balcão, cardápio e preço no servidor, ponto/zona, desconto no orçamento, amigos, tokens de push, textos e fila de notificações |
 | `14_desconto_limite.test.sql` | Desconto limitado ao valor do pedido (com e sem taxa), orçamento, entrega com valor final 0, uso único |
+| `18_avaliacoes_equipa.test.sql` | I5: avaliar pelo telemóvel (C9), lista pública sem ids e médias (C10), moderação e palavras filtradas (O7), N9, reconhecimentos e N12 com push da equipa (O8) |
 | `16_lancamento.test.sql` | I4: esconder ganhos na lista (C5), textos N5–N7, N5 com prato do dia, envio com preferências e interruptor |
 | `17_preferencias_notificacao.test.sql` | C14: o cliente desliga N5 e N7 pela app, só no seu perfil e só essas colunas; N5 não é enfileirada |
 | `15_app_operador.test.sql` | I3: telefone e ligação dos funcionários, painel (O1), verificação e "Confirmar todos" com N3 (O2), levantamentos (O3), embaixadores (O4), fila de entregas e caixas (E1), auditoria de cozinhas e cardápio (O6) |
@@ -80,7 +82,7 @@ base de dados.
 
 ### Resultados (1 de Outubro de 2026)
 
-| Teste | Postgres 16 local, 11 migrações | Supabase `laruvuambdovnkojwrzp` |
+| Teste | Postgres 16 local, 12 migrações | Supabase `laruvuambdovnkojwrzp` |
 |---|---|---|
 | 00 estrutura | 19/19 | 19/19 |
 | 01 ligação | 9/9 | 9/9 |
@@ -100,7 +102,8 @@ base de dados.
 | 15 app do operador | 28/28 | 28/28 (em partes, ver abaixo) |
 | 16 lançamento (I4) | 16/16 | 16/16 |
 | 17 preferências de notificação (C14) | 6/6 | 6/6 |
-| **Total** | **363/363** | |
+| 18 avaliações e equipa (I5) | 30/30 | por correr (migração por aplicar) |
+| **Total** | **393/393** | |
 
 Na I2 voltaram a correr no Supabase os testes afectados por cada migração (app do cliente: 06, 08, 09, 12 e 13;
 desconto limitado: 02, 09 e 14); os restantes não dependem delas (e todos passam localmente).

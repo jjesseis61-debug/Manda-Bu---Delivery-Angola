@@ -43,6 +43,8 @@ export type ItemCardapio = {
   preco: number;
   foto_url: string | null;
   do_dia: boolean;
+  cozinha_id: string;
+  prato_base_id: string | null;
 };
 
 export type ItemOrcamento = {
@@ -50,7 +52,20 @@ export type ItemOrcamento = {
   nome: string;
   qtd: number;
   preco_unitario: number;
+  prato_base_id?: string | null;
 };
+
+/** Avaliação na lista pública (C10): sem ids */
+export type AvaliacaoPublica = {
+  criado_em: string;
+  estrelas: number;
+  comentario: string | null;
+  autor: string;
+  pratos: { nome: string; estrelas: number }[];
+};
+
+export type Media = { media: number; total: number };
+export type MediasAvaliacoes = { cozinha: Media | null; pratos: (Media & { prato_base_id: string })[] };
 
 export type Orcamento = {
   itens: ItemOrcamento[];

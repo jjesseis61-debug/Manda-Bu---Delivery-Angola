@@ -34,7 +34,8 @@
           "imageWidth": 76
         }
       ],
-      "expo-sharing"
+      "expo-sharing",
+      "expo-notifications"
     ],
     "scheme": "mandabueoperador",
     "experiments": {

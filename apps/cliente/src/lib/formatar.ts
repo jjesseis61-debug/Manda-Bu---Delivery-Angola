@@ -9,6 +9,15 @@ export function formatarKz(valor: number | null | undefined): string {
 }
 
 /** "Ana · 23 dias", "Ana · último dia", "Ana · à espera do 1.º pedido", "Ana · terminou" */
+export function formatarData(iso: string | null | undefined): string {
+  return iso ? new Date(iso).toLocaleDateString('pt-PT') : '';
+}
+
+/** "★ 4,5 · 12 avaliações" */
+export function formatarMedia(media: number, total: number): string {
+  return `★ ${media.toFixed(1).replace('.', ',')} · ${total} ${total === 1 ? 'avaliação' : 'avaliações'}`;
+}
+
 /** Valor na lista de destaques: exacto, em intervalo ("10.000–20.000 Kz") ou escondido (null) */
 export function valorDestaque(valor: number | null, min: number | null, max: number | null): string | null {
   if (valor !== null) return formatarKz(valor);
@@ -110,6 +119,8 @@ const mensagens: Record<string, string> = {
   metodo_invalido: 'Escolhe Multicaixa Express ou Unitel Money.',
   numero_invalido: 'Número de telefone inválido.',
   token_invalido: 'Não foi possível activar as notificações.',
+  // avaliações (C9)
+  prato_fora_do_pedido: 'Só podes avaliar os pratos deste pedido.',
 };
 
 /** Extrai o código de um erro do Supabase (mensagem = código) e devolve o texto para o cliente */

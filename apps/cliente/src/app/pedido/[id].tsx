@@ -5,7 +5,7 @@ import { Text } from 'react-native';
 import { PartilharCodigo } from '@/components/PartilharCodigo';
 import { PessoasComoTu } from '@/components/PessoasComoTu';
 import { ACarregar, Aviso, Botao, Cartao, Ecra, Linha, Paragrafo, Subtitulo } from '@/components/ui';
-import { cancelarPedido, lerPedido } from '@/lib/api';
+import { avaliacaoPermitida, cancelarPedido, lerPedido, minhaAvaliacao } from '@/lib/api';
 import { formatarKz, mensagemErro, nomeEstadoPedido } from '@/lib/formatar';
 import { useSessao } from '@/lib/sessao';
 import { cores } from '@/lib/tema';
@@ -19,12 +19,19 @@ export default function PedidoDetalhe() {
   const [pedido, setPedido] = useState<Pedido | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [aCancelar, setACancelar] = useState(false);
+  const [avaliacao, setAvaliacao] = useState<{ estrelas: number } | 'pode' | null>(null);
 
   const carregar = useCallback(() => {
     lerPedido(String(id))
-      .then(setPedido)
+      .then(async (p) => {
+        setPedido(p);
+        if (p?.estado === 'entregue_pago' && ligada('avaliacoes')) {
+          const minha = await minhaAvaliacao(p.id);
+          setAvaliacao(minha ?? ((await avaliacaoPermitida(p.id)) ? 'pode' : null));
+        }
+      })
       .catch((e) => setErro(mensagemErro(e)));
-  }, [id]);
+  }, [id, ligada]);
   useFocusEffect(carregar);
 
   if (erro) return <Ecra><Aviso tipo="erro">{erro}</Aviso></Ecra>;
@@ -61,6 +68,14 @@ export default function PedidoDetalhe() {
         )}
         <Linha esquerda="A pagar na entrega" direita={formatarKz(total - pedido.credito_indicacao_usado)} forte />
       </Cartao>
+
+      {/* C9: avaliar até ao prazo; depois de avaliado mostra as estrelas dadas */}
+      {avaliacao === 'pode' && <Botao titulo="Avaliar pedido" aoCarregar={() => router.push(`/avaliar/${pedido.id}`)} />}
+      {avaliacao && avaliacao !== 'pode' && (
+        <Paragrafo suave>
+          A tua avaliação: <Text style={{ color: cores.destaque }}>{'★'.repeat(avaliacao.estrelas)}</Text>
+        </Paragrafo>
+      )}
 
       {pedido.estado === 'pendente' && (
         <Botao

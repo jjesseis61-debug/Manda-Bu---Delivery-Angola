@@ -4,6 +4,8 @@ export type Funcionario = {
   cargo: string | null;
   administrador_principal: boolean;
   permissoes: string[];
+  /** Cozinhas onde tem turnos (vê as métricas e os reconhecimentos da equipa, O8) */
+  cozinhas_equipa: string[];
 };
 
 export type Permissao =
@@ -139,4 +141,41 @@ export type Relatorio = {
   retencao: Record<string, number | null>;
   media_avaliacao: number | null;
   prato_mais_pedido: { nome: string; quantidade: number } | null;
+};
+
+export type ComentarioModeracao = {
+  avaliacao_id: string;
+  criado_em: string;
+  cozinha_nome: string;
+  estrelas: number;
+  comentario: string;
+  oculta: boolean;
+  autor_nome: string;
+  autor_publico: string;
+};
+
+export type PalavraFiltrada = { id: string; palavra: string };
+
+export type Periodo = 'manha' | 'tarde' | 'noite';
+
+export type MetricaTurno = {
+  periodo: Periodo;
+  quebras: number;
+  quantidade_quebra: number;
+  entregas: number;
+  entregas_a_horas: number;
+  pct_a_horas: number | null;
+  diferenca_caixa: number;
+};
+
+export type TipoReconhecimento = 'menos_desperdicio' | 'entregas_a_horas' | 'caixa_certa' | 'outro';
+
+export type Reconhecimento = {
+  id: string;
+  criado_em: string;
+  cozinha_id: string;
+  semana: string;
+  periodo: Periodo;
+  tipo: TipoReconhecimento;
+  nota: string | null;
 };

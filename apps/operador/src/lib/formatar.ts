@@ -31,6 +31,23 @@ export function diaLuanda(desvioDias = 0, agora: Date = new Date()): string {
   return luanda.toISOString().slice(0, 10);
 }
 
+/** Segunda-feira da semana de um dia AAAA-MM-DD (com desvio em semanas) */
+export function segundaFeira(dia: string, desvioSemanas = 0): string {
+  const d = new Date(`${dia}T12:00:00Z`);
+  const dow = (d.getUTCDay() + 6) % 7; // 0 = segunda
+  d.setUTCDate(d.getUTCDate() - dow + 7 * desvioSemanas);
+  return d.toISOString().slice(0, 10);
+}
+
+export const nomePeriodo: Record<string, string> = { manha: 'Manhã', tarde: 'Tarde', noite: 'Noite' };
+
+export const nomeTipoReconhecimento: Record<string, string> = {
+  entregas_a_horas: 'Entregas a horas',
+  menos_desperdicio: 'Menos desperdício',
+  caixa_certa: 'Caixa certa',
+  outro: 'Outro',
+};
+
 /** Primeiro dia do mês corrente em Luanda */
 export function inicioMesLuanda(agora: Date = new Date()): string {
   return `${diaLuanda(0, agora).slice(0, 8)}01`;
@@ -92,6 +109,7 @@ const mensagens: Record<string, string> = {
   numero_invalido: 'Número de telefone inválido.',
   periodo_invalido: 'Período inválido.',
   nivel_invalido: 'Nível inválido.',
+  avaliacao_inexistente: 'A avaliação já não existe.',
   pedido_inexistente: 'O pedido já não existe.',
   funcionalidade_inexistente: 'Funcionalidade desconhecida.',
 };

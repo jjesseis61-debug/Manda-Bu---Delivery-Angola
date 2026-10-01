@@ -1,5 +1,5 @@
 import * as Notifications from 'expo-notifications';
-import { Stack, useRouter } from 'expo-router';
+import { type Href, Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 
@@ -19,8 +19,8 @@ function EfeitosSessao() {
 
   useEffect(() => {
     const sub = Notifications.addNotificationResponseReceivedListener((resposta) => {
-      const rota = rotaDaNotificacao(resposta.notification.request.content.data?.codigo);
-      if (rota) router.push(rota);
+      const rota = rotaDaNotificacao(resposta.notification.request.content.data);
+      if (rota) router.push(rota as Href);
     });
     return () => sub.remove();
   }, [router]);
@@ -52,6 +52,8 @@ export default function LayoutRaiz() {
           <Stack.Screen name="destaques" options={{ title: 'Destaques do mês' }} />
           <Stack.Screen name="privacidade" options={{ title: 'Privacidade na lista' }} />
           <Stack.Screen name="notificacoes" options={{ title: 'Notificações' }} />
+          <Stack.Screen name="avaliar/[id]" options={{ title: 'Avaliar pedido' }} />
+          <Stack.Screen name="avaliacoes" options={{ title: 'Avaliações' }} />
           <Stack.Screen name="enderecos/index" options={{ title: 'Endereços' }} />
           <Stack.Screen name="enderecos/novo" options={{ title: 'Novo endereço' }} />
         </Stack>

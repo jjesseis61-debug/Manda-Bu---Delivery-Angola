@@ -45,3 +45,13 @@ npm run typecheck
 npm test
 npx expo export --platform android --platform web
 ```
+
+## I5
+
+| Rota | Ecrã | Permissão |
+|---|---|---|
+| `moderacao` | O7: comentários recentes (Ocultar/Mostrar) e palavras filtradas | `avaliacoes.moderar` |
+| `equipa` | O8: métricas da semana por turno, reconhecimentos | `equipa.reconhecer` ou membro da cozinha (tem turnos) |
+
+Push (N12): `src/lib/push.ts` regista o telemóvel do funcionário depois de entrar. Precisa de
+`extra.eas.projectId` em `app.json` e de uma *development build* no Android.

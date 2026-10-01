@@ -1,4 +1,6 @@
-// Envia a fila de notificações (N2, N3, N4, N8) pelo serviço de push da Expo.
+// Envia a fila de notificações (clientes: N2–N9; equipa: N12) pelo serviço de push da Expo.
+// A app do cliente e a do operador são projectos Expo diferentes: a Expo recusa um pedido
+// com tokens de projectos diferentes, por isso cada destino segue num pedido à parte.
 //
 // Chamada de minuto a minuto por pg_cron (agendar_envio_notificacoes). Só despacha
 // o que já está na fila: os textos e os destinatários vêm do servidor
@@ -13,7 +15,7 @@ const LOTE_EXPO = 100;
 
 type Pendente = {
   id: string;
-  cliente_id: string;
+  destino: 'cliente' | 'funcionario';
   codigo: string;
   titulo: string;
   corpo: string;
@@ -46,19 +48,29 @@ Deno.serve(async (req) => {
     return Response.json({ enviadas: 0, mensagens: 0, tokens_desactivados: 0 });
   }
 
-  const mensagens: Mensagem[] = pendentes.flatMap((n) =>
-    n.tokens.map((token) => ({
-      to: token,
-      title: n.titulo,
-      body: n.corpo,
-      sound: 'default' as const,
-      data: { codigo: n.codigo, notificacao_id: n.id },
-    })),
-  );
+  const paraMensagens = (lista: Pendente[]): Mensagem[] =>
+    lista.flatMap((n) =>
+      n.tokens.map((token) => ({
+        to: token,
+        title: n.titulo,
+        body: n.corpo,
+        sound: 'default' as const,
+        data: { codigo: n.codigo, notificacao_id: n.id, ...('pedido_id' in n.dados ? { pedido_id: n.dados.pedido_id } : {}) },
+      })),
+    );
+  const porDestino = [
+    paraMensagens(pendentes.filter((n) => n.destino !== 'funcionario')),
+    paraMensagens(pendentes.filter((n) => n.destino === 'funcionario')),
+  ];
+  const lotes = porDestino.flatMap((m) => {
+    const r: Mensagem[][] = [];
+    for (let i = 0; i < m.length; i += LOTE_EXPO) r.push(m.slice(i, i + LOTE_EXPO));
+    return r;
+  });
+  const totalMensagens = porDestino.reduce((s, m) => s + m.length, 0);
 
   const tokensInvalidos: string[] = [];
-  for (let i = 0; i < mensagens.length; i += LOTE_EXPO) {
-    const lote = mensagens.slice(i, i + LOTE_EXPO);
+  for (const lote of lotes) {
     const resposta = await fetch(EXPO_PUSH_URL, {
       method: 'POST',
       headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
@@ -90,5 +102,5 @@ Deno.serve(async (req) => {
     return Response.json({ erro: erroMarcar.message }, { status: 500 });
   }
 
-  return Response.json({ enviadas, mensagens: mensagens.length, tokens_desactivados: desactivados });
+  return Response.json({ enviadas, mensagens: totalMensagens, tokens_desactivados: desactivados });
 });

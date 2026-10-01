@@ -40,6 +40,8 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 'definir_telefone_funcionario', 'ligar_funcionario', 'meu_funcionario', 'painel_programa',
                 'ganhos_em_verificacao', 'confirmar_ganhos_indicador', 'levantamentos_operador', 'embaixadores',
                 'pedidos_operador',
+                -- I5: avaliações e push da equipa
+                'avaliacoes_publicas', 'medias_avaliacoes', 'avaliacoes_moderacao', 'registar_token_push_funcionario',
                 -- auxiliares usadas em políticas RLS, valores por defeito ou triggers SECURITY INVOKER
                 'cliente_actual', 'cozinha_padrao', 'e_funcionario', 'funcionalidade_activa',
                 'funcionario_actual', 'membro_da_cozinha', 'tem_permissao')),

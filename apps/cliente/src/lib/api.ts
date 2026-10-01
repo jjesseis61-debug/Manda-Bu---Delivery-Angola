@@ -4,11 +4,13 @@ import { dispositivoId } from './dispositivo';
 import { supabase } from './supabase';
 import type {
   Amigo,
+  AvaliacaoPublica,
   Destaque,
   Endereco,
   Funcionalidades,
   ItemCardapio,
   Levantamento,
+  MediasAvaliacoes,
   MinhaPosicao,
   Orcamento,
   Parametros,
@@ -69,7 +71,7 @@ export async function descontoGarantido(clienteId: string): Promise<number | nul
 export async function lerCardapio(): Promise<ItemCardapio[]> {
   const r = await supabase
     .from('cardapio')
-    .select('id, nome, descricao, categoria, preco, foto_url, do_dia')
+    .select('id, nome, descricao, categoria, preco, foto_url, do_dia, cozinha_id, prato_base_id')
     .eq('disponivel', true)
     .order('do_dia', { ascending: false })
     .order('ordem')
@@ -85,9 +87,51 @@ export async function lerCozinhaPublica(): Promise<Cozinha | null> {
   return ((verificar(r) as Cozinha[])[0] ?? null) as Cozinha | null;
 }
 
-export async function mediaAvaliacoes(cozinhaId: string): Promise<{ media: number; total: number } | null> {
-  const r = await supabase.from('media_avaliacoes_cozinha').select('media, total').eq('cozinha_id', cozinhaId).maybeSingle();
-  return verificar(r) as { media: number; total: number } | null;
+// ---------------------------------------------------------------- avaliações (C9, C10)
+/** Médias da cozinha e dos pratos; o servidor só devolve com o mínimo de avaliações */
+export async function mediasAvaliacoes(cozinhaId: string): Promise<MediasAvaliacoes | null> {
+  return verificar(await supabase.rpc('medias_avaliacoes', { p_cozinha: cozinhaId })) as MediasAvaliacoes | null;
+}
+
+export async function avaliacoesPublicas(cozinhaId: string, pratoId?: string | null): Promise<AvaliacaoPublica[]> {
+  return verificar(
+    await supabase.rpc('avaliacoes_publicas', { p_cozinha: cozinhaId, p_prato: pratoId ?? null, p_limite: 50 }),
+  ) as AvaliacaoPublica[];
+}
+
+export async function avaliacaoPermitida(pedidoId: string): Promise<boolean> {
+  return verificar(await supabase.rpc('avaliacao_permitida', { p_pedido: pedidoId })) as boolean;
+}
+
+export async function minhaAvaliacao(pedidoId: string): Promise<{ estrelas: number; comentario: string | null } | null> {
+  const r = await supabase.from('avaliacoes').select('estrelas, comentario').eq('pedido_id', pedidoId).maybeSingle();
+  return verificar(r) as { estrelas: number; comentario: string | null } | null;
+}
+
+export async function avaliarPedido(dados: {
+  pedidoId: string;
+  clienteId: string;
+  estrelas: number;
+  comentario: string | null;
+  usarPseudonimo: boolean;
+  pratos: { prato_id: string; estrelas: number }[];
+}): Promise<void> {
+  const r = await supabase
+    .from('avaliacoes')
+    .insert({
+      pedido_id: dados.pedidoId,
+      cliente_id: dados.clienteId,
+      estrelas: dados.estrelas,
+      comentario: dados.comentario,
+      usar_pseudonimo: dados.usarPseudonimo,
+      dispositivo_id: await dispositivoId(),
+    })
+    .select('id')
+    .single();
+  const { id } = verificar(r) as { id: string };
+  if (dados.pratos.length > 0) {
+    verificar(await supabase.from('avaliacoes_pratos').insert(dados.pratos.map((p) => ({ ...p, avaliacao_id: id }))));
+  }
 }
 
 // ---------------------------------------------------------------- endereços (C11)

@@ -3,15 +3,21 @@
 import { supabase } from './supabase';
 import type {
   Caixa,
+  ComentarioModeracao,
   Cozinha,
   Embaixador,
   Funcionario,
   GanhoVerificacao,
   LevantamentoOperador,
+  MetricaTurno,
   Painel,
+  PalavraFiltrada,
+  Periodo,
   PedidoOperador,
   PratoCardapio,
+  Reconhecimento,
   Relatorio,
+  TipoReconhecimento,
 } from './tipos';
 
 function verificar<T>(r: { data: T | null; error: { message: string } | null }): T {
@@ -161,4 +167,77 @@ export async function mudarEstado(
 
 export async function marcarPagadorDistinto(pedidoId: string, valor: boolean) {
   verificar(await supabase.rpc('marcar_pagador_distinto', { p_pedido: pedidoId, p_valor: valor }));
+}
+
+// ---------------------------------------------------------------- push da equipa (N12)
+export async function registarTokenPush(token: string, plataforma: string) {
+  verificar(await supabase.rpc('registar_token_push_funcionario', { p_token: token, p_plataforma: plataforma }));
+}
+
+export async function removerTokenPush(token: string) {
+  verificar(await supabase.rpc('remover_token_push', { p_token: token }));
+}
+
+// ---------------------------------------------------------------- O7
+export async function comentariosModeracao(dias = 14): Promise<ComentarioModeracao[]> {
+  return verificar(await supabase.rpc('avaliacoes_moderacao', { p_dias: dias })) as ComentarioModeracao[];
+}
+
+export async function ocultarAvaliacao(id: string, oculta: boolean) {
+  verificar(await supabase.rpc('ocultar_avaliacao', { p_avaliacao: id, p_oculta: oculta }));
+}
+
+export async function lerPalavras(): Promise<PalavraFiltrada[]> {
+  return verificar(
+    await supabase.from('palavras_filtradas').select('id, palavra').is('deletado_em', null).order('palavra'),
+  ) as PalavraFiltrada[];
+}
+
+export async function adicionarPalavra(palavra: string) {
+  verificar(await supabase.from('palavras_filtradas').insert({ palavra: palavra.trim().toLowerCase() }));
+}
+
+export async function removerPalavra(id: string) {
+  verificar(
+    await supabase
+      .from('palavras_filtradas')
+      .update({ deletado_em: new Date().toISOString(), atualizado_em: new Date().toISOString() })
+      .eq('id', id),
+  );
+}
+
+// ---------------------------------------------------------------- O8
+export async function metricasTurno(cozinhaId: string, semana: string): Promise<MetricaTurno[]> {
+  return verificar(await supabase.rpc('metricas_turno', { p_cozinha: cozinhaId, p_semana: semana })) as MetricaTurno[];
+}
+
+export async function lerReconhecimentos(cozinhaId: string): Promise<Reconhecimento[]> {
+  return verificar(
+    await supabase
+      .from('reconhecimentos_turno')
+      .select('id, criado_em, cozinha_id, semana, periodo, tipo, nota')
+      .eq('cozinha_id', cozinhaId)
+      .is('deletado_em', null)
+      .order('semana', { ascending: false })
+      .order('criado_em', { ascending: false })
+      .limit(30),
+  ) as Reconhecimento[];
+}
+
+export async function registarReconhecimento(dados: {
+  cozinhaId: string;
+  semana: string;
+  periodo: Periodo;
+  tipo: TipoReconhecimento;
+  nota: string | null;
+}) {
+  verificar(
+    await supabase.from('reconhecimentos_turno').insert({
+      cozinha_id: dados.cozinhaId,
+      semana: dados.semana,
+      periodo: dados.periodo,
+      tipo: dados.tipo,
+      nota: dados.nota,
+    }),
+  );
 }

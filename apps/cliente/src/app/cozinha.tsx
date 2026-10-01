@@ -1,16 +1,17 @@
-import { Redirect, useFocusEffect } from 'expo-router';
+import { Redirect, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Image } from 'react-native';
 
-import { ACarregar, Cartao, Ecra, Linha, Paragrafo, Subtitulo, Titulo } from '@/components/ui';
-import { lerCardapio, lerCozinhaPublica, mediaAvaliacoes, type Cozinha } from '@/lib/api';
-import { formatarKz } from '@/lib/formatar';
+import { ACarregar, Botao, Cartao, Ecra, Linha, Paragrafo, Subtitulo, Titulo } from '@/components/ui';
+import { lerCardapio, lerCozinhaPublica, mediasAvaliacoes, type Cozinha } from '@/lib/api';
+import { formatarKz, formatarMedia } from '@/lib/formatar';
 import { useSessao } from '@/lib/sessao';
 import { raio } from '@/lib/tema';
 import type { ItemCardapio } from '@/lib/tipos';
 
 /** C8. Perfil da cozinha: só com o interruptor e o consentimento público da responsável */
 export default function PerfilCozinha() {
+  const router = useRouter();
   const { ligada } = useSessao();
   const [cozinha, setCozinha] = useState<Cozinha | null | undefined>(undefined);
   const [doDia, setDoDia] = useState<ItemCardapio[]>([]);
@@ -23,9 +24,12 @@ export default function PerfilCozinha() {
         .then(async (c) => {
           setCozinha(c);
           if (!c) return;
-          const [itens, m] = await Promise.all([lerCardapio(), mediaAvaliacoes(c.id).catch(() => null)]);
+          const [itens, m] = await Promise.all([
+            lerCardapio(),
+            ligada('avaliacoes') ? mediasAvaliacoes(c.id).catch(() => null) : Promise.resolve(null),
+          ]);
           setDoDia(itens.filter((i) => i.do_dia));
-          setMedia(m);
+          setMedia(m?.cozinha ?? null);
         })
         .catch(() => setCozinha(null));
     }, [ligada]),
@@ -40,8 +44,8 @@ export default function PerfilCozinha() {
         <Image source={{ uri: cozinha.foto_url }} style={{ width: '100%', height: 200, borderRadius: raio }} accessibilityLabel={cozinha.nome} />
       )}
       <Titulo>{cozinha.nome}</Titulo>
-      {/* A média só aparece com o mínimo de avaliações (a vista do servidor não devolve abaixo disso) */}
-      {media && <Paragrafo suave>★ {media.media.toFixed(1)} · {media.total} avaliações</Paragrafo>}
+      {/* A média só aparece com o mínimo de avaliações (o servidor não a devolve abaixo disso) */}
+      {media && <Paragrafo suave>{formatarMedia(media.media, media.total)}</Paragrafo>}
       {cozinha.historia && <Paragrafo>{cozinha.historia}</Paragrafo>}
       {doDia.length > 0 && (
         <>
@@ -52,6 +56,13 @@ export default function PerfilCozinha() {
             ))}
           </Cartao>
         </>
+      )}
+      {ligada('avaliacoes') && (
+        <Botao
+          titulo="Ver avaliações"
+          variante="secundario"
+          aoCarregar={() => router.push({ pathname: '/avaliacoes', params: { cozinha: cozinha.id, nome: cozinha.nome } })}
+        />
       )}
     </Ecra>
   );
