@@ -2,7 +2,7 @@
 -- só as vendas que gera; as vendas da app do operador ficam com a app.
 begin;
 \ir _helpers.psql
-select plan(29);
+select plan(35);
 
 -- ---------------------------------------------------------------------------
 -- Catálogo: produtos e pratos
@@ -122,9 +122,14 @@ update pedidos set estado = 'entregue_pago' where id = testes.u('p');
 select is((select count(*)::int from estoque_longo_prazo e join vendas v on v.id = e.venda_id
             where v.pedido_id = testes.u('p')), 2, 'repetir entregue_pago não volta a descontar');
 
--- O mesmo consumo nunca é registado duas vezes
-select throws_ok(format($$insert into estoque_longo_prazo (produto_id, tipo, quantidade, venda_id)
-                          select %L, 'Consumo', 1, id from vendas where pedido_id = %L and linha_pedido = 1$$,
+-- Segunda tentativa do servidor: não duplica
+insert into estoque_longo_prazo (dispositivo_id, produto_id, tipo, quantidade, venda_id)
+select 'servidor', testes.u('frango'), 'Consumo', 500, id from vendas where pedido_id = testes.u('p') and linha_pedido = 1
+on conflict (venda_id, produto_id) where venda_id is not null do nothing;
+select is((select count(*)::int from estoque_longo_prazo e join vendas v on v.id = e.venda_id
+            where v.pedido_id = testes.u('p')), 2, 'segunda tentativa do servidor não duplica o consumo');
+select throws_ok(format($$insert into estoque_longo_prazo (dispositivo_id, produto_id, tipo, quantidade, venda_id)
+                          select 'servidor', %L, 'Consumo', 1, id from vendas where pedido_id = %L and linha_pedido = 1$$,
                         testes.u('frango'), testes.u('p')),
                  '23505', null, 'índice único (venda_id, produto_id) impede consumo duplicado');
 
@@ -192,6 +197,48 @@ select results_eq(
              join vendas v on v.id = e.venda_id where v.pedido_id = %L$$, testes.u('pm')),
   $$values ('Jindungo'::text, 2.000)$$,
   'os componentes bem registados são descontados');
+
+-- ---------------------------------------------------------------------------
+-- 7. Guarda (regra 10): consumo de vendas 'App cliente' só pelo servidor
+-- ---------------------------------------------------------------------------
+select testes.def('venda_app', (select id from vendas where pedido_id = testes.u('p') and linha_pedido = 1
+                                   and origem = 'App cliente'));
+select testes.def('lp_guarda', (select count(*) from estoque_longo_prazo));
+
+-- Fila de saída de um tablet (serviço de sincronização) a enviar um consumo dessa venda
+insert into estoque_longo_prazo (dispositivo_id, produto_id, tipo, quantidade, venda_id)
+values ('tablet-1', testes.u('jindungo'), 'Consumo', 2, testes.u('venda_app'));
+select is((select count(*) from estoque_longo_prazo)::text, testes.v('lp_guarda'),
+          'consumo enviado por dispositivo para venda App cliente é rejeitado');
+select ok(exists (select 1 from auditoria where acao = 'consumo_dispositivo_bloqueado' and bloqueado
+                    and detalhe::jsonb ->> 'venda_id' = testes.v('venda_app')
+                    and detalhe::jsonb ->> 'dispositivo_id' = 'tablet-1'),
+          'tentativa registada na auditoria como bloqueada');
+
+-- Sessão do telemóvel a fingir ser o servidor (política só desta transacção)
+create policy teste_inserir_stock on estoque_longo_prazo for insert to authenticated with check (true);
+select testes.entrar_funcionario(testes.u('operador'));
+set local role authenticated;
+insert into estoque_longo_prazo (dispositivo_id, produto_id, tipo, quantidade, venda_id)
+values ('servidor', testes.u('jindungo'), 'Consumo', 2, testes.u('venda_app'));
+reset role;
+select testes.sair();
+select is((select count(*)::int from auditoria where acao = 'consumo_dispositivo_bloqueado' and bloqueado), 2,
+          'sessão de dispositivo com dispositivo_id = servidor também é rejeitada e auditada');
+
+-- Dispositivo a alterar o consumo do servidor
+update estoque_longo_prazo set quantidade = 0, dispositivo_id = 'tablet-1'
+ where venda_id = testes.u('venda_app') and produto_id = testes.u('frango');
+select is((select quantidade from estoque_longo_prazo
+            where venda_id = testes.u('venda_app') and produto_id = testes.u('frango')), 500.000,
+          'dispositivo não altera o consumo do servidor');
+
+-- Venda do operador: o consumo do dispositivo é aceite
+select testes.def('venda_op', (select id from vendas where dispositivo_id = 'tablet-1'));
+insert into estoque_longo_prazo (dispositivo_id, produto_id, tipo, quantidade, venda_id)
+values ('tablet-1', testes.u('frango'), 'Consumo', 250, testes.u('venda_op'));
+select is((select count(*)::int from estoque_longo_prazo where venda_id = testes.u('venda_op')), 1,
+          'consumo do dispositivo para venda do operador é aceite');
 
 select * from finish();
 rollback;

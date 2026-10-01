@@ -278,6 +278,11 @@ Os valores são preenchidos a partir de `parametros` (e, para cada amigo, a part
   - Unidade desconhecida, produto inexistente ou sem tipo de stock: a venda passa e fica um aviso `stock_consumo_pendente` na auditoria.
   - O `prato_base_id` de cada item é validado quando o pedido é criado (`prato_invalido`).
   - Formatos no item: `componentes_excluidos: [produto_id, …]`; `componentes_ajustados: [{produto_id, quantidade, unidade}, …]` (substitui a quantidade da receita; acrescenta se o produto não estiver na receita).
+  - **Guarda (regra 10):** um consumo em `estoque_longo_prazo` vindo de um dispositivo (`dispositivo_id <> 'servidor'` ou sessão `authenticated`/`anon`) para uma venda `App cliente` é descartado e registado na auditoria (`consumo_dispositivo_bloqueado`, `bloqueado = true`). Descarta-se em vez de dar erro para o registo na auditoria não ser desfeito e a fila de saída não repetir a tentativa sem fim.
+- **Requisito da app do operador (Expo):**
+  1. Aceitar a coluna `estoque_longo_prazo.venda_id` na sincronização (vem preenchida nos consumos do servidor) e preenchê-la nos consumos que a app regista para as suas próprias vendas.
+  2. **Nunca** correr o consumo automático para vendas com origem `App cliente` (nem `App cliente (estorno)`): essas vendas chegam pela sincronização com `stock_consumido_por = 'servidor'` e já foram descontadas no servidor. A app só desconta vendas com `stock_consumido_por = 'dispositivo'`.
+  3. Não enviar `stock_consumido_por = 'servidor'` (o servidor força `dispositivo` nas escritas vindas de dispositivos).
 - Os ganhos de indicação são calculados em `pedidos`.
 
 ### 4.15 Programa de indicação antigo
@@ -296,7 +301,7 @@ O SQL definitivo está nas migrações em `supabase/migrations/` (aplicadas por 
 | `20260930173922_crescimento_i1_ajustes.sql` | Nomes finais (`pontos_entrega`), estado do pedido só no servidor, venda gerada, campos de sincronização em todas as tabelas, valores garantidos na ligação |
 | `20260930183237_crescimento_i1_decisoes.sql` | Duração garantida, vendas por item (regra 7), caixa na entrega (regra 8), estorno sem stock (regra 3), catálogo de permissões |
 | `20261001040216_crescimento_i1_endurecimento.sql` | `search_path` fixo, funções de trigger não expostas, índices nas chaves estrangeiras |
-| `20261001050000_crescimento_i1_consumo_stock.sql` | Consumo de stock das vendas geradas de pedidos (regra 3), validação dos itens do pedido |
+| `20261001041532_crescimento_i1_consumo_stock.sql` | Consumo de stock das vendas geradas de pedidos (regra 3), validação dos itens do pedido |
 
 **Nomes reais.** Os nomes assumidos na versão 1.0 foram substituídos pelos do `MODELO_DE_DADOS.md`:
 

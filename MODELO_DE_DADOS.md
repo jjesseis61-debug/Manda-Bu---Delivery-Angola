@@ -19,6 +19,7 @@ Além dos campos próprios de cada entidade (listados abaixo), toda tabela deve 
 |---|---|---|
 | `vendas` | **Append-only** | Nunca se edita uma venda passada; cada venda é um evento novo, soma-se tudo depois |
 | `estoque_diario` / `estoque_longo_prazo` (movimentos) | **Append-only** | Cada entrada/consumo é um evento; o saldo é sempre calculado, nunca guardado como valor fixo |
+| `estoque_longo_prazo` — consumos de vendas `App cliente` | **Só o servidor** (`dispositivo_id = 'servidor'`, `venda_id` preenchido, único com `produto_id`); um consumo ou alteração vindo de um dispositivo para uma dessas vendas é descartado e registado na auditoria como bloqueado | A venda é gerada no servidor a partir do pedido e o servidor desconta o stock; um segundo desconto no dispositivo duplicaria o consumo |
 | `auditoria` | **Append-only, imutável** | Nunca aceitar UPDATE nem DELETE vindo de nenhum dispositivo, nem do Administrador Principal |
 | `distribuicoes` (stock → cozinha) | **Append-only para criação; last-write-wins só no campo de devolução/quebra** | A distribuição em si nunca muda; só o progresso de devolução é atualizado |
 | `caixa` | **Last-write-wins por posto+data** | Só um dispositivo deve abrir/fechar o caixa de um posto por dia — improvável colisão real |
@@ -60,7 +61,7 @@ Além dos campos próprios de cada entidade (listados abaixo), toda tabela deve 
 
 ### `estoque_longo_prazo` (movimentos)
 `produto_id`, `tipo` (Entrada/Consumo), `quantidade` (sempre em unidade base — grama/ml/unidade),
-`custo_total`, `fornecedor`, `validade`, `venda_id` (consumos do servidor; único com `produto_id`)
+`custo_total`, `fornecedor`, `validade`, `venda_id` (venda que originou o consumo; único com `produto_id` quando preenchido)
 
 ### `custos`
 `categoria`, `descricao`, `valor`, `data`

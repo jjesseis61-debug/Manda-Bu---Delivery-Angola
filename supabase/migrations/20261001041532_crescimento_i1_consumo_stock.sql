@@ -11,8 +11,10 @@
 --      estar apagado; componentes excluídos/ajustados só com prato e bem formados.
 --   2. vendas.stock_consumido_por ('dispositivo' | 'servidor'); um dispositivo
 --      nunca consegue marcar 'servidor' nem mudar o valor depois.
---   3. estoque_longo_prazo.venda_id, único com produto_id: o mesmo consumo
---      nunca é registado duas vezes.
+--   3. estoque_longo_prazo.venda_id, único com produto_id (quando preenchido):
+--      o mesmo consumo nunca é registado duas vezes. Guarda: um consumo vindo
+--      de um dispositivo para uma venda 'App cliente' é rejeitado e registado
+--      na auditoria como tentativa bloqueada (regra 10).
 --   4. Conversão para a unidade base (g, ml, unidade).
 --   5. gerar_venda_pedido copia os componentes do item e marca 'servidor'.
 --   6. Trigger de consumo em vendas:
@@ -134,9 +136,58 @@ for each row execute function vendas_proteger_consumo();
 -- 3. Ligação do movimento de stock à venda
 -- -----------------------------------------------------------------------------
 alter table estoque_longo_prazo add column venda_id uuid references vendas(id);
-create unique index estoque_lp_venda_produto_key on estoque_longo_prazo (venda_id, produto_id);
+create unique index estoque_lp_venda_produto_key on estoque_longo_prazo (venda_id, produto_id)
+  where venda_id is not null;
 comment on column estoque_longo_prazo.venda_id is
-  'Venda que originou o consumo (só nos consumos feitos pelo servidor). Único com produto_id.';
+  'Venda que originou o consumo. Único com produto_id quando preenchido. Consumos de vendas App cliente: só o servidor.';
+
+-- Guarda (regra 10): o consumo das vendas 'App cliente' é só do servidor.
+-- Um consumo vindo de um dispositivo (dispositivo_id <> 'servidor', ou escrita
+-- de uma sessão authenticated/anon) para uma dessas vendas é descartado e fica
+-- registado na auditoria como bloqueado. Descarta-se a linha em vez de lançar
+-- um erro porque um erro desfaria também o registo na auditoria (mesma
+-- transacção) e a fila de saída do dispositivo voltaria a tentar sem fim.
+create or replace function origem_venda(p_venda uuid) returns text
+language sql stable security definer set search_path = public as $$
+  select origem from vendas where id = p_venda;
+$$;
+
+-- Regista a tentativa bloqueada. Chamada pelo trigger de guarda, que corre com
+-- o papel de quem escreve; só regista se a venda for mesmo 'App cliente'.
+create or replace function auditar_consumo_bloqueado(p_movimento uuid, p_venda uuid, p_detalhe jsonb)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if origem_venda(p_venda) like 'App cliente%' then
+    perform registar_auditoria('consumo_dispositivo_bloqueado', 'estoque_longo_prazo', p_movimento,
+                               p_detalhe || jsonb_build_object('venda_id', p_venda), true);
+  end if;
+end $$;
+
+-- SECURITY INVOKER: precisa de saber quem escreve (e_escrita_cliente)
+create or replace function estoque_lp_guardar_consumo_servidor() returns trigger
+language plpgsql set search_path = public as $$
+declare
+  v_venda  uuid := coalesce(new.venda_id, case when tg_op = 'UPDATE' then old.venda_id end);
+  v_origem text;
+begin
+  if v_venda is null then
+    return new;
+  end if;
+  v_origem := origem_venda(v_venda);
+  if v_origem like 'App cliente%'
+     and (new.dispositivo_id is distinct from 'servidor' or e_escrita_cliente()) then
+    perform auditar_consumo_bloqueado(new.id, v_venda,
+      jsonb_build_object('origem', v_origem, 'operacao', tg_op,
+                         'dispositivo_id', new.dispositivo_id, 'produto_id', new.produto_id,
+                         'quantidade', new.quantidade, 'utilizador', current_user));
+    return null;
+  end if;
+  return new;
+end $$;
+
+create trigger trg_estoque_lp_0_consumo_servidor
+before insert or update on estoque_longo_prazo
+for each row execute function estoque_lp_guardar_consumo_servidor();
 
 -- -----------------------------------------------------------------------------
 -- 4. Conversão para a unidade base (grama, ml, unidade)
@@ -368,7 +419,7 @@ begin
       insert into estoque_longo_prazo (dispositivo_id, sincronizado_em, data, cozinha_id, produto_id,
                                        tipo, quantidade, venda_id)
       values ('servidor', now(), new.data, new.cozinha_id, c.produto_id, 'Consumo', c.quantidade_base, new.id)
-      on conflict (venda_id, produto_id) do nothing;
+      on conflict (venda_id, produto_id) where venda_id is not null do nothing;
     end if;
     -- 'Diário': sem movimento por venda (fica para a reconciliação do dia)
   end loop;
@@ -386,3 +437,8 @@ revoke execute on function pedidos_validar_itens()   from public, anon, authenti
 revoke execute on function vendas_proteger_consumo() from public, anon, authenticated;
 revoke execute on function consumir_stock_venda()    from public, anon, authenticated;
 revoke execute on function gerar_venda_pedido()      from public, anon, authenticated;
+revoke execute on function estoque_lp_guardar_consumo_servidor() from public, anon, authenticated;
+revoke execute on function origem_venda(uuid)        from public, anon;
+revoke execute on function auditar_consumo_bloqueado(uuid, uuid, jsonb) from public, anon;
+grant  execute on function origem_venda(uuid)        to authenticated;
+grant  execute on function auditar_consumo_bloqueado(uuid, uuid, jsonb) to authenticated;

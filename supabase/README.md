@@ -11,7 +11,7 @@ Aplicadas por esta ordem. **Uma migração já aplicada nunca se edita:** qualqu
 | `20260930173922_crescimento_i1_ajustes.sql` | `pontos_entrega`/`ponto_entrega_id`; estado do pedido só no servidor; venda gerada em `entregue_pago`; 6 campos de sincronização em `parametros` e `funcionalidades`; escrita só pelo servidor; valores garantidos na ligação. | aplicada |
 | `20260930183237_crescimento_i1_decisoes.sql` | `duracao_dias_garantida`; uma venda por item (taxa na 1.ª, desconto e parcelas proporcionais, soma = valor final — regra 7); caixa obrigatória em `entregue_pago` e registada na venda (regra 8); estorno sem reposição de stock (regra 3); catálogo `permissoes`. | aplicada |
 | `20261001040216_crescimento_i1_endurecimento.sql` | Correcções aos avisos do Supabase: `search_path` fixo, funções de trigger não expostas, índices nas chaves estrangeiras, nome do índice de `vendas.local`. | aplicada |
-| `20261001050000_crescimento_i1_consumo_stock.sql` | Regra 3 (consumo): o servidor desconta o stock só das vendas que gera de pedidos (`vendas.stock_consumido_por`); itens do pedido validados (`prato_base_id` existente); componentes excluídos/ajustados copiados para a venda; conversão para a unidade base; só produtos `Longo Prazo`; `estoque_longo_prazo.venda_id` único com `produto_id`; avisos `stock_consumo_pendente`. | **por aplicar** |
+| `20261001041532_crescimento_i1_consumo_stock.sql` | Regra 3 (consumo): o servidor desconta o stock só das vendas que gera de pedidos (`vendas.stock_consumido_por`); itens do pedido validados (`prato_base_id` existente); componentes excluídos/ajustados; conversão para a unidade base; só produtos `Longo Prazo`; índice único `estoque_longo_prazo (venda_id, produto_id) where venda_id is not null`; guarda (regra 10): consumo de dispositivo para venda `App cliente` descartado e auditado como bloqueado; avisos `stock_consumo_pendente`. | aplicada |
 
 Os números de versão dos ficheiros são os que o Supabase registou ao aplicar, para `supabase migration list` e
 `supabase db push` não voltarem a aplicá-las.
@@ -49,7 +49,7 @@ base de dados.
 | `08_ajustes_i1.test.sql` | Testes 33–45: nomes, sincronização, valores garantidos, venda gerada |
 | `09_endurecimento.test.sql` | Teste 46: `search_path`, funções de trigger, índices (precisa da migração de endurecimento) |
 | `10_decisoes_i1.test.sql` | Testes 47–51: duração garantida, vendas por item, caixa, estorno sem stock, permissões |
-| `11_consumo_stock.test.sql` | Consumo de stock das vendas de pedidos: validação dos itens, conversão de unidades, excluídos/ajustados, diários, idempotência, estorno, vendas do operador, avisos |
+| `11_consumo_stock.test.sql` | Consumo de stock das vendas de pedidos: validação dos itens, conversão de unidades, excluídos/ajustados, diários, consumo uma só vez (incl. segunda tentativa do servidor), estorno, vendas do operador, guarda contra consumo de dispositivo (auditado como bloqueado), avisos |
 
 ### Como correr
 
@@ -63,7 +63,7 @@ base de dados.
 
 ### Resultados (30 de Setembro de 2026)
 
-| Teste | Postgres 16 local, 6 migrações | Supabase `laruvuambdovnkojwrzp` |
+| Teste | Postgres 16 local, 6 migrações | Supabase `laruvuambdovnkojwrzp`, 6 migrações |
 |---|---|---|
 | 00 estrutura | 19/19 | 19/19 |
 | 01 ligação | 9/9 | 9/9 |
@@ -74,17 +74,15 @@ base de dados.
 | 06 RLS | 29/29 | 29/29 |
 | 07 funções de apoio | 19/19 | 19/19 |
 | 08 ajustes I1 | 32/32 | 32/32 |
-| 09 endurecimento | 5/5 | 5/5 (verificações corridas como consultas, depois de aplicar o endurecimento) |
+| 09 endurecimento | 5/5 | 5/5 |
 | 10 decisões I1 | 29/29 | 29/29 |
-| 11 consumo de stock | 29/29 | — (migração por aplicar) |
-
-Os testes 00–08 e 10 correram no Supabase com 4 migrações aplicadas (antes do endurecimento, que só mexe em
-privilégios, `search_path` e índices).
+| 11 consumo de stock | 35/35 | 35/35 |
+| **Total** | **257/257** | **257/257** |
 
 No fim, o esquema `testes` e a extensão `pgtap` foram removidos do Supabase e não ficou nenhum dado de teste.
 
 A comparação do esquema (funções, colunas, restrições, índices, políticas, triggers, vistas, comentários e
-privilégios) entre o Supabase e uma base local construída com as mesmas 4 migrações deu resultados idênticos.
+privilégios) entre o Supabase e uma base local construída com as primeiras 4 migrações deu resultados idênticos (comparação feita antes do endurecimento e do consumo de stock).
 
 ### Dependências nas tabelas base
 
