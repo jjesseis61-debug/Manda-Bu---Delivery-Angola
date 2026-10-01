@@ -65,7 +65,11 @@ export default function Convida() {
         <View style={{ flex: 1 }}>
           <Botao titulo="Levantar saldo" variante="secundario" aoCarregar={() => router.push('/levantar')} />
         </View>
-        {/* C3 (Destaques) chega na I4: o botão só aparece com o interruptor ligado */}
+        {ligada('destaques') && (
+          <View style={{ flex: 1 }}>
+            <Botao titulo="Destaques" variante="secundario" aoCarregar={() => router.push('/destaques')} />
+          </View>
+        )}
       </View>
 
       <Subtitulo>Os teus amigos</Subtitulo>

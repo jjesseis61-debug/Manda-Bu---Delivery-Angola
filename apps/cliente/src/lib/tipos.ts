@@ -18,6 +18,7 @@ export type Parametros = {
   levantamento_minimo: number;
   limite_parcelamento: number;
   contador_minimo: number;
+  tamanho_top: number;
 };
 
 export type ChaveFuncionalidade =
@@ -121,6 +122,33 @@ export type Amigo = {
 };
 
 export type PessoaComoTu = { nome_exibido: string; amigos: number; valor: number };
+
+/** Linha da lista de destaques (C3). Valor exacto ou intervalo; ambos vazios se a pessoa escondeu os ganhos */
+export type Destaque = {
+  posicao: number;
+  nome_exibido: string;
+  amigos: number;
+  valor: number | null;
+  valor_min: number | null;
+  valor_max: number | null;
+  sou_eu: boolean;
+};
+
+export type MinhaPosicao = {
+  posicao: number | null;
+  nome_exibido: string;
+  amigos: number;
+  valor: number;
+  amigos_em_falta: number;
+  no_top: boolean;
+};
+
+export type PerfilDestaques = {
+  pseudonimo: string;
+  mostrar_nome_real: boolean;
+  ocultar_ganhos: boolean;
+  sair_da_lista: boolean;
+};
 
 export type Levantamento = {
   id: string;

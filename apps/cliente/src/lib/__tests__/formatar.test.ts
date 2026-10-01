@@ -8,7 +8,9 @@ import {
   normalizarCodigo,
   telefoneInternacional,
   textoAmigo,
+  textoAmigosEmFalta,
   textoRegras,
+  valorDestaque,
 } from '../formatar';
 import type { Parametros } from '../tipos';
 
@@ -20,6 +22,7 @@ const parametros: Parametros = {
   levantamento_minimo: 2000,
   limite_parcelamento: 20000,
   contador_minimo: 10,
+  tamanho_top: 10,
 };
 
 describe('formatarKz', () => {
@@ -105,5 +108,18 @@ describe('mensagens de erro', () => {
   });
   it('tem uma mensagem genérica para erros desconhecidos', () => {
     expect(mensagemErro(new Error('boom'))).toBe('Não foi possível concluir. Verifica a ligação e tenta outra vez.');
+  });
+});
+
+describe('destaques (C3)', () => {
+  it('valor exacto, em intervalo ou escondido', () => {
+    expect(valorDestaque(12000, null, null)).toBe('12.000 Kz');
+    expect(valorDestaque(null, 10000, 20000)).toBe('10.000–20.000 Kz');
+    expect(valorDestaque(null, null, null)).toBeNull();
+  });
+
+  it('amigos em falta para o top, no singular e no plural', () => {
+    expect(textoAmigosEmFalta(1, 10)).toBe('Falta 1 amigo para entrares no top 10.');
+    expect(textoAmigosEmFalta(3, 10)).toBe('Faltam 3 amigos para entrares no top 10.');
   });
 });

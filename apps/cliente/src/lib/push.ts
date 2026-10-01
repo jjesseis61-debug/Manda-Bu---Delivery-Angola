@@ -53,8 +53,9 @@ export async function desactivarPush(): Promise<void> {
 }
 
 /** Ecrã a abrir quando o cliente toca numa notificação */
-export function rotaDaNotificacao(codigo: unknown): '/convida' | '/levantar' | null {
-  if (codigo === 'N2' || codigo === 'N3' || codigo === 'N4') return '/convida';
+export function rotaDaNotificacao(codigo: unknown): '/convida' | '/levantar' | '/destaques' | null {
+  if (codigo === 'N2' || codigo === 'N3' || codigo === 'N4' || codigo === 'N5' || codigo === 'N6') return '/convida';
+  if (codigo === 'N7') return '/destaques';
   if (codigo === 'N8') return '/levantar';
   return null;
 }

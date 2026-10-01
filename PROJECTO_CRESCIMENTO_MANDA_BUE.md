@@ -646,6 +646,19 @@ desligados.
 3. Políticas RLS das restantes tabelas base (lista acima) antes de a app do operador sincronizar vendas, stock e turnos; a I3 só abriu a leitura de `caixa`.
 4. Remover do Supabase o esquema `testes` e a extensão `pgtap` (o ambiente bloqueou o `drop`; ver `supabase/README.md`).
 
+**Estado da I4 (lançamento aberto):** código pronto, interruptores ainda desligados. App do cliente: C3
+(Destaques: top do mês com "(tu)", posição própria e amigos em falta, "Pessoas como tu", total pago no mês, atalho
+para C5) e C5 (pseudónimo, "Mostrar o meu primeiro nome", "Não mostrar os meus ganhos"); botão Destaques no C1;
+toque em N5/N6 abre o C1 e em N7 abre o C3. Servidor: N5 com o prato do dia, textos de N5–N7 e envio pela Edge
+Function (N5 e N7 respeitam as preferências do cliente também no momento do envio). Os primeiros Embaixadores
+promovem-se no O4.
+
+**Para fazer o lançamento (ligar os interruptores no O5):** é uma decisão operacional e depende dos pendentes da I2
+e da I3 (fornecedor de SMS, projecto EAS e push, `ENVIO_SEGREDO`, `pg_cron`/`pg_net` com `agendar_jobs()` e
+`agendar_envio_notificacoes(...)`, cardápio e zonas preenchidos, telefones dos funcionários). Ordem sugerida:
+`indicacao`, `pessoas_como_tu`, `contadores_zona`, `perfil_cozinha` (com consentimento) e por fim `destaques`.
+O C14 (desligar N5 e N7 na app) é da I5; até lá as preferências ficam ligadas por defeito.
+
 A revisão de parâmetros (custo por cliente conquistado, retenção, % anulados) é feita 1–2 meses após I4 e depois trimestralmente, sempre no painel, sem alterar código.
 
 ---

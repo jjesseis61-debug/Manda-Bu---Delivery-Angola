@@ -9,6 +9,18 @@ export function formatarKz(valor: number | null | undefined): string {
 }
 
 /** "Ana · 23 dias", "Ana · último dia", "Ana · à espera do 1.º pedido", "Ana · terminou" */
+/** Valor na lista de destaques: exacto, em intervalo ("10.000–20.000 Kz") ou escondido (null) */
+export function valorDestaque(valor: number | null, min: number | null, max: number | null): string | null {
+  if (valor !== null) return formatarKz(valor);
+  if (min !== null && max !== null) return `${formatarKz(min).replace(' Kz', '')}–${formatarKz(max)}`;
+  return null;
+}
+
+/** "Faltam 3 amigos para entrares no top 10." */
+export function textoAmigosEmFalta(emFalta: number, tamanhoTop: number): string {
+  return `${emFalta === 1 ? 'Falta 1 amigo' : `Faltam ${emFalta} amigos`} para entrares no top ${tamanhoTop}.`;
+}
+
 export function textoAmigo(nome: string, estado: string, diasRestantes: number | null): string {
   if (estado === 'aguarda_primeiro_pedido') return `${nome} · à espera do 1.º pedido`;
   if (estado === 'expirado' || diasRestantes === null || diasRestantes <= 0) return `${nome} · terminou`;

@@ -16,6 +16,7 @@ Aplicadas por esta ordem. **Uma migração já aplicada nunca se edita:** qualqu
 | `20261001052041_crescimento_i2_app_cliente.sql` | I2: `registar_cliente`/`meu_perfil` (registo pelo telefone confirmado por SMS; liga clientes do balcão); `cardapio` (preço, disponível, prato do dia) e preço dos pedidos da app calculado no servidor (`orcamento_pedido`, `trg_pedidos_00_cardapio`); `meus_amigos`; `dispositivos_push` e tokens Expo; textos N2/N3/N4/N8 e funções do serviço de envio (só `service_role`). | aplicada |
 | `20261001052738_crescimento_i2_desconto_limite.sql` | O desconto de indicação nunca passa o valor do pedido (subtotal + taxa): valor final nunca negativo, no pedido e no orçamento. Uso único (o que sobra não passa para o pedido seguinte). | aplicada |
 | `20261001091617_crescimento_i3_app_operador.sql` | I3: `funcionarios.telefone` e entrada por SMS (`definir_telefone_funcionario`, `ligar_funcionario`, `meu_funcionario`); leituras do operador com permissão do organograma: `painel_programa` (O1), `ganhos_em_verificacao` e `confirmar_ganhos_indicador` (O2), `levantamentos_operador` (O3), `embaixadores` (O4), `pedidos_operador` (E1); RLS de leitura em `caixa`; N3 vinda da verificação com o nome do amigo e o saldo da semana; auditoria das escritas em `cozinhas` e `cardapio` (O6). | aplicada |
+| `20261001144534_crescimento_i4_lancamento.sql` | I4: C5 "Não mostrar os meus ganhos" (`perfil_destaques.ocultar_ganhos`; valores escondidos para os outros em `destaques_mes`); N5 com o prato do dia; textos de N5, N6 e N7 e envio pela Edge Function, respeitando no envio as preferências do cliente. Não liga interruptores. | aplicada |
 
 Os números de versão dos ficheiros são os que o Supabase registou ao aplicar, para `supabase migration list` e
 `supabase db push` não voltarem a aplicá-las.
@@ -63,6 +64,7 @@ base de dados.
 | `12_privilegios.test.sql` | Funções SECURITY DEFINER chamáveis pelas apps (lista fechada), nenhuma para `anon`; grupo criado pela app; guarda do consumo com sessão do telemóvel |
 | `13_app_cliente.test.sql` | I2: registo e ligação ao cliente do balcão, cardápio e preço no servidor, ponto/zona, desconto no orçamento, amigos, tokens de push, textos e fila de notificações |
 | `14_desconto_limite.test.sql` | Desconto limitado ao valor do pedido (com e sem taxa), orçamento, entrega com valor final 0, uso único |
+| `16_lancamento.test.sql` | I4: esconder ganhos na lista (C5), textos N5–N7, N5 com prato do dia, envio com preferências e interruptor |
 | `15_app_operador.test.sql` | I3: telefone e ligação dos funcionários, painel (O1), verificação e "Confirmar todos" com N3 (O2), levantamentos (O3), embaixadores (O4), fila de entregas e caixas (E1), auditoria de cozinhas e cardápio (O6) |
 
 ### Como correr
@@ -77,7 +79,7 @@ base de dados.
 
 ### Resultados (1 de Outubro de 2026)
 
-| Teste | Postgres 16 local, 10 migrações | Supabase `laruvuambdovnkojwrzp` |
+| Teste | Postgres 16 local, 11 migrações | Supabase `laruvuambdovnkojwrzp` |
 |---|---|---|
 | 00 estrutura | 19/19 | 19/19 |
 | 01 ligação | 9/9 | 9/9 |
@@ -95,7 +97,8 @@ base de dados.
 | 13 app do cliente | 37/37 | 37/37 |
 | 14 desconto limitado | 11/11 | 11/11 |
 | 15 app do operador | 28/28 | 28/28 (em partes, ver abaixo) |
-| **Total** | **341/341** | |
+| 16 lançamento (I4) | 16/16 | 16/16 |
+| **Total** | **357/357** | |
 
 Na I2 voltaram a correr no Supabase os testes afectados por cada migração (app do cliente: 06, 08, 09, 12 e 13;
 desconto limitado: 02, 09 e 14); os restantes não dependem delas (e todos passam localmente).
@@ -105,6 +108,9 @@ Na I3 correram no Supabase, depois da migração da app do operador: 09 (5/5), a
 que o teste local cria alterando `parametros` (limite semanal 0, levantamento mínimo 100, limiar de Embaixador 1)
 foram criadas com dados de teste, sem tocar na linha de `parametros` de produção. O 03 e o resto do 12 não voltaram a
 correr remotamente (o ambiente bloqueou as escritas em massa); passam localmente.
+
+Na I4 correram no Supabase o 16 (16/16), o 05 (15/15: sem a verificação que altera `limiar_intervalos` em
+`parametros`) e as verificações de `search_path`, `anon` e privilégios das funções alteradas.
 
 Nenhum dado de teste ficou na base (contagens de `funcionarios`, `clientes`, `pedidos`, `cardapio` e `caixa` a 0;
 interruptores todos desligados). **Por remover:** o esquema `testes` e a extensão `pgtap` ficaram instalados no

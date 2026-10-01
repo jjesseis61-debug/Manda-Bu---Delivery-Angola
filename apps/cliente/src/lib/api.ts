@@ -4,14 +4,17 @@ import { dispositivoId } from './dispositivo';
 import { supabase } from './supabase';
 import type {
   Amigo,
+  Destaque,
   Endereco,
   Funcionalidades,
   ItemCardapio,
   Levantamento,
+  MinhaPosicao,
   Orcamento,
   Parametros,
   Pedido,
   Perfil,
+  PerfilDestaques,
   PessoaComoTu,
   Saldo,
   Zona,
@@ -202,6 +205,41 @@ export async function meusAmigos(): Promise<Amigo[]> {
 
 export async function pessoasComoTu(): Promise<PessoaComoTu[]> {
   return verificar(await supabase.rpc('pessoas_como_tu')) as PessoaComoTu[];
+}
+
+// ---------------------------------------------------------------- destaques (C3, C5)
+export async function destaquesMes(): Promise<Destaque[]> {
+  return verificar(await supabase.rpc('destaques_mes')) as Destaque[];
+}
+
+export async function minhaPosicao(): Promise<MinhaPosicao | null> {
+  const linhas = verificar(await supabase.rpc('minha_posicao')) as MinhaPosicao[];
+  return linhas[0] ?? null;
+}
+
+export async function totalPagoMes(): Promise<number> {
+  return verificar(await supabase.rpc('total_pago_mes')) as number;
+}
+
+export async function lerPerfilDestaques(clienteId: string): Promise<PerfilDestaques | null> {
+  const r = await supabase
+    .from('perfil_destaques')
+    .select('pseudonimo, mostrar_nome_real, ocultar_ganhos, sair_da_lista')
+    .eq('cliente_id', clienteId)
+    .maybeSingle();
+  return verificar(r) as PerfilDestaques | null;
+}
+
+export async function alterarPerfilDestaques(
+  clienteId: string,
+  valores: Partial<Pick<PerfilDestaques, 'mostrar_nome_real' | 'ocultar_ganhos'>>,
+): Promise<void> {
+  verificar(
+    await supabase
+      .from('perfil_destaques')
+      .update({ ...valores, atualizado_em: new Date().toISOString() })
+      .eq('cliente_id', clienteId),
+  );
 }
 
 export async function contadorZona(zonaId: string): Promise<number | null> {
