@@ -51,7 +51,7 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 'cozinhas_para_pedir', 'relatorio_comparativo', 'cozinha_aceita_pedidos',
                 -- auxiliares usadas em políticas RLS, valores por defeito ou triggers SECURITY INVOKER
                 'cliente_actual', 'cozinha_padrao', 'e_funcionario', 'funcionalidade_activa',
-                'funcionario_actual', 'membro_da_cozinha', 'tem_permissao')),
+                'funcionario_actual', 'membro_da_cozinha', 'tem_permissao', 'e_administrador', 'pode_na_cozinha')),
           null, 'nenhuma função SECURITY DEFINER chamável fora da lista revista');
 
 select is((select string_agg(p.proname, ', ' order by p.proname)

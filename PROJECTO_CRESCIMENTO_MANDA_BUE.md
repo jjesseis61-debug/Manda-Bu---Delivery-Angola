@@ -527,6 +527,26 @@ Nunca entram na fila de saída do telemóvel.
 
 As funções de trigger e as auxiliares internas não são chamáveis pelas apps; todas as funções têm `search_path` fixo.
 
+**Tabelas base (app do operador).** Acesso por permissão do organograma; nas tabelas com `cozinha_id` o funcionário
+tem também de ser da cozinha (tem um turno lá) ou ter `cozinhas.gerir` (`pode_na_cozinha`). Os clientes não lhes
+chegam directamente. Nenhuma tem DELETE (apaga-se com `deletado_em`).
+
+| Tabela | Ler | Escrever |
+|---|---|---|
+| `vendas` | `vendas.registar` ou `relatorios.exportar` na cozinha; `financas.gerir` | Criar com `vendas.registar` na cozinha, nunca `App cliente` nem com `pedido_id`; append-only |
+| `estoque_diario`, `estoque_longo_prazo` | `stock.gerir` na cozinha | Criar com `stock.gerir` na cozinha; append-only |
+| `distribuicoes` | `stock.gerir` na cozinha | Criar; depois só estado, recebimento, devolução e quebra |
+| `caixa` | `vendas.registar`/`entregas.registar`/`pedidos.gerir` | Abrir e fechar com `vendas.registar` ou `entregas.registar` na cozinha |
+| `pre_encomendas`, `pedidos_especiais` | `vendas.registar` na cozinha | Idem |
+| `clientes` | `clientes.gerir`, `vendas.registar`, `financas.gerir` | Dados com `clientes.gerir`; `limite_credito`/`desconto` só `financas.gerir`; `auth_user_id` só o servidor |
+| `pagamentos_credito` | `vendas.registar`, `financas.gerir` | Pagamentos com `vendas.registar`; notas de crédito só `financas.gerir`; append-only |
+| `custos` | `financas.gerir` | `financas.gerir` |
+| `produtos`, `locais` | Toda a equipa | `stock.gerir` / `cozinhas.gerir` |
+| `turnos` | Os seus e os da sua cozinha | `equipa.gerir` na cozinha |
+| `refeicoes_funcionarios` | As suas; `equipa.gerir`, `vendas.registar` | Criar com `equipa.gerir` ou `vendas.registar`; append-only |
+| `direcoes`, `funcionarios` | Direcções: toda a equipa; funcionários: a sua ficha, `equipa.gerir`, administrador | Só o administrador principal |
+| `auditoria` | `auditoria.ver` | Cada funcionário regista as suas acções; imutável |
+
 ---
 
 ## 9. Ecrãs da app do cliente (cardapio-cliente)
@@ -607,7 +627,7 @@ Todos os valores e nomes são preenchidos a partir dos dados e parâmetros.
 | **I7. Fotos nas avaliações** | Envio de fotos, bucket privado, moderação em O7 | `avaliacoes_fotos` | Existe moderador designado |
 | **I8. Rede de cozinhas** | Selector de cozinha no cliente, gestão multi-cozinha no operador, relatórios comparativos | `multi_cozinha` | Primeira cozinha parceira assinada |
 
-**Tarefa pendente antes de a app do operador sincronizar (I3):** as tabelas base têm RLS activo **sem políticas**
+**Feito (migração `20261001184650_crescimento_rls_tabelas_base.sql`, ver secção 8):** ~~Tarefa pendente antes de a app do operador sincronizar (I3)~~: as tabelas base tinham RLS activo **sem políticas**
 (fechadas a `authenticated`/`anon`): `auditoria`, `caixa`, `clientes`, `custos`, `direcoes`, `distribuicoes`,
 `estoque_diario`, `estoque_longo_prazo`, `funcionarios`, `locais`, `pagamentos_credito`, `pedidos_especiais`,
 `pre_encomendas`, `produtos`, `refeicoes_funcionarios`, `turnos`, `vendas`. Precisam de políticas por permissão do
@@ -643,7 +663,7 @@ desligados.
 **Pendente para pôr a I3 em uso:**
 1. Telefones dos funcionários registados pelo administrador principal (`select definir_telefone_funcionario(id, '9XXXXXXXX')` ou um ecrã de equipa numa fase seguinte); o fornecedor de SMS é o mesmo da I2.
 2. Gestão de zonas (com `taxa`) e de caixas fica fora da I3: continuam a ser feitas pelo sistema actual.
-3. Políticas RLS das restantes tabelas base (lista acima) antes de a app do operador sincronizar vendas, stock e turnos; a I3 só abriu a leitura de `caixa`.
+3. ~~Políticas RLS das restantes tabelas base~~ feitas (secção 8, "Tabelas base").
 4. Remover do Supabase o esquema `testes` e a extensão `pgtap` (o ambiente bloqueou o `drop`; ver `supabase/README.md`).
 
 **Estado da I4 (lançamento aberto):** código pronto, interruptores ainda desligados. App do cliente: C3
@@ -841,4 +861,4 @@ Acrescentar ao `PROMPT_INICIAL.md`:
 6. **Registo de marca** "Manda Bué" no INAPI.
 7. **`REGRAS_DE_NEGOCIO.md`** não está no repositório. As regras 3, 7 e 8 foram aplicadas como descritas pelo responsável (6.9). Confirmar: "caixa aberta" = `caixa.fechamento` vazio.
 8. **`pg_cron`**: activar a extensão no Supabase e correr `select agendar_jobs();` antes de ligar interruptores que dependem de jobs (I2/I4).
-9. **Políticas RLS das tabelas base** (17 tabelas, lista na secção 12): estão fechadas por defeito; definir por permissão do organograma antes de a app do operador sincronizar (I3).
+9. ~~**Políticas RLS das tabelas base**~~: feitas (secção 8). Falta atribuir as permissões novas às direcções no organograma.

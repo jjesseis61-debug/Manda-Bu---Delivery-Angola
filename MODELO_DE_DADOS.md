@@ -102,7 +102,8 @@ Além dos campos próprios de cada entidade (listados abaixo), toda tabela deve 
 `chave` (única), `grupo`, `descricao`. Lista as permissões que podem ser atribuídas em `direcoes.permissoes` e
 `funcionarios.permissoes_extra`: `indicacoes.ver`, `indicacoes.verificar`, `indicacoes.aprovar_pagamentos`,
 `plataforma.parametros`, `avaliacoes.moderar`, `cozinhas.gerir`, `equipa.reconhecer`, `relatorios.exportar`,
-`pedidos.gerir`, `entregas.registar`.
+`pedidos.gerir`, `entregas.registar`, `vendas.registar`, `stock.gerir`, `financas.gerir`, `clientes.gerir`,
+`equipa.gerir`, `auditoria.ver`.
 
 ### `refeicoes_funcionarios`
 `funcionario_id`, `prato`, `valor_custo`, `valor_desconto`
