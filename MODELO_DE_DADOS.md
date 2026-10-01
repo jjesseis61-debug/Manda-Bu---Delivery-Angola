@@ -50,7 +50,7 @@ Além dos campos próprios de cada entidade (listados abaixo), toda tabela deve 
 
 ### `vendas`
 `pedido_id`, `linha_pedido` (quando a venda resulta de um pedido da app; único com `origem`), `caixa_id`,
-`movimenta_stock` (false nas vendas de compensação), `cozinha_id`, `produto`, `qtd`, `valor_total`, `valor_antes_desconto`, `desconto_aplicado`, `local`, `parcelas`
+`movimenta_stock` (false nas vendas de compensação), `stock_consumido_por` (`dispositivo` por defeito; `servidor` nas vendas geradas de pedidos — quem desconta o stock), `cozinha_id`, `produto`, `qtd`, `valor_total`, `valor_antes_desconto`, `desconto_aplicado`, `local`, `parcelas`
 (lista de `{metodo, valor, cliente_id, titular}`), `credito`, `cliente_id`, `entrega`, `zona_nome`,
 `tipo_entrega`, `taxa_entrega`, `prato_base_id`, `componentes_excluidos`, `componentes_ajustados`,
 `registado_por`, `aprovado_por`, `entregue_por`, `origem` (Venda direta / Pré-encomenda / Pedido especial)
@@ -60,7 +60,7 @@ Além dos campos próprios de cada entidade (listados abaixo), toda tabela deve 
 
 ### `estoque_longo_prazo` (movimentos)
 `produto_id`, `tipo` (Entrada/Consumo), `quantidade` (sempre em unidade base — grama/ml/unidade),
-`custo_total`, `fornecedor`, `validade`
+`custo_total`, `fornecedor`, `validade`, `venda_id` (consumos do servidor; único com `produto_id`)
 
 ### `custos`
 `categoria`, `descricao`, `valor`, `data`

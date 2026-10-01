@@ -272,6 +272,12 @@ Os valores são preenchidos a partir de `parametros` (e, para cada amigo, a part
 - **Regra 7:** as parcelas do pedido mais o crédito de indicação têm de somar o **valor final** (subtotal + taxa − desconto). O entregador pode registar as parcelas efectivamente recebidas ao marcar a entrega.
 - Quando o pedido chega a `entregue_pago`, o servidor **gera uma venda por item** (origem `App cliente`, `linha_pedido` = 1, 2, …): a taxa de entrega fica só na primeira venda; o desconto e cada parcela são repartidos proporcionalmente, com o arredondamento na última venda; a soma das vendas é o valor final e as parcelas de cada venda somam o total dessa venda.
 - **Regra 3:** um estorno gera, para cada venda, uma venda de compensação (origem `App cliente (estorno)`) com valores negativos, `qtd = 0` e `movimenta_stock = false`: **não repõe stock**.
+- **Consumo de stock (regra 3):** o servidor desconta o stock **só das vendas que gera a partir de pedidos** (`vendas.stock_consumido_por = 'servidor'`); as vendas da app do operador (`'dispositivo'`, por defeito) continuam a ser descontadas pela própria app. Um dispositivo nunca consegue marcar `'servidor'`.
+  - Consumo = receita do prato (`pratos_base.componentes`) − componentes excluídos, com os ajustados, × `qtd`, convertido para a unidade base (g, ml, unidade); movimento `Consumo` em `estoque_longo_prazo` na cozinha da venda, com `venda_id` (único com `produto_id`: nunca desconta duas vezes).
+  - Só produtos `Longo Prazo`; os `Diário` ficam para a reconciliação do dia. Itens sem prato não descontam.
+  - Unidade desconhecida, produto inexistente ou sem tipo de stock: a venda passa e fica um aviso `stock_consumo_pendente` na auditoria.
+  - O `prato_base_id` de cada item é validado quando o pedido é criado (`prato_invalido`).
+  - Formatos no item: `componentes_excluidos: [produto_id, …]`; `componentes_ajustados: [{produto_id, quantidade, unidade}, …]` (substitui a quantidade da receita; acrescenta se o produto não estiver na receita).
 - Os ganhos de indicação são calculados em `pedidos`.
 
 ### 4.15 Programa de indicação antigo
@@ -289,7 +295,8 @@ O SQL definitivo está nas migrações em `supabase/migrations/` (aplicadas por 
 | `20260930173725_crescimento_i1.sql` | Modelo do programa (5.1–5.9), Cozinha da Alexandra, funções, triggers, vistas, RLS |
 | `20260930173922_crescimento_i1_ajustes.sql` | Nomes finais (`pontos_entrega`), estado do pedido só no servidor, venda gerada, campos de sincronização em todas as tabelas, valores garantidos na ligação |
 | `20260930183237_crescimento_i1_decisoes.sql` | Duração garantida, vendas por item (regra 7), caixa na entrega (regra 8), estorno sem stock (regra 3), catálogo de permissões |
-| `20260930190000_crescimento_i1_endurecimento.sql` | `search_path` fixo, funções de trigger não expostas, índices nas chaves estrangeiras |
+| `20261001040216_crescimento_i1_endurecimento.sql` | `search_path` fixo, funções de trigger não expostas, índices nas chaves estrangeiras |
+| `20261001050000_crescimento_i1_consumo_stock.sql` | Consumo de stock das vendas geradas de pedidos (regra 3), validação dos itens do pedido |
 
 **Nomes reais.** Os nomes assumidos na versão 1.0 foram substituídos pelos do `MODELO_DE_DADOS.md`:
 
