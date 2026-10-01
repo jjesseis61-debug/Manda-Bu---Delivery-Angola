@@ -3,10 +3,10 @@ import { useCallback, useState } from 'react';
 
 import { Guarda } from '@/components/Guarda';
 import { ACarregar, Aviso, Botao, Cartao, Ecra, Escolha, Linha, Paragrafo, Subtitulo } from '@/components/ui';
-import { lerCozinhas, relatorioCozinha } from '@/lib/api';
+import { lerCozinhas, relatorioComparativo, relatorioCozinha } from '@/lib/api';
 import { escaparHtml, exportarCsv, exportarPdf } from '@/lib/exportar';
-import { diaLuanda, formatarDia, inicioMesLuanda, mensagemErro, paraCsv } from '@/lib/formatar';
-import type { Cozinha, Relatorio } from '@/lib/tipos';
+import { diaLuanda, formatarDia, formatarKz, inicioMesLuanda, mensagemErro, paraCsv } from '@/lib/formatar';
+import type { Cozinha, LinhaComparativo, Relatorio } from '@/lib/tipos';
 
 type Periodo = '7' | '30' | 'mes';
 
@@ -47,12 +47,36 @@ function html(cozinha: string, inicio: string, fim: string, r: Relatorio) {
   </style></head><body><h1>Manda Bué · Relatório da cozinha</h1><table>${linhas}</table></body></html>`;
 }
 
-/** O9. Relatório por cozinha, exportável em CSV e PDF */
+const COMPARAR = 'comparar';
+
+function linhasComparativo(inicio: string, fim: string, l: LinhaComparativo[]) {
+  return [
+    ['Período', `${inicio} a ${fim}`],
+    ['Pedidos da app entregues e pagos no período'],
+    [],
+    ['Cozinha', 'Estado', 'Pedidos', 'Vendas (Kz)', 'Ticket médio (Kz)', 'Cancelados', 'Clientes', 'Clientes novos',
+     'Novos por indicação', 'Entregas a horas (%)', 'Média das avaliações', 'Avaliações'],
+    ...l.map((c) => [c.nome, c.estado, c.pedidos, c.vendas, c.ticket_medio, c.cancelados, c.clientes, c.clientes_novos,
+                     c.clientes_indicacao, c.pct_a_horas, c.media_avaliacao, c.avaliacoes]),
+  ];
+}
+
+function htmlTabela(titulo: string, linhas: (string | number | null)[][]) {
+  const corpo = linhas
+    .map((l) => (l.length ? `<tr>${l.map((c) => `<td>${escaparHtml(String(c ?? '—'))}</td>`).join('')}</tr>` : '<tr><td>&nbsp;</td></tr>'))
+    .join('');
+  return `<html><head><meta charset="utf-8"><style>
+    body{font-family:sans-serif;padding:24px} h1{color:#B5121B} td{padding:4px 8px;border-bottom:1px solid #eee;font-size:12px}
+  </style></head><body><h1>${escaparHtml(titulo)}</h1><table>${corpo}</table></body></html>`;
+}
+
+/** O9. Relatório por cozinha e comparativo entre cozinhas (I8), exportáveis em CSV e PDF */
 export default function Relatorios() {
   const [cozinhas, setCozinhas] = useState<Cozinha[] | null>(null);
   const [cozinhaId, setCozinhaId] = useState<string | null>(null);
   const [periodo, setPeriodo] = useState<Periodo>('30');
   const [rel, setRel] = useState<Relatorio | null>(null);
+  const [comp, setComp] = useState<LinhaComparativo[] | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [aCarregar, setACarregar] = useState(false);
 
@@ -75,7 +99,8 @@ export default function Relatorios() {
     setErro(null);
     setACarregar(true);
     try {
-      setRel(await relatorioCozinha(cozinhaId, inicio, fim));
+      if (cozinhaId === COMPARAR) setComp(await relatorioComparativo(inicio, fim));
+      else setRel(await relatorioCozinha(cozinhaId, inicio, fim));
     } catch (e) {
       setErro(mensagemErro(e));
     } finally {
@@ -98,7 +123,15 @@ export default function Relatorios() {
       <Ecra>
         {!cozinhas && !erro && <ACarregar />}
         {cozinhas && cozinhas.length > 1 && cozinhaId && (
-          <Escolha opcoes={cozinhas.map((c) => ({ valor: c.id, rotulo: c.nome }))} valor={cozinhaId} aoMudar={(v) => { setCozinhaId(v); setRel(null); }} />
+          <Escolha
+            opcoes={[...cozinhas.map((c) => ({ valor: c.id, rotulo: c.nome })), { valor: COMPARAR, rotulo: 'Comparar cozinhas' }]}
+            valor={cozinhaId}
+            aoMudar={(v) => {
+              setCozinhaId(v);
+              setRel(null);
+              setComp(null);
+            }}
+          />
         )}
         <Escolha
           opcoes={[
@@ -110,13 +143,48 @@ export default function Relatorios() {
           aoMudar={(v) => {
             setPeriodo(v);
             setRel(null);
+            setComp(null);
           }}
         />
         <Paragrafo suave>
-          {nomeCozinha} · {formatarDia(inicio)} a {formatarDia(fim)}
+          {cozinhaId === COMPARAR ? 'Todas as cozinhas' : nomeCozinha} · {formatarDia(inicio)} a {formatarDia(fim)}
         </Paragrafo>
         <Botao titulo="Gerar relatório" aCarregar={aCarregar} desactivado={!cozinhaId} aoCarregar={gerar} />
         {erro && <Aviso tipo="erro">{erro}</Aviso>}
+        {comp && (
+          <>
+            {comp.map((c) => (
+              <Cartao key={c.cozinha_id}>
+                <Linha esquerda={c.nome} direita={formatarKz(c.vendas)} forte />
+                <Linha esquerda="Pedidos · ticket médio" direita={`${c.pedidos} · ${c.ticket_medio !== null ? formatarKz(c.ticket_medio) : '—'}`} />
+                <Linha esquerda="Clientes · novos · por indicação" direita={`${c.clientes} · ${c.clientes_novos} · ${c.clientes_indicacao}`} />
+                <Linha esquerda="Cancelados" direita={String(c.cancelados)} />
+                <Linha esquerda="Entregas a horas" direita={percentagem(c.pct_a_horas)} />
+                <Linha
+                  esquerda="Média das avaliações"
+                  direita={c.media_avaliacao === null ? `— (${c.avaliacoes})` : `${String(c.media_avaliacao).replace('.', ',')} (${c.avaliacoes})`}
+                />
+                {c.estado !== 'activa' && <Paragrafo suave>Cozinha {c.estado}</Paragrafo>}
+              </Cartao>
+            ))}
+            <Botao
+              titulo="Exportar CSV"
+              variante="secundario"
+              aoCarregar={() =>
+                exportarCsv(`comparativo-${inicio}-${fim}.csv`, paraCsv(linhasComparativo(inicio, fim, comp))).catch((e) => setErro(mensagemErro(e)))
+              }
+            />
+            <Botao
+              titulo="Exportar PDF"
+              variante="secundario"
+              aoCarregar={() =>
+                exportarPdf(htmlTabela('Manda Bué · Comparativo das cozinhas', linhasComparativo(inicio, fim, comp))).catch((e) =>
+                  setErro(mensagemErro(e)),
+                )
+              }
+            />
+          </>
+        )}
         {rel && (
           <>
             <Cartao>

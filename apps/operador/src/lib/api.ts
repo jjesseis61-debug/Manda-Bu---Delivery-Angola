@@ -11,6 +11,7 @@ import type {
   GanhoVerificacao,
   GrupoOperador,
   LevantamentoOperador,
+  LinhaComparativo,
   MetricaTurno,
   Painel,
   PalavraFiltrada,
@@ -138,6 +139,10 @@ export async function relatorioCozinha(cozinhaId: string, inicio: string, fim: s
   return verificar(
     await supabase.rpc('relatorio_cozinha', { p_cozinha: cozinhaId, p_inicio: inicio, p_fim: fim }),
   ) as Relatorio;
+}
+
+export async function relatorioComparativo(inicio: string, fim: string): Promise<LinhaComparativo[]> {
+  return verificar(await supabase.rpc('relatorio_comparativo', { p_inicio: inicio, p_fim: fim })) as LinhaComparativo[];
 }
 
 // ---------------------------------------------------------------- E1

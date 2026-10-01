@@ -1,14 +1,22 @@
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 
-import { Aviso, Botao, Cartao, Paragrafo, Subtitulo, estilos } from '@/components/ui';
-import { contadorZona, lerCardapio, lerCozinhaPublica, lerEnderecos, mediasAvaliacoes, type Cozinha } from '@/lib/api';
+import { Aviso, Botao, Cartao, Escolha, Paragrafo, Subtitulo, estilos } from '@/components/ui';
+import {
+  contadorZona,
+  cozinhasParaPedir,
+  lerCardapio,
+  lerCozinhaPublica,
+  lerEnderecos,
+  mediasAvaliacoes,
+  type Cozinha,
+} from '@/lib/api';
 import { useCarrinho } from '@/lib/carrinho';
 import { formatarKz, formatarMedia, mensagemErro } from '@/lib/formatar';
 import { useSessao } from '@/lib/sessao';
 import { cores, espaco, raio } from '@/lib/tema';
-import type { Endereco, ItemCardapio, MediasAvaliacoes } from '@/lib/tipos';
+import type { CozinhaParaPedir, Endereco, ItemCardapio, MediasAvaliacoes } from '@/lib/tipos';
 
 export default function Inicio() {
   const router = useRouter();
@@ -19,26 +27,44 @@ export default function Inicio() {
   const [contador, setContador] = useState<number | null>(null);
   const [cozinha, setCozinha] = useState<Cozinha | null>(null);
   const [medias, setMedias] = useState<MediasAvaliacoes | null>(null);
+  const [cozinhas, setCozinhas] = useState<CozinhaParaPedir[]>([]);
+  const cozinhaId = carrinho.cozinhaActual?.id ?? null;
+  // Referência ao carrinho para o carregamento não depender de cada prato adicionado
+  const carrinhoRef = useRef(carrinho);
+  carrinhoRef.current = carrinho;
+  const emGrupo = carrinho.grupo !== null;
   const [erro, setErro] = useState<string | null>(null);
   const [aActualizar, setAActualizar] = useState(false);
 
   const carregar = useCallback(async () => {
     setErro(null);
     try {
-      const [itens, ends] = await Promise.all([lerCardapio(), lerEnderecos()]);
+      // I8: com multi_cozinha, o cliente escolhe a cozinha; por defeito a primeira da lista
+      let escolhida = cozinhaId;
+      if (ligada('multi_cozinha')) {
+        const lista = await cozinhasParaPedir();
+        setCozinhas(lista);
+        if (!emGrupo && (!escolhida || !lista.some((c) => c.cozinha_id === escolhida)) && lista[0]) {
+          escolhida = lista[0].cozinha_id;
+          carrinhoRef.current.definirCozinha({ id: lista[0].cozinha_id, nome: lista[0].nome });
+        }
+      } else {
+        setCozinhas([]);
+      }
+      const [itens, ends] = await Promise.all([lerCardapio(ligada('multi_cozinha') ? escolhida : null), lerEnderecos()]);
       setCardapio(itens);
       setEnderecos(ends);
       // C7: contador do bairro do endereço principal (o servidor devolve null abaixo do mínimo)
       const zona = ends[0]?.pontos_entrega?.zona_id;
       setContador(ligada('contadores_zona') && zona ? await contadorZona(zona) : null);
       // C8: só com o interruptor e o consentimento público da cozinha
-      setCozinha(ligada('perfil_cozinha') ? await lerCozinhaPublica() : null);
+      setCozinha(ligada('perfil_cozinha') ? await lerCozinhaPublica(ligada('multi_cozinha') ? escolhida : null) : null);
       // C10: média de cada prato (só com o mínimo de avaliações)
       setMedias(ligada('avaliacoes') && itens[0] ? await mediasAvaliacoes(itens[0].cozinha_id).catch(() => null) : null);
     } catch (e) {
       setErro(mensagemErro(e));
     }
-  }, [ligada]);
+  }, [ligada, cozinhaId, emGrupo]);
 
   useFocusEffect(
     useCallback(() => {
@@ -70,6 +96,22 @@ export default function Inicio() {
             }}
           />
         }>
+        {/* I8: selector de cozinha (só com multi_cozinha e mais de uma cozinha a aceitar pedidos) */}
+        {ligada('multi_cozinha') && !carrinho.grupo && cozinhas.length > 1 && (
+          <View style={{ gap: espaco.s }}>
+            <Escolha
+              opcoes={cozinhas.map((c) => ({ valor: c.cozinha_id, rotulo: c.nome }))}
+              valor={cozinhaId ?? ''}
+              aoMudar={(id) => {
+                const c = cozinhas.find((x) => x.cozinha_id === id);
+                if (c) carrinho.definirCozinha({ id: c.cozinha_id, nome: c.nome });
+              }}
+            />
+            {carrinho.quantidade > 0 && (
+              <Text style={{ color: cores.textoSuave, fontSize: 13 }}>Mudar de cozinha esvazia o carrinho.</Text>
+            )}
+          </View>
+        )}
         {contador !== null && (
           <Cartao>
             <Text style={{ fontSize: 16, fontWeight: '600' }}>{contador} pedidos no teu bairro hoje</Text>

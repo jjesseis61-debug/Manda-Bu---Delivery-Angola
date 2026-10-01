@@ -5,6 +5,7 @@ import { supabase } from './supabase';
 import type {
   Amigo,
   AvaliacaoPublica,
+  CozinhaParaPedir,
   Destaque,
   Endereco,
   GrupoDetalhe,
@@ -70,11 +71,13 @@ export async function descontoGarantido(clienteId: string): Promise<number | nul
 }
 
 // ---------------------------------------------------------------- cardápio e cozinha
-export async function lerCardapio(): Promise<ItemCardapio[]> {
-  const r = await supabase
+export async function lerCardapio(cozinhaId?: string | null): Promise<ItemCardapio[]> {
+  let q = supabase
     .from('cardapio')
     .select('id, nome, descricao, categoria, preco, foto_url, do_dia, cozinha_id, prato_base_id')
-    .eq('disponivel', true)
+    .eq('disponivel', true);
+  if (cozinhaId) q = q.eq('cozinha_id', cozinhaId);
+  const r = await q
     .order('do_dia', { ascending: false })
     .order('ordem')
     .order('nome');
@@ -83,10 +86,17 @@ export async function lerCardapio(): Promise<ItemCardapio[]> {
 
 export type Cozinha = { id: string; nome: string; foto_url: string | null; historia: string | null };
 
-/** Só devolve cozinhas com consentimento público (RLS) */
-export async function lerCozinhaPublica(): Promise<Cozinha | null> {
-  const r = await supabase.from('cozinhas').select('id, nome, foto_url, historia').eq('estado', 'activa').limit(1);
+/** Só devolve cozinhas com consentimento público (RLS); com cozinhaId, essa cozinha */
+export async function lerCozinhaPublica(cozinhaId?: string | null): Promise<Cozinha | null> {
+  let q = supabase.from('cozinhas').select('id, nome, foto_url, historia').eq('estado', 'activa');
+  if (cozinhaId) q = q.eq('id', cozinhaId);
+  const r = await q.limit(1);
   return ((verificar(r) as Cozinha[])[0] ?? null) as Cozinha | null;
+}
+
+/** Cozinhas que aceitam pedidos (I8); com multi_cozinha desligado, só a cozinha por defeito */
+export async function cozinhasParaPedir(): Promise<CozinhaParaPedir[]> {
+  return verificar(await supabase.rpc('cozinhas_para_pedir')) as CozinhaParaPedir[];
 }
 
 // ---------------------------------------------------------------- avaliações (C9, C10)
@@ -204,9 +214,19 @@ export async function criarEndereco(dados: {
 // ---------------------------------------------------------------- pedidos
 export type ItemCarrinho = { cardapio_id: string; qtd: number };
 
-export async function orcamento(itens: ItemCarrinho[], pontoEntregaId: string | null, grupoId?: string | null): Promise<Orcamento> {
+export async function orcamento(
+  itens: ItemCarrinho[],
+  pontoEntregaId: string | null,
+  grupoId?: string | null,
+  cozinhaId?: string | null,
+): Promise<Orcamento> {
   return verificar(
-    await supabase.rpc('orcamento_pedido', { p_itens: itens, p_ponto_entrega: pontoEntregaId, p_grupo: grupoId ?? null }),
+    await supabase.rpc('orcamento_pedido', {
+      p_itens: itens,
+      p_ponto_entrega: pontoEntregaId,
+      p_grupo: grupoId ?? null,
+      p_cozinha: cozinhaId ?? null,
+    }),
   ) as Orcamento;
 }
 
@@ -215,6 +235,7 @@ export async function criarPedido(dados: {
   clienteId: string;
   pontoEntregaId: string | null;
   grupoId?: string | null;
+  cozinhaId?: string | null;
   itens: ItemCarrinho[];
   observacoes: string;
 }): Promise<string> {
@@ -224,6 +245,7 @@ export async function criarPedido(dados: {
       cliente_id: dados.clienteId,
       ponto_entrega_id: dados.pontoEntregaId,
       grupo_id: dados.grupoId ?? null,
+      cozinha_id: dados.cozinhaId ?? null,
       itens: dados.itens,
       observacoes: dados.observacoes.trim() || null,
       dispositivo_id: await dispositivoId(),
@@ -362,11 +384,13 @@ export async function criarGrupo(dados: {
   horaEntrega: string;
   prazoAdesao: string;
   modo: 'individual' | 'empresa';
+  cozinhaId?: string | null;
 }): Promise<string> {
   const r = await supabase
     .from('pedidos_grupo')
     .insert({
       ponto_entrega_id: dados.pontoEntregaId,
+      ...(dados.cozinhaId ? { cozinha_id: dados.cozinhaId } : {}),
       hora_entrega: dados.horaEntrega,
       prazo_adesao: dados.prazoAdesao,
       modo_pagamento: dados.modo,

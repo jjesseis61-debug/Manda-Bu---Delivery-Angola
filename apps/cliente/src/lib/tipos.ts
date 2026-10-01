@@ -88,6 +88,8 @@ export type EstadoGrupo = 'aberto' | 'fechado' | 'em_preparacao' | 'entregue' | 
 export type GrupoDetalhe = {
   grupo_id: string;
   codigo_convite: string;
+  cozinha_id: string;
+  cozinha_nome: string;
   hora_entrega: string;
   prazo_adesao: string;
   estado: EstadoGrupo;
@@ -210,4 +212,14 @@ export type Levantamento = {
   estado: 'pedido' | 'aprovado' | 'pago' | 'rejeitado';
   referencia: string | null;
   motivo_rejeicao: string | null;
+};
+
+/** Cozinha que aceita pedidos (selector, I8). Foto e história só com perfil público */
+export type CozinhaParaPedir = {
+  cozinha_id: string;
+  nome: string;
+  publica: boolean;
+  foto_url: string | null;
+  historia: string | null;
+  pratos: number;
 };

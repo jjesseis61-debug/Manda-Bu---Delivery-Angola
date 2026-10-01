@@ -61,7 +61,13 @@ export default function Grupo() {
   }
 
   function juntar() {
-    carrinho.definirGrupo({ grupoId: g.grupo_id, codigo: g.codigo_convite, hora: horaLuanda(g.hora_entrega) });
+    carrinho.definirGrupo({
+      grupoId: g.grupo_id,
+      codigo: g.codigo_convite,
+      hora: horaLuanda(g.hora_entrega),
+      cozinhaId: g.cozinha_id,
+      cozinhaNome: g.cozinha_nome,
+    });
     router.push('/inicio');
   }
 
@@ -84,6 +90,7 @@ export default function Grupo() {
       <Cartao>
         <Text style={{ fontSize: 20, fontWeight: '800' }}>Entrega às {horaLuanda(g.hora_entrega)}</Text>
         {g.local && <Text style={{ fontSize: 15 }}>{g.local}</Text>}
+        {ligada('multi_cozinha') && <Text style={{ fontWeight: '600' }}>{g.cozinha_nome}</Text>}
         <Text style={{ color: cores.textoSuave }}>
           Organizado por {g.sou_organizador ? 'ti' : g.organizador} ·{' '}
           {g.modo_pagamento === 'empresa' ? 'a empresa paga tudo' : 'cada um paga o seu'}

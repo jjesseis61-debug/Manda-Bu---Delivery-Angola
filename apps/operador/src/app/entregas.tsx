@@ -4,11 +4,11 @@ import { Linking, Switch, Text, View } from 'react-native';
 
 import { Guarda } from '@/components/Guarda';
 import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Escolha, Paragrafo, Subtitulo } from '@/components/ui';
-import { caixasAbertas, marcarPagadorDistinto, mudarEstado, pedidosOperador } from '@/lib/api';
+import { caixasAbertas, lerCozinhas, marcarPagadorDistinto, mudarEstado, pedidosOperador } from '@/lib/api';
 import { formatarData, formatarDia, formatarKz, mensagemErro, nomeEstadoPedido } from '@/lib/formatar';
 import { useSessao } from '@/lib/sessao';
 import { cores, espaco } from '@/lib/tema';
-import type { Caixa, PedidoOperador } from '@/lib/tipos';
+import type { Caixa, Cozinha, PedidoOperador } from '@/lib/tipos';
 
 const METODOS = ['Dinheiro', 'Multicaixa Express', 'TPA', 'Unitel Money', 'Transferência'];
 
@@ -35,12 +35,15 @@ export default function Entregas() {
   const [caixa, setCaixa] = useState<string | null>(null);
   const [parcelas, setParcelas] = useState<Parcela[]>([]);
   const [ocupado, setOcupado] = useState<string | null>(null);
+  const [cozinhas, setCozinhas] = useState<Cozinha[]>([]);
+  const [filtroCozinha, setFiltroCozinha] = useState('todas');
 
   const carregar = useCallback(() => {
-    Promise.all([pedidosOperador(), caixasAbertas()])
-      .then(([p, c]) => {
+    Promise.all([pedidosOperador(), caixasAbertas(), lerCozinhas().catch(() => [] as Cozinha[])])
+      .then(([p, c, cz]) => {
         setPedidos(p);
         setCaixas(c);
+        setCozinhas(cz);
       })
       .catch((e) => setErro(mensagemErro(e)));
   }, []);
@@ -48,12 +51,12 @@ export default function Entregas() {
 
   const grupos = useMemo(() => {
     const m = new Map<string, PedidoOperador[]>();
-    for (const p of pedidos ?? []) {
+    for (const p of (pedidos ?? []).filter((x) => filtroCozinha === 'todas' || x.cozinha_id === filtroCozinha)) {
       const chave = p.ponto_entrega_id ?? `sem-ponto-${p.pedido_id}`;
       m.set(chave, [...(m.get(chave) ?? []), p]);
     }
     return [...m.values()];
-  }, [pedidos]);
+  }, [pedidos, filtroCozinha]);
 
   function abrirEntrega(p: PedidoOperador) {
     const daCozinha = caixas.filter((c) => c.cozinha_id === p.cozinha_id);
@@ -211,6 +214,14 @@ export default function Entregas() {
     <Guarda permissoes={['entregas.registar', 'pedidos.gerir']}>
       <Ecra>
         {erro && <Aviso tipo="erro">{erro}</Aviso>}
+        {/* I8: com várias cozinhas, filtrar a fila por cozinha */}
+        {cozinhas.length > 1 && (
+          <Escolha
+            opcoes={[{ valor: 'todas', rotulo: 'Todas' }, ...cozinhas.map((c) => ({ valor: c.id, rotulo: c.nome }))]}
+            valor={filtroCozinha}
+            aoMudar={setFiltroCozinha}
+          />
+        )}
         {!pedidos && !erro && <ACarregar />}
         {pedidos && pedidos.length === 0 && <Paragrafo suave>Sem pedidos em curso.</Paragrafo>}
         <Botao titulo="Actualizar" variante="texto" aoCarregar={carregar} />

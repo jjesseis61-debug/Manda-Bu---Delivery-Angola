@@ -3,6 +3,7 @@ import { useCallback, useMemo, useState } from 'react';
 
 import { ACarregar, Aviso, Botao, Ecra, Escolha, Paragrafo, Subtitulo } from '@/components/ui';
 import { criarGrupo, lerEnderecos } from '@/lib/api';
+import { useCarrinho } from '@/lib/carrinho';
 import { horaLuanda, mensagemErro } from '@/lib/formatar';
 import { useSessao } from '@/lib/sessao';
 import type { Endereco } from '@/lib/tipos';
@@ -30,6 +31,7 @@ function horasPossiveis(agora = new Date()): string[] {
 export default function NovoGrupo() {
   const router = useRouter();
   const { ligada, perfil } = useSessao();
+  const carrinho = useCarrinho();
   const [enderecos, setEnderecos] = useState<Endereco[] | null>(null);
   const [pontoId, setPontoId] = useState<string | null>(null);
   const horas = useMemo(() => horasPossiveis(), []);
@@ -62,7 +64,13 @@ export default function NovoGrupo() {
     setErro(null);
     setACriar(true);
     try {
-      const codigo = await criarGrupo({ pontoEntregaId: pontoId, horaEntrega: hora, prazoAdesao: prazoIso, modo });
+      const codigo = await criarGrupo({
+        pontoEntregaId: pontoId,
+        horaEntrega: hora,
+        prazoAdesao: prazoIso,
+        modo,
+        cozinhaId: ligada('multi_cozinha') ? carrinho.cozinha?.id : null,
+      });
       router.replace({ pathname: '/grupo/[codigo]', params: { codigo } });
     } catch (e) {
       setErro(mensagemErro(e));
@@ -73,6 +81,7 @@ export default function NovoGrupo() {
 
   return (
     <Ecra>
+      {ligada('multi_cozinha') && carrinho.cozinha && <Paragrafo>Cozinha: {carrinho.cozinha.nome}</Paragrafo>}
       <Subtitulo>Onde</Subtitulo>
       {enderecos && enderecos.length === 0 ? (
         <>

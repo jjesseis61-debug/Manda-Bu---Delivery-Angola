@@ -5,6 +5,7 @@ import { Image } from 'react-native';
 import { ACarregar, Botao, Cartao, Ecra, Linha, Paragrafo, Subtitulo, Titulo } from '@/components/ui';
 import { lerCardapio, lerCozinhaPublica, mediasAvaliacoes, type Cozinha } from '@/lib/api';
 import { formatarKz, formatarMedia } from '@/lib/formatar';
+import { useCarrinho } from '@/lib/carrinho';
 import { useSessao } from '@/lib/sessao';
 import { raio } from '@/lib/tema';
 import type { ItemCardapio } from '@/lib/tipos';
@@ -13,6 +14,8 @@ import type { ItemCardapio } from '@/lib/tipos';
 export default function PerfilCozinha() {
   const router = useRouter();
   const { ligada } = useSessao();
+  const carrinho = useCarrinho();
+  const cozinhaId = carrinho.cozinhaActual?.id ?? null;
   const [cozinha, setCozinha] = useState<Cozinha | null | undefined>(undefined);
   const [doDia, setDoDia] = useState<ItemCardapio[]>([]);
   const [media, setMedia] = useState<{ media: number; total: number } | null>(null);
@@ -20,19 +23,19 @@ export default function PerfilCozinha() {
   useFocusEffect(
     useCallback(() => {
       if (!ligada('perfil_cozinha')) return;
-      lerCozinhaPublica()
+      lerCozinhaPublica(cozinhaId)
         .then(async (c) => {
           setCozinha(c);
           if (!c) return;
           const [itens, m] = await Promise.all([
-            lerCardapio(),
+            lerCardapio(c.id),
             ligada('avaliacoes') ? mediasAvaliacoes(c.id).catch(() => null) : Promise.resolve(null),
           ]);
           setDoDia(itens.filter((i) => i.do_dia));
           setMedia(m?.cozinha ?? null);
         })
         .catch(() => setCozinha(null));
-    }, [ligada]),
+    }, [ligada, cozinhaId]),
   );
 
   if (!ligada('perfil_cozinha') || cozinha === null) return <Redirect href="/inicio" />;

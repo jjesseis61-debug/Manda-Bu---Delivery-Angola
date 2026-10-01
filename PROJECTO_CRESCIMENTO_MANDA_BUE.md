@@ -704,6 +704,18 @@ lidos só com endereços temporários e só por quem a política deixa.
 da fase. As fotos rejeitadas ficam no bucket sem acesso de ninguém além dos moderadores; apagá-las de vez é uma
 tarefa de manutenção (Storage do Supabase).
 
+**Estado da I8 (rede de cozinhas):** código pronto, interruptor `multi_cozinha` desligado. App do cliente: com o
+interruptor ligado e mais de uma cozinha activa, o início mostra o selector de cozinha (a Cozinha da Alexandra
+primeiro); o cardápio, o perfil da cozinha (C8) e o checkout passam a ser da cozinha escolhida; mudar de cozinha
+esvazia o carrinho; um pedido de grupo é sempre da cozinha do grupo. App do operador: O9 com "Comparar cozinhas"
+(pedidos, vendas, ticket médio, cancelados, clientes, novos, por indicação, entregas a horas, avaliações) em CSV e
+PDF; filtro por cozinha nas entregas (E1) e nos grupos do dia (O10). A gestão de cada cozinha e do seu cardápio já
+estava no O6 (criar cozinha, estado activa/pausada/inactiva, consentimento, pratos).
+
+**Pendente para pôr a I8 em uso:** a primeira cozinha parceira assinada (critério da fase): criá-la no O6, com o
+cardápio, o consentimento público se a responsável o der, e turnos/caixas na cozinha. Uma cozinha pausada sai do
+selector e não aceita pedidos.
+
 A revisão de parâmetros (custo por cliente conquistado, retenção, % anulados) é feita 1–2 meses após I4 e depois trimestralmente, sempre no painel, sem alterar código.
 
 ---

@@ -183,6 +183,8 @@ export type Reconhecimento = {
 /** O10: um grupo do dia com todos os pedidos juntos */
 export type GrupoOperador = {
   grupo_id: string;
+  cozinha_id: string;
+  cozinha_nome: string;
   hora_entrega: string;
   prazo_adesao: string;
   estado: 'aberto' | 'fechado' | 'em_preparacao' | 'entregue' | 'cancelado';
@@ -211,4 +213,21 @@ export type FotoPendente = {
   estrelas: number;
   comentario: string | null;
   autor_nome: string;
+};
+
+/** Relatório comparativo das cozinhas (I8), pedidos da app no período */
+export type LinhaComparativo = {
+  cozinha_id: string;
+  nome: string;
+  estado: string;
+  pedidos: number;
+  vendas: number;
+  ticket_medio: number | null;
+  cancelados: number;
+  clientes: number;
+  clientes_novos: number;
+  clientes_indicacao: number;
+  pct_a_horas: number | null;
+  media_avaliacao: number | null;
+  avaliacoes: number;
 };

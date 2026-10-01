@@ -20,6 +20,7 @@ export default function Grupos() {
   const [ocupado, setOcupado] = useState<string | null>(null);
   const [aCancelar, setACancelar] = useState<string | null>(null);
   const [motivo, setMotivo] = useState('');
+  const [filtroCozinha, setFiltroCozinha] = useState('todas');
 
   const carregar = useCallback(() => {
     setLista(null);
@@ -58,7 +59,18 @@ export default function Grupos() {
         {erro && <Aviso tipo="erro">{erro}</Aviso>}
         {!lista && !erro && <ACarregar />}
         {lista && lista.length === 0 && <Paragrafo suave>Sem pedidos de grupo.</Paragrafo>}
-        {lista?.map((g) => {
+        {/* I8: com grupos de várias cozinhas, filtrar por cozinha */}
+        {lista && new Set(lista.map((g) => g.cozinha_id)).size > 1 && (
+          <Escolha
+            opcoes={[
+              { valor: 'todas', rotulo: 'Todas' },
+              ...[...new Map(lista.map((g) => [g.cozinha_id, g.cozinha_nome])).entries()].map(([valor, rotulo]) => ({ valor, rotulo })),
+            ]}
+            valor={filtroCozinha}
+            aoMudar={setFiltroCozinha}
+          />
+        )}
+        {lista?.filter((g) => filtroCozinha === 'todas' || g.cozinha_id === filtroCozinha).map((g) => {
           const activos = g.pedidos.filter((p) => p.estado !== 'cancelado');
           return (
             <Cartao key={g.grupo_id}>
@@ -66,6 +78,9 @@ export default function Grupos() {
                 <Text style={{ fontSize: 18, fontWeight: '800' }}>{horaLuanda(g.hora_entrega)}</Text>
                 <Text style={{ fontWeight: '700', color: cores.marca }}>{nomeEstadoGrupo[g.estado]}</Text>
               </View>
+              {lista && new Set(lista.map((x) => x.cozinha_id)).size > 1 && (
+                <Text style={{ fontWeight: '700', color: cores.textoSuave }}>{g.cozinha_nome}</Text>
+              )}
               <Text style={{ fontWeight: '600' }}>
                 {g.local.referencia ?? 'Local de trabalho'}
                 {g.local.zona ? ` · ${g.local.zona}` : ''}

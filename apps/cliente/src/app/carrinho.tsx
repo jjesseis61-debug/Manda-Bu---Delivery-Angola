@@ -55,10 +55,11 @@ export default function Carrinho() {
       carrinho.linhas.map((l) => ({ cardapio_id: l.item.id, qtd: l.qtd })),
       grupo ? null : pontoId,
       grupo?.grupoId ?? null,
+      carrinho.cozinhaActual?.id ?? null,
     )
       .then(setOrc)
       .catch((e) => setErroOrc(mensagemErro(e)));
-  }, [carrinho.linhas, pontoId, grupo, versao]);
+  }, [carrinho.linhas, pontoId, grupo, carrinho.cozinhaActual?.id, versao]);
 
   const valorSaldo = orc && usarSaldo ? Math.min(saldo, orc.total) : 0;
 
@@ -71,6 +72,7 @@ export default function Carrinho() {
         clienteId: perfil.cliente_id,
         pontoEntregaId: grupo ? null : pontoId,
         grupoId: grupo?.grupoId ?? null,
+        cozinhaId: grupo ? null : (carrinho.cozinhaActual?.id ?? null),
         itens: carrinho.linhas.map((l) => ({ cardapio_id: l.item.id, qtd: l.qtd })),
         observacoes,
       });
@@ -101,6 +103,7 @@ export default function Carrinho() {
 
   return (
     <Ecra>
+      {ligada('multi_cozinha') && carrinho.cozinhaActual && <Subtitulo>{carrinho.cozinhaActual.nome}</Subtitulo>}
       {carrinho.linhas.map((l) => (
         <View key={l.item.id} style={{ flexDirection: 'row', alignItems: 'center', gap: espaco.m }}>
           <Text style={{ flex: 1, fontSize: 15 }}>{l.item.nome}</Text>
