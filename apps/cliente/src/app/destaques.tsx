@@ -13,7 +13,7 @@ import type { Destaque, MinhaPosicao } from '@/lib/tipos';
 /** C3. Destaques do mês */
 export default function Destaques() {
   const router = useRouter();
-  const { ligada, parametros } = useSessao();
+  const { carregado, ligada, parametros } = useSessao();
   const [lista, setLista] = useState<Destaque[] | null>(null);
   const [eu, setEu] = useState<MinhaPosicao | null>(null);
   const [totalPago, setTotalPago] = useState<number | null>(null);
@@ -32,6 +32,8 @@ export default function Destaques() {
     }, [ligada]),
   );
 
+  // Aberto por link ou notificação: espera pelos interruptores antes de decidir
+  if (!carregado) return <ACarregar />;
   if (!ligada('destaques')) return <Redirect href="/inicio" />;
   if (!lista && !erro) return <ACarregar />;
 

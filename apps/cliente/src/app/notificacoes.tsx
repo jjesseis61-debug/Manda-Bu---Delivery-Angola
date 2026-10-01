@@ -11,7 +11,7 @@ import type { PreferenciasNotificacao } from '@/lib/tipos';
 
 /** C14. Definições de notificações: desligar N5 (lembrete do almoço) e N7 (destaques) */
 export default function Notificacoes() {
-  const { ligada, perfil } = useSessao();
+  const { carregado, ligada, perfil } = useSessao();
   const [prefs, setPrefs] = useState<PreferenciasNotificacao | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const visivel = ligada('indicacao') || ligada('destaques');
@@ -25,6 +25,8 @@ export default function Notificacoes() {
     }, [perfil, visivel]),
   );
 
+  // Aberto por link ou notificação: espera pelos interruptores antes de decidir
+  if (!carregado) return <ACarregar />;
   if (!visivel) return <Redirect href="/conta" />;
   if (!prefs && !erro) return <ACarregar />;
 

@@ -13,7 +13,7 @@ type Opcao = 'mostrar_nome_real' | 'ocultar_ganhos';
 
 /** C5. Privacidade na lista de destaques */
 export default function Privacidade() {
-  const { ligada, perfil } = useSessao();
+  const { carregado, ligada, perfil } = useSessao();
   const [dados, setDados] = useState<PerfilDestaques | null>(null);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -26,6 +26,8 @@ export default function Privacidade() {
     }, [perfil, ligada]),
   );
 
+  // Aberto por link ou notificação: espera pelos interruptores antes de decidir
+  if (!carregado) return <ACarregar />;
   if (!ligada('destaques')) return <Redirect href="/inicio" />;
   if (!dados && !erro) return <ACarregar />;
 

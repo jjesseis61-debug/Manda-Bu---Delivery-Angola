@@ -13,7 +13,7 @@ import type { ItemCardapio } from '@/lib/tipos';
 /** C8. Perfil da cozinha: só com o interruptor e o consentimento público da responsável */
 export default function PerfilCozinha() {
   const router = useRouter();
-  const { ligada } = useSessao();
+  const { carregado, ligada } = useSessao();
   const carrinho = useCarrinho();
   const cozinhaId = carrinho.cozinhaActual?.id ?? null;
   const [cozinha, setCozinha] = useState<Cozinha | null | undefined>(undefined);
@@ -38,6 +38,8 @@ export default function PerfilCozinha() {
     }, [ligada, cozinhaId]),
   );
 
+  // Aberto por link ou notificação: espera pelos interruptores antes de decidir
+  if (!carregado) return <ACarregar />;
   if (!ligada('perfil_cozinha') || cozinha === null) return <Redirect href="/inicio" />;
   if (cozinha === undefined) return <ACarregar />;
 

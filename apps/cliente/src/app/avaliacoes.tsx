@@ -13,7 +13,7 @@ import type { AvaliacaoPublica, Media } from '@/lib/tipos';
 /** C10. Avaliações da cozinha ou de um prato (só as visíveis; sem ids) */
 export default function Avaliacoes() {
   const { cozinha, prato, nome } = useLocalSearchParams<{ cozinha: string; prato?: string; nome?: string }>();
-  const { ligada } = useSessao();
+  const { carregado, ligada } = useSessao();
   const [lista, setLista] = useState<AvaliacaoPublica[] | null>(null);
   const [media, setMedia] = useState<Media | null>(null);
   const [erro, setErro] = useState<string | null>(null);
@@ -35,6 +35,8 @@ export default function Avaliacoes() {
     }, [ligada, cozinha, prato]),
   );
 
+  // Aberto por link ou notificação: espera pelos interruptores antes de decidir
+  if (!carregado) return <ACarregar />;
   if (!ligada('avaliacoes')) return <Redirect href="/inicio" />;
   if (!lista && !erro) return <ACarregar />;
 

@@ -29,7 +29,7 @@ function Estrelas({ valor, aoMudar, tamanho = 36 }: { valor: number; aoMudar: (v
 export default function Avaliar() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { ligada, perfil } = useSessao();
+  const { carregado, ligada, perfil } = useSessao();
   const [pedido, setPedido] = useState<Pedido | null>(null);
   const [estado, setEstado] = useState<'a_carregar' | 'pode' | 'feita' | 'fora_do_prazo'>('a_carregar');
   const [estrelas, setEstrelas] = useState(0);
@@ -58,6 +58,8 @@ export default function Avaliar() {
     return [...vistos.entries()];
   }, [pedido]);
 
+  // Aberto por link ou notificação: espera pelos interruptores antes de decidir
+  if (!carregado) return <ACarregar />;
   if (!ligada('avaliacoes')) return <Redirect href="/pedidos" />;
   if (erro && estado === 'a_carregar') return <Ecra><Aviso tipo="erro">{erro}</Aviso></Ecra>;
   if (estado === 'a_carregar') return <ACarregar />;

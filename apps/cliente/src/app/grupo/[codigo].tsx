@@ -15,7 +15,7 @@ import type { GrupoDetalhe } from '@/lib/tipos';
 export default function Grupo() {
   const router = useRouter();
   const { codigo } = useLocalSearchParams<{ codigo: string }>();
-  const { ligada } = useSessao();
+  const { carregado, ligada } = useSessao();
   const carrinho = useCarrinho();
   const [grupo, setGrupo] = useState<GrupoDetalhe | null | undefined>(undefined);
   const [erro, setErro] = useState<string | null>(null);
@@ -38,6 +38,8 @@ export default function Grupo() {
     return () => clearInterval(t);
   }, []);
 
+  // Aberto por link ou notificação: espera pelos interruptores antes de decidir
+  if (!carregado) return <ACarregar />;
   if (!ligada('pedidos_grupo')) return <Redirect href="/inicio" />;
   if (grupo === undefined && !erro) return <ACarregar />;
   if (!grupo) {

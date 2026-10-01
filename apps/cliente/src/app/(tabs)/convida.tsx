@@ -14,7 +14,7 @@ import type { Amigo, Saldo } from '@/lib/tipos';
 /** C1. Convida e Ganha */
 export default function Convida() {
   const router = useRouter();
-  const { perfil, ligada } = useSessao();
+  const { carregado, perfil, ligada } = useSessao();
   const [saldo, setSaldo] = useState<Saldo | null>(null);
   const [amigos, setAmigos] = useState<Amigo[] | null>(null);
   const [verExpirados, setVerExpirados] = useState(false);
@@ -32,6 +32,8 @@ export default function Convida() {
     }, [perfil, ligada]),
   );
 
+  // Aberto por link ou notificação: espera pelos interruptores antes de decidir
+  if (!carregado) return <ACarregar />;
   if (!ligada('indicacao')) return <Redirect href="/inicio" />;
   if (!amigos && !erro) return <ACarregar />;
 

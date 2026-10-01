@@ -18,7 +18,7 @@ const nomeEstado: Record<Levantamento['estado'], string> = {
 
 /** C4. Levantar saldo */
 export default function Levantar() {
-  const { perfil, parametros, ligada } = useSessao();
+  const { carregado, perfil, parametros, ligada } = useSessao();
   const [saldo, setSaldo] = useState<number | null>(null);
   const [historico, setHistorico] = useState<Levantamento[]>([]);
   const [modo, setModo] = useState<'refeicoes' | 'dinheiro'>('dinheiro');
@@ -41,6 +41,8 @@ export default function Levantar() {
   }, [perfil]);
   useFocusEffect(carregar);
 
+  // Aberto por link ou notificação: espera pelos interruptores antes de decidir
+  if (!carregado) return <ACarregar />;
   if (!ligada('indicacao')) return <Redirect href="/inicio" />;
   if (saldo === null || !parametros) return erro ? <Ecra><Aviso tipo="erro">{erro}</Aviso></Ecra> : <ACarregar />;
 

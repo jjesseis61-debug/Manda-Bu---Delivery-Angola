@@ -30,7 +30,7 @@ function horasPossiveis(agora = new Date()): string[] {
 /** C12. Criar grupo: local de trabalho, hora de entrega, prazo de adesão, modo de pagamento */
 export default function NovoGrupo() {
   const router = useRouter();
-  const { ligada, perfil } = useSessao();
+  const { carregado, ligada, perfil } = useSessao();
   const carrinho = useCarrinho();
   const [enderecos, setEnderecos] = useState<Endereco[] | null>(null);
   const [pontoId, setPontoId] = useState<string | null>(null);
@@ -53,6 +53,8 @@ export default function NovoGrupo() {
     }, []),
   );
 
+  // Aberto por link ou notificação: espera pelos interruptores antes de decidir
+  if (!carregado) return <ACarregar />;
   if (!ligada('pedidos_grupo')) return <Redirect href="/inicio" />;
   if (!enderecos && !erro) return <ACarregar />;
 

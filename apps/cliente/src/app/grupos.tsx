@@ -12,7 +12,7 @@ import type { MeuGrupo } from '@/lib/tipos';
 /** Pedidos de grupo do cliente e atalho para criar um (C12) */
 export default function Grupos() {
   const router = useRouter();
-  const { ligada } = useSessao();
+  const { carregado, ligada } = useSessao();
   const [lista, setLista] = useState<MeuGrupo[] | null>(null);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -25,6 +25,8 @@ export default function Grupos() {
     }, [ligada]),
   );
 
+  // Aberto por link ou notificação: espera pelos interruptores antes de decidir
+  if (!carregado) return <ACarregar />;
   if (!ligada('pedidos_grupo')) return <Redirect href="/inicio" />;
   if (!lista && !erro) return <ACarregar />;
 
