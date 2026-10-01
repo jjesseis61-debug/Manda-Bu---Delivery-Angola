@@ -135,6 +135,7 @@ Valores entre `[ ]` são parâmetros (tabela `parametros`) com o valor inicial i
 
 **Ganho do indicado**
 - `[desconto_indicado = 500 Kz]` no primeiro pedido.
+- O desconto nunca passa o valor do pedido (subtotal + taxa de entrega): o valor final nunca fica negativo. É de uso único: num pedido mais pequeno do que o desconto, a parte que sobra não passa para o pedido seguinte.
 - Validado no servidor. Se o primeiro pedido for cancelado, o desconto fica disponível para o seguinte.
 - Limite por ponto residencial: no máximo `[max_descontos_por_local = 3]` descontos de primeiro pedido. A partir daí, a app informa "Este convite já foi usado o número máximo de vezes nesta morada" e o pedido segue sem desconto. Pontos `empresa` não têm este limite.
 - Só um pedido em curso de cada vez pode levar o desconto.
@@ -304,6 +305,7 @@ O SQL definitivo está nas migrações em `supabase/migrations/` (aplicadas por 
 | `20261001041532_crescimento_i1_consumo_stock.sql` | Consumo de stock das vendas geradas de pedidos (regra 3), validação dos itens do pedido |
 | `20261001043509_crescimento_i1_privilegios.sql` | Guarda do consumo sem funções expostas; funções SECURITY DEFINER internas fora do alcance das apps |
 | `20261001052041_crescimento_i2_app_cliente.sql` | I2: registo do cliente, cardápio com preços no servidor, amigos convidados, tokens de push, textos das notificações |
+| `20261001052738_crescimento_i2_desconto_limite.sql` | Desconto de indicação limitado ao valor do pedido |
 
 **Nomes reais.** Os nomes assumidos na versão 1.0 foram substituídos pelos do `MODELO_DE_DADOS.md`:
 
@@ -626,7 +628,6 @@ carrinho, checkout e acompanhamento do pedido. Interruptores continuam todos des
 5. Cardápio e zonas (com `taxa`) preenchidos pelo operador; o pedido da app exige um endereço com zona.
 6. Página https do link de convite (para quem ainda não tem a app): precisa de domínio; hoje o link é `mandabue://`.
 7. App local-first (SQLite e fila de saída offline) — a app da I2 funciona com ligação à rede.
-8. Desconto maior do que o valor do pedido: o orçamento mostra 0, mas o pedido guardado pode ficar com valor final negativo; limitar no servidor.
 
 A revisão de parâmetros (custo por cliente conquistado, retenção, % anulados) é feita 1–2 meses após I4 e depois trimestralmente, sempre no painel, sem alterar código.
 

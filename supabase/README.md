@@ -14,6 +14,7 @@ Aplicadas por esta ordem. **Uma migração já aplicada nunca se edita:** qualqu
 | `20261001041532_crescimento_i1_consumo_stock.sql` | Regra 3 (consumo): o servidor desconta o stock só das vendas que gera de pedidos (`vendas.stock_consumido_por`); itens do pedido validados (`prato_base_id` existente); componentes excluídos/ajustados; conversão para a unidade base; só produtos `Longo Prazo`; índice único `estoque_longo_prazo (venda_id, produto_id) where venda_id is not null`; guarda (regra 10): consumo de dispositivo para venda `App cliente` descartado e auditado como bloqueado; avisos `stock_consumo_pendente`. | aplicada |
 | `20261001043509_crescimento_i1_privilegios.sql` | Guarda do consumo de stock passa a SECURITY DEFINER (um trigger SECURITY INVOKER anterior marca as sessões do telemóvel); `origem_venda`, `auditar_consumo_bloqueado` e `gerar_codigo_grupo` deixam de ser chamáveis pelas apps. | aplicada |
 | `20261001052041_crescimento_i2_app_cliente.sql` | I2: `registar_cliente`/`meu_perfil` (registo pelo telefone confirmado por SMS; liga clientes do balcão); `cardapio` (preço, disponível, prato do dia) e preço dos pedidos da app calculado no servidor (`orcamento_pedido`, `trg_pedidos_00_cardapio`); `meus_amigos`; `dispositivos_push` e tokens Expo; textos N2/N3/N4/N8 e funções do serviço de envio (só `service_role`). | aplicada |
+| `20261001052738_crescimento_i2_desconto_limite.sql` | O desconto de indicação nunca passa o valor do pedido (subtotal + taxa): valor final nunca negativo, no pedido e no orçamento. Uso único (o que sobra não passa para o pedido seguinte). | aplicada |
 
 Os números de versão dos ficheiros são os que o Supabase registou ao aplicar, para `supabase migration list` e
 `supabase db push` não voltarem a aplicá-las.
@@ -60,6 +61,7 @@ base de dados.
 | `11_consumo_stock.test.sql` | Consumo de stock das vendas de pedidos: validação dos itens, conversão de unidades, excluídos/ajustados, diários, consumo uma só vez (incl. segunda tentativa do servidor), estorno, vendas do operador, guarda contra consumo de dispositivo (auditado como bloqueado), avisos |
 | `12_privilegios.test.sql` | Funções SECURITY DEFINER chamáveis pelas apps (lista fechada), nenhuma para `anon`; grupo criado pela app; guarda do consumo com sessão do telemóvel |
 | `13_app_cliente.test.sql` | I2: registo e ligação ao cliente do balcão, cardápio e preço no servidor, ponto/zona, desconto no orçamento, amigos, tokens de push, textos e fila de notificações |
+| `14_desconto_limite.test.sql` | Desconto limitado ao valor do pedido (com e sem taxa), orçamento, entrega com valor final 0, uso único |
 
 ### Como correr
 
@@ -73,7 +75,7 @@ base de dados.
 
 ### Resultados (30 de Setembro de 2026)
 
-| Teste | Postgres 16 local, 8 migrações | Supabase `laruvuambdovnkojwrzp`, 8 migrações |
+| Teste | Postgres 16 local, 9 migrações | Supabase `laruvuambdovnkojwrzp`, 9 migrações |
 |---|---|---|
 | 00 estrutura | 19/19 | 19/19 |
 | 01 ligação | 9/9 | 9/9 |
@@ -89,10 +91,11 @@ base de dados.
 | 11 consumo de stock | 35/35 | 35/35 |
 | 12 privilégios | 8/8 | 8/8 |
 | 13 app do cliente | 37/37 | 37/37 |
-| **Total** | **302/302** | **302/302** |
+| 14 desconto limitado | 11/11 | 11/11 |
+| **Total** | **313/313** | **313/313** |
 
-Na I2 voltaram a correr no Supabase os testes afectados pela migração (06, 08, 09, 12 e 13); os restantes não
-dependem dela e passaram com a mesma versão da base na ronda anterior (e todos passam localmente).
+Na I2 voltaram a correr no Supabase os testes afectados por cada migração (app do cliente: 06, 08, 09, 12 e 13;
+desconto limitado: 02, 09 e 14); os restantes não dependem delas (e todos passam localmente).
 
 No fim, o esquema `testes` e a extensão `pgtap` foram removidos do Supabase e não ficou nenhum dado de teste.
 
