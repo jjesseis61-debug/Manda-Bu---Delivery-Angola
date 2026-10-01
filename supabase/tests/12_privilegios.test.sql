@@ -42,6 +42,9 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 'pedidos_operador',
                 -- I5: avaliações e push da equipa
                 'avaliacoes_publicas', 'medias_avaliacoes', 'avaliacoes_moderacao', 'registar_token_push_funcionario',
+                -- I6: pedidos de grupo (validar_novo_grupo é chamada pelo trigger da sessão da app)
+                'grupo_detalhe', 'meus_grupos', 'fechar_grupo', 'cancelar_grupo', 'grupos_operador', 'mudar_estado_grupo',
+                'validar_novo_grupo',
                 -- auxiliares usadas em políticas RLS, valores por defeito ou triggers SECURITY INVOKER
                 'cliente_actual', 'cozinha_padrao', 'e_funcionario', 'funcionalidade_activa',
                 'funcionario_actual', 'membro_da_cozinha', 'tem_permissao')),
@@ -60,7 +63,10 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
 -- Grupo criado por uma sessão do cliente: o código de convite é gerado
 select testes.funcionalidade('pedidos_grupo', true);
 select testes.def('gil', testes.cliente('Gil Organizador'));
-select testes.def('sede', testes.ponto('empresa'));
+with z as (insert into zonas (nome, tipo, taxa) values ('Zona da sede', 'Própria', 300) returning id)
+select testes.def('zona_sede', id) from z;
+select testes.def('sede', testes.ponto('empresa', null, null, testes.u('zona_sede')));
+insert into enderecos_cliente (cliente_id, ponto_entrega_id) values (testes.u('gil'), testes.u('sede'));
 select testes.entrar(testes.u('gil'));
 set local role authenticated;
 select testes.def('e_grupo', testes.erro(format(

@@ -18,6 +18,7 @@ Aplicadas por esta ordem. **Uma migração já aplicada nunca se edita:** qualqu
 | `20261001091617_crescimento_i3_app_operador.sql` | I3: `funcionarios.telefone` e entrada por SMS (`definir_telefone_funcionario`, `ligar_funcionario`, `meu_funcionario`); leituras do operador com permissão do organograma: `painel_programa` (O1), `ganhos_em_verificacao` e `confirmar_ganhos_indicador` (O2), `levantamentos_operador` (O3), `embaixadores` (O4), `pedidos_operador` (E1); RLS de leitura em `caixa`; N3 vinda da verificação com o nome do amigo e o saldo da semana; auditoria das escritas em `cozinhas` e `cardapio` (O6). | aplicada |
 | `20261001144534_crescimento_i4_lancamento.sql` | I4: C5 "Não mostrar os meus ganhos" (`perfil_destaques.ocultar_ganhos`; valores escondidos para os outros em `destaques_mes`); N5 com o prato do dia; textos de N5, N6 e N7 e envio pela Edge Function, respeitando no envio as preferências do cliente. Não liga interruptores. | aplicada |
 | `20261001155248_crescimento_i5_avaliacoes_equipa.sql` | I5: avaliações lidas pelos clientes só pelas suas linhas; lista pública e médias por funções sem ids (`avaliacoes_publicas`, `medias_avaliacoes`); estrelas por prato só de pratos do pedido; O7 (`avaliacoes_moderacao`); N9 (`job_n9_avaliacao`, de 15 em 15 minutos); N12 e push para funcionários (`notificacoes_fila.funcionario_id`, `dispositivos_push.funcionario_id`, `registar_token_push_funcionario`, nova `notificacoes_por_enviar` com o destino, usada pela Edge Function; `notificacoes_pendentes` fica sem uso); `meu_funcionario().cozinhas_equipa`. Sem `drop`: a política muda com `alter policy`. | aplicada |
+| `20261001161430_crescimento_i6_pedidos_grupo.sql` | I6: criar grupo validado no servidor (local de trabalho do próprio cliente, prazo e hora, modo empresa só para clientes Empresa; a app não altera grupos); pedido no grupo com o ponto e a zona do grupo e a taxa a 0 até ao fecho (`orcamento_pedido` devolve a estimativa); fecho pelo prazo (`job_grupos`, de 5 em 5 minutos), pelo organizador ou pelo operador, com a taxa da zona repartida (`regra_taxa_grupo`) ou toda no pedido da empresa; `cancelar_grupo`; N10 com hora e código, N11; `grupo_detalhe`, `meus_grupos`; O10 (`grupos_operador`, `mudar_estado_grupo`); o grupo acompanha o estado dos pedidos. | aplicada |
 
 Os números de versão dos ficheiros são os que o Supabase registou ao aplicar, para `supabase migration list` e
 `supabase db push` não voltarem a aplicá-las.
@@ -41,7 +42,7 @@ Os jobs respeitam os interruptores: com tudo desligado não enfileiram nada.
 
 | Função | O que faz | Configuração |
 |---|---|---|
-| `functions/enviar-notificacoes` | Envia a fila (clientes N2–N9; equipa N12) pelo push da Expo, um pedido por app (a Expo recusa tokens de projectos diferentes no mesmo pedido); desactiva tokens rejeitados; marca como enviadas | Publicada sem verificação de JWT, com autenticação própria: segredo `ENVIO_SEGREDO` (obrigatório) no cabeçalho `x-envio-segredo`. Agendar com `select agendar_envio_notificacoes('<url da função>', '<segredo>');` depois de activar `pg_cron` e `pg_net`. |
+| `functions/enviar-notificacoes` | Envia a fila (clientes N2–N11; equipa N12) pelo push da Expo, um pedido por app (a Expo recusa tokens de projectos diferentes no mesmo pedido); desactiva tokens rejeitados; marca como enviadas | Publicada sem verificação de JWT, com autenticação própria: segredo `ENVIO_SEGREDO` (obrigatório) no cabeçalho `x-envio-segredo`. Agendar com `select agendar_envio_notificacoes('<url da função>', '<segredo>');` depois de activar `pg_cron` e `pg_net`. |
 
 ## Testes
 
@@ -68,6 +69,7 @@ base de dados.
 | `18_avaliacoes_equipa.test.sql` | I5: avaliar pelo telemóvel (C9), lista pública sem ids e médias (C10), moderação e palavras filtradas (O7), N9, reconhecimentos e N12 com push da equipa (O8) |
 | `16_lancamento.test.sql` | I4: esconder ganhos na lista (C5), textos N5–N7, N5 com prato do dia, envio com preferências e interruptor |
 | `17_preferencias_notificacao.test.sql` | C14: o cliente desliga N5 e N7 pela app, só no seu perfil e só essas colunas; N5 não é enfileirada |
+| `19_pedidos_grupo.test.sql` | I6: criar grupo (C12) e validações, aderir (C13) com desconto, N10/N11, fecho e repartição da taxa, modo empresa, cancelar, O10 |
 | `15_app_operador.test.sql` | I3: telefone e ligação dos funcionários, painel (O1), verificação e "Confirmar todos" com N3 (O2), levantamentos (O3), embaixadores (O4), fila de entregas e caixas (E1), auditoria de cozinhas e cardápio (O6) |
 
 ### Como correr
@@ -82,7 +84,7 @@ base de dados.
 
 ### Resultados (1 de Outubro de 2026)
 
-| Teste | Postgres 16 local, 12 migrações | Supabase `laruvuambdovnkojwrzp` |
+| Teste | Postgres 16 local, 14 migrações | Supabase `laruvuambdovnkojwrzp` |
 |---|---|---|
 | 00 estrutura | 19/19 | 19/19 |
 | 01 ligação | 9/9 | 9/9 |
@@ -103,7 +105,8 @@ base de dados.
 | 16 lançamento (I4) | 16/16 | 16/16 |
 | 17 preferências de notificação (C14) | 6/6 | 6/6 |
 | 18 avaliações e equipa (I5) | 30/30 | 30/30 |
-| **Total** | **393/393** | |
+| 19 pedidos de grupo (I6) | 33/33 | 33/33 |
+| **Total** | **426/426** | |
 
 Na I2 voltaram a correr no Supabase os testes afectados por cada migração (app do cliente: 06, 08, 09, 12 e 13;
 desconto limitado: 02, 09 e 14); os restantes não dependem delas (e todos passam localmente).
@@ -120,6 +123,10 @@ Na I4 correram no Supabase o 16 (16/16), o 05 (15/15: sem a verificação que al
 Na I5 correram no Supabase o 18 (30/30) e as verificações de catálogo do 09 e do 12 (funções chamáveis pelas apps,
 `anon`, `search_path`, funções de trigger, índices das chaves estrangeiras). A Edge Function `enviar-notificacoes`
 foi publicada de novo (versão 2), sem verificação de JWT e com o segredo próprio, como antes.
+
+Na I6 correram no Supabase o 19 (33/33) e as verificações de catálogo (funções chamáveis pelas apps, `anon`,
+`search_path`, funções de trigger, índices). A Edge Function foi publicada de novo (versão 3: envia o código do
+grupo para a app abrir o grupo ao tocar em N10/N11).
 
 Nenhum dado de teste ficou na base (contagens de `funcionarios`, `clientes`, `pedidos`, `cardapio` e `caixa` a 0;
 interruptores todos desligados). **Por remover:** o esquema `testes` e a extensão `pgtap` ficaram instalados no

@@ -3,6 +3,9 @@
 import {
   formatarKz,
   formatarMedia,
+  horaLuanda,
+  mensagemGrupo,
+  tempoEmFalta,
   mensagemCodigo,
   mensagemConvite,
   mensagemErro,
@@ -129,5 +132,26 @@ describe('avaliações (C10)', () => {
   it('média com vírgula e plural', () => {
     expect(formatarMedia(4.5, 12)).toBe('★ 4,5 · 12 avaliações');
     expect(formatarMedia(5, 1)).toBe('★ 5,0 · 1 avaliação');
+  });
+});
+
+describe('pedidos de grupo (C12, C13)', () => {
+  it('hora de Luanda', () => {
+    expect(horaLuanda('2026-10-01T11:30:00Z')).toBe('12h30');
+    expect(horaLuanda('2026-10-01T23:05:00Z')).toBe('00h05');
+  });
+
+  it('tempo em falta para o prazo', () => {
+    const agora = new Date('2026-10-01T10:00:00Z');
+    expect(tempoEmFalta('2026-10-01T10:12:00Z', agora)).toBe('12 min');
+    expect(tempoEmFalta('2026-10-01T11:05:00Z', agora)).toBe('1 h 05 min');
+    expect(tempoEmFalta('2026-10-01T10:00:30Z', agora)).toBe('menos de 1 min');
+    expect(tempoEmFalta('2026-10-01T09:59:00Z', agora)).toBeNull();
+  });
+
+  it('mensagem de partilha do grupo', () => {
+    expect(mensagemGrupo('12h30', 'Edifício Kilamba', 'mandabue://grupo/G-ABC123')).toBe(
+      'Vamos pedir juntos o almoço no Manda Bué — Delivery Angola! Entrega às 12h30 em Edifício Kilamba. Junta o teu pedido: mandabue://grupo/G-ABC123',
+    );
   });
 });

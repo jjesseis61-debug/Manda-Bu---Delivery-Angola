@@ -54,6 +54,9 @@ export default function LayoutRaiz() {
           <Stack.Screen name="notificacoes" options={{ title: 'Notificações' }} />
           <Stack.Screen name="avaliar/[id]" options={{ title: 'Avaliar pedido' }} />
           <Stack.Screen name="avaliacoes" options={{ title: 'Avaliações' }} />
+          <Stack.Screen name="grupos" options={{ title: 'Pedidos de grupo' }} />
+          <Stack.Screen name="grupo/novo" options={{ title: 'Novo pedido de grupo' }} />
+          <Stack.Screen name="grupo/[codigo]" options={{ title: 'Pedido de grupo' }} />
           <Stack.Screen name="enderecos/index" options={{ title: 'Endereços' }} />
           <Stack.Screen name="enderecos/novo" options={{ title: 'Novo endereço' }} />
         </Stack>

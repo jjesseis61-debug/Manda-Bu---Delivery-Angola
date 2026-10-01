@@ -92,6 +92,17 @@ export default function Inicio() {
             </Text>
           </Aviso>
         )}
+        {ligada('pedidos_grupo') && carrinho.grupo && (
+          <Aviso>
+            A juntar ao pedido de grupo das {carrinho.grupo.hora}. Escolhe os teus pratos.{' '}
+            <Text style={{ fontWeight: '700' }} onPress={() => carrinho.definirGrupo(null)}>
+              Sair do grupo
+            </Text>
+          </Aviso>
+        )}
+        {ligada('pedidos_grupo') && !carrinho.grupo && (
+          <Botao titulo="Pedido de grupo com os colegas" variante="secundario" aoCarregar={() => router.push('/grupos')} />
+        )}
         {erro && <Aviso tipo="erro">{erro}</Aviso>}
         {cardapio !== null && cardapio.length === 0 && <Paragrafo suave>O cardápio de hoje ainda não está disponível.</Paragrafo>}
         {categorias.map(([categoria, itens]) => (

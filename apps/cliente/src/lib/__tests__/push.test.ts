@@ -12,6 +12,8 @@ describe('rotaDaNotificacao', () => {
     expect(rotaDaNotificacao({ codigo: 'N7' })).toBe('/destaques');
     expect(rotaDaNotificacao({ codigo: 'N8' })).toBe('/levantar');
     expect(rotaDaNotificacao({ codigo: 'N9', pedido_id: 'abc' })).toBe('/avaliar/abc');
+    expect(rotaDaNotificacao({ codigo: 'N10', codigo_grupo: 'G-ABC123' })).toBe('/grupo/G-ABC123');
+    expect(rotaDaNotificacao({ codigo: 'N11', codigo_grupo: 'G-ABC123' })).toBe('/grupo/G-ABC123');
   });
 
   it('ignora notificações desconhecidas ou sem pedido', () => {

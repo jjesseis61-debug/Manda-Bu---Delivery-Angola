@@ -55,3 +55,9 @@ npx expo export --platform android --platform web
 
 Push (N12): `src/lib/push.ts` regista o telemóvel do funcionário depois de entrar. Precisa de
 `extra.eas.projectId` em `app.json` e de uma *development build* no Android.
+
+## I6
+
+| Rota | Ecrã | Permissão |
+|---|---|---|
+| `grupos` | O10: grupos do dia, resumo dos pratos, todos os pedidos de um grupo de uma vez | `pedidos.gerir` ou `entregas.registar` |

@@ -76,6 +76,35 @@ export type Orcamento = {
   desconto: number;
   motivo_desconto: string | null;
   total: number;
+  /** Pedido de grupo: taxa por pessoa se o grupo fechasse agora (a taxa real é repartida no fecho) */
+  taxa_grupo_estimada?: number | null;
+};
+
+export type EstadoGrupo = 'aberto' | 'fechado' | 'em_preparacao' | 'entregue' | 'cancelado';
+
+/** C13: o grupo visto pelos colegas (primeiros nomes, sem ids de clientes) */
+export type GrupoDetalhe = {
+  grupo_id: string;
+  codigo_convite: string;
+  hora_entrega: string;
+  prazo_adesao: string;
+  estado: EstadoGrupo;
+  modo_pagamento: 'individual' | 'empresa';
+  local: string | null;
+  organizador: string;
+  sou_organizador: boolean;
+  taxa_estimada: number | null;
+  participantes: { nome: string; estado: EstadoPedido; sou_eu: boolean }[];
+};
+
+export type MeuGrupo = {
+  codigo_convite: string;
+  hora_entrega: string;
+  prazo_adesao: string;
+  estado: EstadoGrupo;
+  local: string | null;
+  sou_organizador: boolean;
+  participantes: number;
 };
 
 export type EstadoPedido =

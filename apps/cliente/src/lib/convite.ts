@@ -24,3 +24,8 @@ export async function limparCodigoPendente(): Promise<void> {
 export function linkConvite(codigo: string): string {
   return Linking.createURL(`/convite/${codigo}`);
 }
+
+/** Link do pedido de grupo: abre a app em /grupo/G-ABC123 */
+export function linkGrupo(codigo: string): string {
+  return Linking.createURL(`/grupo/${codigo}`);
+}

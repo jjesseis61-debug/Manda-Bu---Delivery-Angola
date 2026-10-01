@@ -179,3 +179,25 @@ export type Reconhecimento = {
   tipo: TipoReconhecimento;
   nota: string | null;
 };
+
+/** O10: um grupo do dia com todos os pedidos juntos */
+export type GrupoOperador = {
+  grupo_id: string;
+  hora_entrega: string;
+  prazo_adesao: string;
+  estado: 'aberto' | 'fechado' | 'em_preparacao' | 'entregue' | 'cancelado';
+  modo_pagamento: 'individual' | 'empresa';
+  organizador: string;
+  organizador_telefone: string | null;
+  local: { referencia: string | null; lat: number | null; lng: number | null; zona: string | null };
+  pedidos: {
+    pedido_id: string;
+    cliente_nome: string;
+    estado: string;
+    itens: { nome: string; qtd: number }[];
+    a_pagar: number;
+    observacoes: string | null;
+  }[];
+  resumo: { nome: string; qtd: number }[];
+  total_a_pagar: number;
+};

@@ -675,6 +675,25 @@ directamente: a lista e as médias vêm de funções do servidor.
 2. Turnos registados com `periodo` (manhã/tarde/noite) e `hora_prometida` nos pedidos, para as métricas de turno terem dados.
 3. Critério da fase: métricas de turno aceites pela equipa.
 
+**Estado da I6 (pedidos de grupo):** código pronto, interruptor `pedidos_grupo` desligado. App do cliente: C12
+(criar grupo no local de trabalho, hora de entrega de meia em meia hora, prazo 30 min/1 h/2 h antes, "a empresa
+paga tudo" só para contas Empresa, partilha por WhatsApp com o link `mandabue://grupo/G-XXXXXX`) e C13 (participantes
+por primeiro nome e estado, contagem regressiva, "Junta o teu pedido", taxa estimada por pessoa; o organizador fecha
+ou cancela). No checkout dentro do grupo não se escolhe endereço: o pedido vai para o local do grupo e a parte da
+entrega fica fixa no fecho. App do operador: O10 (grupos do dia com o resumo dos pratos para preparar, todos os
+pedidos juntos, confirmar/preparar/sair de uma vez; a entrega e o pagamento de cada pessoa continuam em E1).
+
+**Decisões tomadas na I6 (a rever se quiseres outra regra):**
+1. A taxa de entrega do grupo (taxa da zona, uma só entrega) fica a 0 em cada pedido até o grupo fechar; no fecho é
+   dividida por igual pelos pedidos (os primeiros a aderir levam 1 Kz a mais até a soma bater certo). No modo
+   "empresa", ou com `regra_taxa_grupo = empresa` e organizador Empresa, fica toda no pedido da empresa.
+2. O grupo fecha sozinho no prazo de adesão (job de 5 em 5 minutos); o organizador ou o operador podem fechar antes.
+3. Cancelar um grupo só é possível antes de algum pedido entrar em preparação; cancela os pedidos ainda pendentes ou
+   confirmados.
+
+**Pendente para pôr a I6 em uso:** `pg_cron` activo com `select agendar_jobs();` (inclui o job dos grupos);
+testar com 2–3 escritórios (critério da fase).
+
 A revisão de parâmetros (custo por cliente conquistado, retenção, % anulados) é feita 1–2 meses após I4 e depois trimestralmente, sempre no painel, sem alterar código.
 
 ---

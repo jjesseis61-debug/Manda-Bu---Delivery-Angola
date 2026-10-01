@@ -7,10 +7,12 @@ import type {
   AvaliacaoPublica,
   Destaque,
   Endereco,
+  GrupoDetalhe,
   Funcionalidades,
   ItemCardapio,
   Levantamento,
   MediasAvaliacoes,
+  MeuGrupo,
   MinhaPosicao,
   Orcamento,
   Parametros,
@@ -191,16 +193,17 @@ export async function criarEndereco(dados: {
 // ---------------------------------------------------------------- pedidos
 export type ItemCarrinho = { cardapio_id: string; qtd: number };
 
-export async function orcamento(itens: ItemCarrinho[], pontoEntregaId: string): Promise<Orcamento> {
+export async function orcamento(itens: ItemCarrinho[], pontoEntregaId: string | null, grupoId?: string | null): Promise<Orcamento> {
   return verificar(
-    await supabase.rpc('orcamento_pedido', { p_itens: itens, p_ponto_entrega: pontoEntregaId }),
+    await supabase.rpc('orcamento_pedido', { p_itens: itens, p_ponto_entrega: pontoEntregaId, p_grupo: grupoId ?? null }),
   ) as Orcamento;
 }
 
 /** O servidor recalcula itens, preços, taxa e desconto; devolve o id do pedido */
 export async function criarPedido(dados: {
   clienteId: string;
-  pontoEntregaId: string;
+  pontoEntregaId: string | null;
+  grupoId?: string | null;
   itens: ItemCarrinho[];
   observacoes: string;
 }): Promise<string> {
@@ -209,6 +212,7 @@ export async function criarPedido(dados: {
     .insert({
       cliente_id: dados.clienteId,
       ponto_entrega_id: dados.pontoEntregaId,
+      grupo_id: dados.grupoId ?? null,
       itens: dados.itens,
       observacoes: dados.observacoes.trim() || null,
       dispositivo_id: await dispositivoId(),
@@ -339,4 +343,41 @@ export async function registarTokenPush(token: string, plataforma: string): Prom
 
 export async function removerTokenPush(token: string): Promise<void> {
   verificar(await supabase.rpc('remover_token_push', { p_token: token }));
+}
+
+// ---------------------------------------------------------------- pedidos de grupo (C12, C13)
+export async function criarGrupo(dados: {
+  pontoEntregaId: string;
+  horaEntrega: string;
+  prazoAdesao: string;
+  modo: 'individual' | 'empresa';
+}): Promise<string> {
+  const r = await supabase
+    .from('pedidos_grupo')
+    .insert({
+      ponto_entrega_id: dados.pontoEntregaId,
+      hora_entrega: dados.horaEntrega,
+      prazo_adesao: dados.prazoAdesao,
+      modo_pagamento: dados.modo,
+      dispositivo_id: await dispositivoId(),
+    })
+    .select('codigo_convite')
+    .single();
+  return (verificar(r) as { codigo_convite: string }).codigo_convite;
+}
+
+export async function grupoDetalhe(codigo: string): Promise<GrupoDetalhe | null> {
+  return verificar(await supabase.rpc('grupo_detalhe', { p_codigo: codigo })) as GrupoDetalhe | null;
+}
+
+export async function meusGrupos(): Promise<MeuGrupo[]> {
+  return verificar(await supabase.rpc('meus_grupos')) as MeuGrupo[];
+}
+
+export async function fecharGrupo(grupoId: string): Promise<void> {
+  verificar(await supabase.rpc('fechar_grupo', { p_grupo: grupoId }));
+}
+
+export async function cancelarGrupo(grupoId: string, motivo: string | null): Promise<void> {
+  verificar(await supabase.rpc('cancelar_grupo', { p_grupo: grupoId, p_motivo: motivo }));
 }

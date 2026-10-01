@@ -39,6 +39,20 @@ export function segundaFeira(dia: string, desvioSemanas = 0): string {
   return d.toISOString().slice(0, 10);
 }
 
+/** "12h30" (hora de Luanda, UTC+1) */
+export function horaLuanda(iso: string): string {
+  const d = new Date(new Date(iso).getTime() + 60 * 60 * 1000);
+  return `${String(d.getUTCHours()).padStart(2, '0')}h${String(d.getUTCMinutes()).padStart(2, '0')}`;
+}
+
+export const nomeEstadoGrupo: Record<string, string> = {
+  aberto: 'Aberto (aceita pedidos)',
+  fechado: 'Fechado',
+  em_preparacao: 'Em preparação',
+  entregue: 'Entregue',
+  cancelado: 'Cancelado',
+};
+
 export const nomePeriodo: Record<string, string> = { manha: 'Manhã', tarde: 'Tarde', noite: 'Noite' };
 
 export const nomeTipoReconhecimento: Record<string, string> = {
@@ -110,6 +124,8 @@ const mensagens: Record<string, string> = {
   periodo_invalido: 'Período inválido.',
   nivel_invalido: 'Nível inválido.',
   avaliacao_inexistente: 'A avaliação já não existe.',
+  grupo_inexistente: 'O grupo já não existe.',
+  grupo_em_preparacao: 'O grupo já está em preparação e não pode ser cancelado.',
   pedido_inexistente: 'O pedido já não existe.',
   funcionalidade_inexistente: 'Funcionalidade desconhecida.',
 };

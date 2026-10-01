@@ -1,5 +1,5 @@
 /// <reference types="jest" />
-import { segundaFeira, diaLuanda, formatarDia, formatarKz, formatarPercentagem, inicioMesLuanda, mensagemErro, paraCsv } from '../formatar';
+import { horaLuanda, segundaFeira, diaLuanda, formatarDia, formatarKz, formatarPercentagem, inicioMesLuanda, mensagemErro, paraCsv } from '../formatar';
 
 describe('formatar (operador)', () => {
   it('formata kwanzas', () => {
@@ -44,5 +44,9 @@ describe('formatar (operador)', () => {
     expect(segundaFeira('2026-09-28')).toBe('2026-09-28');
     expect(segundaFeira('2026-10-04')).toBe('2026-09-28'); // domingo
     expect(segundaFeira('2026-10-01', -1)).toBe('2026-09-21');
+  });
+
+  it('hora de Luanda', () => {
+    expect(horaLuanda('2026-10-01T11:30:00Z')).toBe('12h30');
   });
 });

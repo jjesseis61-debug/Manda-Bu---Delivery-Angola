@@ -1,4 +1,4 @@
-// Envia a fila de notificações (clientes: N2–N9; equipa: N12) pelo serviço de push da Expo.
+// Envia a fila de notificações (clientes: N2–N11; equipa: N12) pelo serviço de push da Expo.
 // A app do cliente e a do operador são projectos Expo diferentes: a Expo recusa um pedido
 // com tokens de projectos diferentes, por isso cada destino segue num pedido à parte.
 //
@@ -55,7 +55,13 @@ Deno.serve(async (req) => {
         title: n.titulo,
         body: n.corpo,
         sound: 'default' as const,
-        data: { codigo: n.codigo, notificacao_id: n.id, ...('pedido_id' in n.dados ? { pedido_id: n.dados.pedido_id } : {}) },
+        data: {
+          codigo: n.codigo,
+          notificacao_id: n.id,
+          // Só o que a app precisa para abrir o ecrã certo
+          ...('pedido_id' in n.dados ? { pedido_id: n.dados.pedido_id } : {}),
+          ...('codigo_grupo' in n.dados ? { codigo_grupo: n.dados.codigo_grupo } : {}),
+        },
       })),
     );
   const porDestino = [

@@ -43,29 +43,34 @@ export default function Carrinho() {
     }, [perfil, ligada]),
   );
 
+  // Pedido de grupo (C13): o ponto é o do grupo; não se escolhe endereço
+  const grupo = ligada('pedidos_grupo') ? carrinho.grupo : null;
+
   // O valor a pagar vem sempre do servidor (preços do cardápio, taxa da zona, desconto confirmado)
   useEffect(() => {
     setOrc(null);
     setErroOrc(null);
-    if (!pontoId || carrinho.linhas.length === 0) return;
+    if ((!pontoId && !grupo) || carrinho.linhas.length === 0) return;
     pedirOrcamento(
       carrinho.linhas.map((l) => ({ cardapio_id: l.item.id, qtd: l.qtd })),
-      pontoId,
+      grupo ? null : pontoId,
+      grupo?.grupoId ?? null,
     )
       .then(setOrc)
       .catch((e) => setErroOrc(mensagemErro(e)));
-  }, [carrinho.linhas, pontoId, versao]);
+  }, [carrinho.linhas, pontoId, grupo, versao]);
 
   const valorSaldo = orc && usarSaldo ? Math.min(saldo, orc.total) : 0;
 
   async function confirmar() {
-    if (!perfil || !pontoId || !orc) return;
+    if (!perfil || (!pontoId && !grupo) || !orc) return;
     setErro(null);
     setAEnviar(true);
     try {
       const id = await criarPedido({
         clienteId: perfil.cliente_id,
-        pontoEntregaId: pontoId,
+        pontoEntregaId: grupo ? null : pontoId,
+        grupoId: grupo?.grupoId ?? null,
         itens: carrinho.linhas.map((l) => ({ cardapio_id: l.item.id, qtd: l.qtd })),
         observacoes,
       });
@@ -76,7 +81,8 @@ export default function Carrinho() {
         });
       }
       carrinho.limpar();
-      router.replace({ pathname: '/pedido/[id]', params: { id, fim: '1', ...(saldoFalhou ? { saldo: 'falhou' } : {}) } });
+      if (grupo) router.replace({ pathname: '/grupo/[codigo]', params: { codigo: grupo.codigo } });
+      else router.replace({ pathname: '/pedido/[id]', params: { id, fim: '1', ...(saldoFalhou ? { saldo: 'falhou' } : {}) } });
     } catch (e) {
       setErro(mensagemErro(e));
     } finally {
@@ -108,11 +114,18 @@ export default function Carrinho() {
         </View>
       ))}
 
-      <Subtitulo>Entregar em</Subtitulo>
-      {enderecos && enderecos.length === 0 && (
+      {grupo && (
+        <Cartao>
+          <Text style={{ fontWeight: '700' }}>Pedido de grupo · entrega às {grupo.hora}</Text>
+          <Paragrafo suave>Chega com os pedidos dos colegas, no local do grupo.</Paragrafo>
+          <Botao titulo="Pedir só para mim" variante="texto" aoCarregar={() => carrinho.definirGrupo(null)} />
+        </Cartao>
+      )}
+      {!grupo && <Subtitulo>Entregar em</Subtitulo>}
+      {!grupo && enderecos && enderecos.length === 0 && (
         <Aviso>Ainda não tens endereços de entrega.</Aviso>
       )}
-      {enderecos && enderecos.length > 0 && (
+      {!grupo && enderecos && enderecos.length > 0 && (
         <Escolha
           opcoes={enderecos.map((e) => ({
             valor: e.ponto_entrega_id,
@@ -122,7 +135,7 @@ export default function Carrinho() {
           aoMudar={setPontoId}
         />
       )}
-      <Botao titulo="Adicionar endereço" variante="texto" aoCarregar={() => router.push('/enderecos/novo')} />
+      {!grupo && <Botao titulo="Adicionar endereço" variante="texto" aoCarregar={() => router.push('/enderecos/novo')} />}
 
       {/* C2: no checkout do 1.º pedido; depois de ligar, o orçamento é pedido de novo ao servidor */}
       <CampoCodigo aoLigar={() => setVersao((v) => v + 1)} />
@@ -131,7 +144,14 @@ export default function Carrinho() {
       {orc && (
         <Cartao>
           <Linha esquerda="Subtotal" direita={formatarKz(orc.subtotal)} />
-          <Linha esquerda={`Entrega${orc.zona_nome ? ` (${orc.zona_nome})` : ''}`} direita={formatarKz(orc.taxa_entrega)} />
+          {grupo ? (
+            <Linha
+              esquerda="Entrega (dividida no fecho do grupo)"
+              direita={orc.taxa_grupo_estimada ? `cerca de ${formatarKz(orc.taxa_grupo_estimada)}` : formatarKz(0)}
+            />
+          ) : (
+            <Linha esquerda={`Entrega${orc.zona_nome ? ` (${orc.zona_nome})` : ''}`} direita={formatarKz(orc.taxa_entrega)} />
+          )}
           {orc.desconto > 0 && (
             <Linha esquerda="Desconto de convite" direita={`−${formatarKz(orc.desconto)}`} />
           )}
@@ -158,8 +178,12 @@ export default function Carrinho() {
         maxLength={300}
       />
       {erro && <Aviso tipo="erro">{erro}</Aviso>}
-      <Botao titulo="Confirmar pedido" aoCarregar={confirmar} aCarregar={aEnviar} desactivado={!orc || !pontoId} />
-      <Paragrafo suave>Pagas na entrega. O valor final é confirmado pelo servidor.</Paragrafo>
+      <Botao titulo="Confirmar pedido" aoCarregar={confirmar} aCarregar={aEnviar} desactivado={!orc || (!pontoId && !grupo)} />
+      <Paragrafo suave>
+        {grupo
+          ? 'Pagas na entrega. A tua parte da entrega fica fixa quando o grupo fechar.'
+          : 'Pagas na entrega. O valor final é confirmado pelo servidor.'}
+      </Paragrafo>
     </Ecra>
   );
 }

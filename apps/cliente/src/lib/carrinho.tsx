@@ -4,6 +4,9 @@ import type { ItemCardapio } from './tipos';
 
 export type LinhaCarrinho = { item: ItemCardapio; qtd: number };
 
+/** Pedido de grupo em curso (C13): o checkout usa o ponto do grupo em vez do endereço */
+export type GrupoCarrinho = { grupoId: string; codigo: string; hora: string };
+
 type Carrinho = {
   linhas: LinhaCarrinho[];
   quantidade: number;
@@ -12,12 +15,15 @@ type Carrinho = {
   adicionar: (item: ItemCardapio) => void;
   alterar: (itemId: string, qtd: number) => void;
   limpar: () => void;
+  grupo: GrupoCarrinho | null;
+  definirGrupo: (g: GrupoCarrinho | null) => void;
 };
 
 const Contexto = createContext<Carrinho | null>(null);
 
 export function CarrinhoProvider({ children }: { children: ReactNode }) {
   const [linhas, setLinhas] = useState<LinhaCarrinho[]>([]);
+  const [grupo, setGrupo] = useState<GrupoCarrinho | null>(null);
 
   const valor = useMemo<Carrinho>(
     () => ({
@@ -36,9 +42,14 @@ export function CarrinhoProvider({ children }: { children: ReactNode }) {
             ? actual.filter((l) => l.item.id !== itemId)
             : actual.map((l) => (l.item.id === itemId ? { ...l, qtd: Math.min(qtd, 50) } : l)),
         ),
-      limpar: () => setLinhas([]),
+      limpar: () => {
+        setLinhas([]);
+        setGrupo(null);
+      },
+      grupo,
+      definirGrupo: setGrupo,
     }),
-    [linhas],
+    [linhas, grupo],
   );
 
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;

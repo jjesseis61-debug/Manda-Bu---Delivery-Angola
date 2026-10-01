@@ -8,6 +8,7 @@ import type {
   Embaixador,
   Funcionario,
   GanhoVerificacao,
+  GrupoOperador,
   LevantamentoOperador,
   MetricaTurno,
   Painel,
@@ -240,4 +241,21 @@ export async function registarReconhecimento(dados: {
       nota: dados.nota,
     }),
   );
+}
+
+// ---------------------------------------------------------------- O10
+export async function gruposDoDia(dia: string): Promise<GrupoOperador[]> {
+  return verificar(await supabase.rpc('grupos_operador', { p_dia: dia })) as GrupoOperador[];
+}
+
+export async function mudarEstadoGrupo(grupoId: string, estado: 'confirmado' | 'em_preparacao' | 'em_entrega'): Promise<number> {
+  return verificar(await supabase.rpc('mudar_estado_grupo', { p_grupo: grupoId, p_estado: estado })) as number;
+}
+
+export async function fecharGrupo(grupoId: string) {
+  verificar(await supabase.rpc('fechar_grupo', { p_grupo: grupoId }));
+}
+
+export async function cancelarGrupo(grupoId: string, motivo: string) {
+  verificar(await supabase.rpc('cancelar_grupo', { p_grupo: grupoId, p_motivo: motivo }));
 }

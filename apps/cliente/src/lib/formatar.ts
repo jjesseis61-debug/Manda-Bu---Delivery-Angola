@@ -13,6 +13,35 @@ export function formatarData(iso: string | null | undefined): string {
   return iso ? new Date(iso).toLocaleDateString('pt-PT') : '';
 }
 
+export const nomeEstadoGrupo: Record<string, string> = {
+  aberto: 'Aberto',
+  fechado: 'Fechado: já não se juntam pedidos',
+  em_preparacao: 'Em preparação',
+  entregue: 'Entregue',
+  cancelado: 'Cancelado',
+};
+
+/** "12h30" (hora de Luanda, UTC+1) */
+export function horaLuanda(iso: string): string {
+  const d = new Date(new Date(iso).getTime() + 60 * 60 * 1000);
+  return `${String(d.getUTCHours()).padStart(2, '0')}h${String(d.getUTCMinutes()).padStart(2, '0')}`;
+}
+
+/** Tempo que falta: "1 h 05 min", "12 min", "menos de 1 min"; null se já passou */
+export function tempoEmFalta(iso: string, agora: Date = new Date()): string | null {
+  const ms = new Date(iso).getTime() - agora.getTime();
+  if (ms <= 0) return null;
+  const min = Math.floor(ms / 60000);
+  if (min < 1) return 'menos de 1 min';
+  if (min < 60) return `${min} min`;
+  return `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, '0')} min`;
+}
+
+/** Mensagem de partilha do grupo (C12) */
+export function mensagemGrupo(hora: string, local: string | null, link: string): string {
+  return `Vamos pedir juntos o almoço no Manda Bué — Delivery Angola! Entrega às ${hora}${local ? ` em ${local}` : ''}. Junta o teu pedido: ${link}`;
+}
+
 /** "★ 4,5 · 12 avaliações" */
 export function formatarMedia(media: number, total: number): string {
   return `★ ${media.toFixed(1).replace('.', ',')} · ${total} ${total === 1 ? 'avaliação' : 'avaliações'}`;
@@ -121,6 +150,14 @@ const mensagens: Record<string, string> = {
   token_invalido: 'Não foi possível activar as notificações.',
   // avaliações (C9)
   prato_fora_do_pedido: 'Só podes avaliar os pratos deste pedido.',
+  // pedidos de grupo (C12, C13)
+  grupo_ponto_invalido: 'O grupo é entregue num dos teus endereços de trabalho. Escolhe um endereço do tipo Trabalho.',
+  grupo_horas_invalidas: 'O prazo para aderir tem de ser no futuro e pelo menos 15 minutos antes da entrega.',
+  grupo_empresa_invalida: 'Só uma conta Empresa pode pagar o pedido de todo o grupo.',
+  grupo_fechado: 'Este grupo já fechou. Já não é possível juntar pedidos.',
+  grupo_em_preparacao: 'O grupo já está a ser preparado e não pode ser cancelado.',
+  funcionalidade_inactiva: 'Esta funcionalidade não está disponível.',
+  sem_permissao: 'Não tens permissão para isto.',
 };
 
 /** Extrai o código de um erro do Supabase (mensagem = código) e devolve o texto para o cliente */
