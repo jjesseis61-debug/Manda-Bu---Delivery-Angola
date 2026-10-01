@@ -302,6 +302,7 @@ O SQL definitivo está nas migrações em `supabase/migrations/` (aplicadas por 
 | `20260930183237_crescimento_i1_decisoes.sql` | Duração garantida, vendas por item (regra 7), caixa na entrega (regra 8), estorno sem stock (regra 3), catálogo de permissões |
 | `20261001040216_crescimento_i1_endurecimento.sql` | `search_path` fixo, funções de trigger não expostas, índices nas chaves estrangeiras |
 | `20261001041532_crescimento_i1_consumo_stock.sql` | Consumo de stock das vendas geradas de pedidos (regra 3), validação dos itens do pedido |
+| `20261001043509_crescimento_i1_privilegios.sql` | Guarda do consumo sem funções expostas; funções SECURITY DEFINER internas fora do alcance das apps |
 
 **Nomes reais.** Os nomes assumidos na versão 1.0 foram substituídos pelos do `MODELO_DE_DADOS.md`:
 
@@ -603,6 +604,14 @@ Todos os valores e nomes são preenchidos a partir dos dados e parâmetros.
 | **I7. Fotos nas avaliações** | Envio de fotos, bucket privado, moderação em O7 | `avaliacoes_fotos` | Existe moderador designado |
 | **I8. Rede de cozinhas** | Selector de cozinha no cliente, gestão multi-cozinha no operador, relatórios comparativos | `multi_cozinha` | Primeira cozinha parceira assinada |
 
+**Tarefa pendente antes de a app do operador sincronizar (I3):** as tabelas base têm RLS activo **sem políticas**
+(fechadas a `authenticated`/`anon`): `auditoria`, `caixa`, `clientes`, `custos`, `direcoes`, `distribuicoes`,
+`estoque_diario`, `estoque_longo_prazo`, `funcionarios`, `locais`, `pagamentos_credito`, `pedidos_especiais`,
+`pre_encomendas`, `produtos`, `refeicoes_funcionarios`, `turnos`, `vendas`. Precisam de políticas por permissão do
+organograma (`tem_permissao`, `membro_da_cozinha`) antes de a app do operador sincronizar. O verificador do Supabase
+conta 19 tabelas sem políticas: as outras duas, `notificacoes_fila` e `contadores_zona`, são só do servidor e ficam
+fechadas de propósito. Não criadas em I1.
+
 A revisão de parâmetros (custo por cliente conquistado, retenção, % anulados) é feita 1–2 meses após I4 e depois trimestralmente, sempre no painel, sem alterar código.
 
 ---
@@ -728,4 +737,4 @@ Acrescentar ao `PROMPT_INICIAL.md`:
 6. **Registo de marca** "Manda Bué" no INAPI.
 7. **`REGRAS_DE_NEGOCIO.md`** não está no repositório. As regras 3, 7 e 8 foram aplicadas como descritas pelo responsável (6.9). Confirmar: "caixa aberta" = `caixa.fechamento` vazio.
 8. **`pg_cron`**: activar a extensão no Supabase e correr `select agendar_jobs();` antes de ligar interruptores que dependem de jobs (I2/I4).
-9. **Políticas RLS das tabelas base** (`clientes`, `vendas`, `turnos`, …): estão fechadas por defeito; definir na fase da app do operador (I3).
+9. **Políticas RLS das tabelas base** (17 tabelas, lista na secção 12): estão fechadas por defeito; definir por permissão do organograma antes de a app do operador sincronizar (I3).
