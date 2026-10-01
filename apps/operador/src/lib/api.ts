@@ -6,6 +6,7 @@ import type {
   ComentarioModeracao,
   Cozinha,
   Embaixador,
+  FotoPendente,
   Funcionario,
   GanhoVerificacao,
   GrupoOperador,
@@ -186,6 +187,24 @@ export async function comentariosModeracao(dias = 14): Promise<ComentarioModerac
 
 export async function ocultarAvaliacao(id: string, oculta: boolean) {
   verificar(await supabase.rpc('ocultar_avaliacao', { p_avaliacao: id, p_oculta: oculta }));
+}
+
+export async function fotosPendentes(): Promise<FotoPendente[]> {
+  return verificar(await supabase.rpc('fotos_pendentes')) as FotoPendente[];
+}
+
+export async function moderarFoto(fotoId: string, decisao: 'aprovada' | 'rejeitada') {
+  verificar(await supabase.rpc('moderar_foto', { p_foto: fotoId, p_decisao: decisao }));
+}
+
+/** Endereços temporários (15 min) das fotos do bucket privado; o storage só os dá a moderadores */
+export async function enderecosFotos(caminhos: string[]): Promise<Record<string, string>> {
+  if (caminhos.length === 0) return {};
+  const { data, error } = await supabase.storage.from('fotos-avaliacoes').createSignedUrls(caminhos, 900);
+  if (error) throw error;
+  const r: Record<string, string> = {};
+  for (const d of data ?? []) if (d.path && d.signedUrl) r[d.path] = d.signedUrl;
+  return r;
 }
 
 export async function lerPalavras(): Promise<PalavraFiltrada[]> {

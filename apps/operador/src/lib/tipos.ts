@@ -201,3 +201,14 @@ export type GrupoOperador = {
   resumo: { nome: string; qtd: number }[];
   total_a_pagar: number;
 };
+
+/** O7: foto à espera de moderação (o ficheiro já foi enviado) */
+export type FotoPendente = {
+  foto_id: string;
+  caminho: string;
+  criado_em: string;
+  cozinha_nome: string;
+  estrelas: number;
+  comentario: string | null;
+  autor_nome: string;
+};

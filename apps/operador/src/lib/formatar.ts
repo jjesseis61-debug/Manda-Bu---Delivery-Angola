@@ -124,6 +124,8 @@ const mensagens: Record<string, string> = {
   periodo_invalido: 'Período inválido.',
   nivel_invalido: 'Nível inválido.',
   avaliacao_inexistente: 'A avaliação já não existe.',
+  foto_inexistente: 'A foto já não existe.',
+  decisao_invalida: 'Decisão inválida.',
   grupo_inexistente: 'O grupo já não existe.',
   grupo_em_preparacao: 'O grupo já está em preparação e não pode ser cancelado.',
   pedido_inexistente: 'O pedido já não existe.',

@@ -694,6 +694,16 @@ pedidos juntos, confirmar/preparar/sair de uma vez; a entrega e o pagamento de c
 **Pendente para pôr a I6 em uso:** `pg_cron` activo com `select agendar_jobs();` (inclui o job dos grupos);
 testar com 2–3 escritórios (critério da fase).
 
+**Estado da I7 (fotos nas avaliações):** código pronto, interruptor `avaliacoes_fotos` desligado. App do cliente: no
+C9 junta até 2 fotos (galeria, reduzidas para JPEG até 1280 px); as fotos são enviadas depois da avaliação e ficam
+privadas até um moderador as aprovar; no C10 aparecem as fotos aprovadas. App do operador: O7 mostra as fotos por
+aprovar (com a avaliação e o autor) e Aprovar/Rejeitar, auditado. Ficheiros num bucket privado (`fotos-avaliacoes`),
+lidos só com endereços temporários e só por quem a política deixa.
+
+**Pendente para pôr a I7 em uso:** designar o moderador (permissão `avaliacoes.moderar` no organograma) — critério
+da fase. As fotos rejeitadas ficam no bucket sem acesso de ninguém além dos moderadores; apagá-las de vez é uma
+tarefa de manutenção (Storage do Supabase).
+
 A revisão de parâmetros (custo por cliente conquistado, retenção, % anulados) é feita 1–2 meses após I4 e depois trimestralmente, sempre no painel, sem alterar código.
 
 ---

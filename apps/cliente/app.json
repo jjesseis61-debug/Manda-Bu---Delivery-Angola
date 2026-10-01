@@ -40,7 +40,14 @@
           "locationWhenInUsePermission": "A Manda Bué usa a tua localização para marcar o ponto de entrega no mapa."
         }
       ],
-      "expo-notifications"
+      "expo-notifications",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "A Manda Bué usa as tuas fotos só para as juntares às avaliações que escreves.",
+          "cameraPermission": false
+        }
+      ]
     ],
     "scheme": "mandabue",
     "experiments": {

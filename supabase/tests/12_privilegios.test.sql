@@ -45,6 +45,8 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 -- I6: pedidos de grupo (validar_novo_grupo é chamada pelo trigger da sessão da app)
                 'grupo_detalhe', 'meus_grupos', 'fechar_grupo', 'cancelar_grupo', 'grupos_operador', 'mudar_estado_grupo',
                 'validar_novo_grupo',
+                -- I7: fotos (foto_pode_* nas políticas do storage; fotos_da_avaliacao no trigger da app)
+                'lista_avaliacoes', 'fotos_pendentes', 'foto_pode_enviar', 'foto_pode_ver', 'fotos_da_avaliacao',
                 -- auxiliares usadas em políticas RLS, valores por defeito ou triggers SECURITY INVOKER
                 'cliente_actual', 'cozinha_padrao', 'e_funcionario', 'funcionalidade_activa',
                 'funcionario_actual', 'membro_da_cozinha', 'tem_permissao')),

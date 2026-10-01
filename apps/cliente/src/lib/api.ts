@@ -97,7 +97,7 @@ export async function mediasAvaliacoes(cozinhaId: string): Promise<MediasAvaliac
 
 export async function avaliacoesPublicas(cozinhaId: string, pratoId?: string | null): Promise<AvaliacaoPublica[]> {
   return verificar(
-    await supabase.rpc('avaliacoes_publicas', { p_cozinha: cozinhaId, p_prato: pratoId ?? null, p_limite: 50 }),
+    await supabase.rpc('lista_avaliacoes', { p_cozinha: cozinhaId, p_prato: pratoId ?? null, p_limite: 50 }),
   ) as AvaliacaoPublica[];
 }
 
@@ -117,7 +117,7 @@ export async function avaliarPedido(dados: {
   comentario: string | null;
   usarPseudonimo: boolean;
   pratos: { prato_id: string; estrelas: number }[];
-}): Promise<void> {
+}): Promise<string> {
   const r = await supabase
     .from('avaliacoes')
     .insert({
@@ -134,6 +134,17 @@ export async function avaliarPedido(dados: {
   if (dados.pratos.length > 0) {
     verificar(await supabase.from('avaliacoes_pratos').insert(dados.pratos.map((p) => ({ ...p, avaliacao_id: id }))));
   }
+  return id;
+}
+
+/** Cria a linha da foto (pendente) e devolve o caminho onde o servidor quer o ficheiro */
+export async function criarFoto(avaliacaoId: string): Promise<string> {
+  const r = await supabase
+    .from('fotos_avaliacao')
+    .insert({ avaliacao_id: avaliacaoId, caminho: '-', dispositivo_id: await dispositivoId() })
+    .select('caminho')
+    .single();
+  return (verificar(r) as { caminho: string }).caminho;
 }
 
 // ---------------------------------------------------------------- endereços (C11)

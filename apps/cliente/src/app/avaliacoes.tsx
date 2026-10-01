@@ -1,12 +1,13 @@
 import { Redirect, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Text, View } from 'react-native';
+import { Image, Text, View } from 'react-native';
 
 import { ACarregar, Aviso, Cartao, Ecra, Paragrafo, Subtitulo } from '@/components/ui';
 import { avaliacoesPublicas, mediasAvaliacoes } from '@/lib/api';
+import { enderecosFotos } from '@/lib/fotos';
 import { formatarData, formatarMedia, mensagemErro } from '@/lib/formatar';
 import { useSessao } from '@/lib/sessao';
-import { cores } from '@/lib/tema';
+import { cores, raio } from '@/lib/tema';
 import type { AvaliacaoPublica, Media } from '@/lib/tipos';
 
 /** C10. Avaliações da cozinha ou de um prato (só as visíveis; sem ids) */
@@ -16,6 +17,7 @@ export default function Avaliacoes() {
   const [lista, setLista] = useState<AvaliacaoPublica[] | null>(null);
   const [media, setMedia] = useState<Media | null>(null);
   const [erro, setErro] = useState<string | null>(null);
+  const [urls, setUrls] = useState<Record<string, string>>({});
 
   useFocusEffect(
     useCallback(() => {
@@ -23,6 +25,10 @@ export default function Avaliacoes() {
       Promise.all([avaliacoesPublicas(cozinha, prato), mediasAvaliacoes(cozinha)])
         .then(([l, m]) => {
           setLista(l);
+          // Fotos aprovadas: endereços temporários do bucket privado
+          enderecosFotos(l.flatMap((a) => a.fotos ?? []))
+            .then(setUrls)
+            .catch(() => setUrls({}));
           setMedia(prato ? (m?.pratos.find((p) => p.prato_base_id === prato) ?? null) : (m?.cozinha ?? null));
         })
         .catch((e) => setErro(mensagemErro(e)));
@@ -47,6 +53,20 @@ export default function Avaliacoes() {
           {a.comentario && <Text style={{ fontSize: 15 }}>{a.comentario}</Text>}
           {a.pratos.length > 0 && (
             <Text style={{ color: cores.textoSuave, fontSize: 13 }}>{a.pratos.map((p) => `${p.nome} ${p.estrelas}★`).join(' · ')}</Text>
+          )}
+          {(a.fotos ?? []).some((f) => urls[f]) && (
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              {(a.fotos ?? []).map((f) =>
+                urls[f] ? (
+                  <Image
+                    key={f}
+                    source={{ uri: urls[f] }}
+                    style={{ width: 120, height: 120, borderRadius: raio }}
+                    accessibilityLabel={`Foto de ${a.autor}`}
+                  />
+                ) : null,
+              )}
+            </View>
           )}
           <Text style={{ color: cores.textoSuave, fontSize: 13 }}>{a.autor}</Text>
         </Cartao>

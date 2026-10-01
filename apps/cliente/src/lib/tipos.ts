@@ -62,6 +62,8 @@ export type AvaliacaoPublica = {
   comentario: string | null;
   autor: string;
   pratos: { nome: string; estrelas: number }[];
+  /** Caminhos das fotos aprovadas (I7); vazio com avaliacoes_fotos desligado */
+  fotos: string[];
 };
 
 export type Media = { media: number; total: number };

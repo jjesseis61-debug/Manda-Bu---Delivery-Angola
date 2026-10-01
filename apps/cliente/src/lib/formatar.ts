@@ -150,6 +150,7 @@ const mensagens: Record<string, string> = {
   token_invalido: 'Não foi possível activar as notificações.',
   // avaliações (C9)
   prato_fora_do_pedido: 'Só podes avaliar os pratos deste pedido.',
+  limite_fotos: 'Podes juntar no máximo 2 fotos.',
   // pedidos de grupo (C12, C13)
   grupo_ponto_invalido: 'O grupo é entregue num dos teus endereços de trabalho. Escolhe um endereço do tipo Trabalho.',
   grupo_horas_invalidas: 'O prazo para aderir tem de ser no futuro e pelo menos 15 minutos antes da entrega.',

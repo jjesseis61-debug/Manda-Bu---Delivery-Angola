@@ -1,15 +1,24 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Text, View } from 'react-native';
+import { Image, Text, View } from 'react-native';
 
 import { Guarda } from '@/components/Guarda';
 import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Escolha, Paragrafo, Subtitulo } from '@/components/ui';
-import { adicionarPalavra, comentariosModeracao, lerPalavras, ocultarAvaliacao, removerPalavra } from '@/lib/api';
+import {
+  adicionarPalavra,
+  comentariosModeracao,
+  enderecosFotos,
+  fotosPendentes,
+  lerPalavras,
+  moderarFoto,
+  ocultarAvaliacao,
+  removerPalavra,
+} from '@/lib/api';
 import { formatarData, mensagemErro } from '@/lib/formatar';
-import { cores, espaco } from '@/lib/tema';
-import type { ComentarioModeracao, PalavraFiltrada } from '@/lib/tipos';
+import { cores, espaco, raio } from '@/lib/tema';
+import type { ComentarioModeracao, FotoPendente, PalavraFiltrada } from '@/lib/tipos';
 
-/** O7. Moderação: comentários recentes (Ocultar/Mostrar) e palavras filtradas. Fotos chegam na I7. */
+/** O7. Moderação: fotos pendentes (Aprovar/Rejeitar), comentários recentes (Ocultar/Mostrar) e palavras filtradas */
 export default function Moderacao() {
   const [filtro, setFiltro] = useState<'todos' | 'ocultos'>('todos');
   const [lista, setLista] = useState<ComentarioModeracao[] | null>(null);
@@ -17,12 +26,16 @@ export default function Moderacao() {
   const [nova, setNova] = useState('');
   const [erro, setErro] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState<string | null>(null);
+  const [fotos, setFotos] = useState<FotoPendente[]>([]);
+  const [urls, setUrls] = useState<Record<string, string>>({});
 
   const carregar = useCallback(() => {
-    Promise.all([comentariosModeracao(30), lerPalavras()])
-      .then(([c, p]) => {
+    Promise.all([comentariosModeracao(30), lerPalavras(), fotosPendentes()])
+      .then(async ([c, p, f]) => {
         setLista(c);
         setPalavras(p);
+        setFotos(f);
+        setUrls(await enderecosFotos(f.map((x) => x.caminho)).catch(() => ({})));
       })
       .catch((e) => setErro(mensagemErro(e)));
   }, []);
@@ -47,6 +60,31 @@ export default function Moderacao() {
     <Guarda permissoes={['avaliacoes.moderar']}>
       <Ecra>
         {erro && <Aviso tipo="erro">{erro}</Aviso>}
+        <Subtitulo>Fotos por aprovar ({fotos.length})</Subtitulo>
+        {fotos.length === 0 && <Paragrafo suave>Nenhuma foto à espera.</Paragrafo>}
+        {fotos.map((f) => (
+          <Cartao key={f.foto_id}>
+            {urls[f.caminho] ? (
+              <Image source={{ uri: urls[f.caminho] }} style={{ width: '100%', height: 240, borderRadius: raio }} resizeMode="contain" />
+            ) : (
+              <Paragrafo suave>Não foi possível abrir a foto.</Paragrafo>
+            )}
+            <Text style={{ color: cores.destaque, fontSize: 16 }}>{'★'.repeat(f.estrelas)}</Text>
+            {f.comentario && <Text>{f.comentario}</Text>}
+            <Text style={{ color: cores.textoSuave, fontSize: 13 }}>
+              {f.autor_nome} · {f.cozinha_nome} · {formatarData(f.criado_em, true)}
+            </Text>
+            <View style={{ flexDirection: 'row', gap: espaco.s }}>
+              <View style={{ flex: 1 }}>
+                <Botao titulo="Aprovar" aCarregar={ocupado === f.foto_id} aoCarregar={() => accao(f.foto_id, () => moderarFoto(f.foto_id, 'aprovada'))} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Botao titulo="Rejeitar" variante="secundario" aCarregar={ocupado === `${f.foto_id}r`} aoCarregar={() => accao(`${f.foto_id}r`, () => moderarFoto(f.foto_id, 'rejeitada'))} />
+              </View>
+            </View>
+          </Cartao>
+        ))}
+
         <Subtitulo>Comentários dos últimos 30 dias</Subtitulo>
         <Escolha
           opcoes={[

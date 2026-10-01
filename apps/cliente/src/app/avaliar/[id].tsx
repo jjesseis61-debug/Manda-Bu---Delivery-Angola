@@ -1,15 +1,17 @@
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, Switch, Text, View } from 'react-native';
+import { Image, Pressable, Switch, Text, View } from 'react-native';
 
 import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Paragrafo, Subtitulo } from '@/components/ui';
-import { avaliacaoPermitida, avaliarPedido, lerPedido, minhaAvaliacao } from '@/lib/api';
+import { avaliacaoPermitida, avaliarPedido, criarFoto, lerPedido, minhaAvaliacao } from '@/lib/api';
+import { enviarFoto, escolherFotos } from '@/lib/fotos';
 import { mensagemErro } from '@/lib/formatar';
 import { useSessao } from '@/lib/sessao';
-import { cores } from '@/lib/tema';
+import { cores, raio } from '@/lib/tema';
 import type { Pedido } from '@/lib/tipos';
 
 const MAX_COMENTARIO = 200;
+const MAX_FOTOS = 2;
 
 function Estrelas({ valor, aoMudar, tamanho = 36 }: { valor: number; aoMudar: (v: number) => void; tamanho?: number }) {
   return (
@@ -36,6 +38,8 @@ export default function Avaliar() {
   const [pratos, setPratos] = useState<Record<string, number>>({});
   const [erro, setErro] = useState<string | null>(null);
   const [aEnviar, setAEnviar] = useState(false);
+  const [fotos, setFotos] = useState<string[]>([]);
+  const [avisoFotos, setAvisoFotos] = useState<string | null>(null);
 
   useEffect(() => {
     if (!ligada('avaliacoes')) return;
@@ -62,6 +66,7 @@ export default function Avaliar() {
     return (
       <Ecra>
         <Aviso tipo="sucesso">Obrigado! Já avaliaste este pedido.</Aviso>
+        {avisoFotos && <Aviso>{avisoFotos}</Aviso>}
         <Botao titulo="Voltar" variante="secundario" aoCarregar={() => router.back()} />
       </Ecra>
     );
@@ -80,7 +85,7 @@ export default function Avaliar() {
     setErro(null);
     setAEnviar(true);
     try {
-      await avaliarPedido({
+      const avaliacaoId = await avaliarPedido({
         pedidoId: String(id),
         clienteId: perfil.cliente_id,
         estrelas,
@@ -88,6 +93,22 @@ export default function Avaliar() {
         usarPseudonimo: pseudonimo,
         pratos: Object.entries(pratos).map(([prato_id, e]) => ({ prato_id, estrelas: e })),
       });
+      // As fotos seguem depois da avaliação; se alguma falhar, a avaliação fica feita na mesma
+      if (fotos.length > 0) {
+        let falhadas = 0;
+        for (const uri of fotos) {
+          try {
+            await enviarFoto(await criarFoto(avaliacaoId), uri);
+          } catch {
+            falhadas += 1;
+          }
+        }
+        setAvisoFotos(
+          falhadas > 0
+            ? `Não foi possível enviar ${falhadas === 1 ? 'uma foto' : 'as fotos'}. A avaliação foi registada.`
+            : 'As fotos aparecem na avaliação depois de aprovadas pela nossa equipa.',
+        );
+      }
       setEstado('feita');
     } catch (e) {
       setErro(mensagemErro(e));
@@ -116,6 +137,33 @@ export default function Avaliar() {
               <Estrelas valor={pratos[pratoId] ?? 0} aoMudar={(v) => setPratos((p) => ({ ...p, [pratoId]: v }))} tamanho={26} />
             </View>
           ))}
+        </Cartao>
+      )}
+      {ligada('avaliacoes_fotos') && (
+        <Cartao>
+          <Paragrafo suave>Fotos (opcional, até {MAX_FOTOS}). Só aparecem depois de aprovadas.</Paragrafo>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            {fotos.map((uri) => (
+              <Pressable key={uri} onPress={() => setFotos((f) => f.filter((x) => x !== uri))} accessibilityLabel="Tirar esta foto">
+                <Image source={{ uri }} style={{ width: 88, height: 88, borderRadius: raio }} />
+                <Text style={{ color: cores.marca, fontSize: 12, textAlign: 'center' }}>Tirar</Text>
+              </Pressable>
+            ))}
+          </View>
+          {fotos.length < MAX_FOTOS && (
+            <Botao
+              titulo="Juntar fotos"
+              variante="secundario"
+              aoCarregar={async () => {
+                try {
+                  const novas = await escolherFotos(MAX_FOTOS - fotos.length);
+                  setFotos((f) => [...f, ...novas].slice(0, MAX_FOTOS));
+                } catch (e) {
+                  setErro(mensagemErro(e));
+                }
+              }}
+            />
+          )}
         </Cartao>
       )}
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
