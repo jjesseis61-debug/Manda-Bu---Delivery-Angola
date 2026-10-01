@@ -671,10 +671,9 @@ operador também regista o telemóvel). Para não expor ids, os clientes deixam 
 directamente: a lista e as médias vêm de funções do servidor.
 
 **Pendente para pôr a I5 em uso:**
-1. Aplicar a migração `20261001500000_crescimento_i5_avaliacoes_equipa.sql` no Supabase (precisa da tua confirmação) e publicar de novo a Edge Function `enviar-notificacoes`.
-2. Projecto EAS também para a app do operador (`extra.eas.projectId`) para o N12 chegar por push.
-3. Turnos registados com `periodo` (manhã/tarde/noite) e `hora_prometida` nos pedidos, para as métricas de turno terem dados.
-4. Critério da fase: métricas de turno aceites pela equipa.
+1. Projecto EAS também para a app do operador (`extra.eas.projectId`) para o N12 chegar por push.
+2. Turnos registados com `periodo` (manhã/tarde/noite) e `hora_prometida` nos pedidos, para as métricas de turno terem dados.
+3. Critério da fase: métricas de turno aceites pela equipa.
 
 A revisão de parâmetros (custo por cliente conquistado, retenção, % anulados) é feita 1–2 meses após I4 e depois trimestralmente, sempre no painel, sem alterar código.
 

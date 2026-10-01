@@ -4,7 +4,7 @@
 //
 // Chamada de minuto a minuto por pg_cron (agendar_envio_notificacoes). Só despacha
 // o que já está na fila: os textos e os destinatários vêm do servidor
-// (notificacoes_pendentes) e os interruptores são respeitados lá.
+// (notificacoes_por_enviar) e os interruptores são respeitados lá.
 // Autenticação própria (a função é publicada sem verificação de JWT, porque o pg_cron
 // não tem sessão): o pedido tem de trazer o cabeçalho x-envio-segredo igual ao
 // segredo ENVIO_SEGREDO da função. Sem segredo configurado, recusa tudo.
@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
     auth: { persistSession: false },
   });
 
-  const { data, error } = await supabase.rpc('notificacoes_pendentes', { p_limite: 200 });
+  const { data, error } = await supabase.rpc('notificacoes_por_enviar', { p_limite: 200 });
   if (error) {
     return Response.json({ erro: error.message }, { status: 500 });
   }

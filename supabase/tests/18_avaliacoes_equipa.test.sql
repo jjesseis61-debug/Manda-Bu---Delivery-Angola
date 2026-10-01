@@ -152,7 +152,7 @@ select is((texto_notificacao('N9', '{"refeicao": "almoço", "cozinha_nome": "Coz
           'Como estava o almoço da Cozinha da Alexandra? Avalia em 10 segundos.', 'N9: texto');
 insert into notificacoes_fila (cliente_id, codigo, dados)
 values (testes.u('ana'), 'N9', jsonb_build_object('pedido_id', testes.u('p_ana'), 'cozinha_nome', 'Cozinha da Alexandra'));
-select is((select count(*)::int from notificacoes_pendentes(1000) where cliente_id = testes.u('ana') and codigo = 'N9'), 0,
+select is((select count(*)::int from notificacoes_por_enviar(1000) where cliente_id = testes.u('ana') and codigo = 'N9'), 0,
           'N9: pedido já avaliado -> não é enviada');
 
 -- ---------------------------------------------------------------------------
@@ -201,7 +201,7 @@ select results_eq($$select funcionario_id, (texto_notificacao(codigo, dados)).co
                   format($$values (%L::uuid, 'Parabéns, turno da manhã: entregas a horas esta semana!'::text)$$, testes.u('rui')),
                   'N12: só os membros do turno reconhecido, uma vez cada');
 select is(testes.v('rui_token'), 'sem_erro', 'push: o funcionário regista o telemóvel');
-select results_eq($$select destino, tokens from notificacoes_pendentes(1000) where codigo = 'N12'$$,
+select results_eq($$select destino, tokens from notificacoes_por_enviar(1000) where codigo = 'N12'$$,
                   $$values ('funcionario'::text, array['ExponentPushToken[rui-1]'])$$,
                   'N12 segue para o telemóvel do funcionário, com destino funcionário');
 select throws_ok(format($$insert into notificacoes_fila (cliente_id, funcionario_id, codigo) values (%L, %L, 'N12')$$,

@@ -18,8 +18,7 @@
 -- -----------------------------------------------------------------------------
 -- 1. Avaliações: leitura pública por funções
 -- -----------------------------------------------------------------------------
-drop policy ler on avaliacoes;
-create policy ler on avaliacoes for select to authenticated
+alter policy ler on avaliacoes
   using (cliente_id = cliente_actual() or e_funcionario());
 
 -- Nome do autor: primeiro nome e inicial do apelido, ou o pseudónimo se o cliente preferir
@@ -263,8 +262,8 @@ $$;
 
 -- Notificações por enviar, com o destino (cliente ou funcionário): a Edge Function
 -- envia cada destino num pedido à Expo à parte (as duas apps são projectos diferentes).
-drop function notificacoes_pendentes(integer);
-create function notificacoes_pendentes(p_limite integer default 100)
+-- Substitui notificacoes_pendentes (que fica só para a versão anterior da Edge Function).
+create or replace function notificacoes_por_enviar(p_limite integer default 100)
 returns table (id uuid, cliente_id uuid, funcionario_id uuid, destino text, codigo text,
                titulo text, corpo text, dados jsonb, tokens text[])
 language sql stable security definer set search_path = public as $$
@@ -318,6 +317,6 @@ revoke execute on function nome_autor_avaliacao(uuid, boolean)  from public, ano
 revoke execute on function job_n9_avaliacao()                   from public, anon, authenticated;
 revoke execute on function agendar_jobs()                       from public, anon, authenticated;
 revoke execute on function avaliacoes_pratos_antes_inserir()    from public, anon, authenticated;
-revoke execute on function notificacoes_pendentes(integer)      from public, anon, authenticated;
+revoke execute on function notificacoes_por_enviar(integer)     from public, anon, authenticated;
 revoke execute on function texto_notificacao(text, jsonb)       from public, anon, authenticated;
-grant execute on function notificacoes_pendentes(integer), texto_notificacao(text, jsonb) to service_role;
+grant execute on function notificacoes_por_enviar(integer), texto_notificacao(text, jsonb) to service_role;

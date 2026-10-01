@@ -17,7 +17,7 @@ Aplicadas por esta ordem. **Uma migração já aplicada nunca se edita:** qualqu
 | `20261001052738_crescimento_i2_desconto_limite.sql` | O desconto de indicação nunca passa o valor do pedido (subtotal + taxa): valor final nunca negativo, no pedido e no orçamento. Uso único (o que sobra não passa para o pedido seguinte). | aplicada |
 | `20261001091617_crescimento_i3_app_operador.sql` | I3: `funcionarios.telefone` e entrada por SMS (`definir_telefone_funcionario`, `ligar_funcionario`, `meu_funcionario`); leituras do operador com permissão do organograma: `painel_programa` (O1), `ganhos_em_verificacao` e `confirmar_ganhos_indicador` (O2), `levantamentos_operador` (O3), `embaixadores` (O4), `pedidos_operador` (E1); RLS de leitura em `caixa`; N3 vinda da verificação com o nome do amigo e o saldo da semana; auditoria das escritas em `cozinhas` e `cardapio` (O6). | aplicada |
 | `20261001144534_crescimento_i4_lancamento.sql` | I4: C5 "Não mostrar os meus ganhos" (`perfil_destaques.ocultar_ganhos`; valores escondidos para os outros em `destaques_mes`); N5 com o prato do dia; textos de N5, N6 e N7 e envio pela Edge Function, respeitando no envio as preferências do cliente. Não liga interruptores. | aplicada |
-| `20261001500000_crescimento_i5_avaliacoes_equipa.sql` | I5: avaliações lidas pelos clientes só pelas suas linhas; lista pública e médias por funções sem ids (`avaliacoes_publicas`, `medias_avaliacoes`); estrelas por prato só de pratos do pedido; O7 (`avaliacoes_moderacao`); N9 (`job_n9_avaliacao`, de 15 em 15 minutos); N12 e push para funcionários (`notificacoes_fila.funcionario_id`, `dispositivos_push.funcionario_id`, `registar_token_push_funcionario`, destino em `notificacoes_pendentes`); `meu_funcionario().cozinhas_equipa`. | **por aplicar** (o ambiente pediu confirmação: apaga e recria uma política e uma função e altera duas tabelas) |
+| `20261001155248_crescimento_i5_avaliacoes_equipa.sql` | I5: avaliações lidas pelos clientes só pelas suas linhas; lista pública e médias por funções sem ids (`avaliacoes_publicas`, `medias_avaliacoes`); estrelas por prato só de pratos do pedido; O7 (`avaliacoes_moderacao`); N9 (`job_n9_avaliacao`, de 15 em 15 minutos); N12 e push para funcionários (`notificacoes_fila.funcionario_id`, `dispositivos_push.funcionario_id`, `registar_token_push_funcionario`, nova `notificacoes_por_enviar` com o destino, usada pela Edge Function; `notificacoes_pendentes` fica sem uso); `meu_funcionario().cozinhas_equipa`. Sem `drop`: a política muda com `alter policy`. | aplicada |
 
 Os números de versão dos ficheiros são os que o Supabase registou ao aplicar, para `supabase migration list` e
 `supabase db push` não voltarem a aplicá-las.
@@ -102,7 +102,7 @@ base de dados.
 | 15 app do operador | 28/28 | 28/28 (em partes, ver abaixo) |
 | 16 lançamento (I4) | 16/16 | 16/16 |
 | 17 preferências de notificação (C14) | 6/6 | 6/6 |
-| 18 avaliações e equipa (I5) | 30/30 | por correr (migração por aplicar) |
+| 18 avaliações e equipa (I5) | 30/30 | 30/30 |
 | **Total** | **393/393** | |
 
 Na I2 voltaram a correr no Supabase os testes afectados por cada migração (app do cliente: 06, 08, 09, 12 e 13;
@@ -116,6 +116,10 @@ correr remotamente (o ambiente bloqueou as escritas em massa); passam localmente
 
 Na I4 correram no Supabase o 16 (16/16), o 05 (15/15: sem a verificação que altera `limiar_intervalos` em
 `parametros`) e as verificações de `search_path`, `anon` e privilégios das funções alteradas.
+
+Na I5 correram no Supabase o 18 (30/30) e as verificações de catálogo do 09 e do 12 (funções chamáveis pelas apps,
+`anon`, `search_path`, funções de trigger, índices das chaves estrangeiras). A Edge Function `enviar-notificacoes`
+foi publicada de novo (versão 2), sem verificação de JWT e com o segredo próprio, como antes.
 
 Nenhum dado de teste ficou na base (contagens de `funcionarios`, `clientes`, `pedidos`, `cardapio` e `caixa` a 0;
 interruptores todos desligados). **Por remover:** o esquema `testes` e a extensão `pgtap` ficaram instalados no
