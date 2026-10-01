@@ -13,6 +13,7 @@ Aplicadas por esta ordem. **Uma migração já aplicada nunca se edita:** qualqu
 | `20261001040216_crescimento_i1_endurecimento.sql` | Correcções aos avisos do Supabase: `search_path` fixo, funções de trigger não expostas, índices nas chaves estrangeiras, nome do índice de `vendas.local`. | aplicada |
 | `20261001041532_crescimento_i1_consumo_stock.sql` | Regra 3 (consumo): o servidor desconta o stock só das vendas que gera de pedidos (`vendas.stock_consumido_por`); itens do pedido validados (`prato_base_id` existente); componentes excluídos/ajustados; conversão para a unidade base; só produtos `Longo Prazo`; índice único `estoque_longo_prazo (venda_id, produto_id) where venda_id is not null`; guarda (regra 10): consumo de dispositivo para venda `App cliente` descartado e auditado como bloqueado; avisos `stock_consumo_pendente`. | aplicada |
 | `20261001043509_crescimento_i1_privilegios.sql` | Guarda do consumo de stock passa a SECURITY DEFINER (um trigger SECURITY INVOKER anterior marca as sessões do telemóvel); `origem_venda`, `auditar_consumo_bloqueado` e `gerar_codigo_grupo` deixam de ser chamáveis pelas apps. | aplicada |
+| `20261001052041_crescimento_i2_app_cliente.sql` | I2: `registar_cliente`/`meu_perfil` (registo pelo telefone confirmado por SMS; liga clientes do balcão); `cardapio` (preço, disponível, prato do dia) e preço dos pedidos da app calculado no servidor (`orcamento_pedido`, `trg_pedidos_00_cardapio`); `meus_amigos`; `dispositivos_push` e tokens Expo; textos N2/N3/N4/N8 e funções do serviço de envio (só `service_role`). | aplicada |
 
 Os números de versão dos ficheiros são os que o Supabase registou ao aplicar, para `supabase migration list` e
 `supabase db push` não voltarem a aplicá-las.
@@ -31,6 +32,12 @@ Os jobs respeitam os interruptores: com tudo desligado não enfileiram nada.
 | N6 — indicado expira em 5 dias | diariamente às 08h | `job_n6_expiracao()` |
 | N5 — lembrete do almoço | dias úteis às 11h | `job_n5_lembrete()` |
 | N7 — perto do top | segundas às 08h | `job_n7_destaques()` |
+
+## Edge Functions
+
+| Função | O que faz | Configuração |
+|---|---|---|
+| `functions/enviar-notificacoes` | Envia a fila (N2, N3, N4, N8) pelo push da Expo; desactiva tokens rejeitados; marca como enviadas | Publicada sem verificação de JWT, com autenticação própria: segredo `ENVIO_SEGREDO` (obrigatório) no cabeçalho `x-envio-segredo`. Agendar com `select agendar_envio_notificacoes('<url da função>', '<segredo>');` depois de activar `pg_cron` e `pg_net`. |
 
 ## Testes
 
@@ -52,6 +59,7 @@ base de dados.
 | `10_decisoes_i1.test.sql` | Testes 47–51: duração garantida, vendas por item, caixa, estorno sem stock, permissões |
 | `11_consumo_stock.test.sql` | Consumo de stock das vendas de pedidos: validação dos itens, conversão de unidades, excluídos/ajustados, diários, consumo uma só vez (incl. segunda tentativa do servidor), estorno, vendas do operador, guarda contra consumo de dispositivo (auditado como bloqueado), avisos |
 | `12_privilegios.test.sql` | Funções SECURITY DEFINER chamáveis pelas apps (lista fechada), nenhuma para `anon`; grupo criado pela app; guarda do consumo com sessão do telemóvel |
+| `13_app_cliente.test.sql` | I2: registo e ligação ao cliente do balcão, cardápio e preço no servidor, ponto/zona, desconto no orçamento, amigos, tokens de push, textos e fila de notificações |
 
 ### Como correr
 
@@ -65,7 +73,7 @@ base de dados.
 
 ### Resultados (30 de Setembro de 2026)
 
-| Teste | Postgres 16 local, 7 migrações | Supabase `laruvuambdovnkojwrzp`, 7 migrações |
+| Teste | Postgres 16 local, 8 migrações | Supabase `laruvuambdovnkojwrzp`, 8 migrações |
 |---|---|---|
 | 00 estrutura | 19/19 | 19/19 |
 | 01 ligação | 9/9 | 9/9 |
@@ -75,12 +83,16 @@ base de dados.
 | 05 destaques | 16/16 | 16/16 |
 | 06 RLS | 29/29 | 29/29 |
 | 07 funções de apoio | 19/19 | 19/19 |
-| 08 ajustes I1 | 32/32 | 32/32 |
+| 08 ajustes I1 | 32/32 | 32/32 (a verificação alterada na I2 voltou a correr) |
 | 09 endurecimento | 5/5 | 5/5 |
 | 10 decisões I1 | 29/29 | 29/29 |
 | 11 consumo de stock | 35/35 | 35/35 |
 | 12 privilégios | 8/8 | 8/8 |
-| **Total** | **265/265** | **265/265** |
+| 13 app do cliente | 37/37 | 37/37 |
+| **Total** | **302/302** | **302/302** |
+
+Na I2 voltaram a correr no Supabase os testes afectados pela migração (06, 08, 09, 12 e 13); os restantes não
+dependem dela e passaram com a mesma versão da base na ronda anterior (e todos passam localmente).
 
 No fim, o esquema `testes` e a extensão `pgtap` foram removidos do Supabase e não ficou nenhum dado de teste.
 

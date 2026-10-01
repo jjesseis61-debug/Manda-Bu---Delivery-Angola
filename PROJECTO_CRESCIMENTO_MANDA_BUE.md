@@ -303,6 +303,7 @@ O SQL definitivo está nas migrações em `supabase/migrations/` (aplicadas por 
 | `20261001040216_crescimento_i1_endurecimento.sql` | `search_path` fixo, funções de trigger não expostas, índices nas chaves estrangeiras |
 | `20261001041532_crescimento_i1_consumo_stock.sql` | Consumo de stock das vendas geradas de pedidos (regra 3), validação dos itens do pedido |
 | `20261001043509_crescimento_i1_privilegios.sql` | Guarda do consumo sem funções expostas; funções SECURITY DEFINER internas fora do alcance das apps |
+| `20261001052041_crescimento_i2_app_cliente.sql` | I2: registo do cliente, cardápio com preços no servidor, amigos convidados, tokens de push, textos das notificações |
 
 **Nomes reais.** Os nomes assumidos na versão 1.0 foram substituídos pelos do `MODELO_DE_DADOS.md`:
 
@@ -611,6 +612,21 @@ Todos os valores e nomes são preenchidos a partir dos dados e parâmetros.
 organograma (`tem_permissao`, `membro_da_cozinha`) antes de a app do operador sincronizar. O verificador do Supabase
 conta 19 tabelas sem políticas: as outras duas, `notificacoes_fila` e `contadores_zona`, são só do servidor e ficam
 fechadas de propósito. Não criadas em I1.
+
+**Estado da I2 (app do cliente, `apps/cliente`):** implementados C1, C2 (registo e checkout), C4, C6, C7, C8, C11,
+deep link `mandabue://convite/MB-1234`, N1 (mensagem de partilha) e o envio de N2, N3, N4 e N8 (Edge Function
+`enviar-notificacoes` + Expo Push). Para isso a I2 incluiu também a base da app: entrada por SMS, registo, cardápio,
+carrinho, checkout e acompanhamento do pedido. Interruptores continuam todos desligados (ligam em I4).
+
+**Pendente para pôr a I2 em uso:**
+1. Fornecedor de SMS configurado no Supabase Auth (Twilio, MessageBird, Vonage…).
+2. Projecto EAS (`npx eas-cli init`) e o `projectId` em `app.json` → `extra.eas.projectId`; sem ele a app não pede o token de push. Push no Android exige uma *development build* (não funciona no Expo Go).
+3. Segredo `ENVIO_SEGREDO` na Edge Function; activar `pg_cron` e `pg_net`; `select agendar_envio_notificacoes(url, segredo)`.
+4. Chave do Google Maps para o mapa no Android em produção (`app.json` → `android.config.googleMaps.apiKey`).
+5. Cardápio e zonas (com `taxa`) preenchidos pelo operador; o pedido da app exige um endereço com zona.
+6. Página https do link de convite (para quem ainda não tem a app): precisa de domínio; hoje o link é `mandabue://`.
+7. App local-first (SQLite e fila de saída offline) — a app da I2 funciona com ligação à rede.
+8. Desconto maior do que o valor do pedido: o orçamento mostra 0, mas o pedido guardado pode ficar com valor final negativo; limitar no servidor.
 
 A revisão de parâmetros (custo por cliente conquistado, retenção, % anulados) é feita 1–2 meses após I4 e depois trimestralmente, sempre no painel, sem alterar código.
 

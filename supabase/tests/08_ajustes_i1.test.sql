@@ -32,8 +32,8 @@ select col_type_is('parametros', 'id', 'uuid', 'parametros.id é UUID');
 select col_type_is('funcionalidades', 'id', 'uuid', 'funcionalidades.id é UUID');
 select is((select count(*)::int from pg_description d join pg_class c on c.oid = d.objoid
             where c.relnamespace = 'public'::regnamespace and d.objsubid = 0
-              and d.description like 'Sincronização:%'), 21,
-          'estratégia de conflito registada nas 21 tabelas novas');
+              and d.description like 'Sincronização:%'), 23,
+          'estratégia de conflito registada nas 23 tabelas novas (21 de I1, cardapio e dispositivos_push de I2)');
 
 -- ---------------------------------------------------------------------------
 -- Parâmetros e interruptores só por funções do servidor

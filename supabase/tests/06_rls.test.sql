@@ -22,7 +22,12 @@ insert into pagamentos_indicacao (indicador_id, valor, tipo, metodo, numero_dest
 values (testes.u('b'), 2000, 'levantamento', 'unitel_money', '923555666');
 
 -- Dados do cliente A
-select testes.def('ponto_a', testes.ponto('residencial'));
+-- Pedidos criados pela app usam o cardápio e um ponto com zona (I2)
+with z as (insert into zonas (nome, tipo, taxa) values ('Zona A', 'Própria', 500) returning id)
+select testes.def('zona_a', id) from z;
+with m as (insert into cardapio (nome, preco) values ('Muamba', 2500) returning id)
+select testes.def('item_a', id) from m;
+select testes.def('ponto_a', testes.ponto('residencial', null, null, testes.u('zona_a')));
 insert into enderecos_cliente (cliente_id, ponto_entrega_id) values (testes.u('a'), testes.u('ponto_a'));
 select testes.def('pedido_a', testes.pedido(testes.u('a'), testes.u('ponto_a')));
 
@@ -93,8 +98,10 @@ select testes.def('e_nivel', testes.erro(format(
   'update codigos_indicacao set nivel = %L where cliente_id = %L', 'embaixador', testes.u('a'))));
 select testes.def('e_parametros', testes.erro('update parametros set ganho_por_pedido = 1000'));
 -- Inserir um pedido com desconto inventado é aceite, mas o servidor recalcula
-with x as (insert into pedidos (cliente_id, ponto_entrega_id, desconto_indicacao)
-           values (testes.u('a'), testes.u('ponto_a'), 700) returning desconto_indicacao)
+with x as (insert into pedidos (cliente_id, ponto_entrega_id, itens, desconto_indicacao)
+           values (testes.u('a'), testes.u('ponto_a'),
+                   jsonb_build_array(jsonb_build_object('cardapio_id', testes.u('item_a'), 'qtd', 1)), 700)
+           returning desconto_indicacao)
 select testes.def('desconto_a2', desconto_indicacao) from x;
 reset role;
 

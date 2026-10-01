@@ -33,6 +33,9 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 'mudar_estado_pedido', 'ocultar_avaliacao', 'pedir_levantamento', 'pessoas_como_tu',
                 'pontos_entrega_proximos', 'registar_partilha', 'rejeitar_levantamento',
                 'relatorio_cozinha', 'rever_ganho', 'total_pago_mes', 'usar_credito',
+                -- API da app do cliente (I2)
+                'registar_cliente', 'meu_perfil', 'orcamento_pedido', 'meus_amigos',
+                'registar_token_push', 'remover_token_push',
                 -- auxiliares usadas em políticas RLS, valores por defeito ou triggers SECURITY INVOKER
                 'cliente_actual', 'cozinha_padrao', 'e_funcionario', 'funcionalidade_activa',
                 'funcionario_actual', 'membro_da_cozinha', 'tem_permissao')),

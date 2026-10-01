@@ -1,0 +1,60 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
+import * as Device from 'expo-device';
+import * as Notifications from 'expo-notifications';
+import { Platform } from 'react-native';
+
+import { registarTokenPush, removerTokenPush } from './api';
+
+const CHAVE = 'manda-bue:token-push';
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowBanner: true,
+    shouldShowList: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
+
+function projectId(): string | undefined {
+  return (Constants.expoConfig?.extra?.eas?.projectId as string | undefined) ?? Constants.easConfig?.projectId;
+}
+
+/**
+ * Pede autorização e regista o token Expo deste telemóvel no servidor.
+ * Sem projectId do EAS (app.json → extra.eas.projectId), num simulador ou na web, não faz nada.
+ */
+export async function activarPush(): Promise<void> {
+  const id = projectId();
+  if (Platform.OS === 'web' || !Device.isDevice || !id) return;
+
+  if (Platform.OS === 'android') {
+    await Notifications.setNotificationChannelAsync('default', {
+      name: 'Manda Bué',
+      importance: Notifications.AndroidImportance.DEFAULT,
+    });
+  }
+  let { status } = await Notifications.getPermissionsAsync();
+  if (status !== 'granted') ({ status } = await Notifications.requestPermissionsAsync());
+  if (status !== 'granted') return;
+
+  const token = (await Notifications.getExpoPushTokenAsync({ projectId: id })).data;
+  await registarTokenPush(token, Platform.OS);
+  await AsyncStorage.setItem(CHAVE, token);
+}
+
+/** Ao sair da conta: este telemóvel deixa de receber as notificações da conta */
+export async function desactivarPush(): Promise<void> {
+  const token = await AsyncStorage.getItem(CHAVE);
+  if (!token) return;
+  await removerTokenPush(token).catch(() => undefined);
+  await AsyncStorage.removeItem(CHAVE);
+}
+
+/** Ecrã a abrir quando o cliente toca numa notificação */
+export function rotaDaNotificacao(codigo: unknown): '/convida' | '/levantar' | null {
+  if (codigo === 'N2' || codigo === 'N3' || codigo === 'N4') return '/convida';
+  if (codigo === 'N8') return '/levantar';
+  return null;
+}

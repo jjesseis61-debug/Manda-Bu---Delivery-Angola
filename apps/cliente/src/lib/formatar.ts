@@ -1,0 +1,117 @@
+import type { EstadoPedido, Parametros } from './tipos';
+
+/** 1300 -> "1.300 Kz" (separador de milhares angolano) */
+export function formatarKz(valor: number | null | undefined): string {
+  const inteiro = Math.round(Number(valor ?? 0));
+  const sinal = inteiro < 0 ? '−' : '';
+  const digitos = Math.abs(inteiro).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return `${sinal}${digitos} Kz`;
+}
+
+/** "Ana · 23 dias", "Ana · último dia", "Ana · à espera do 1.º pedido", "Ana · terminou" */
+export function textoAmigo(nome: string, estado: string, diasRestantes: number | null): string {
+  if (estado === 'aguarda_primeiro_pedido') return `${nome} · à espera do 1.º pedido`;
+  if (estado === 'expirado' || diasRestantes === null || diasRestantes <= 0) return `${nome} · terminou`;
+  if (diasRestantes === 1) return `${nome} · último dia`;
+  return `${nome} · ${diasRestantes} dias`;
+}
+
+/** N1: mensagem de partilha enviada pelo próprio cliente */
+export function mensagemConvite(codigo: string, descontoIndicado: number, link: string): string {
+  return (
+    `Estou a pedir no Manda Bué — Delivery Angola e está bom! ` +
+    `Usa o meu código ${codigo} e ganhas ${formatarKz(descontoIndicado)} de desconto no primeiro pedido. ${link}`
+  );
+}
+
+/** Texto das regras (secção 4.13), com os valores de `parametros` */
+export function textoRegras(p: Parametros): string[] {
+  return [
+    `Ganhas ${formatarKz(p.ganho_por_pedido)} por cada pedido dos amigos que convidares, durante ${p.duracao_dias} dias a contar do primeiro pedido deles. Não há limite de ganhos.`,
+    `O teu amigo ganha ${formatarKz(p.desconto_indicado)} de desconto no primeiro pedido.`,
+    `Levantas o saldo a partir de ${formatarKz(p.levantamento_minimo)} ou usas em refeições. Acima de ${formatarKz(p.limite_verificacao_semanal)} por semana, confirmamos os pedidos antes de pagar.`,
+    'Ganhos de contas falsas ou pedidos não pagos são anulados.',
+    'Os teus ganhos podem aparecer na lista de destaques com um nome fictício. Podes sair da lista quando quiseres.',
+  ];
+}
+
+/** "mb-4821 " -> "MB-4821"; devolve null se não tiver o formato do código */
+export function normalizarCodigo(texto: string | null | undefined): string | null {
+  const limpo = (texto ?? '').trim().toUpperCase().replace(/\s+/g, '');
+  const comPrefixo = /^\d{4,5}$/.test(limpo) ? `MB-${limpo}` : limpo.replace(/^MB(?=\d)/, 'MB-');
+  return /^MB-\d{4,5}$/.test(comPrefixo) ? comPrefixo : null;
+}
+
+/** "923 456 789" ou "+244923456789" -> "+244923456789"; null se não for um número angolano */
+export function telefoneInternacional(texto: string): string | null {
+  const digitos = texto.replace(/\D/g, '').replace(/^(00)?244/, '');
+  return /^9\d{8}$/.test(digitos) ? `+244${digitos}` : null;
+}
+
+export const nomeEstadoPedido: Record<EstadoPedido, string> = {
+  pendente: 'Recebido',
+  confirmado: 'Confirmado',
+  em_preparacao: 'Em preparação',
+  em_entrega: 'A caminho',
+  entregue_pago: 'Entregue',
+  cancelado: 'Cancelado',
+  estornado: 'Estornado',
+};
+
+export const nomeMetodo: Record<string, string> = {
+  multicaixa_express: 'Multicaixa Express',
+  unitel_money: 'Unitel Money',
+};
+
+/** Mensagens para os códigos de erro e de resultado devolvidos pelo servidor */
+const mensagens: Record<string, string> = {
+  // ligar_indicacao (6.3)
+  programa_inactivo: 'O programa de convites não está disponível neste momento.',
+  sem_sessao: 'Entra na tua conta para continuar.',
+  codigo_inexistente: 'Este código não existe. Confirma as letras e os números.',
+  proprio_codigo: 'Não podes usar o teu próprio código.',
+  ja_ligado: 'Já usaste um código de convite nesta conta.',
+  cliente_nao_novo: 'O código de convite é só para clientes que ainda não fizeram nenhum pedido.',
+  // desconto (6.4)
+  limite_local: 'Este convite já foi usado o número máximo de vezes nesta morada.',
+  desconto_em_curso: 'O desconto já está num pedido em curso.',
+  desconto_usado: 'O desconto de convite já foi usado.',
+  // registo
+  nome_invalido: 'Escreve o teu nome.',
+  nif_obrigatorio: 'Para empresas, o NIF é obrigatório.',
+  telefone_nao_confirmado: 'Confirma o teu número de telefone primeiro.',
+  telefone_ja_associado: 'Este número já está associado a outra conta. Fala connosco.',
+  // pedidos
+  pedido_vazio: 'O carrinho está vazio.',
+  item_indisponivel: 'Um dos pratos já não está disponível. Actualiza o carrinho.',
+  quantidade_invalida: 'Quantidade inválida.',
+  ponto_obrigatorio: 'Escolhe o endereço de entrega.',
+  ponto_invalido: 'Este endereço não é teu. Escolhe outro.',
+  ponto_sem_zona: 'Este endereço não tem zona de entrega. Edita o endereço e escolhe o bairro.',
+  estado_invalido: 'O pedido já não está no estado certo para isto.',
+  pedido_inexistente: 'Pedido não encontrado.',
+  acima_do_valor_do_pedido: 'O saldo usado não pode passar o valor do pedido.',
+  valor_invalido: 'Valor inválido.',
+  // levantamentos (6.7)
+  abaixo_minimo: 'O valor está abaixo do mínimo para levantar.',
+  saldo_insuficiente: 'Não tens saldo suficiente.',
+  metodo_invalido: 'Escolhe Multicaixa Express ou Unitel Money.',
+  numero_invalido: 'Número de telefone inválido.',
+  token_invalido: 'Não foi possível activar as notificações.',
+};
+
+/** Extrai o código de um erro do Supabase (mensagem = código) e devolve o texto para o cliente */
+export function mensagemErro(erro: unknown): string {
+  const texto =
+    typeof erro === 'string'
+      ? erro
+      : erro && typeof erro === 'object' && 'message' in erro
+        ? String((erro as { message: unknown }).message)
+        : '';
+  const codigo = texto.trim();
+  return mensagens[codigo] ?? 'Não foi possível concluir. Verifica a ligação e tenta outra vez.';
+}
+
+export function mensagemCodigo(codigo: string): string {
+  return mensagens[codigo] ?? mensagemErro(codigo);
+}
