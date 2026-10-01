@@ -629,6 +629,23 @@ carrinho, checkout e acompanhamento do pedido. Interruptores continuam todos des
 6. Página https do link de convite (para quem ainda não tem a app): precisa de domínio; hoje o link é `mandabue://`.
 7. App local-first (SQLite e fila de saída offline) — a app da I2 funciona com ligação à rede.
 
+**Estado da I3 (app do operador, `apps/operador`):** implementados O1 (painel do programa, 7 dias / mês), O2
+(verificação agrupada por indicador, confirmar/anular com motivo, "Confirmar todos", local no mapa), O3
+(levantamentos: aprovar, rejeitar com motivo, marcar pago com referência, primeiro levantamento em destaque,
+parcelas), O4 (embaixadores elegíveis e actuais, promover/remover), O5 (parâmetros e interruptores com
+confirmação, auditados), O6 (cozinhas: estado, história, foto, consentimento; cardápio), O9 (relatório por cozinha
+em CSV e PDF) e E1 (entregas agrupadas por ponto, estados, caixa aberta e formas de pagamento, pagador distinto).
+Entrada por telefone + SMS: o administrador principal regista o número do funcionário
+(`definir_telefone_funcionario`); no primeiro login a conta liga-se ao funcionário; os ecrãs seguem as permissões
+do organograma e o servidor volta a verificá-las. A app corre em Android e na web. Interruptores continuam todos
+desligados.
+
+**Pendente para pôr a I3 em uso:**
+1. Telefones dos funcionários registados pelo administrador principal (`select definir_telefone_funcionario(id, '9XXXXXXXX')` ou um ecrã de equipa numa fase seguinte); o fornecedor de SMS é o mesmo da I2.
+2. Gestão de zonas (com `taxa`) e de caixas fica fora da I3: continuam a ser feitas pelo sistema actual.
+3. Políticas RLS das restantes tabelas base (lista acima) antes de a app do operador sincronizar vendas, stock e turnos; a I3 só abriu a leitura de `caixa`.
+4. Remover do Supabase o esquema `testes` e a extensão `pgtap` (o ambiente bloqueou o `drop`; ver `supabase/README.md`).
+
 A revisão de parâmetros (custo por cliente conquistado, retenção, % anulados) é feita 1–2 meses após I4 e depois trimestralmente, sempre no painel, sem alterar código.
 
 ---

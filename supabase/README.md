@@ -15,6 +15,7 @@ Aplicadas por esta ordem. **Uma migração já aplicada nunca se edita:** qualqu
 | `20261001043509_crescimento_i1_privilegios.sql` | Guarda do consumo de stock passa a SECURITY DEFINER (um trigger SECURITY INVOKER anterior marca as sessões do telemóvel); `origem_venda`, `auditar_consumo_bloqueado` e `gerar_codigo_grupo` deixam de ser chamáveis pelas apps. | aplicada |
 | `20261001052041_crescimento_i2_app_cliente.sql` | I2: `registar_cliente`/`meu_perfil` (registo pelo telefone confirmado por SMS; liga clientes do balcão); `cardapio` (preço, disponível, prato do dia) e preço dos pedidos da app calculado no servidor (`orcamento_pedido`, `trg_pedidos_00_cardapio`); `meus_amigos`; `dispositivos_push` e tokens Expo; textos N2/N3/N4/N8 e funções do serviço de envio (só `service_role`). | aplicada |
 | `20261001052738_crescimento_i2_desconto_limite.sql` | O desconto de indicação nunca passa o valor do pedido (subtotal + taxa): valor final nunca negativo, no pedido e no orçamento. Uso único (o que sobra não passa para o pedido seguinte). | aplicada |
+| `20261001091617_crescimento_i3_app_operador.sql` | I3: `funcionarios.telefone` e entrada por SMS (`definir_telefone_funcionario`, `ligar_funcionario`, `meu_funcionario`); leituras do operador com permissão do organograma: `painel_programa` (O1), `ganhos_em_verificacao` e `confirmar_ganhos_indicador` (O2), `levantamentos_operador` (O3), `embaixadores` (O4), `pedidos_operador` (E1); RLS de leitura em `caixa`; N3 vinda da verificação com o nome do amigo e o saldo da semana; auditoria das escritas em `cozinhas` e `cardapio` (O6). | aplicada |
 
 Os números de versão dos ficheiros são os que o Supabase registou ao aplicar, para `supabase migration list` e
 `supabase db push` não voltarem a aplicá-las.
@@ -62,6 +63,7 @@ base de dados.
 | `12_privilegios.test.sql` | Funções SECURITY DEFINER chamáveis pelas apps (lista fechada), nenhuma para `anon`; grupo criado pela app; guarda do consumo com sessão do telemóvel |
 | `13_app_cliente.test.sql` | I2: registo e ligação ao cliente do balcão, cardápio e preço no servidor, ponto/zona, desconto no orçamento, amigos, tokens de push, textos e fila de notificações |
 | `14_desconto_limite.test.sql` | Desconto limitado ao valor do pedido (com e sem taxa), orçamento, entrega com valor final 0, uso único |
+| `15_app_operador.test.sql` | I3: telefone e ligação dos funcionários, painel (O1), verificação e "Confirmar todos" com N3 (O2), levantamentos (O3), embaixadores (O4), fila de entregas e caixas (E1), auditoria de cozinhas e cardápio (O6) |
 
 ### Como correr
 
@@ -73,9 +75,9 @@ base de dados.
   teste, sem comandos do `psql`. Cada script termina com um erro intencional cuja mensagem é o relatório TAP
   (`ok 1 - …`); o erro desfaz a transacção inteira.
 
-### Resultados (30 de Setembro de 2026)
+### Resultados (1 de Outubro de 2026)
 
-| Teste | Postgres 16 local, 9 migrações | Supabase `laruvuambdovnkojwrzp`, 9 migrações |
+| Teste | Postgres 16 local, 10 migrações | Supabase `laruvuambdovnkojwrzp` |
 |---|---|---|
 | 00 estrutura | 19/19 | 19/19 |
 | 01 ligação | 9/9 | 9/9 |
@@ -92,12 +94,22 @@ base de dados.
 | 12 privilégios | 8/8 | 8/8 |
 | 13 app do cliente | 37/37 | 37/37 |
 | 14 desconto limitado | 11/11 | 11/11 |
-| **Total** | **313/313** | **313/313** |
+| 15 app do operador | 28/28 | 28/28 (em partes, ver abaixo) |
+| **Total** | **341/341** | |
 
 Na I2 voltaram a correr no Supabase os testes afectados por cada migração (app do cliente: 06, 08, 09, 12 e 13;
 desconto limitado: 02, 09 e 14); os restantes não dependem delas (e todos passam localmente).
 
-No fim, o esquema `testes` e a extensão `pgtap` foram removidos do Supabase e não ficou nenhum dado de teste.
+Na I3 correram no Supabase, depois da migração da app do operador: 09 (5/5), as 3 verificações de catálogo do 12
+(funções chamáveis pelas apps e por `anon`) e o 15 inteiro, dividido em partes. Nas partes remotas do 15 as situações
+que o teste local cria alterando `parametros` (limite semanal 0, levantamento mínimo 100, limiar de Embaixador 1)
+foram criadas com dados de teste, sem tocar na linha de `parametros` de produção. O 03 e o resto do 12 não voltaram a
+correr remotamente (o ambiente bloqueou as escritas em massa); passam localmente.
+
+Nenhum dado de teste ficou na base (contagens de `funcionarios`, `clientes`, `pedidos`, `cardapio` e `caixa` a 0;
+interruptores todos desligados). **Por remover:** o esquema `testes` e a extensão `pgtap` ficaram instalados no
+Supabase porque o ambiente bloqueou o `drop`; correr no SQL editor
+`drop schema if exists testes cascade; drop extension if exists pgtap;`.
 
 A comparação do esquema (funções, colunas, restrições, índices, políticas, triggers, vistas, comentários e
 privilégios) entre o Supabase e uma base local construída com as primeiras 4 migrações deu resultados idênticos (comparação feita antes do endurecimento e do consumo de stock).

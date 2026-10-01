@@ -36,6 +36,10 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 -- API da app do cliente (I2)
                 'registar_cliente', 'meu_perfil', 'orcamento_pedido', 'meus_amigos',
                 'registar_token_push', 'remover_token_push',
+                -- API da app do operador (I3)
+                'definir_telefone_funcionario', 'ligar_funcionario', 'meu_funcionario', 'painel_programa',
+                'ganhos_em_verificacao', 'confirmar_ganhos_indicador', 'levantamentos_operador', 'embaixadores',
+                'pedidos_operador',
                 -- auxiliares usadas em políticas RLS, valores por defeito ou triggers SECURITY INVOKER
                 'cliente_actual', 'cozinha_padrao', 'e_funcionario', 'funcionalidade_activa',
                 'funcionario_actual', 'membro_da_cozinha', 'tem_permissao')),
