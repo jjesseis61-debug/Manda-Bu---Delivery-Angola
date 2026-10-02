@@ -747,7 +747,8 @@ selector e não aceita pedidos.
 - **I9 · Pratos montáveis:** no O6, cada prato tem "Opções" (grupos com mínimo e máximo, opções com preço extra e
   esgotada). No cliente, um prato com opções mostra "Montar" e abre o ecrã de montar, com o preço a actualizar e o
   botão desligado até os grupos obrigatórios estarem escolhidos. O servidor valida tudo e calcula o preço; o nome do
-  item leva as opções, por isso a cozinha, a entrega e a venda as mostram. Falta: as opções não descontam stock.
+  item leva as opções, por isso a cozinha, a entrega e a venda as mostram. Cada opção pode ter ingredientes (no O6,
+  "Ingredientes" na opção: produto, quantidade e unidade por prato), que descontam stock na venda junto com a receita.
 - **I10 · Como chegar:** no O6, "Localização" com morada, horário, ponto (escrito ou "usar a localização deste
   telemóvel") e a autorização da responsável. No cliente, um cartão com a morada e "Como chegar" no início e no perfil
   da cozinha (com mapa), que abre a navegação do Google Maps. Sem API paga.

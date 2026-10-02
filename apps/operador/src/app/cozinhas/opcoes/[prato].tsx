@@ -4,13 +4,22 @@ import { Switch, Text, View } from 'react-native';
 
 import { Guarda } from '@/components/Guarda';
 import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Paragrafo, Subtitulo } from '@/components/ui';
-import { apagarGrupoOpcoes, apagarOpcao, guardarGrupoOpcoes, guardarOpcao, lerGruposOpcoes } from '@/lib/api';
-import { formatarKz, mensagemErro } from '@/lib/formatar';
+import { apagarGrupoOpcoes, apagarOpcao, guardarGrupoOpcoes, guardarOpcao, lerGruposOpcoes, lerProdutos } from '@/lib/api';
+import { componentesParaGuardar, formatarKz, mensagemErro, unidadePorDefeito } from '@/lib/formatar';
 import { cores, espaco } from '@/lib/tema';
-import type { GrupoOpcoesPrato } from '@/lib/tipos';
+import type { GrupoOpcoesPrato, ProdutoStock } from '@/lib/tipos';
 
 type GrupoEditado = { id?: string; nome: string; minimo: string; maximo: string; ordem: string };
-type OpcaoEditada = { id?: string; grupo_id: string; nome: string; preco_extra: string; disponivel: boolean; ordem: string };
+type ComponenteEditado = { produto_id: string; quantidade: string; unidade: string };
+type OpcaoEditada = {
+  id?: string;
+  grupo_id: string;
+  nome: string;
+  preco_extra: string;
+  disponivel: boolean;
+  ordem: string;
+  componentes: ComponenteEditado[];
+};
 
 const numero = (t: string) => t.replace(/\D/g, '');
 
@@ -21,6 +30,8 @@ export default function OpcoesPrato() {
   const [grupo, setGrupo] = useState<GrupoEditado | null>(null);
   const [opcao, setOpcao] = useState<OpcaoEditada | null>(null);
   const [erro, setErro] = useState<string | null>(null);
+  const [produtos, setProdutos] = useState<ProdutoStock[] | null>(null);
+  const [procura, setProcura] = useState('');
   const [ocupado, setOcupado] = useState(false);
 
   const carregar = useCallback(() => {
@@ -29,6 +40,19 @@ export default function OpcoesPrato() {
       .catch((e) => setErro(mensagemErro(e)));
   }, [prato]);
   useEffect(carregar, [carregar]);
+
+  // Produtos do stock: só quando se edita uma opção (para os ingredientes)
+  useEffect(() => {
+    if (opcao && produtos === null) lerProdutos().then(setProdutos).catch(() => setProdutos([]));
+  }, [opcao, produtos]);
+  const nomeProduto = (id: string) => produtos?.find((p) => p.id === id)?.nome ?? 'Produto';
+  const encontrados =
+    procura.trim().length >= 2
+      ? (produtos ?? [])
+          .filter((p) => p.nome.toLowerCase().includes(procura.trim().toLowerCase()))
+          .filter((p) => !opcao?.componentes.some((c) => c.produto_id === p.id))
+          .slice(0, 6)
+      : [];
 
   async function correr(f: () => Promise<void>) {
     setErro(null);
@@ -78,7 +102,12 @@ export default function OpcoesPrato() {
                   titulo="Editar"
                   variante="texto"
                   aoCarregar={() =>
-                    setOpcao({ ...o, preco_extra: String(o.preco_extra), ordem: String(o.ordem) })
+                    setOpcao({
+                      ...o,
+                      preco_extra: String(o.preco_extra),
+                      ordem: String(o.ordem),
+                      componentes: (o.componentes ?? []).map((c) => ({ ...c, quantidade: String(c.quantidade) })),
+                    })
                   }
                 />
               </View>
@@ -87,7 +116,7 @@ export default function OpcoesPrato() {
               <Botao
                 titulo="Nova opção"
                 variante="secundario"
-                aoCarregar={() => setOpcao({ grupo_id: g.id, nome: '', preco_extra: '0', disponivel: true, ordem: '0' })}
+                aoCarregar={() => setOpcao({ grupo_id: g.id, nome: '', preco_extra: '0', disponivel: true, ordem: '0', componentes: [] })}
               />
               <Botao
                 titulo="Editar grupo"
@@ -119,6 +148,65 @@ export default function OpcoesPrato() {
                 trackColor={{ true: cores.marca, false: cores.linha }}
               />
             </View>
+            <Text style={{ fontWeight: '700', marginTop: espaco.s }}>Ingredientes (descontam stock)</Text>
+            <Paragrafo suave>
+              Por cada prato com esta opção (ex.: Ovo estrelado: 1 un de ovo). Somam aos ingredientes da receita do prato.
+            </Paragrafo>
+            {opcao.componentes.map((c, i) => (
+              <View key={c.produto_id} style={{ flexDirection: 'row', alignItems: 'flex-end', gap: espaco.s }}>
+                <View style={{ flex: 2 }}>
+                  <Text>{nomeProduto(c.produto_id)}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Campo
+                    rotulo="Quantidade"
+                    value={c.quantidade}
+                    keyboardType="decimal-pad"
+                    onChangeText={(t) =>
+                      setOpcao({
+                        ...opcao,
+                        componentes: opcao.componentes.map((x, j) => (j === i ? { ...x, quantidade: t.replace(/[^\d.,]/g, '') } : x)),
+                      })
+                    }
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Campo
+                    rotulo="Unidade"
+                    value={c.unidade}
+                    autoCapitalize="none"
+                    onChangeText={(t) =>
+                      setOpcao({ ...opcao, componentes: opcao.componentes.map((x, j) => (j === i ? { ...x, unidade: t } : x)) })
+                    }
+                  />
+                </View>
+                <Botao
+                  titulo="Tirar"
+                  variante="texto"
+                  aoCarregar={() => setOpcao({ ...opcao, componentes: opcao.componentes.filter((_, j) => j !== i) })}
+                />
+              </View>
+            ))}
+            {opcao.componentes.length < 20 && (
+              <Campo rotulo="Adicionar ingrediente (escreve o nome do produto)" value={procura} onChangeText={setProcura} />
+            )}
+            {encontrados.map((p) => (
+              <Botao
+                key={p.id}
+                titulo={`+ ${p.nome}`}
+                variante="texto"
+                aoCarregar={() => {
+                  setOpcao({
+                    ...opcao,
+                    componentes: [...opcao.componentes, { produto_id: p.id, quantidade: '', unidade: unidadePorDefeito(p.categoria_medida) }],
+                  });
+                  setProcura('');
+                }}
+              />
+            ))}
+            {procura.trim().length >= 2 && encontrados.length === 0 && produtos !== null && (
+              <Paragrafo suave>Nenhum produto com esse nome.</Paragrafo>
+            )}
             <Botao
               titulo="Guardar opção"
               aCarregar={ocupado}
@@ -130,6 +218,7 @@ export default function OpcoesPrato() {
                     nome: opcao.nome.trim(),
                     preco_extra: Number(opcao.preco_extra || 0),
                     ordem: Number(opcao.ordem || 0),
+                    componentes: componentesParaGuardar(opcao.componentes),
                   });
                   setOpcao(null);
                 })

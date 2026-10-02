@@ -29,6 +29,7 @@ Aplicadas por esta ordem. **Uma migração já aplicada nunca se edita:** qualqu
 | `20261002064759_crescimento_i11_acompanhamento_entrega.sql` | I11: `pedidos.entregador_id` (quem marca a caminho); `posicoes_entregadores` (só servidor, última posição, apagada quando o estafeta já não tem pedidos a caminho); `registar_posicao_entrega` (estafeta) e `posicao_entrega` (cliente, só o seu pedido, posição com menos de 10 minutos, distância e tempo estimado). Interruptor `acompanhamento_entrega`. | aplicada |
 | `20261002074833_crescimento_i12_pacotes.sql` | I12: pacotes mensais pré-pagos. `pacotes` (catálogo, escrita com `pacotes.gerir`) e `adesoes_pacote` (só servidor, condições copiadas na adesão); `pedidos.pago_pacote`/`refeicoes_pacote`; `aderir_pacote`, `cancelar_adesao_pacote`, `usar_pacote`, `pausar_pacote`, `meu_pacote`, `pacotes_a_minha_volta` (prova social a partir de `contador_minimo`); `confirmar_pagamento_pacote`, `reembolsar_pacote`, `adesoes_operador`. Parcela "Pacote" nas vendas; as refeições voltam ao pacote se o pedido for cancelado; o saldo do Convida e Ganha não passa o que falta pagar depois do pacote. Interruptor `pacotes`. | aplicada |
 | `20261002081819_crescimento_i12_avisos_pacotes.sql` | I12: avisos dos pacotes. N13 (pagamento confirmado), N14 (restam 3 refeições ou menos; e 3 dias antes do fim, pelo job diário `job_n14_pacotes`, agendado em `agendar_jobs` às 8h UTC) e N15 (nova adesão, à equipa com `pacotes.gerir`, via `funcionarios_com_permissao`). Só com o interruptor `pacotes`. | aplicada |
+| `20261002083722_crescimento_i9_opcoes_stock.sql` | I9: `opcoes.componentes` (ingredientes de cada opção, por unidade do prato); `consumir_stock_venda` junta-os à receita do prato na venda gerada do pedido (o mesmo produto soma-se; mesmas regras de conversão e de avisos; um ingrediente mal escrito não trava a entrega). | aplicada |
 
 Os números de versão dos ficheiros são os que o Supabase registou ao aplicar, para `supabase migration list` e
 `supabase db push` não voltarem a aplicá-las.
@@ -90,6 +91,7 @@ base de dados.
 | `27_acompanhamento_entrega.test.sql` | I11: entregador, interruptor, posição inválida, tabela fechada, posição e tempo estimado para o cliente, outro cliente, sem permissão, posição antiga, apagada na entrega |
 | `28_pacotes.test.sql` | I12: interruptor, adesão pendente e única, cliente sem escrita, permissão, referência, validade, valor pago (até ao valor da refeição + entrega), idempotência, a pagar na entrega, parcela Pacote, soma das parcelas, devolução no cancelamento, poupança, pausa, prova social, reembolso, pagamento na loja com caixa |
 | `29_avisos_pacotes.test.sql` | I12: N15 só a quem tem `pacotes.gerir`, N13 no pagamento, N14 ao ficar com 3 refeições (uma vez) e a 3 dias do fim (uma vez), textos, envio só com o interruptor ligado, funções internas fechadas |
+| `30_opcoes_stock.test.sql` | I9: receita + opções (o mesmo produto soma-se), stock diário sem movimento, só receita sem opções, prato sem receita só com opções, unidade desconhecida pendente, ingrediente mal escrito não trava a entrega, formato da lista |
 | `15_app_operador.test.sql` | I3: telefone e ligação dos funcionários, painel (O1), verificação e "Confirmar todos" com N3 (O2), levantamentos (O3), embaixadores (O4), fila de entregas e caixas (E1), auditoria de cozinhas e cardápio (O6) |
 
 ### Como correr
@@ -136,7 +138,8 @@ base de dados.
 | 27 acompanhamento da entrega (I11) | 14/14 | 14/14 |
 | 28 pacotes (I12) | 25/25 | 25/25 |
 | 29 avisos dos pacotes (I12) | 14/14 | 14/14 |
-| **Total** | **582/582** | |
+| 30 opções descontam stock (I9) | 9/9 | 9/9 |
+| **Total** | **591/591** | |
 
 Na I2 voltaram a correr no Supabase os testes afectados por cada migração (app do cliente: 06, 08, 09, 12 e 13;
 desconto limitado: 02, 09 e 14); os restantes não dependem delas (e todos passam localmente).
@@ -176,7 +179,7 @@ A CI (`.github/workflows/testes.yml`) corre em cada PR a base de dados, a Edge F
 Nas fases I9–I11 correram no Supabase o 25 (14/14), o 26 (9/9) e o 27 (14/14). Os testes que contam interruptores
 (00, 06) e tabelas com estratégia de sincronização (08) passaram a contar 13 interruptores e 27 tabelas.
 
-Na I12 correram no Supabase o 28 (25/25) e o 29 (14/14); os testes de contagem passaram a 14 interruptores, 29 tabelas e 17
+Na I12 correram no Supabase o 28 (25/25) e o 29 (14/14), e depois do stock das opções o 30 (9/9) e de novo o 11 (35/35); os testes de contagem passaram a 14 interruptores, 29 tabelas e 17
 permissões, e o 12 inclui as novas funções na lista das chamáveis pelas apps.
 
 Nenhum dado de teste ficou na base (contagens de `funcionarios`, `clientes`, `pedidos`, `cardapio` e `caixa` a 0;

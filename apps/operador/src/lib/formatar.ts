@@ -143,3 +143,17 @@ export function mensagemErro(erro: unknown): string {
         : '';
   return mensagens[texto.trim()] ?? 'Não foi possível concluir. Verifica a ligação e tenta outra vez.';
 }
+
+/** I9: unidade sugerida para um ingrediente, pela medida do produto */
+export function unidadePorDefeito(medida: string | null | undefined): string {
+  return medida === 'Volume' ? 'ml' : medida === 'Unidade' ? 'un' : 'g';
+}
+
+/** I9: ingredientes editados (quantidade em texto, vírgula decimal) para guardar; ignora linhas vazias ou a zero */
+export function componentesParaGuardar(
+  linhas: { produto_id: string; quantidade: string; unidade: string }[],
+): { produto_id: string; quantidade: number; unidade: string }[] {
+  return linhas
+    .map((l) => ({ produto_id: l.produto_id, quantidade: Number(l.quantidade.replace(',', '.')), unidade: l.unidade.trim() }))
+    .filter((l) => l.produto_id && Number.isFinite(l.quantidade) && l.quantidade > 0);
+}

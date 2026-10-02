@@ -234,7 +234,18 @@ export type LinhaComparativo = {
 };
 
 // I9 · Pratos montáveis
-export type OpcaoPrato = { id: string; grupo_id: string; nome: string; preco_extra: number; disponivel: boolean; ordem: number };
+/** Ingrediente de uma opção, por unidade do prato (desconta stock na venda) */
+export type ComponenteOpcao = { produto_id: string; quantidade: number; unidade: string };
+export type OpcaoPrato = {
+  id: string;
+  grupo_id: string;
+  nome: string;
+  preco_extra: number;
+  disponivel: boolean;
+  ordem: number;
+  componentes: ComponenteOpcao[];
+};
+export type ProdutoStock = { id: string; nome: string; categoria_medida: 'Peso' | 'Volume' | 'Unidade' | null; tipo_estoque: string | null };
 export type GrupoOpcoesPrato = {
   id: string;
   cardapio_id: string;

@@ -50,3 +50,20 @@ describe('formatar (operador)', () => {
     expect(horaLuanda('2026-10-01T11:30:00Z')).toBe('12h30');
   });
 });
+
+test('I9: ingredientes das opções', () => {
+  const { componentesParaGuardar, unidadePorDefeito } = require('../formatar') as typeof import('../formatar');
+  expect(unidadePorDefeito('Peso')).toBe('g');
+  expect(unidadePorDefeito('Volume')).toBe('ml');
+  expect(unidadePorDefeito('Unidade')).toBe('un');
+  expect(
+    componentesParaGuardar([
+      { produto_id: 'ovo', quantidade: '1', unidade: 'un' },
+      { produto_id: 'arroz', quantidade: '0,05', unidade: ' kg ' },
+      { produto_id: 'sal', quantidade: '', unidade: 'g' },
+    ]),
+  ).toEqual([
+    { produto_id: 'ovo', quantidade: 1, unidade: 'un' },
+    { produto_id: 'arroz', quantidade: 0.05, unidade: 'kg' },
+  ]);
+});

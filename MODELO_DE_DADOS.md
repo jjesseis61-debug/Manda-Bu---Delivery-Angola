@@ -39,7 +39,7 @@ Além dos campos próprios de cada entidade (listados abaixo), toda tabela deve 
 | `pedidos_grupo` | **Append-only na criação; last-write-wins no estado** | Só o organizador ou o operador mudam o grupo |
 | `notificacoes_fila` / `contadores_zona` | **Só servidor**, não sincronizam para o telemóvel | Fila interna e cache |
 | `permissoes` | **Só servidor**; o telemóvel só lê | Catálogo central |
-| `opcoes_grupos` / `opcoes` (I9) | **Last-write-wins**, escrita só com `cozinhas.gerir` | Opções dos pratos montáveis; o preço extra soma no servidor |
+| `opcoes_grupos` / `opcoes` (I9) | **Last-write-wins**, escrita só com `cozinhas.gerir` | Opções dos pratos montáveis; o preço extra soma no servidor; `opcoes.componentes` desconta stock na venda |
 | `cozinhas_localizacao` (I10) | **Last-write-wins**, escrita só com `cozinhas.gerir` | Aos clientes só por `localizacao_cozinha()` e com autorização (`publica`) |
 | `posicoes_entregadores` (I11) | **Só servidor**, não sincroniza | Última posição do estafeta, só durante entregas |
 | `pacotes` (I12) | **Last-write-wins**, escrita só com `pacotes.gerir` | Catálogo de pacotes pré-pagos |

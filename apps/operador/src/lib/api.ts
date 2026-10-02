@@ -8,6 +8,7 @@ import type {
   Cozinha,
   Embaixador,
   PacoteCatalogo,
+  ProdutoStock,
   FotoPendente,
   Funcionario,
   GanhoVerificacao,
@@ -143,7 +144,7 @@ export async function guardarPrato(p: Omit<PratoCardapio, 'id'> & { id?: string 
 export async function lerGruposOpcoes(cardapioId: string): Promise<GrupoOpcoesPrato[]> {
   const r = await supabase
     .from('opcoes_grupos')
-    .select('id, cardapio_id, nome, minimo, maximo, ordem, opcoes(id, grupo_id, nome, preco_extra, disponivel, ordem, deletado_em)')
+    .select('id, cardapio_id, nome, minimo, maximo, ordem, opcoes(id, grupo_id, nome, preco_extra, disponivel, ordem, componentes, deletado_em)')
     .eq('cardapio_id', cardapioId)
     .is('deletado_em', null)
     .order('ordem')
@@ -168,6 +169,13 @@ export async function guardarOpcao(o: Omit<OpcaoPrato, 'id'> & { id?: string }) 
   const { id, ...dados } = o;
   if (id) verificar(await supabase.from('opcoes').update({ ...dados, atualizado_em: new Date().toISOString() }).eq('id', id));
   else verificar(await supabase.from('opcoes').insert(dados));
+}
+
+/** Produtos do stock, para escolher os ingredientes das opções */
+export async function lerProdutos(): Promise<ProdutoStock[]> {
+  return verificar(
+    await supabase.from('produtos').select('id, nome, categoria_medida, tipo_estoque').is('deletado_em', null).order('nome'),
+  ) as ProdutoStock[];
 }
 
 /** Apagar = marcar deletado_em (os pedidos antigos continuam a mostrar o nome da opção) */
