@@ -388,7 +388,7 @@ Reconhece o turno da cozinha, nunca uma pessoa (uma linha de `turnos` é o turno
 `modo_pagamento`, `codigo_convite` (`G-` + 6 caracteres, gerado no servidor), `estado`.
 
 ### 5.9 Fila de notificações e contadores
-`notificacoes_fila` (`cliente_id`, `codigo` N1–N12, `dados`, `enviada_em`) e `contadores_zona` (cache horária de
+`notificacoes_fila` (`cliente_id`, `codigo` N1–N15, `dados`, `enviada_em`) e `contadores_zona` (cache horária de
 pedidos pagos por zona e dia). Não sincronizam para o telemóvel.
 
 ---
@@ -608,6 +608,9 @@ chegam directamente. Nenhuma tem DELETE (apaga-se com `deletado_em`).
 | N10 | Alguém entra no teu grupo | A Marta juntou-se ao teu grupo das 12h30. Já são 6. | `pedidos_grupo` |
 | N11 | 15 min antes do fecho do grupo | O grupo das 12h30 fecha em 15 minutos. | `pedidos_grupo` |
 | N12 | Reconhecimento do turno (app do operador) | Parabéns, turno da manhã: entregas a horas esta semana! | `reconhecimento_equipa` |
+| N13 | Pagamento do pacote confirmado | O teu Almoço do Mês está activo: 22 refeições até 31/10. Bom almoço! | `pacotes` |
+| N14 | Pacote a acabar (3 refeições ou 3 dias) | Restam 3 refeições no teu Almoço do Mês. Renova para continuares a almoçar sem pagar na entrega. | `pacotes` |
+| N15 | Nova adesão por confirmar (app do operador) | Ana aderiu ao Almoço do Mês (Multicaixa Express, 50.000 Kz). Confirma o pagamento. | `pacotes` |
 
 Todos os valores e nomes são preenchidos a partir dos dados e parâmetros.
 
@@ -770,7 +773,11 @@ selector e não aceita pedidos.
   entregue. Pedido cancelado ou estornado: as refeições voltam ao pacote.
 - Antes de ligar: criar o pacote no catálogo, preencher `EXPO_PUBLIC_INSTRUCOES_PAGAMENTO` (números e morada) e dar
   `pacotes.gerir` a quem confirma os pagamentos. Falta: o pagamento é confirmado à mão (sem integração com a EMIS ou a
-  Unitel) e não há aviso automático de pacote a acabar.
+  Unitel).
+- Avisos (push): N13 ao cliente quando o pagamento é confirmado ("O teu Almoço do Mês está activo: 22 refeições até
+  31/10"); N14 quando restam 3 refeições ou menos e 3 dias antes do fim se ainda houver refeições (job diário às 9h de
+  Luanda; correr `agendar_jobs()` de novo para o agendar); N15 à equipa com `pacotes.gerir` quando há uma adesão por
+  confirmar. Tocar no aviso abre o ecrã dos pacotes nas duas apps.
 
 **Correcções depois da análise do sistema (2 de Outubro de 2026):**
 - Pedido criado com id gerado no telemóvel: retentar depois de uma falha de rede já não cria um pedido repetido.
