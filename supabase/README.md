@@ -24,6 +24,9 @@ Aplicadas por esta ordem. **Uma migração já aplicada nunca se edita:** qualqu
 | `20261001184650_crescimento_rls_tabelas_base.sql` | Políticas RLS das 16 tabelas base (vendas, stock, caixa, clientes, custos, organograma, turnos, …) por permissão do organograma e por cozinha (`pode_na_cozinha`: permissão + turno na cozinha, ou `cozinhas.gerir`); 6 permissões novas no catálogo (`vendas.registar`, `stock.gerir`, `financas.gerir`, `clientes.gerir`, `equipa.gerir`, `auditoria.ver`); append-only sem UPDATE; vendas `App cliente` só do servidor; distribuições só mudam recebimento/devolução/quebra; limite de crédito e desconto dos clientes só com `financas.gerir` e ligação à conta só pelo servidor (`clientes_proteger_campos`); organograma escrito só pelo administrador principal (`e_administrador`). Clientes continuam sem acesso directo. | aplicada |
 | `20261002054644_notificacoes_validade.sql` | Validade das notificações (`notificacao_valida`): N5 2 horas, N10/N11 3 horas, N7/N9 24 horas, N6 48 horas, as outras 7 dias. `notificacoes_por_enviar` ignora as expiradas e `descartar_notificacoes_expiradas` tira-as da fila; `agendar_jobs()` passa a agendar essa limpeza (03h30 UTC). | aplicada |
 | `20261002055313_apagar_conta.sql` | `apagar_conta()` para a app do cliente: apaga nome, telefone, NIF, contacto, endereços, telemóveis de push, notificações por enviar e o utilizador da Auth; pedidos, vendas e pagamentos ficam com "Cliente removido". Recusa com pedido, levantamento ou grupo a meio. | aplicada |
+| `20261002064709_crescimento_i9_pratos_montaveis.sql` | I9: pratos montáveis. `opcoes_grupos` (mínimo e máximo por grupo) e `opcoes` (preço extra, disponível); `opcoes_do_item` valida as escolhas; `orcamento_pedido` soma os extras e põe as opções no nome do item (a cozinha, a entrega e a venda mostram-nas). Interruptor `pratos_montaveis`. As opções ainda não descontam stock. | aplicada |
+| `20261002064729_crescimento_i10_como_chegar.sql` | I10: `cozinhas_localizacao` (morada, horário, ponto, `publica`), lida pela equipa e escrita com `cozinhas.gerir`; `localizacao_cozinha()` para o cliente, só pública, com a cozinha activa e o interruptor `como_chegar`. | aplicada |
+| `20261002064759_crescimento_i11_acompanhamento_entrega.sql` | I11: `pedidos.entregador_id` (quem marca a caminho); `posicoes_entregadores` (só servidor, última posição, apagada quando o estafeta já não tem pedidos a caminho); `registar_posicao_entrega` (estafeta) e `posicao_entrega` (cliente, só o seu pedido, posição com menos de 10 minutos, distância e tempo estimado). Interruptor `acompanhamento_entrega`. | aplicada |
 
 Os números de versão dos ficheiros são os que o Supabase registou ao aplicar, para `supabase migration list` e
 `supabase db push` não voltarem a aplicá-las.
@@ -80,6 +83,9 @@ base de dados.
 | `22_rls_tabelas_base.test.sql` | Políticas das tabelas base: cliente sem acesso, vendas e stock por cozinha, append-only, vendas da app só do servidor, distribuições, campos de crédito dos clientes, organograma e auditoria |
 | `23_notificacoes_validade.test.sql` | Validade das notificações por código e limpeza da fila |
 | `24_apagar_conta.test.sql` | Apagar a conta: recusa com pedido a meio, dados pessoais e utilizador da Auth apagados, venda mantida, auditoria, novo registo com o mesmo telefone |
+| `25_pratos_montaveis.test.sql` | I9: interruptor, preço com extras, nome com opções, mínimo/máximo, opção de outro prato, repetida, indisponível, preço da app ignorado, venda, permissões |
+| `26_como_chegar.test.sql` | I10: gravar com `cozinhas.gerir`, cliente sem acesso à tabela, interruptor, autorização pública, cozinha pausada |
+| `27_acompanhamento_entrega.test.sql` | I11: entregador, interruptor, posição inválida, tabela fechada, posição e tempo estimado para o cliente, outro cliente, sem permissão, posição antiga, apagada na entrega |
 | `15_app_operador.test.sql` | I3: telefone e ligação dos funcionários, painel (O1), verificação e "Confirmar todos" com N3 (O2), levantamentos (O3), embaixadores (O4), fila de entregas e caixas (E1), auditoria de cozinhas e cardápio (O6) |
 
 ### Como correr
@@ -94,7 +100,7 @@ base de dados.
 
 ### Resultados (1 de Outubro de 2026)
 
-| Teste | Postgres 16 local, 19 migrações | Supabase `laruvuambdovnkojwrzp` |
+| Teste | Postgres 16 local, 22 migrações | Supabase `laruvuambdovnkojwrzp` |
 |---|---|---|
 | 00 estrutura | 19/19 | 19/19 |
 | 01 ligação | 9/9 | 9/9 |
@@ -121,7 +127,10 @@ base de dados.
 | 22 RLS das tabelas base | 26/26 | 26/26 |
 | 23 validade das notificações | 7/7 | 7/7 |
 | 24 apagar a conta | 11/11 | 11/11 |
-| **Total** | **506/506** | |
+| 25 pratos montáveis (I9) | 14/14 | 14/14 |
+| 26 como chegar (I10) | 9/9 | 9/9 |
+| 27 acompanhamento da entrega (I11) | 14/14 | 14/14 |
+| **Total** | **543/543** | |
 
 Na I2 voltaram a correr no Supabase os testes afectados por cada migração (app do cliente: 06, 08, 09, 12 e 13;
 desconto limitado: 02, 09 e 14); os restantes não dependem delas (e todos passam localmente).
@@ -157,6 +166,9 @@ facto). A Edge Function `enviar-notificacoes` passou à versão 4 (marca as noti
 tem testes próprios em Node, sem Deno: `node --experimental-strip-types supabase/functions/enviar-notificacoes/envio.test.mjs`.
 
 A CI (`.github/workflows/testes.yml`) corre em cada PR a base de dados, a Edge Function e as duas apps.
+
+Nas fases I9–I11 correram no Supabase o 25 (14/14), o 26 (9/9) e o 27 (14/14). Os testes que contam interruptores
+(00, 06) e tabelas com estratégia de sincronização (08) passaram a contar 13 interruptores e 27 tabelas.
 
 Nenhum dado de teste ficou na base (contagens de `funcionarios`, `clientes`, `pedidos`, `cardapio` e `caixa` a 0;
 interruptores todos desligados). **Por remover:** o esquema `testes` e a extensão `pgtap` ficaram instalados no

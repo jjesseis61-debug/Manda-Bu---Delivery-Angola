@@ -2,6 +2,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 
+import { ComoChegar } from '@/components/ComoChegar';
 import { Aviso, Botao, Cartao, Escolha, Paragrafo, Subtitulo, estilos } from '@/components/ui';
 import {
   contadorZona,
@@ -9,6 +10,7 @@ import {
   lerCardapio,
   lerCozinhaPublica,
   lerEnderecos,
+  lerOpcoes,
   mediasAvaliacoes,
   type Cozinha,
 } from '@/lib/api';
@@ -28,6 +30,8 @@ export default function Inicio() {
   const [cozinha, setCozinha] = useState<Cozinha | null>(null);
   const [medias, setMedias] = useState<MediasAvaliacoes | null>(null);
   const [cozinhas, setCozinhas] = useState<CozinhaParaPedir[]>([]);
+  // I9: pratos com opções (abrem o ecrã de montar em vez de irem direito ao carrinho)
+  const [montaveis, setMontaveis] = useState<Set<string>>(new Set());
   const cozinhaId = carrinho.cozinhaActual?.id ?? null;
   // Referência ao carrinho para o carregamento não depender de cada prato adicionado
   const carrinhoRef = useRef(carrinho);
@@ -54,6 +58,11 @@ export default function Inicio() {
       const [itens, ends] = await Promise.all([lerCardapio(ligada('multi_cozinha') ? escolhida : null), lerEnderecos()]);
       setCardapio(itens);
       setEnderecos(ends);
+      setMontaveis(
+        ligada('pratos_montaveis')
+          ? new Set((await lerOpcoes(itens.map((i) => i.id))).filter((g) => g.opcoes.length > 0).map((g) => g.cardapio_id))
+          : new Set(),
+      );
       // C7: contador do bairro do endereço principal (o servidor devolve null abaixo do mínimo)
       const zona = ends[0]?.pontos_entrega?.zona_id;
       setContador(ligada('contadores_zona') && zona ? await contadorZona(zona) : null);
@@ -142,6 +151,10 @@ export default function Inicio() {
             </Text>
           </Aviso>
         )}
+        {/* I10: morada da cozinha e botão para o Google Maps */}
+        {ligada('como_chegar') && (cozinhaId ?? cardapio?.[0]?.cozinha_id) && (
+          <ComoChegar cozinhaId={(cozinhaId ?? cardapio?.[0]?.cozinha_id) as string} />
+        )}
         {ligada('pedidos_grupo') && !carrinho.grupo && (
           <Botao titulo="Pedido de grupo com os colegas" variante="secundario" aoCarregar={() => router.push('/grupos')} />
         )}
@@ -151,7 +164,7 @@ export default function Inicio() {
           <View key={categoria} style={{ gap: espaco.s }}>
             <Subtitulo>{categoria}</Subtitulo>
             {itens.map((item) => {
-              const noCarrinho = carrinho.linhas.find((l) => l.item.id === item.id)?.qtd ?? 0;
+              const noCarrinho = carrinho.quantidadeDe(item.id);
               return (
                 <View key={item.id} style={{ backgroundColor: cores.fundoSuave, borderRadius: raio, padding: espaco.m, gap: 4 }}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: espaco.m }}>
@@ -178,9 +191,13 @@ export default function Inicio() {
                     {noCarrinho > 0 && <Text style={{ color: cores.marca, fontWeight: '600' }}>{noCarrinho} no carrinho</Text>}
                     <Pressable
                       accessibilityRole="button"
-                      onPress={() => carrinho.adicionar(item)}
+                      onPress={() =>
+                        montaveis.has(item.id)
+                          ? router.push({ pathname: '/montar/[id]', params: { id: item.id } })
+                          : carrinho.adicionar(item)
+                      }
                       style={{ backgroundColor: cores.marca, borderRadius: 20, paddingHorizontal: espaco.l, paddingVertical: 6 }}>
-                      <Text style={{ color: '#fff', fontWeight: '700' }}>Adicionar</Text>
+                      <Text style={{ color: '#fff', fontWeight: '700' }}>{montaveis.has(item.id) ? 'Montar' : 'Adicionar'}</Text>
                     </Pressable>
                   </View>
                 </View>

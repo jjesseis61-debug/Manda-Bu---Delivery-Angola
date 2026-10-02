@@ -9,14 +9,17 @@ import type {
   FotoPendente,
   Funcionario,
   GanhoVerificacao,
+  GrupoOpcoesPrato,
   GrupoOperador,
   LevantamentoOperador,
   LinhaComparativo,
+  LocalizacaoCozinha,
   MetricaTurno,
+  OpcaoPrato,
   Painel,
   PalavraFiltrada,
-  Periodo,
   PedidoOperador,
+  Periodo,
   PratoCardapio,
   Reconhecimento,
   Relatorio,
@@ -132,6 +135,73 @@ export async function guardarPrato(p: Omit<PratoCardapio, 'id'> & { id?: string 
   const { id, ...dados } = p;
   if (id) verificar(await supabase.from('cardapio').update({ ...dados, atualizado_em: new Date().toISOString() }).eq('id', id));
   else verificar(await supabase.from('cardapio').insert(dados));
+}
+
+// ---------------------------------------------------------------- I9: opções dos pratos
+export async function lerGruposOpcoes(cardapioId: string): Promise<GrupoOpcoesPrato[]> {
+  const r = await supabase
+    .from('opcoes_grupos')
+    .select('id, cardapio_id, nome, minimo, maximo, ordem, opcoes(id, grupo_id, nome, preco_extra, disponivel, ordem, deletado_em)')
+    .eq('cardapio_id', cardapioId)
+    .is('deletado_em', null)
+    .order('ordem')
+    .order('nome');
+  type Linha = Omit<GrupoOpcoesPrato, 'opcoes'> & { opcoes: (OpcaoPrato & { deletado_em: string | null })[] };
+  return (verificar(r) as Linha[]).map((g) => ({
+    ...g,
+    opcoes: g.opcoes
+      .filter((o) => !o.deletado_em)
+      .sort((a, b) => a.ordem - b.ordem || a.nome.localeCompare(b.nome))
+      .map(({ deletado_em: _d, ...o }) => o),
+  }));
+}
+
+export async function guardarGrupoOpcoes(g: Omit<GrupoOpcoesPrato, 'id' | 'opcoes'> & { id?: string }) {
+  const { id, ...dados } = g;
+  if (id) verificar(await supabase.from('opcoes_grupos').update({ ...dados, atualizado_em: new Date().toISOString() }).eq('id', id));
+  else verificar(await supabase.from('opcoes_grupos').insert(dados));
+}
+
+export async function guardarOpcao(o: Omit<OpcaoPrato, 'id'> & { id?: string }) {
+  const { id, ...dados } = o;
+  if (id) verificar(await supabase.from('opcoes').update({ ...dados, atualizado_em: new Date().toISOString() }).eq('id', id));
+  else verificar(await supabase.from('opcoes').insert(dados));
+}
+
+/** Apagar = marcar deletado_em (os pedidos antigos continuam a mostrar o nome da opção) */
+export async function apagarGrupoOpcoes(id: string) {
+  const agora = new Date().toISOString();
+  verificar(await supabase.from('opcoes_grupos').update({ deletado_em: agora, atualizado_em: agora }).eq('id', id));
+}
+
+export async function apagarOpcao(id: string) {
+  const agora = new Date().toISOString();
+  verificar(await supabase.from('opcoes').update({ deletado_em: agora, atualizado_em: agora }).eq('id', id));
+}
+
+// ---------------------------------------------------------------- I10: localização da cozinha
+export async function lerLocalizacao(cozinhaId: string): Promise<LocalizacaoCozinha | null> {
+  return verificar(
+    await supabase
+      .from('cozinhas_localizacao')
+      .select('id, cozinha_id, morada, horario, lat, lng, publica')
+      .eq('cozinha_id', cozinhaId)
+      .maybeSingle(),
+  ) as LocalizacaoCozinha | null;
+}
+
+export async function guardarLocalizacao(l: LocalizacaoCozinha) {
+  const { id, ...dados } = l;
+  if (id) verificar(await supabase.from('cozinhas_localizacao').update({ ...dados, atualizado_em: new Date().toISOString() }).eq('id', id));
+  else verificar(await supabase.from('cozinhas_localizacao').insert(dados));
+}
+
+// ---------------------------------------------------------------- I11: posição do estafeta
+/** Envia a posição; devolve quantos pedidos o estafeta tem a caminho (0 = parar de enviar) */
+export async function registarPosicaoEntrega(lat: number, lng: number, precisao: number | null): Promise<number> {
+  return verificar(
+    await supabase.rpc('registar_posicao_entrega', { p_lat: lat, p_lng: lng, p_precisao: precisao }),
+  ) as number;
 }
 
 // ---------------------------------------------------------------- O9

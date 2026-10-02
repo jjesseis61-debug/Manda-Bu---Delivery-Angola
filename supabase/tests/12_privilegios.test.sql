@@ -51,6 +51,8 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 'cozinhas_para_pedir', 'relatorio_comparativo', 'cozinha_aceita_pedidos',
                 -- apagar a conta pela app (exigido pelas lojas)
                 'apagar_conta',
+                -- I10 e I11: localização da cozinha e acompanhamento da entrega
+                'localizacao_cozinha', 'registar_posicao_entrega', 'posicao_entrega',
                 -- auxiliares usadas em políticas RLS, valores por defeito ou triggers SECURITY INVOKER
                 'cliente_actual', 'cozinha_padrao', 'e_funcionario', 'funcionalidade_activa',
                 'funcionario_actual', 'membro_da_cozinha', 'tem_permissao', 'e_administrador', 'pode_na_cozinha')),

@@ -35,7 +35,13 @@
         }
       ],
       "expo-sharing",
-      "expo-notifications"
+      "expo-notifications",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "A Manda Bué usa a tua localização para mostrar ao cliente onde está a entrega, só enquanto tens pedidos a caminho, e para marcar a localização das cozinhas."
+        }
+      ]
     ],
     "scheme": "mandabueoperador",
     "experiments": {

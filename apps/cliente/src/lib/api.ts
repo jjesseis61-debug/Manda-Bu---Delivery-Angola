@@ -9,9 +9,11 @@ import type {
   Destaque,
   Endereco,
   GrupoDetalhe,
+  GrupoOpcoes,
   Funcionalidades,
   ItemCardapio,
   Levantamento,
+  LocalizacaoCozinha,
   MediasAvaliacoes,
   MeuGrupo,
   MinhaPosicao,
@@ -22,6 +24,7 @@ import type {
   PerfilDestaques,
   PreferenciasNotificacao,
   PessoaComoTu,
+  PosicaoEntrega,
   Saldo,
   Zona,
 } from './tipos';
@@ -97,6 +100,50 @@ export async function lerCozinhaPublica(cozinhaId?: string | null): Promise<Cozi
   if (cozinhaId) q = q.eq('id', cozinhaId);
   const r = await q.limit(1);
   return ((verificar(r) as Cozinha[])[0] ?? null) as Cozinha | null;
+}
+
+/** Um prato do cardápio (ecrã de montar o prato) */
+export async function lerItemCardapio(id: string): Promise<ItemCardapio | null> {
+  const r = await supabase
+    .from('cardapio')
+    .select('id, nome, descricao, categoria, preco, foto_url, do_dia, cozinha_id, prato_base_id')
+    .eq('id', id)
+    .eq('disponivel', true)
+    .maybeSingle();
+  return verificar(r) as ItemCardapio | null;
+}
+
+/** I9: grupos de opções dos pratos indicados, só com as opções disponíveis */
+export async function lerOpcoes(cardapioIds: string[]): Promise<GrupoOpcoes[]> {
+  if (cardapioIds.length === 0) return [];
+  const r = await supabase
+    .from('opcoes_grupos')
+    .select('id, cardapio_id, nome, minimo, maximo, ordem, opcoes(id, nome, preco_extra, ordem, disponivel, deletado_em)')
+    .in('cardapio_id', cardapioIds)
+    .is('deletado_em', null)
+    .order('ordem')
+    .order('nome');
+  type Linha = Omit<GrupoOpcoes, 'opcoes'> & {
+    opcoes: (GrupoOpcoes['opcoes'][number] & { disponivel: boolean; deletado_em: string | null })[];
+  };
+  return (verificar(r) as Linha[]).map((g) => ({
+    ...g,
+    opcoes: g.opcoes
+      .filter((o) => o.disponivel && !o.deletado_em)
+      .sort((a, b) => a.ordem - b.ordem || a.nome.localeCompare(b.nome))
+      .map(({ id, nome, preco_extra, ordem }) => ({ id, nome, preco_extra, ordem })),
+  }));
+}
+
+/** I10: morada e ponto da cozinha, se a responsável autorizou e "Como chegar" está ligado */
+export async function localizacaoCozinha(cozinhaId: string): Promise<LocalizacaoCozinha | null> {
+  const r = verificar(await supabase.rpc('localizacao_cozinha', { p_cozinha: cozinhaId })) as LocalizacaoCozinha[];
+  return r[0] ?? null;
+}
+
+/** I11: onde está o estafeta do meu pedido (só enquanto está a caminho) */
+export async function posicaoEntrega(pedidoId: string): Promise<PosicaoEntrega> {
+  return verificar(await supabase.rpc('posicao_entrega', { p_pedido: pedidoId })) as PosicaoEntrega;
 }
 
 /** Cozinhas que aceitam pedidos (I8); com multi_cozinha desligado, só a cozinha por defeito */
@@ -217,7 +264,7 @@ export async function criarEndereco(dados: {
 }
 
 // ---------------------------------------------------------------- pedidos
-export type ItemCarrinho = { cardapio_id: string; qtd: number };
+export type ItemCarrinho = { cardapio_id: string; qtd: number; opcoes?: string[] };
 
 export async function orcamento(
   itens: ItemCarrinho[],

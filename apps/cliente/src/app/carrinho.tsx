@@ -5,12 +5,17 @@ import { Pressable, Switch, Text, View } from 'react-native';
 import { CampoCodigo } from '@/components/CampoCodigo';
 import { Aviso, Botao, Campo, Cartao, Ecra, Escolha, Linha, Paragrafo, Subtitulo } from '@/components/ui';
 import { criarPedido, lerEnderecos, lerSaldo, orcamento as pedirOrcamento, usarCredito } from '@/lib/api';
-import { useCarrinho } from '@/lib/carrinho';
+import { type LinhaCarrinho, useCarrinho } from '@/lib/carrinho';
 import { novoId } from '@/lib/dispositivo';
 import { formatarKz, mensagemCodigo, mensagemErro } from '@/lib/formatar';
 import { useSessao } from '@/lib/sessao';
 import { cores, espaco } from '@/lib/tema';
 import type { Endereco, Orcamento } from '@/lib/tipos';
+
+/** O que segue para o servidor: o prato, a quantidade e os ids das opções (o preço é calculado lá) */
+function itemDoPedido(l: LinhaCarrinho) {
+  return { cardapio_id: l.item.id, qtd: l.qtd, ...(l.opcoes.length > 0 ? { opcoes: l.opcoes.map((o) => o.id) } : {}) };
+}
 
 /** Checkout: endereço, orçamento do servidor, código de convite (C2) e saldo do programa */
 export default function Carrinho() {
@@ -56,7 +61,7 @@ export default function Carrinho() {
     setErroOrc(null);
     if ((!pontoId && !grupo) || carrinho.linhas.length === 0) return;
     pedirOrcamento(
-      carrinho.linhas.map((l) => ({ cardapio_id: l.item.id, qtd: l.qtd })),
+      carrinho.linhas.map(itemDoPedido),
       grupo ? null : pontoId,
       grupo?.grupoId ?? null,
       carrinho.cozinhaActual?.id ?? null,
@@ -83,7 +88,7 @@ export default function Carrinho() {
         pontoEntregaId: grupo ? null : pontoId,
         grupoId: grupo?.grupoId ?? null,
         cozinhaId: grupo ? null : (carrinho.cozinhaActual?.id ?? null),
-        itens: carrinho.linhas.map((l) => ({ cardapio_id: l.item.id, qtd: l.qtd })),
+        itens: carrinho.linhas.map(itemDoPedido),
         observacoes,
       });
       let saldoFalhou = false;
@@ -115,13 +120,16 @@ export default function Carrinho() {
     <Ecra>
       {ligada('multi_cozinha') && carrinho.cozinhaActual && <Subtitulo>{carrinho.cozinhaActual.nome}</Subtitulo>}
       {carrinho.linhas.map((l) => (
-        <View key={l.item.id} style={{ flexDirection: 'row', alignItems: 'center', gap: espaco.m }}>
-          <Text style={{ flex: 1, fontSize: 15 }}>{l.item.nome}</Text>
-          <Pressable accessibilityLabel="Menos" onPress={() => carrinho.alterar(l.item.id, l.qtd - 1)} hitSlop={8}>
+        <View key={l.chave} style={{ flexDirection: 'row', alignItems: 'center', gap: espaco.m }}>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 15 }}>{l.item.nome}</Text>
+            {l.opcoes.length > 0 && <Text style={{ color: cores.textoSuave }}>{l.opcoes.map((o) => o.nome).join(', ')}</Text>}
+          </View>
+          <Pressable accessibilityLabel="Menos" onPress={() => carrinho.alterar(l.chave, l.qtd - 1)} hitSlop={8}>
             <Text style={{ fontSize: 22, color: cores.marca, width: 24, textAlign: 'center' }}>−</Text>
           </Pressable>
           <Text style={{ fontSize: 16, fontWeight: '600', minWidth: 20, textAlign: 'center' }}>{l.qtd}</Text>
-          <Pressable accessibilityLabel="Mais" onPress={() => carrinho.alterar(l.item.id, l.qtd + 1)} hitSlop={8}>
+          <Pressable accessibilityLabel="Mais" onPress={() => carrinho.alterar(l.chave, l.qtd + 1)} hitSlop={8}>
             <Text style={{ fontSize: 22, color: cores.marca, width: 24, textAlign: 'center' }}>+</Text>
           </Pressable>
         </View>

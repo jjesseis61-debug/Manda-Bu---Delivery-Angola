@@ -31,7 +31,10 @@ export type ChaveFuncionalidade =
   | 'avaliacoes_fotos'
   | 'reconhecimento_equipa'
   | 'pedidos_grupo'
-  | 'multi_cozinha';
+  | 'multi_cozinha'
+  | 'pratos_montaveis'
+  | 'como_chegar'
+  | 'acompanhamento_entrega';
 
 export type Funcionalidades = Partial<Record<ChaveFuncionalidade, boolean>>;
 
@@ -222,4 +225,37 @@ export type CozinhaParaPedir = {
   foto_url: string | null;
   historia: string | null;
   pratos: number;
+};
+
+// I9 · Pratos montáveis
+export type Opcao = { id: string; nome: string; preco_extra: number; ordem: number };
+export type GrupoOpcoes = {
+  id: string;
+  cardapio_id: string;
+  nome: string;
+  minimo: number;
+  maximo: number;
+  ordem: number;
+  opcoes: Opcao[];
+};
+export type OpcaoEscolhida = { id: string; nome: string; preco_extra: number };
+
+// I10 · Como chegar
+export type LocalizacaoCozinha = {
+  cozinha_id: string;
+  nome: string;
+  morada: string | null;
+  horario: string | null;
+  lat: number;
+  lng: number;
+};
+
+// I11 · Acompanhamento da entrega
+export type Ponto = { lat: number; lng: number };
+export type PosicaoEntrega = {
+  activo: boolean;
+  estafeta?: (Ponto & { actualizado_em: string }) | null;
+  destino?: Ponto | null;
+  distancia_km?: number | null;
+  minutos?: number | null;
 };

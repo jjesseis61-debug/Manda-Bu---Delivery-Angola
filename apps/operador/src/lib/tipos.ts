@@ -231,3 +231,26 @@ export type LinhaComparativo = {
   media_avaliacao: number | null;
   avaliacoes: number;
 };
+
+// I9 · Pratos montáveis
+export type OpcaoPrato = { id: string; grupo_id: string; nome: string; preco_extra: number; disponivel: boolean; ordem: number };
+export type GrupoOpcoesPrato = {
+  id: string;
+  cardapio_id: string;
+  nome: string;
+  minimo: number;
+  maximo: number;
+  ordem: number;
+  opcoes: OpcaoPrato[];
+};
+
+// I10 · Localização da cozinha
+export type LocalizacaoCozinha = {
+  id?: string;
+  cozinha_id: string;
+  morada: string | null;
+  horario: string | null;
+  lat: number;
+  lng: number;
+  publica: boolean;
+};

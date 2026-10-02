@@ -626,6 +626,9 @@ Todos os valores e nomes são preenchidos a partir dos dados e parâmetros.
 | **I6. Pedidos de grupo** | C12, C13, O10; N10, N11 | `pedidos_grupo` | Testado com 2–3 escritórios |
 | **I7. Fotos nas avaliações** | Envio de fotos, bucket privado, moderação em O7 | `avaliacoes_fotos` | Existe moderador designado |
 | **I8. Rede de cozinhas** | Selector de cozinha no cliente, gestão multi-cozinha no operador, relatórios comparativos | `multi_cozinha` | Primeira cozinha parceira assinada |
+| **I9. Pratos montáveis** | Grupos de opções por prato (base, acompanhamentos, extras) com preço extra; ecrã "Montar o prato"; gestão das opções no O6 | `pratos_montaveis` | Opções carregadas para os pratos montáveis |
+| **I10. Como chegar** | Morada, horário e ponto de cada cozinha; botão que abre a navegação do Google Maps | `como_chegar` | Localização gravada e autorizada pela responsável |
+| **I11. Acompanhamento da entrega** | Estafeta partilha a posição enquanto tem pedidos a caminho; o cliente vê-o no mapa com tempo estimado | `acompanhamento_entrega` | Testado com estafetas reais; chave do Google Maps no build |
 
 **Feito (migração `20261001184650_crescimento_rls_tabelas_base.sql`, ver secção 8):** ~~Tarefa pendente antes de a app do operador sincronizar (I3)~~: as tabelas base tinham RLS activo **sem políticas**
 (fechadas a `authenticated`/`anon`): `auditoria`, `caixa`, `clientes`, `custos`, `direcoes`, `distribuicoes`,
@@ -735,6 +738,21 @@ estava no O6 (criar cozinha, estado activa/pausada/inactiva, consentimento, prat
 **Pendente para pôr a I8 em uso:** a primeira cozinha parceira assinada (critério da fase): criá-la no O6, com o
 cardápio, o consentimento público se a responsável o der, e turnos/caixas na cozinha. Uma cozinha pausada sai do
 selector e não aceita pedidos.
+
+**Estado das I9–I11 (2 de Outubro de 2026):** código pronto, interruptores desligados.
+- **I9 · Pratos montáveis:** no O6, cada prato tem "Opções" (grupos com mínimo e máximo, opções com preço extra e
+  esgotada). No cliente, um prato com opções mostra "Montar" e abre o ecrã de montar, com o preço a actualizar e o
+  botão desligado até os grupos obrigatórios estarem escolhidos. O servidor valida tudo e calcula o preço; o nome do
+  item leva as opções, por isso a cozinha, a entrega e a venda as mostram. Falta: as opções não descontam stock.
+- **I10 · Como chegar:** no O6, "Localização" com morada, horário, ponto (escrito ou "usar a localização deste
+  telemóvel") e a autorização da responsável. No cliente, um cartão com a morada e "Como chegar" no início e no perfil
+  da cozinha (com mapa), que abre a navegação do Google Maps. Sem API paga.
+- **I11 · Acompanhamento da entrega:** quem marca "Saiu para entrega" fica como estafeta do pedido. No ecrã de
+  entregas, a app do estafeta envia a posição (de 15 em 15 s ou a cada 30 m) enquanto tem pedidos a caminho e o ecrã
+  está aberto. O cliente vê no ecrã do pedido o estafeta e o destino no mapa, a distância e o tempo estimado
+  (distância × 1,4 a 25 km/h), actualizados de 10 em 10 s. Só se guarda a última posição e apaga-se no fim.
+  Limitações: sem localização em segundo plano (o ecrã tem de ficar aberto) e o tempo é uma estimativa; para rotas
+  reais será precisa uma API de rotas paga, com a chave guardada como segredo de uma Edge Function.
 
 **Correcções depois da análise do sistema (2 de Outubro de 2026):**
 - Pedido criado com id gerado no telemóvel: retentar depois de uma falha de rede já não cria um pedido repetido.

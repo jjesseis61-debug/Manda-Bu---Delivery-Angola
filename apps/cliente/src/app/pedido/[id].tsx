@@ -2,6 +2,7 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Text } from 'react-native';
 
+import { AcompanharEntrega } from '@/components/AcompanharEntrega';
 import { PartilharCodigo } from '@/components/PartilharCodigo';
 import { PessoasComoTu } from '@/components/PessoasComoTu';
 import { ACarregar, Aviso, Botao, Cartao, Ecra, Linha, Paragrafo, Subtitulo } from '@/components/ui';
@@ -56,6 +57,11 @@ export default function PedidoDetalhe() {
         )}
         {pedido.motivo_cancelamento && <Paragrafo suave>{pedido.motivo_cancelamento}</Paragrafo>}
       </Cartao>
+
+      {/* I11: estafeta no mapa enquanto o pedido está a caminho */}
+      {pedido.estado === 'em_entrega' && ligada('acompanhamento_entrega') && (
+        <AcompanharEntrega pedidoId={pedido.id} aoTerminar={carregar} />
+      )}
 
       <Cartao>
         {pedido.itens.map((i, n) => (

@@ -2,6 +2,7 @@ import { Redirect, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Image } from 'react-native';
 
+import { ComoChegar } from '@/components/ComoChegar';
 import { ACarregar, Botao, Cartao, Ecra, Linha, Paragrafo, Subtitulo, Titulo } from '@/components/ui';
 import { lerCardapio, lerCozinhaPublica, mediasAvaliacoes, type Cozinha } from '@/lib/api';
 import { formatarKz, formatarMedia } from '@/lib/formatar';
@@ -62,6 +63,7 @@ export default function PerfilCozinha() {
           </Cartao>
         </>
       )}
+      {ligada('como_chegar') && <ComoChegar cozinhaId={cozinha.id} comMapa />}
       {ligada('avaliacoes') && (
         <Botao
           titulo="Ver avaliações"

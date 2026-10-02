@@ -19,6 +19,10 @@ export default function PoliticaPrivacidade() {
         Os teus pedidos, pagamentos, convites e ganhos do Convida e Ganha, as avaliações e fotos que envias, e um
         código do telemóvel para te enviarmos notificações.
       </Paragrafo>
+      <Paragrafo>
+        Enquanto o teu pedido está a caminho, mostramos-te no mapa a posição do estafeta. A posição dele só fica
+        guardada durante a entrega e não guardamos o percurso.
+      </Paragrafo>
 
       <Subtitulo>Para quê</Subtitulo>
       <Paragrafo>

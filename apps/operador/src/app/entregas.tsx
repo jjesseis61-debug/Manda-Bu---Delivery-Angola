@@ -6,6 +6,7 @@ import { Guarda } from '@/components/Guarda';
 import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Escolha, Paragrafo, Subtitulo } from '@/components/ui';
 import { caixasAbertas, lerCozinhas, marcarPagadorDistinto, mudarEstado, pedidosOperador } from '@/lib/api';
 import { formatarData, formatarDia, formatarKz, mensagemErro, nomeEstadoPedido } from '@/lib/formatar';
+import { usePartilharLocalizacao } from '@/lib/partilharLocalizacao';
 import { useSessao } from '@/lib/sessao';
 import { cores, espaco } from '@/lib/tema';
 import type { Caixa, Cozinha, PedidoOperador } from '@/lib/tipos';
@@ -37,6 +38,7 @@ export default function Entregas() {
   const [ocupado, setOcupado] = useState<string | null>(null);
   const [cozinhas, setCozinhas] = useState<Cozinha[]>([]);
   const [filtroCozinha, setFiltroCozinha] = useState('todas');
+  const [versao, setVersao] = useState(0);
 
   const carregar = useCallback(() => {
     Promise.all([pedidosOperador(), caixasAbertas(), lerCozinhas().catch(() => [] as Cozinha[])])
@@ -44,10 +46,14 @@ export default function Entregas() {
         setPedidos(p);
         setCaixas(c);
         setCozinhas(cz);
+        setVersao((v) => v + 1);
       })
       .catch((e) => setErro(mensagemErro(e)));
   }, []);
   useFocusEffect(carregar);
+
+  // I11: com pedidos a caminho, envia a posição para o cliente acompanhar a entrega
+  const partilha = usePartilharLocalizacao(entregar && (pedidos ?? []).some((p) => p.estado === 'em_entrega'), versao);
 
   const grupos = useMemo(() => {
     const m = new Map<string, PedidoOperador[]>();
@@ -214,6 +220,13 @@ export default function Entregas() {
     <Guarda permissoes={['entregas.registar', 'pedidos.gerir']}>
       <Ecra>
         {erro && <Aviso tipo="erro">{erro}</Aviso>}
+        {partilha.erro && <Aviso>{partilha.erro}</Aviso>}
+        {partilha.aCaminho > 0 && (
+          <Aviso tipo="sucesso">
+            A partilhar a tua localização com {partilha.aCaminho === 1 ? '1 cliente' : `${partilha.aCaminho} clientes`}. Mantém
+            este ecrã aberto durante a entrega.
+          </Aviso>
+        )}
         {/* I8: com várias cozinhas, filtrar a fila por cozinha */}
         {cozinhas.length > 1 && (
           <Escolha

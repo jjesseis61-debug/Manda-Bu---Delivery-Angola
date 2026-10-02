@@ -1,8 +1,10 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
 
-import type { ItemCardapio } from './tipos';
+import { chaveLinha, precoMontado } from './opcoes';
+import type { ItemCardapio, OpcaoEscolhida } from './tipos';
 
-export type LinhaCarrinho = { item: ItemCardapio; qtd: number };
+/** Uma linha por prato e combinação de opções (I9: o mesmo prato montado de outra forma é outra linha) */
+export type LinhaCarrinho = { chave: string; item: ItemCardapio; qtd: number; opcoes: OpcaoEscolhida[] };
 
 /** Pedido de grupo em curso (C13): o checkout usa o ponto do grupo em vez do endereço */
 export type GrupoCarrinho = { grupoId: string; codigo: string; hora: string; cozinhaId: string; cozinhaNome: string };
@@ -15,8 +17,10 @@ type Carrinho = {
   quantidade: number;
   /** Só para mostrar no cardápio; o valor a pagar vem sempre do orçamento do servidor */
   totalEstimado: number;
-  adicionar: (item: ItemCardapio) => void;
-  alterar: (itemId: string, qtd: number) => void;
+  adicionar: (item: ItemCardapio, opcoes?: OpcaoEscolhida[]) => void;
+  alterar: (chave: string, qtd: number) => void;
+  /** Quantas unidades deste prato há no carrinho, com quaisquer opções */
+  quantidadeDe: (itemId: string) => number;
   limpar: () => void;
   grupo: GrupoCarrinho | null;
   definirGrupo: (g: GrupoCarrinho | null) => void;
@@ -38,19 +42,21 @@ export function CarrinhoProvider({ children }: { children: ReactNode }) {
     () => ({
       linhas,
       quantidade: linhas.reduce((s, l) => s + l.qtd, 0),
-      totalEstimado: linhas.reduce((s, l) => s + l.qtd * l.item.preco, 0),
-      adicionar: (item) =>
+      totalEstimado: linhas.reduce((s, l) => s + l.qtd * precoMontado(l.item.preco, l.opcoes), 0),
+      adicionar: (item, opcoes = []) =>
         setLinhas((actual) => {
-          const existe = actual.find((l) => l.item.id === item.id);
-          if (existe) return actual.map((l) => (l.item.id === item.id ? { ...l, qtd: Math.min(l.qtd + 1, 50) } : l));
-          return [...actual, { item, qtd: 1 }];
+          const chave = chaveLinha(item.id, opcoes);
+          const existe = actual.find((l) => l.chave === chave);
+          if (existe) return actual.map((l) => (l.chave === chave ? { ...l, qtd: Math.min(l.qtd + 1, 50) } : l));
+          return [...actual, { chave, item, qtd: 1, opcoes }];
         }),
-      alterar: (itemId, qtd) =>
+      alterar: (chave, qtd) =>
         setLinhas((actual) =>
           qtd <= 0
-            ? actual.filter((l) => l.item.id !== itemId)
-            : actual.map((l) => (l.item.id === itemId ? { ...l, qtd: Math.min(qtd, 50) } : l)),
+            ? actual.filter((l) => l.chave !== chave)
+            : actual.map((l) => (l.chave === chave ? { ...l, qtd: Math.min(qtd, 50) } : l)),
         ),
+      quantidadeDe: (itemId) => linhas.filter((l) => l.item.id === itemId).reduce((s, l) => s + l.qtd, 0),
       limpar: () => {
         setLinhas([]);
         setGrupo(null);

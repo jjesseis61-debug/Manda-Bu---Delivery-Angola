@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Switch, Text, View } from 'react-native';
 
 import { Guarda } from '@/components/Guarda';
+import { LocalizacaoCozinha } from '@/components/LocalizacaoCozinha';
 import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Escolha, Paragrafo, Subtitulo } from '@/components/ui';
 import { guardarCozinha, guardarPrato, lerCardapio, lerCozinhas } from '@/lib/api';
 import { formatarKz, mensagemErro } from '@/lib/formatar';
@@ -126,6 +127,8 @@ export default function EditarCozinha() {
         />
         <Botao titulo="Guardar cozinha" aCarregar={ocupado} desactivado={!cozinha.nome.trim() || !cozinha.responsavel?.trim()} aoCarregar={guardar} />
 
+        {!nova && <LocalizacaoCozinha cozinhaId={id} />}
+
         {!nova && (
           <>
             <Subtitulo>Cardápio</Subtitulo>
@@ -140,11 +143,19 @@ export default function EditarCozinha() {
                   </Text>
                   <Text>{formatarKz(p.preco)}</Text>
                 </View>
-                <Botao
-                  titulo="Editar"
-                  variante="texto"
-                  aoCarregar={() => setPrato({ ...p, preco: String(p.preco), ordem: String(p.ordem) })}
-                />
+                <View style={{ flexDirection: 'row', gap: espaco.s }}>
+                  <Botao
+                    titulo="Editar"
+                    variante="texto"
+                    aoCarregar={() => setPrato({ ...p, preco: String(p.preco), ordem: String(p.ordem) })}
+                  />
+                  {/* I9: grupos de opções do prato montável */}
+                  <Botao
+                    titulo="Opções"
+                    variante="texto"
+                    aoCarregar={() => router.push({ pathname: '/cozinhas/opcoes/[prato]', params: { prato: p.id, nome: p.nome } })}
+                  />
+                </View>
               </Cartao>
             ))}
             {prato ? (
