@@ -49,6 +49,8 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 'lista_avaliacoes', 'fotos_pendentes', 'foto_pode_enviar', 'foto_pode_ver', 'fotos_da_avaliacao',
                 -- I8: rede de cozinhas (cozinha_aceita_pedidos no trigger da criação de grupos)
                 'cozinhas_para_pedir', 'relatorio_comparativo', 'cozinha_aceita_pedidos',
+                -- apagar a conta pela app (exigido pelas lojas)
+                'apagar_conta',
                 -- auxiliares usadas em políticas RLS, valores por defeito ou triggers SECURITY INVOKER
                 'cliente_actual', 'cozinha_padrao', 'e_funcionario', 'funcionalidade_activa',
                 'funcionario_actual', 'membro_da_cozinha', 'tem_permissao', 'e_administrador', 'pode_na_cozinha')),

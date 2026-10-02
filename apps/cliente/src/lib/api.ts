@@ -46,6 +46,11 @@ export async function lerConfiguracao(): Promise<{ parametros: Parametros; funci
 }
 
 // ---------------------------------------------------------------- conta
+/** Apaga a conta do cliente da sessão (dados pessoais e utilizador da Auth); pedidos e vendas ficam anónimos */
+export async function apagarConta(): Promise<void> {
+  verificar(await supabase.rpc('apagar_conta'));
+}
+
 export async function meuPerfil(): Promise<Perfil | null> {
   return (verificar(await supabase.rpc('meu_perfil')) as Perfil | null) ?? null;
 }
@@ -230,8 +235,14 @@ export async function orcamento(
   ) as Orcamento;
 }
 
-/** O servidor recalcula itens, preços, taxa e desconto; devolve o id do pedido */
+/**
+ * O servidor recalcula itens, preços, taxa e desconto. O pedido é criado com um id gerado no telemóvel. Se a rede falhar depois de o servidor gravar e o
+ * cliente tocar outra vez em "Confirmar", o mesmo id é recusado como repetido e não nasce um
+ * segundo pedido: confirma-se que o pedido já existe e segue-se como se a primeira tentativa
+ * tivesse respondido.
+ */
 export async function criarPedido(dados: {
+  id: string;
   clienteId: string;
   pontoEntregaId: string | null;
   grupoId?: string | null;
@@ -239,20 +250,22 @@ export async function criarPedido(dados: {
   itens: ItemCarrinho[];
   observacoes: string;
 }): Promise<string> {
-  const r = await supabase
-    .from('pedidos')
-    .insert({
-      cliente_id: dados.clienteId,
-      ponto_entrega_id: dados.pontoEntregaId,
-      grupo_id: dados.grupoId ?? null,
-      cozinha_id: dados.cozinhaId ?? null,
-      itens: dados.itens,
-      observacoes: dados.observacoes.trim() || null,
-      dispositivo_id: await dispositivoId(),
-    })
-    .select('id')
-    .single();
-  return (verificar(r) as { id: string }).id;
+  const r = await supabase.from('pedidos').insert({
+    id: dados.id,
+    cliente_id: dados.clienteId,
+    ponto_entrega_id: dados.pontoEntregaId,
+    grupo_id: dados.grupoId ?? null,
+    cozinha_id: dados.cozinhaId ?? null,
+    itens: dados.itens,
+    observacoes: dados.observacoes.trim() || null,
+    dispositivo_id: await dispositivoId(),
+  });
+  if (r.error && (r.error as { code?: string }).code === '23505') {
+    const existente = await supabase.from('pedidos').select('id').eq('id', dados.id).maybeSingle();
+    if (verificar(existente)) return dados.id;
+  }
+  verificar(r);
+  return dados.id;
 }
 
 export async function usarCredito(pedidoId: string, valor: number): Promise<number> {

@@ -1,0 +1,58 @@
+# Testes em cada PR e em cada push para o main: base de dados (pgTAP), Edge Function e as duas apps.
+name: Testes
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  base-de-dados:
+    name: Base de dados (pgTAP)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Instalar Postgres 16 e pgTAP
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-16 postgresql-16-pgtap libtap-parser-sourcehandler-pgtap-perl
+          sudo systemctl start postgresql
+          sudo -u postgres createuser --superuser "$USER"
+      - name: Migrações e testes
+        run: bash scripts/testar_bd.sh
+
+  edge-function:
+    name: Edge Function enviar-notificacoes
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --experimental-strip-types supabase/functions/enviar-notificacoes/envio.test.mjs
+
+  apps:
+    name: App do ${{ matrix.app }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [cliente, operador]
+    defaults:
+      run:
+        working-directory: apps/${{ matrix.app }}
+    env:
+      EXPO_PUBLIC_SUPABASE_URL: https://exemplo.supabase.co
+      EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: testes
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/${{ matrix.app }}/package-lock.json
+      - run: npm ci
+      # Gera os tipos das rotas (expo-router) antes de verificar os tipos
+      - run: timeout 90 npx expo start --offline > /dev/null 2>&1 || true
+      - run: npx tsc --noEmit
+      - run: npx jest --ci

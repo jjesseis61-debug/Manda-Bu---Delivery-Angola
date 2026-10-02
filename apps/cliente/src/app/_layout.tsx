@@ -58,6 +58,8 @@ export default function LayoutRaiz() {
           <Stack.Screen name="grupo/novo" options={{ title: 'Novo pedido de grupo' }} />
           <Stack.Screen name="grupo/[codigo]" options={{ title: 'Pedido de grupo' }} />
           <Stack.Screen name="enderecos/index" options={{ title: 'Endereços' }} />
+          <Stack.Screen name="apagar-conta" options={{ title: 'Apagar a conta' }} />
+          <Stack.Screen name="politica-privacidade" options={{ title: 'Política de privacidade' }} />
           <Stack.Screen name="enderecos/novo" options={{ title: 'Novo endereço' }} />
         </Stack>
         <StatusBar style="dark" />

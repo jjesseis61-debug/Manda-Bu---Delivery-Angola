@@ -1,11 +1,12 @@
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, Switch, Text, View } from 'react-native';
 
 import { CampoCodigo } from '@/components/CampoCodigo';
 import { Aviso, Botao, Campo, Cartao, Ecra, Escolha, Linha, Paragrafo, Subtitulo } from '@/components/ui';
 import { criarPedido, lerEnderecos, lerSaldo, orcamento as pedirOrcamento, usarCredito } from '@/lib/api';
 import { useCarrinho } from '@/lib/carrinho';
+import { novoId } from '@/lib/dispositivo';
 import { formatarKz, mensagemCodigo, mensagemErro } from '@/lib/formatar';
 import { useSessao } from '@/lib/sessao';
 import { cores, espaco } from '@/lib/tema';
@@ -26,6 +27,9 @@ export default function Carrinho() {
   const [erro, setErro] = useState<string | null>(null);
   const [aEnviar, setAEnviar] = useState(false);
   const [versao, setVersao] = useState(0);
+  // Id do pedido, mantido entre tentativas: retentar depois de uma falha de rede não cria outro pedido.
+  // Muda quando mudam os pratos, o endereço ou o grupo, porque passa a ser outro pedido.
+  const idPedido = useRef<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -61,6 +65,10 @@ export default function Carrinho() {
       .catch((e) => setErroOrc(mensagemErro(e)));
   }, [carrinho.linhas, pontoId, grupo, carrinho.cozinhaActual?.id, versao]);
 
+  useEffect(() => {
+    idPedido.current = null;
+  }, [carrinho.linhas, pontoId, grupo]);
+
   const valorSaldo = orc && usarSaldo ? Math.min(saldo, orc.total) : 0;
 
   async function confirmar() {
@@ -68,7 +76,9 @@ export default function Carrinho() {
     setErro(null);
     setAEnviar(true);
     try {
+      idPedido.current ??= novoId();
       const id = await criarPedido({
+        id: idPedido.current,
         clienteId: perfil.cliente_id,
         pontoEntregaId: grupo ? null : pontoId,
         grupoId: grupo?.grupoId ?? null,

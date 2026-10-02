@@ -22,6 +22,8 @@ Aplicadas por esta ordem. **Uma migração já aplicada nunca se edita:** qualqu
 | `20261001162633_crescimento_i7_fotos_avaliacoes.sql` | I7: bucket privado `fotos-avaliacoes` (só JPEG, até 5 MB); o servidor define o caminho de cada foto (`<id>.jpg`); políticas do storage: envia só o autor, para uma foto sua pendente, com `avaliacoes_fotos` ligado; lê quem pode ver a foto (aprovada e avaliação visível, o próprio, moderadores); até 2 fotos por avaliação; `lista_avaliacoes` (lista pública com as fotos aprovadas) e `fotos_pendentes` (O7). | aplicada |
 | `20261001165139_crescimento_i8_rede_cozinhas.sql` | I8: `cozinhas_para_pedir` (selector do cliente: cozinhas activas, a por defeito primeiro; perfil só com consentimento); o pedido é da cozinha escolhida ou da do grupo e tem de ser de uma cozinha activa (`cozinha_aceita_pedidos`, erro `cozinha_indisponivel`); grupo pode ser criado noutra cozinha; `relatorio_comparativo` (pedidos, vendas, ticket médio, cancelados, clientes, novos, por indicação, entregas a horas, avaliações por cozinha); O10 e `grupo_detalhe` com a cozinha. | aplicada |
 | `20261001184650_crescimento_rls_tabelas_base.sql` | Políticas RLS das 16 tabelas base (vendas, stock, caixa, clientes, custos, organograma, turnos, …) por permissão do organograma e por cozinha (`pode_na_cozinha`: permissão + turno na cozinha, ou `cozinhas.gerir`); 6 permissões novas no catálogo (`vendas.registar`, `stock.gerir`, `financas.gerir`, `clientes.gerir`, `equipa.gerir`, `auditoria.ver`); append-only sem UPDATE; vendas `App cliente` só do servidor; distribuições só mudam recebimento/devolução/quebra; limite de crédito e desconto dos clientes só com `financas.gerir` e ligação à conta só pelo servidor (`clientes_proteger_campos`); organograma escrito só pelo administrador principal (`e_administrador`). Clientes continuam sem acesso directo. | aplicada |
+| `20261002054644_notificacoes_validade.sql` | Validade das notificações (`notificacao_valida`): N5 2 horas, N10/N11 3 horas, N7/N9 24 horas, N6 48 horas, as outras 7 dias. `notificacoes_por_enviar` ignora as expiradas e `descartar_notificacoes_expiradas` tira-as da fila; `agendar_jobs()` passa a agendar essa limpeza (03h30 UTC). | aplicada |
+| `20261002055313_apagar_conta.sql` | `apagar_conta()` para a app do cliente: apaga nome, telefone, NIF, contacto, endereços, telemóveis de push, notificações por enviar e o utilizador da Auth; pedidos, vendas e pagamentos ficam com "Cliente removido". Recusa com pedido, levantamento ou grupo a meio. | aplicada |
 
 Os números de versão dos ficheiros são os que o Supabase registou ao aplicar, para `supabase migration list` e
 `supabase db push` não voltarem a aplicá-las.
@@ -76,6 +78,8 @@ base de dados.
 | `20_fotos_avaliacoes.test.sql` | I7: envio para o bucket privado (caminho do servidor, só o autor, limite de 2), privacidade das pendentes, fila e decisão de moderação (O7), visibilidade depois de aprovada e com a avaliação oculta |
 | `21_rede_cozinhas.test.sql` | I8: selector com e sem `multi_cozinha`, pedido na cozinha escolhida, pratos de outra cozinha recusados, cozinha pausada, grupo noutra cozinha, relatório comparativo, O10 com a cozinha |
 | `22_rls_tabelas_base.test.sql` | Políticas das tabelas base: cliente sem acesso, vendas e stock por cozinha, append-only, vendas da app só do servidor, distribuições, campos de crédito dos clientes, organograma e auditoria |
+| `23_notificacoes_validade.test.sql` | Validade das notificações por código e limpeza da fila |
+| `24_apagar_conta.test.sql` | Apagar a conta: recusa com pedido a meio, dados pessoais e utilizador da Auth apagados, venda mantida, auditoria, novo registo com o mesmo telefone |
 | `15_app_operador.test.sql` | I3: telefone e ligação dos funcionários, painel (O1), verificação e "Confirmar todos" com N3 (O2), levantamentos (O3), embaixadores (O4), fila de entregas e caixas (E1), auditoria de cozinhas e cardápio (O6) |
 
 ### Como correr
@@ -90,7 +94,7 @@ base de dados.
 
 ### Resultados (1 de Outubro de 2026)
 
-| Teste | Postgres 16 local, 17 migrações | Supabase `laruvuambdovnkojwrzp` |
+| Teste | Postgres 16 local, 19 migrações | Supabase `laruvuambdovnkojwrzp` |
 |---|---|---|
 | 00 estrutura | 19/19 | 19/19 |
 | 01 ligação | 9/9 | 9/9 |
@@ -115,7 +119,9 @@ base de dados.
 | 20 fotos nas avaliações (I7) | 19/19 | 19/19 |
 | 21 rede de cozinhas (I8) | 17/17 | 17/17 |
 | 22 RLS das tabelas base | 26/26 | 26/26 |
-| **Total** | **488/488** | |
+| 23 validade das notificações | 7/7 | 7/7 |
+| 24 apagar a conta | 11/11 | 11/11 |
+| **Total** | **506/506** | |
 
 Na I2 voltaram a correr no Supabase os testes afectados por cada migração (app do cliente: 06, 08, 09, 12 e 13;
 desconto limitado: 02, 09 e 14); os restantes não dependem delas (e todos passam localmente).
@@ -145,6 +151,12 @@ Na I8 correram no Supabase o 21 (17/17) e as verificações de catálogo.
 Nas políticas das tabelas base correram no Supabase o 22 (26/26) e as verificações de catálogo do 12 (nenhuma
 função SECURITY DEFINER para `anon`, trigger `clientes_proteger_campos` não exposto). O verificador do Supabase só
 mostra sem políticas `notificacoes_fila`, `contadores_zona` e `dispositivos_push`, todas só do servidor.
+
+Nas correcções de 2 de Outubro correram no Supabase o 23 (7/7) e o 24 (11/11, com o utilizador da Auth apagado de
+facto). A Edge Function `enviar-notificacoes` passou à versão 4 (marca as notificações como enviadas lote a lote) e
+tem testes próprios em Node, sem Deno: `node --experimental-strip-types supabase/functions/enviar-notificacoes/envio.test.mjs`.
+
+A CI (`.github/workflows/testes.yml`) corre em cada PR a base de dados, a Edge Function e as duas apps.
 
 Nenhum dado de teste ficou na base (contagens de `funcionarios`, `clientes`, `pedidos`, `cardapio` e `caixa` a 0;
 interruptores todos desligados). **Por remover:** o esquema `testes` e a extensão `pgtap` ficaram instalados no

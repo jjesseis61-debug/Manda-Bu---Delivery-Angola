@@ -21,6 +21,7 @@ export default function Conta() {
         <Botao titulo="Notificações" variante="secundario" aoCarregar={() => router.push('/notificacoes')} />
       )}
       {ligada('indicacao') && <Botao titulo="Como funciona o Convida e Ganha" variante="texto" aoCarregar={() => router.push('/como-funciona')} />}
+      <Botao titulo="Política de privacidade" variante="texto" aoCarregar={() => router.push('/politica-privacidade')} />
       <Paragrafo suave>Manda Bué — Delivery Angola</Paragrafo>
       <Botao
         titulo="Sair da conta"
@@ -31,6 +32,7 @@ export default function Conta() {
           router.replace('/entrar');
         }}
       />
+      <Botao titulo="Apagar a conta" variante="texto" aoCarregar={() => router.push('/apagar-conta')} />
     </Ecra>
   );
 }

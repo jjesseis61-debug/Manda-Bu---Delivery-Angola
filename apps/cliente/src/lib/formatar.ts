@@ -118,6 +118,10 @@ const mensagens: Record<string, string> = {
   // ligar_indicacao (6.3)
   programa_inactivo: 'O programa de convites não está disponível neste momento.',
   sem_sessao: 'Entra na tua conta para continuar.',
+  // apagar_conta
+  pedido_em_curso: 'Tens um pedido a meio. Espera pela entrega (ou cancela-o) e depois apaga a conta.',
+  levantamento_em_curso: 'Tens um levantamento de saldo por pagar. Espera que seja pago e depois apaga a conta.',
+  grupo_em_curso: 'Organizas um pedido de grupo que ainda não terminou. Espera pelo fim (ou cancela-o) e depois apaga a conta.',
   codigo_inexistente: 'Este código não existe. Confirma as letras e os números.',
   proprio_codigo: 'Não podes usar o teu próprio código.',
   ja_ligado: 'Já usaste um código de convite nesta conta.',

@@ -736,6 +736,19 @@ estava no O6 (criar cozinha, estado activa/pausada/inactiva, consentimento, prat
 cardápio, o consentimento público se a responsável o der, e turnos/caixas na cozinha. Uma cozinha pausada sai do
 selector e não aceita pedidos.
 
+**Correcções depois da análise do sistema (2 de Outubro de 2026):**
+- Pedido criado com id gerado no telemóvel: retentar depois de uma falha de rede já não cria um pedido repetido.
+- Edge Function `enviar-notificacoes` v4: marca as notificações como enviadas lote a lote; uma falha da Expo a meio
+  já não repete o que chegou aos telemóveis.
+- Validade das notificações (N5 2 horas, N10/N11 3 horas, N7/N9 24 horas, N6 48 horas, outras 7 dias) e limpeza
+  diária da fila.
+- Apagar a conta na app do cliente (Conta → Apagar a conta) e página de política de privacidade, exigidas pela
+  Google Play e pela App Store. Antes de publicar: preencher `EXPO_PUBLIC_CONTACTO_PRIVACIDADE` e rever o texto com
+  um jurista (Lei n.º 22/11 de Protecção de Dados Pessoais).
+- Chave do Google Maps para Android lida de `GOOGLE_MAPS_ANDROID_API_KEY` (sem ela o mapa do novo endereço fica em
+  branco em Android).
+- CI em `.github/workflows/testes.yml`: base de dados, Edge Function e as duas apps em cada PR.
+
 A revisão de parâmetros (custo por cliente conquistado, retenção, % anulados) é feita 1–2 meses após I4 e depois trimestralmente, sempre no painel, sem alterar código.
 
 ---
