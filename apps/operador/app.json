@@ -1,0 +1,51 @@
+{
+  "expo": {
+    "name": "Manda Bué Operador",
+    "slug": "manda-bue-operador",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "ao.mandabue.operador"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "ao.mandabue.operador"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#ffffff",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 76
+        }
+      ],
+      "expo-sharing",
+      "expo-notifications",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "A Manda Bué usa a tua localização para mostrar ao cliente onde está a entrega, só enquanto tens pedidos a caminho, e para marcar a localização das cozinhas."
+        }
+      ]
+    ],
+    "scheme": "mandabueoperador",
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
