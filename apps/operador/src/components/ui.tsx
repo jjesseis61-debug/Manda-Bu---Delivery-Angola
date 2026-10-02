@@ -56,14 +56,22 @@ export function Linha({ esquerda, direita, forte = false }: { esquerda: ReactNod
 type BotaoProps = {
   titulo: string;
   aoCarregar: () => void;
-  variante?: 'principal' | 'secundario' | 'whatsapp' | 'texto';
+  variante?: 'principal' | 'secundario' | 'leve' | 'whatsapp' | 'texto';
   desactivado?: boolean;
   aCarregar?: boolean;
 };
 
 export function Botao({ titulo, aoCarregar, variante = 'principal', desactivado, aCarregar }: BotaoProps) {
   const fundo =
-    variante === 'principal' ? cores.marca : variante === 'whatsapp' ? cores.whatsapp : variante === 'secundario' ? cores.fundoSuave : 'transparent';
+    variante === 'principal'
+      ? cores.marca
+      : variante === 'whatsapp'
+        ? cores.whatsapp
+        : variante === 'secundario'
+          ? cores.fundoSuave
+          : variante === 'leve'
+            ? cores.marcaClara
+            : 'transparent';
   const corTexto = variante === 'principal' || variante === 'whatsapp' ? '#fff' : cores.marca;
   return (
     <Pressable
@@ -118,9 +126,15 @@ export function Escolha<T extends string>({
 export function Aviso({ children, tipo = 'aviso' }: { children: ReactNode; tipo?: 'aviso' | 'erro' | 'sucesso' }) {
   const fundo = tipo === 'erro' ? cores.erroFundo : tipo === 'sucesso' ? '#E6F4EA' : cores.avisoFundo;
   const cor = tipo === 'erro' ? cores.erro : tipo === 'sucesso' ? cores.sucesso : cores.aviso;
+  // A cor não é o único sinal: ícone e barra lateral distinguem o aviso dos botões da marca.
+  // No erro o texto fica escuro, para não se confundir com o vermelho das acções.
+  const icone = tipo === 'erro' ? '⚠' : tipo === 'sucesso' ? '✓' : 'ℹ';
   return (
-    <View style={[estilos.aviso, { backgroundColor: fundo }]}>
-      <Text style={{ color: cor, fontSize: 14 }}>{children}</Text>
+    <View
+      accessibilityRole={tipo === 'erro' ? 'alert' : undefined}
+      style={[estilos.aviso, { backgroundColor: fundo, borderLeftColor: cor }]}>
+      <Text style={{ color: cor, fontSize: 15, fontWeight: '700' }}>{icone}</Text>
+      <Text style={{ color: tipo === 'erro' ? cores.texto : cor, fontSize: 14, flex: 1 }}>{children}</Text>
     </View>
   );
 }
@@ -147,7 +161,7 @@ export const estilos = StyleSheet.create({
   rotulo: { fontSize: 13, color: cores.textoSuave, marginBottom: espaco.xs },
   campo: {
     borderWidth: 1,
-    borderColor: cores.linha,
+    borderColor: cores.contorno,
     borderRadius: raio,
     paddingHorizontal: espaco.m,
     paddingVertical: espaco.m,
@@ -159,5 +173,5 @@ export const estilos = StyleSheet.create({
   opcao: { borderWidth: 1, borderColor: cores.marca, borderRadius: 20, paddingVertical: espaco.s, paddingHorizontal: espaco.l },
   opcaoActiva: { backgroundColor: cores.marca },
   opcaoTexto: { color: cores.marca, fontWeight: '600' },
-  aviso: { borderRadius: raio, padding: espaco.m },
+  aviso: { borderRadius: raio, padding: espaco.m, borderLeftWidth: 4, flexDirection: 'row', gap: espaco.s },
 });

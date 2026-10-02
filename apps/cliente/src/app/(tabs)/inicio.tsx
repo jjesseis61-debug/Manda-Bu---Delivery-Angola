@@ -165,7 +165,13 @@ export default function Inicio() {
         {cardapio !== null && cardapio.length === 0 && <Paragrafo suave>O cardápio de hoje ainda não está disponível.</Paragrafo>}
         {categorias.map(([categoria, itens]) => (
           <View key={categoria} style={{ gap: espaco.s }}>
-            <Subtitulo>{categoria}</Subtitulo>
+            {categoria === 'Prato do dia' ? (
+              <View style={{ alignSelf: 'flex-start', backgroundColor: cores.destaqueFundo, borderRadius: 14, paddingHorizontal: espaco.m, paddingVertical: 4, marginTop: espaco.s }}>
+                <Text style={{ color: cores.texto, fontWeight: '700', fontSize: 15 }}>★ Prato do dia</Text>
+              </View>
+            ) : (
+              <Subtitulo>{categoria}</Subtitulo>
+            )}
             {itens.map((item) => {
               const noCarrinho = carrinho.quantidadeDe(item.id);
               return (
@@ -206,8 +212,8 @@ export default function Inicio() {
                           ? router.push({ pathname: '/montar/[id]', params: { id: item.id } })
                           : carrinho.adicionar(item)
                       }
-                      style={{ backgroundColor: cores.marca, borderRadius: 20, paddingHorizontal: espaco.l, paddingVertical: 6 }}>
-                      <Text style={{ color: '#fff', fontWeight: '700' }}>{montaveis.has(item.id) ? 'Montar' : 'Adicionar'}</Text>
+                      style={{ backgroundColor: cores.marcaClara, borderRadius: 20, paddingHorizontal: espaco.l, paddingVertical: 6 }}>
+                      <Text style={{ color: cores.marca, fontWeight: '700' }}>{montaveis.has(item.id) ? 'Montar' : 'Adicionar'}</Text>
                     </Pressable>
                   </View>
                 </View>
