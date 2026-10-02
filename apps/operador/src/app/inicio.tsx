@@ -18,6 +18,7 @@ const ecras: {
   { rota: '/painel', titulo: 'Painel do programa', descricao: 'Custo, vendas por indicação, retenção (O1)', permissoes: ['indicacoes.ver'] },
   { rota: '/verificacao', titulo: 'Verificação', descricao: 'Ganhos em verificação (O2)', permissoes: ['indicacoes.verificar'] },
   { rota: '/levantamentos', titulo: 'Levantamentos', descricao: 'Aprovar e pagar (O3)', permissoes: ['indicacoes.aprovar_pagamentos'] },
+  { rota: '/pacotes', titulo: 'Pacotes do mês', descricao: 'Confirmar pagamentos, reembolsos e catálogo (I12)', permissoes: ['pacotes.gerir'] },
   { rota: '/embaixadores', titulo: 'Embaixadores', descricao: 'Elegíveis e actuais (O4)', permissoes: ['plataforma.parametros'] },
   { rota: '/parametros', titulo: 'Parâmetros e interruptores', descricao: 'Valores do programa e funcionalidades (O5)', permissoes: ['plataforma.parametros'] },
   { rota: '/cozinhas', titulo: 'Cozinhas e cardápio', descricao: 'Perfil, consentimento e pratos (O6)', permissoes: ['cozinhas.gerir'] },

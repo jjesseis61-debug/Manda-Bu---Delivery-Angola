@@ -155,3 +155,17 @@ describe('pedidos de grupo (C12, C13)', () => {
     );
   });
 });
+
+test('I12: benefícios do pacote', () => {
+  const { beneficiosPacote } = require('../formatar') as typeof import('../formatar');
+  expect(
+    beneficiosPacote({ refeicoes: 20, refeicoes_oferta: 2, valor_refeicao: 2500, preco: 50000, validade_dias: 30, pausa_max_dias: 5, entrega_gratis: true }),
+  ).toEqual([
+    '22 refeições: 20 + 2 de oferta',
+    'Poupas 5.000 Kz no mês',
+    'Entrega grátis em todos os pedidos pagos com o pacote',
+    'Válido por 30 dias',
+    'Pausa até 5 dias (férias, doença)',
+    'Reembolso das refeições que não usares',
+  ]);
+});

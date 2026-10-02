@@ -155,6 +155,9 @@ export default function Inicio() {
         {ligada('como_chegar') && (cozinhaId ?? cardapio?.[0]?.cozinha_id) && (
           <ComoChegar cozinhaId={(cozinhaId ?? cardapio?.[0]?.cozinha_id) as string} />
         )}
+        {ligada('pacotes') && !carrinho.grupo && (
+          <Botao titulo="Pacote do mês: paga uma vez, almoça o mês todo" variante="secundario" aoCarregar={() => router.push('/pacotes')} />
+        )}
         {ligada('pedidos_grupo') && !carrinho.grupo && (
           <Botao titulo="Pedido de grupo com os colegas" variante="secundario" aoCarregar={() => router.push('/grupos')} />
         )}

@@ -629,6 +629,7 @@ Todos os valores e nomes são preenchidos a partir dos dados e parâmetros.
 | **I9. Pratos montáveis** | Grupos de opções por prato (base, acompanhamentos, extras) com preço extra; ecrã "Montar o prato"; gestão das opções no O6 | `pratos_montaveis` | Opções carregadas para os pratos montáveis |
 | **I10. Como chegar** | Morada, horário e ponto de cada cozinha; botão que abre a navegação do Google Maps | `como_chegar` | Localização gravada e autorizada pela responsável |
 | **I11. Acompanhamento da entrega** | Estafeta partilha a posição enquanto tem pedidos a caminho; o cliente vê-o no mapa com tempo estimado | `acompanhamento_entrega` | Testado com estafetas reais; chave do Google Maps no build |
+| **I12. Pacotes do mês** | "Almoço do Mês" pré-pago (ex.: 20 + 2 de oferta, entrega grátis, 30 dias, pausa até 5 dias, reembolso das não usadas); pagamento por Multicaixa Express, Unitel Money ou na loja confirmado pela equipa; prova social por local e zona | `pacotes` | Pacote criado no catálogo; instruções de pagamento no build; equipa com `pacotes.gerir` |
 
 **Feito (migração `20261001184650_crescimento_rls_tabelas_base.sql`, ver secção 8):** ~~Tarefa pendente antes de a app do operador sincronizar (I3)~~: as tabelas base tinham RLS activo **sem políticas**
 (fechadas a `authenticated`/`anon`): `auditoria`, `caixa`, `clientes`, `custos`, `direcoes`, `distribuicoes`,
@@ -753,6 +754,23 @@ selector e não aceita pedidos.
   (distância × 1,4 a 25 km/h), actualizados de 10 em 10 s. Só se guarda a última posição e apaga-se no fim.
   Limitações: sem localização em segundo plano (o ecrã tem de ficar aberto) e o tempo é uma estimativa; para rotas
   reais será precisa uma API de rotas paga, com a chave guardada como segredo de uma Edge Function.
+
+**Estado da I12 · Pacotes do mês (2 de Outubro de 2026):** código pronto, interruptor desligado.
+- Cliente: Conta → "Pacote do mês" e um botão no início. Catálogo com os benefícios (refeições de oferta, poupança,
+  entrega grátis, validade, pausa, reembolso), cartão de prova social ("4 colegas do teu local de trabalho já almoçam
+  com um pacote", só a partir de `contador_minimo`, sem nomes), escolha do pagamento e adesão. Enquanto o pagamento não
+  é confirmado, o ecrã mostra as instruções (`EXPO_PUBLIC_INSTRUCOES_PAGAMENTO`) e deixa cancelar. Com o pacote em
+  vigor: refeições por usar, validade, poupança e "Pausar 1 dia".
+- Carrinho: "Pagar com o pacote" (ligado por defeito). Cada prato gasta uma refeição e o pacote paga até ao valor da
+  refeição; o resto (por exemplo um prato mais caro) e o que o saldo do Convida e Ganha não cobrir paga-se na entrega.
+  Com entrega grátis, o pacote paga também a taxa, excepto nos pedidos de grupo.
+- Operador: "Pacotes do mês" (`pacotes.gerir`): confirmar pagamentos (referência para Multicaixa Express e Unitel
+  Money, caixa aberto para pagamentos na loja), reembolsar (as refeições pagas e não usadas) e gerir o catálogo.
+- Contas: o pagamento do pacote entra como pagamento adiantado; a venda leva a parcela "Pacote" quando a refeição é
+  entregue. Pedido cancelado ou estornado: as refeições voltam ao pacote.
+- Antes de ligar: criar o pacote no catálogo, preencher `EXPO_PUBLIC_INSTRUCOES_PAGAMENTO` (números e morada) e dar
+  `pacotes.gerir` a quem confirma os pagamentos. Falta: o pagamento é confirmado à mão (sem integração com a EMIS ou a
+  Unitel) e não há aviso automático de pacote a acabar.
 
 **Correcções depois da análise do sistema (2 de Outubro de 2026):**
 - Pedido criado com id gerado no telemóvel: retentar depois de uma falha de rede já não cria um pedido repetido.

@@ -42,6 +42,8 @@ Além dos campos próprios de cada entidade (listados abaixo), toda tabela deve 
 | `opcoes_grupos` / `opcoes` (I9) | **Last-write-wins**, escrita só com `cozinhas.gerir` | Opções dos pratos montáveis; o preço extra soma no servidor |
 | `cozinhas_localizacao` (I10) | **Last-write-wins**, escrita só com `cozinhas.gerir` | Aos clientes só por `localizacao_cozinha()` e com autorização (`publica`) |
 | `posicoes_entregadores` (I11) | **Só servidor**, não sincroniza | Última posição do estafeta, só durante entregas |
+| `pacotes` (I12) | **Last-write-wins**, escrita só com `pacotes.gerir` | Catálogo de pacotes pré-pagos |
+| `adesoes_pacote` (I12) | **Só servidor** (funções `aderir_pacote`, `confirmar_pagamento_pacote`, `usar_pacote`, `pausar_pacote`, `reembolsar_pacote`); o telemóvel só lê as suas | Condições copiadas na adesão; refeições usadas contadas no servidor |
 
 ## Entidades (campos próprios, além dos campos de sincronização)
 
@@ -208,6 +210,13 @@ lista de palavras do filtro de comentários.
 ### `pedidos_grupo`
 `organizador_id`, `empresa_id`, `ponto_entrega_id`, `cozinha_id`, `hora_entrega`, `prazo_adesao`, `modo_pagamento`,
 `codigo_convite`, `estado`
+
+### `pacotes` / `adesoes_pacote` (I12)
+`pacotes`: `nome`, `descricao`, `refeicoes`, `refeicoes_oferta`, `valor_refeicao`, `preco`, `validade_dias`,
+`pausa_max_dias`, `entrega_gratis`, `activo`, `ordem`. `adesoes_pacote`: `cliente_id`, `pacote_id`, `estado`
+(pendente, activa, cancelada, reembolsada), `metodo`, as condições do pacote copiadas, `refeicoes_usadas`,
+`pausa_dias_usados`, `inicio`, `fim`, `referencia`, `caixa_id`, `confirmado_por`, `pago_em`, `valor_reembolso`.
+Em `pedidos`: `adesao_pacote_id`, `pago_pacote`, `refeicoes_pacote`.
 
 ### `notificacoes_fila` / `contadores_zona`
 Fila de notificações push (lida por uma Edge Function) e cache horária de pedidos por zona.

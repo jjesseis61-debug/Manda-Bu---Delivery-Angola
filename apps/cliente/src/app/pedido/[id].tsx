@@ -15,7 +15,7 @@ import type { Pedido } from '@/lib/tipos';
 /** Estado do pedido; com fim=1 é o ecrã de fim de pedido (C6) */
 export default function PedidoDetalhe() {
   const router = useRouter();
-  const { id, fim, saldo } = useLocalSearchParams<{ id: string; fim?: string; saldo?: string }>();
+  const { id, fim, saldo, pacote } = useLocalSearchParams<{ id: string; fim?: string; saldo?: string; pacote?: string }>();
   const { ligada } = useSessao();
   const [pedido, setPedido] = useState<Pedido | null>(null);
   const [erro, setErro] = useState<string | null>(null);
@@ -46,6 +46,7 @@ export default function PedidoDetalhe() {
       {fimDePedido && (
         <Aviso tipo="sucesso">Pedido enviado! Avisamos-te quando estiver a caminho.</Aviso>
       )}
+      {pacote === 'falhou' && <Aviso>Não foi possível pagar com o pacote neste pedido. Pagas na entrega.</Aviso>}
       {saldo === 'falhou' && <Aviso>Não foi possível usar o saldo neste pedido. Pagas o valor total na entrega.</Aviso>}
 
       <Cartao>
@@ -72,7 +73,17 @@ export default function PedidoDetalhe() {
         {pedido.credito_indicacao_usado > 0 && (
           <Linha esquerda="Saldo do Convida e Ganha" direita={`−${formatarKz(pedido.credito_indicacao_usado)}`} />
         )}
-        <Linha esquerda="A pagar na entrega" direita={formatarKz(total - pedido.credito_indicacao_usado)} forte />
+        {(pedido.pago_pacote ?? 0) > 0 && (
+          <Linha
+            esquerda={`Pago com o pacote (${pedido.refeicoes_pacote} ${pedido.refeicoes_pacote === 1 ? 'refeição' : 'refeições'})`}
+            direita={`−${formatarKz(pedido.pago_pacote)}`}
+          />
+        )}
+        <Linha
+          esquerda="A pagar na entrega"
+          direita={formatarKz(total - pedido.credito_indicacao_usado - (pedido.pago_pacote ?? 0))}
+          forte
+        />
       </Cartao>
 
       {/* C9: avaliar até ao prazo; depois de avaliado mostra as estrelas dadas */}

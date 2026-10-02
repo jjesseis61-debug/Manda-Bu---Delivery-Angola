@@ -142,6 +142,12 @@ const mensagens: Record<string, string> = {
   opcoes_em_falta: 'Falta escolher uma opção obrigatória do prato.',
   opcoes_a_mais: 'Escolheste opções a mais para um dos pratos.',
   posicao_invalida: 'Localização inválida.',
+  pacotes_inactivos: 'Os pacotes não estão disponíveis neste momento.',
+  pacote_indisponivel: 'Este pacote já não está disponível.',
+  adesao_pendente: 'Já tens uma adesão à espera de pagamento.',
+  adesao_inexistente: 'Adesão não encontrada.',
+  sem_pacote: 'Não tens um pacote activo com refeições disponíveis.',
+  pausa_invalida: 'Não podes pausar tantos dias.',
   quantidade_invalida: 'Quantidade inválida.',
   ponto_obrigatorio: 'Escolhe o endereço de entrega.',
   ponto_invalido: 'Este endereço não é teu. Escolhe outro.',
@@ -183,4 +189,35 @@ export function mensagemErro(erro: unknown): string {
 
 export function mensagemCodigo(codigo: string): string {
   return mensagens[codigo] ?? mensagemErro(codigo);
+}
+
+export const nomeMetodoPacote: Record<string, string> = {
+  multicaixa_express: 'Multicaixa Express',
+  unitel_money: 'Unitel Money',
+  loja: 'Na loja',
+};
+
+/** I12: benefícios de um pacote, por esta ordem, para o cartão do catálogo */
+export function beneficiosPacote(p: {
+  refeicoes: number;
+  refeicoes_oferta: number;
+  valor_refeicao: number;
+  preco: number;
+  validade_dias: number;
+  pausa_max_dias: number;
+  entrega_gratis: boolean;
+}): string[] {
+  const total = p.refeicoes + p.refeicoes_oferta;
+  const poupanca = total * p.valor_refeicao - p.preco;
+  const linhas = [
+    p.refeicoes_oferta > 0
+      ? `${total} refeições: ${p.refeicoes} + ${p.refeicoes_oferta} de oferta`
+      : `${total} refeições`,
+  ];
+  if (poupanca > 0) linhas.push(`Poupas ${formatarKz(poupanca)} no mês`);
+  if (p.entrega_gratis) linhas.push('Entrega grátis em todos os pedidos pagos com o pacote');
+  linhas.push(`Válido por ${p.validade_dias} dias`);
+  if (p.pausa_max_dias > 0) linhas.push(`Pausa até ${p.pausa_max_dias} dias (férias, doença)`);
+  linhas.push('Reembolso das refeições que não usares');
+  return linhas;
 }

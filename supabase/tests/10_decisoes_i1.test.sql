@@ -148,7 +148,7 @@ select is((select (select count(*) from estoque_diario) + (select count(*) from 
 select results_eq($$select chave from permissoes where chave in ('pedidos.gerir','entregas.registar') order by chave$$,
                   $$values ('entregas.registar'::text), ('pedidos.gerir'::text)$$,
                   'pedidos.gerir e entregas.registar estão no catálogo de permissões');
-select is((select count(*)::int from permissoes), 16, 'catálogo com as 10 permissões da secção 4.12 e as 6 das tabelas base');
+select is((select count(*)::int from permissoes), 17, 'catálogo com as 10 permissões da secção 4.12, as 6 das tabelas base e pacotes.gerir');
 select is((select count(*)::int from information_schema.columns
             where table_schema = 'public' and table_name = 'permissoes'
               and column_name in ('id','dispositivo_id','criado_em','atualizado_em','sincronizado_em','deletado_em')), 6,

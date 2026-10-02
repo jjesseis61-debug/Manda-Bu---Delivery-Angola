@@ -4,8 +4,8 @@ begin;
 \ir _helpers.psql
 select plan(19);
 
--- Interruptores: existem os 13 (10 do plano; pratos_montaveis, como_chegar e acompanhamento_entrega das fases I9–I11) e estão todos desligados
-select is((select count(*)::int from funcionalidades), 13, 'existem 13 interruptores');
+-- Interruptores: existem os 14 (10 do plano; pratos_montaveis, como_chegar, acompanhamento_entrega e pacotes das fases I9–I12) e estão todos desligados
+select is((select count(*)::int from funcionalidades), 14, 'existem 14 interruptores');
 select is((select count(*)::int from funcionalidades where activa), 0, 'todos os interruptores desligados');
 
 -- Parâmetros iniciais

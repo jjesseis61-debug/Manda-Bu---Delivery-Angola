@@ -2,10 +2,12 @@
 // permissão do organograma; a app só esconde o que o funcionário não pode usar.
 import { supabase } from './supabase';
 import type {
+  AdesaoOperador,
   Caixa,
   ComentarioModeracao,
   Cozinha,
   Embaixador,
+  PacoteCatalogo,
   FotoPendente,
   Funcionario,
   GanhoVerificacao,
@@ -352,4 +354,35 @@ export async function fecharGrupo(grupoId: string) {
 
 export async function cancelarGrupo(grupoId: string, motivo: string) {
   verificar(await supabase.rpc('cancelar_grupo', { p_grupo: grupoId, p_motivo: motivo }));
+}
+
+// ---------------------------------------------------------------- I12: pacotes pré-pagos
+export async function adesoesPacote(estado: string | null): Promise<AdesaoOperador[]> {
+  return verificar(await supabase.rpc('adesoes_operador', { p_estado: estado })) as AdesaoOperador[];
+}
+
+export async function confirmarPagamentoPacote(adesaoId: string, referencia: string | null, caixaId: string | null) {
+  verificar(
+    await supabase.rpc('confirmar_pagamento_pacote', { p_adesao: adesaoId, p_referencia: referencia, p_caixa: caixaId }),
+  );
+}
+
+export async function reembolsarPacote(adesaoId: string, referencia: string): Promise<number> {
+  return verificar(await supabase.rpc('reembolsar_pacote', { p_adesao: adesaoId, p_referencia: referencia })) as number;
+}
+
+export async function lerCatalogoPacotes(): Promise<PacoteCatalogo[]> {
+  return verificar(
+    await supabase
+      .from('pacotes')
+      .select('id, nome, descricao, refeicoes, refeicoes_oferta, valor_refeicao, preco, validade_dias, pausa_max_dias, entrega_gratis, activo, ordem')
+      .is('deletado_em', null)
+      .order('ordem'),
+  ) as PacoteCatalogo[];
+}
+
+export async function guardarPacote(p: Omit<PacoteCatalogo, 'id'> & { id?: string }) {
+  const { id, ...dados } = p;
+  if (id) verificar(await supabase.from('pacotes').update({ ...dados, atualizado_em: new Date().toISOString() }).eq('id', id));
+  else verificar(await supabase.from('pacotes').insert(dados));
 }

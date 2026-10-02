@@ -118,6 +118,8 @@ const mensagens: Record<string, string> = {
   transicao_invalida: 'Esta mudança de estado não é possível.',
   caixa_obrigatoria: 'Escolhe a caixa onde o dinheiro entrou.',
   caixa_invalida: 'A caixa escolhida já não está aberta.',
+  adesao_inexistente: 'Adesão não encontrada.',
+  pedido_em_curso: 'O cliente tem um pedido a meio pago com o pacote. Reembolsa depois da entrega.',
   parcelas_nao_somam_valor_final: 'Os pagamentos não somam o valor a receber.',
   parametro_invalido: 'Valor de parâmetro inválido.',
   numero_invalido: 'Número de telefone inválido.',

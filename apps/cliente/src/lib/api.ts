@@ -14,10 +14,14 @@ import type {
   ItemCardapio,
   Levantamento,
   LocalizacaoCozinha,
+  MetodoPacote,
+  MeuPacote,
   MediasAvaliacoes,
   MeuGrupo,
   MinhaPosicao,
   Orcamento,
+  Pacote,
+  PacotesAMinhaVolta,
   Parametros,
   Pedido,
   Perfil,
@@ -324,7 +328,7 @@ export async function cancelarPedido(pedidoId: string): Promise<void> {
 }
 
 const camposPedido =
-  'id, criado_em, estado, itens, subtotal, taxa_entrega, desconto_indicacao, credito_indicacao_usado, observacoes, motivo_cancelamento, hora_prometida, entregue_em';
+  'id, criado_em, estado, itens, subtotal, taxa_entrega, desconto_indicacao, credito_indicacao_usado, pago_pacote, refeicoes_pacote, observacoes, motivo_cancelamento, hora_prometida, entregue_em';
 
 export async function lerPedidos(): Promise<Pedido[]> {
   const r = await supabase.from('pedidos').select(camposPedido).order('criado_em', { ascending: false }).limit(50);
@@ -333,6 +337,44 @@ export async function lerPedidos(): Promise<Pedido[]> {
 
 export async function lerPedido(id: string): Promise<Pedido | null> {
   return verificar(await supabase.from('pedidos').select(camposPedido).eq('id', id).maybeSingle()) as Pedido | null;
+}
+
+// ---------------------------------------------------------------- I12: pacotes pré-pagos
+export async function lerPacotes(): Promise<Pacote[]> {
+  const r = await supabase
+    .from('pacotes')
+    .select('id, nome, descricao, refeicoes, refeicoes_oferta, valor_refeicao, preco, validade_dias, pausa_max_dias, entrega_gratis')
+    .eq('activo', true)
+    .is('deletado_em', null)
+    .order('ordem')
+    .order('preco');
+  return verificar(r) as Pacote[];
+}
+
+export async function meuPacote(): Promise<MeuPacote | null> {
+  return (verificar(await supabase.rpc('meu_pacote')) as MeuPacote | null) ?? null;
+}
+
+export async function pacotesAMinhaVolta(): Promise<PacotesAMinhaVolta | null> {
+  return (verificar(await supabase.rpc('pacotes_a_minha_volta')) as PacotesAMinhaVolta | null) ?? null;
+}
+
+export async function aderirPacote(pacoteId: string, metodo: MetodoPacote): Promise<string> {
+  return verificar(await supabase.rpc('aderir_pacote', { p_pacote: pacoteId, p_metodo: metodo })) as string;
+}
+
+export async function cancelarAdesaoPacote(adesaoId: string): Promise<void> {
+  verificar(await supabase.rpc('cancelar_adesao_pacote', { p_adesao: adesaoId }));
+}
+
+/** Gasta refeições do pacote no pedido; devolve o valor pago pelo pacote (repetir não gasta duas vezes) */
+export async function usarPacote(pedidoId: string): Promise<number> {
+  return verificar(await supabase.rpc('usar_pacote', { p_pedido: pedidoId })) as number;
+}
+
+/** Pausa: prolonga a validade; devolve o novo fim */
+export async function pausarPacote(dias: number): Promise<string> {
+  return verificar(await supabase.rpc('pausar_pacote', { p_dias: dias })) as string;
 }
 
 // ---------------------------------------------------------------- Convida e Ganha (C1, C4)

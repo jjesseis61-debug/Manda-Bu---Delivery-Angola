@@ -4,13 +4,22 @@ import { Pressable, Switch, Text, View } from 'react-native';
 
 import { CampoCodigo } from '@/components/CampoCodigo';
 import { Aviso, Botao, Campo, Cartao, Ecra, Escolha, Linha, Paragrafo, Subtitulo } from '@/components/ui';
-import { criarPedido, lerEnderecos, lerSaldo, orcamento as pedirOrcamento, usarCredito } from '@/lib/api';
+import { criarPedido, lerEnderecos, lerSaldo, meuPacote, orcamento as pedirOrcamento, usarCredito, usarPacote } from '@/lib/api';
 import { type LinhaCarrinho, useCarrinho } from '@/lib/carrinho';
 import { novoId } from '@/lib/dispositivo';
 import { formatarKz, mensagemCodigo, mensagemErro } from '@/lib/formatar';
 import { useSessao } from '@/lib/sessao';
 import { cores, espaco } from '@/lib/tema';
-import type { Endereco, Orcamento } from '@/lib/tipos';
+import type { Endereco, MeuPacote, Orcamento } from '@/lib/tipos';
+
+/** I12: quantas refeições o pacote vai pagar (o valor exacto é calculado no servidor) */
+function textoPacoteCarrinho(pacote: MeuPacote | null, linhas: LinhaCarrinho[], emGrupo: boolean): string {
+  if (!pacote) return '';
+  const unidades = linhas.reduce((t, l) => t + l.qtd, 0);
+  const n = Math.min(unidades, pacote.refeicoes_restantes);
+  const entrega = pacote.entrega_gratis && !emGrupo ? ' + entrega' : '';
+  return `${n} ${n === 1 ? 'refeição' : 'refeições'}${entrega}`;
+}
 
 /** O que segue para o servidor: o prato, a quantidade e os ids das opções (o preço é calculado lá) */
 function itemDoPedido(l: LinhaCarrinho) {
@@ -28,6 +37,8 @@ export default function Carrinho() {
   const [erroOrc, setErroOrc] = useState<string | null>(null);
   const [saldo, setSaldo] = useState(0);
   const [usarSaldo, setUsarSaldo] = useState(false);
+  const [pacote, setPacote] = useState<MeuPacote | null>(null);
+  const [comPacote, setComPacote] = useState(true);
   const [observacoes, setObservacoes] = useState('');
   const [erro, setErro] = useState<string | null>(null);
   const [aEnviar, setAEnviar] = useState(false);
@@ -48,6 +59,12 @@ export default function Carrinho() {
         lerSaldo(perfil.cliente_id)
           .then((s) => setSaldo(s?.saldo_disponivel ?? 0))
           .catch(() => setSaldo(0));
+      }
+      // I12: pacote pré-pago em vigor
+      if (perfil && ligada('pacotes')) {
+        meuPacote()
+          .then((m) => setPacote(m?.em_vigor ? m : null))
+          .catch(() => setPacote(null));
       }
     }, [perfil, ligada]),
   );
@@ -74,6 +91,7 @@ export default function Carrinho() {
     idPedido.current = null;
   }, [carrinho.linhas, pontoId, grupo]);
 
+  const pagarComPacote = !!pacote && comPacote;
   const valorSaldo = orc && usarSaldo ? Math.min(saldo, orc.total) : 0;
 
   async function confirmar() {
@@ -91,15 +109,25 @@ export default function Carrinho() {
         itens: carrinho.linhas.map(itemDoPedido),
         observacoes,
       });
+      // O pacote paga primeiro; o saldo cobre só o que faltar
+      let pagoPacote = 0;
+      let pacoteFalhou = false;
+      if (pagarComPacote) {
+        pagoPacote = await usarPacote(id).catch(() => {
+          pacoteFalhou = true;
+          return 0;
+        });
+      }
       let saldoFalhou = false;
-      if (valorSaldo > 0) {
-        await usarCredito(id, valorSaldo).catch(() => {
+      const saldoAUsar = orc && usarSaldo ? Math.min(saldo, orc.total - pagoPacote) : 0;
+      if (saldoAUsar > 0) {
+        await usarCredito(id, saldoAUsar).catch(() => {
           saldoFalhou = true;
         });
       }
       carrinho.limpar();
       if (grupo) router.replace({ pathname: '/grupo/[codigo]', params: { codigo: grupo.codigo } });
-      else router.replace({ pathname: '/pedido/[id]', params: { id, fim: '1', ...(saldoFalhou ? { saldo: 'falhou' } : {}) } });
+      else router.replace({ pathname: '/pedido/[id]', params: { id, fim: '1', ...(saldoFalhou ? { saldo: 'falhou' } : {}), ...(pacoteFalhou ? { pacote: 'falhou' } : {}) } });
     } catch (e) {
       setErro(mensagemErro(e));
     } finally {
@@ -176,14 +204,30 @@ export default function Carrinho() {
           {orc.desconto > 0 && (
             <Linha esquerda="Desconto de convite" direita={`−${formatarKz(orc.desconto)}`} />
           )}
-          {valorSaldo > 0 && <Linha esquerda="Saldo do Convida e Ganha" direita={`−${formatarKz(valorSaldo)}`} />}
-          <Linha esquerda="A pagar na entrega" direita={formatarKz(orc.total - valorSaldo)} forte />
+          {pagarComPacote ? (
+            <Linha esquerda="Pago com o pacote" direita={textoPacoteCarrinho(pacote, carrinho.linhas, !!grupo)} />
+          ) : (
+            valorSaldo > 0 && <Linha esquerda="Saldo do Convida e Ganha" direita={`−${formatarKz(valorSaldo)}`} />
+          )}
+          {pagarComPacote ? (
+            <Paragrafo suave>O valor a pagar na entrega fica no pedido, depois de confirmares.</Paragrafo>
+          ) : (
+            <Linha esquerda="A pagar na entrega" direita={formatarKz(orc.total - valorSaldo)} forte />
+          )}
           {orc.motivo_desconto === 'limite_local' && (
             <Text style={{ color: cores.aviso, fontSize: 13 }}>{mensagemCodigo('limite_local')}</Text>
           )}
         </Cartao>
       )}
 
+      {pacote && orc && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Text style={{ fontSize: 15, flex: 1 }}>
+            Pagar com o pacote ({pacote.refeicoes_restantes} {pacote.refeicoes_restantes === 1 ? 'refeição' : 'refeições'})
+          </Text>
+          <Switch value={comPacote} onValueChange={setComPacote} trackColor={{ true: cores.marca }} />
+        </View>
+      )}
       {ligada('indicacao') && saldo > 0 && orc && (
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <Text style={{ fontSize: 15, flex: 1 }}>Usar saldo do Convida e Ganha ({formatarKz(saldo)})</Text>

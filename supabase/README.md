@@ -27,6 +27,7 @@ Aplicadas por esta ordem. **Uma migração já aplicada nunca se edita:** qualqu
 | `20261002064709_crescimento_i9_pratos_montaveis.sql` | I9: pratos montáveis. `opcoes_grupos` (mínimo e máximo por grupo) e `opcoes` (preço extra, disponível); `opcoes_do_item` valida as escolhas; `orcamento_pedido` soma os extras e põe as opções no nome do item (a cozinha, a entrega e a venda mostram-nas). Interruptor `pratos_montaveis`. As opções ainda não descontam stock. | aplicada |
 | `20261002064729_crescimento_i10_como_chegar.sql` | I10: `cozinhas_localizacao` (morada, horário, ponto, `publica`), lida pela equipa e escrita com `cozinhas.gerir`; `localizacao_cozinha()` para o cliente, só pública, com a cozinha activa e o interruptor `como_chegar`. | aplicada |
 | `20261002064759_crescimento_i11_acompanhamento_entrega.sql` | I11: `pedidos.entregador_id` (quem marca a caminho); `posicoes_entregadores` (só servidor, última posição, apagada quando o estafeta já não tem pedidos a caminho); `registar_posicao_entrega` (estafeta) e `posicao_entrega` (cliente, só o seu pedido, posição com menos de 10 minutos, distância e tempo estimado). Interruptor `acompanhamento_entrega`. | aplicada |
+| `20261002074833_crescimento_i12_pacotes.sql` | I12: pacotes mensais pré-pagos. `pacotes` (catálogo, escrita com `pacotes.gerir`) e `adesoes_pacote` (só servidor, condições copiadas na adesão); `pedidos.pago_pacote`/`refeicoes_pacote`; `aderir_pacote`, `cancelar_adesao_pacote`, `usar_pacote`, `pausar_pacote`, `meu_pacote`, `pacotes_a_minha_volta` (prova social a partir de `contador_minimo`); `confirmar_pagamento_pacote`, `reembolsar_pacote`, `adesoes_operador`. Parcela "Pacote" nas vendas; as refeições voltam ao pacote se o pedido for cancelado; o saldo do Convida e Ganha não passa o que falta pagar depois do pacote. Interruptor `pacotes`. | aplicada |
 
 Os números de versão dos ficheiros são os que o Supabase registou ao aplicar, para `supabase migration list` e
 `supabase db push` não voltarem a aplicá-las.
@@ -86,6 +87,7 @@ base de dados.
 | `25_pratos_montaveis.test.sql` | I9: interruptor, preço com extras, nome com opções, mínimo/máximo, opção de outro prato, repetida, indisponível, preço da app ignorado, venda, permissões |
 | `26_como_chegar.test.sql` | I10: gravar com `cozinhas.gerir`, cliente sem acesso à tabela, interruptor, autorização pública, cozinha pausada |
 | `27_acompanhamento_entrega.test.sql` | I11: entregador, interruptor, posição inválida, tabela fechada, posição e tempo estimado para o cliente, outro cliente, sem permissão, posição antiga, apagada na entrega |
+| `28_pacotes.test.sql` | I12: interruptor, adesão pendente e única, cliente sem escrita, permissão, referência, validade, valor pago (até ao valor da refeição + entrega), idempotência, a pagar na entrega, parcela Pacote, soma das parcelas, devolução no cancelamento, poupança, pausa, prova social, reembolso, pagamento na loja com caixa |
 | `15_app_operador.test.sql` | I3: telefone e ligação dos funcionários, painel (O1), verificação e "Confirmar todos" com N3 (O2), levantamentos (O3), embaixadores (O4), fila de entregas e caixas (E1), auditoria de cozinhas e cardápio (O6) |
 
 ### Como correr
@@ -130,7 +132,8 @@ base de dados.
 | 25 pratos montáveis (I9) | 14/14 | 14/14 |
 | 26 como chegar (I10) | 9/9 | 9/9 |
 | 27 acompanhamento da entrega (I11) | 14/14 | 14/14 |
-| **Total** | **543/543** | |
+| 28 pacotes (I12) | 25/25 | 25/25 |
+| **Total** | **568/568** | |
 
 Na I2 voltaram a correr no Supabase os testes afectados por cada migração (app do cliente: 06, 08, 09, 12 e 13;
 desconto limitado: 02, 09 e 14); os restantes não dependem delas (e todos passam localmente).
@@ -169,6 +172,9 @@ A CI (`.github/workflows/testes.yml`) corre em cada PR a base de dados, a Edge F
 
 Nas fases I9–I11 correram no Supabase o 25 (14/14), o 26 (9/9) e o 27 (14/14). Os testes que contam interruptores
 (00, 06) e tabelas com estratégia de sincronização (08) passaram a contar 13 interruptores e 27 tabelas.
+
+Na I12 correu no Supabase o 28 (25/25); os testes de contagem passaram a 14 interruptores, 29 tabelas e 17
+permissões, e o 12 inclui as novas funções na lista das chamáveis pelas apps.
 
 Nenhum dado de teste ficou na base (contagens de `funcionarios`, `clientes`, `pedidos`, `cardapio` e `caixa` a 0;
 interruptores todos desligados). **Por remover:** o esquema `testes` e a extensão `pgtap` ficaram instalados no

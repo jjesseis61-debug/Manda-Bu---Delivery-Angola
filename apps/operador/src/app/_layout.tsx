@@ -37,6 +37,7 @@ export default function LayoutRaiz() {
         <Stack.Screen name="painel" options={{ title: 'Painel do programa' }} />
         <Stack.Screen name="verificacao" options={{ title: 'Verificação' }} />
         <Stack.Screen name="levantamentos" options={{ title: 'Levantamentos' }} />
+        <Stack.Screen name="pacotes" options={{ title: 'Pacotes do mês' }} />
         <Stack.Screen name="embaixadores" options={{ title: 'Embaixadores' }} />
         <Stack.Screen name="parametros" options={{ title: 'Parâmetros e interruptores' }} />
         <Stack.Screen name="cozinhas/index" options={{ title: 'Cozinhas' }} />

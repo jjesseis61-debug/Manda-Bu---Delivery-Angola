@@ -18,7 +18,8 @@ export type Permissao =
   | 'pedidos.gerir'
   | 'entregas.registar'
   | 'avaliacoes.moderar'
-  | 'equipa.reconhecer';
+  | 'equipa.reconhecer'
+  | 'pacotes.gerir';
 
 export type Painel = {
   custo: number;
@@ -253,4 +254,37 @@ export type LocalizacaoCozinha = {
   lat: number;
   lng: number;
   publica: boolean;
+};
+
+// I12 · Pacotes pré-pagos
+export type PacoteCatalogo = {
+  id: string;
+  nome: string;
+  descricao: string | null;
+  refeicoes: number;
+  refeicoes_oferta: number;
+  valor_refeicao: number;
+  preco: number;
+  validade_dias: number;
+  pausa_max_dias: number;
+  entrega_gratis: boolean;
+  activo: boolean;
+  ordem: number;
+};
+export type AdesaoOperador = {
+  adesao_id: string;
+  estado: 'pendente' | 'activa' | 'cancelada' | 'reembolsada';
+  metodo: 'multicaixa_express' | 'unitel_money' | 'loja';
+  pacote: string;
+  cliente_nome: string;
+  cliente_telefone: string | null;
+  preco: number;
+  refeicoes_total: number;
+  refeicoes_usadas: number;
+  inicio: string | null;
+  fim: string | null;
+  referencia: string | null;
+  criado_em: string;
+  reembolso_previsto: number;
+  valor_reembolso: number | null;
 };

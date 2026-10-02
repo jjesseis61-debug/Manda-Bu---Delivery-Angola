@@ -34,7 +34,8 @@ export type ChaveFuncionalidade =
   | 'multi_cozinha'
   | 'pratos_montaveis'
   | 'como_chegar'
-  | 'acompanhamento_entrega';
+  | 'acompanhamento_entrega'
+  | 'pacotes';
 
 export type Funcionalidades = Partial<Record<ChaveFuncionalidade, boolean>>;
 
@@ -132,6 +133,9 @@ export type Pedido = {
   taxa_entrega: number;
   desconto_indicacao: number;
   credito_indicacao_usado: number;
+  /** I12: parte paga pelo pacote e refeições gastas */
+  pago_pacote: number;
+  refeicoes_pacote: number;
   observacoes: string | null;
   motivo_cancelamento: string | null;
   hora_prometida: string | null;
@@ -258,4 +262,42 @@ export type PosicaoEntrega = {
   destino?: Ponto | null;
   distancia_km?: number | null;
   minutos?: number | null;
+};
+
+// I12 · Pacotes pré-pagos
+export type MetodoPacote = 'multicaixa_express' | 'unitel_money' | 'loja';
+export type Pacote = {
+  id: string;
+  nome: string;
+  descricao: string | null;
+  refeicoes: number;
+  refeicoes_oferta: number;
+  valor_refeicao: number;
+  preco: number;
+  validade_dias: number;
+  pausa_max_dias: number;
+  entrega_gratis: boolean;
+};
+export type MeuPacote = {
+  adesao_id: string;
+  pacote: string;
+  estado: 'pendente' | 'activa';
+  metodo: MetodoPacote;
+  refeicoes_total: number;
+  refeicoes_oferta: number;
+  refeicoes_usadas: number;
+  refeicoes_restantes: number;
+  valor_refeicao: number;
+  preco: number;
+  entrega_gratis: boolean;
+  inicio: string | null;
+  fim: string | null;
+  pausa_restante: number;
+  em_vigor: boolean;
+  poupanca: number;
+};
+export type PacotesAMinhaVolta = {
+  no_meu_local: number | null;
+  na_minha_zona: number | null;
+  poupanca_media_mes: number | null;
 };
