@@ -1,0 +1,60 @@
+# APKs Android das duas apps para testar no telemóvel, sem conta Expo (EAS).
+# O projecto nativo é gerado com `expo prebuild` e compilado com o Gradle do runner. O APK de
+# release fica assinado com a chave de debug: instala-se directamente, mas não serve para a Play Store.
+# Os APKs ficam nos "Artifacts" de cada execução (separador Actions), durante 14 dias.
+name: APK Android
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, 'claude/**']
+    paths: ['apps/**', '.github/workflows/apk.yml']
+
+concurrency:
+  group: apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    name: APK ${{ matrix.app }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [cliente, operador]
+    defaults:
+      run:
+        working-directory: apps/${{ matrix.app }}
+    env:
+      # Valores públicos da app (URL e chave publicável do Supabase); a segurança está nas políticas RLS.
+      EXPO_PUBLIC_SUPABASE_URL: https://laruvuambdovnkojwrzp.supabase.co
+      EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_VoD7AGU0YCNyTJjiNmwJ-Q_FaRL1-aM' }}
+      EXPO_PUBLIC_CONTACTO_PRIVACIDADE: ${{ vars.CONTACTO_PRIVACIDADE }}
+      EXPO_PUBLIC_INSTRUCOES_PAGAMENTO: ${{ vars.INSTRUCOES_PAGAMENTO }}
+      # Secret do repositório; sem ele o mapa do "Novo endereço" fica em branco.
+      GOOGLE_MAPS_ANDROID_API_KEY: ${{ secrets.GOOGLE_MAPS_ANDROID_API_KEY }}
+      NODE_ENV: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/${{ matrix.app }}/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+      - run: npm ci
+      - name: Gerar o projecto Android
+        run: npx expo prebuild --platform android --no-install
+      - name: Compilar o APK
+        working-directory: apps/${{ matrix.app }}/android
+        run: ./gradlew assembleRelease --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: manda-bue-${{ matrix.app }}-apk
+          path: apps/${{ matrix.app }}/android/app/build/outputs/apk/release/*.apk
+          retention-days: 14
