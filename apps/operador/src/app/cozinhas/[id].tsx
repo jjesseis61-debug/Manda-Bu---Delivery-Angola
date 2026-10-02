@@ -1,11 +1,12 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Switch, Text, View } from 'react-native';
+import { Image, Switch, Text, View } from 'react-native';
 
+import { FotoEditavel } from '@/components/FotoEditavel';
 import { Guarda } from '@/components/Guarda';
 import { LocalizacaoCozinha } from '@/components/LocalizacaoCozinha';
 import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Escolha, Paragrafo, Subtitulo } from '@/components/ui';
-import { guardarCozinha, guardarPrato, lerCardapio, lerCozinhas } from '@/lib/api';
+import { definirFotoCozinha, definirFotoPrato, guardarCozinha, guardarPrato, lerCardapio, lerCozinhas } from '@/lib/api';
 import { formatarKz, mensagemErro } from '@/lib/formatar';
 import { cores, espaco } from '@/lib/tema';
 import type { Cozinha, PratoCardapio } from '@/lib/tipos';
@@ -105,12 +106,17 @@ export default function EditarCozinha() {
           multiline
           onChangeText={(t) => setCozinha({ ...cozinha, historia: t || null })}
         />
-        <Campo
-          rotulo="Endereço da foto"
-          value={cozinha.foto_url ?? ''}
-          autoCapitalize="none"
-          onChangeText={(t) => setCozinha({ ...cozinha, foto_url: t || null })}
-        />
+        {!nova && (
+          <FotoEditavel
+            tipo="cozinhas"
+            id={id}
+            url={cozinha.foto_url}
+            aoGravar={async (url) => {
+              await definirFotoCozinha(id, url);
+              setCozinha({ ...cozinha, foto_url: url });
+            }}
+          />
+        )}
         <Escolha
           opcoes={[
             { valor: 'activa', rotulo: 'Activa' },
@@ -135,8 +141,11 @@ export default function EditarCozinha() {
             {pratos.length === 0 && <Paragrafo suave>Sem pratos.</Paragrafo>}
             {pratos.map((p) => (
               <Cartao key={p.id}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <Text style={{ fontWeight: '700', color: p.disponivel ? cores.texto : cores.textoSuave }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: espaco.s }}>
+                  {p.foto_url ? (
+                    <Image source={{ uri: p.foto_url }} style={{ width: 44, height: 44, borderRadius: 6 }} accessibilityLabel={p.nome} />
+                  ) : null}
+                  <Text style={{ fontWeight: '700', flex: 1, color: p.disponivel ? cores.texto : cores.textoSuave }}>
                     {p.nome}
                     {p.do_dia ? ' · do dia' : ''}
                     {p.disponivel ? '' : ' · indisponível'}
@@ -178,6 +187,20 @@ export default function EditarCozinha() {
                   />
                   <Interruptor rotulo="Disponível" valor={prato.disponivel} aoMudar={(v) => setPrato({ ...prato, disponivel: v })} />
                   <Interruptor rotulo="Prato do dia" valor={prato.do_dia} aoMudar={(v) => setPrato({ ...prato, do_dia: v })} />
+                  {prato.id ? (
+                    <FotoEditavel
+                      tipo="pratos"
+                      id={prato.id}
+                      url={prato.foto_url}
+                      aoGravar={async (url) => {
+                        await definirFotoPrato(prato.id as string, url);
+                        setPrato({ ...prato, foto_url: url });
+                        carregar();
+                      }}
+                    />
+                  ) : (
+                    <Paragrafo suave>Guarda o prato para lhe juntar a foto.</Paragrafo>
+                  )}
                   <Botao
                     titulo="Guardar prato"
                     aCarregar={ocupado}

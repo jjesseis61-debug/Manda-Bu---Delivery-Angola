@@ -1,6 +1,6 @@
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Image, Pressable, Text, View } from 'react-native';
 
 import { ACarregar, Aviso, Botao, Ecra, Paragrafo, Subtitulo, Titulo } from '@/components/ui';
 import { lerItemCardapio, lerOpcoes } from '@/lib/api';
@@ -45,6 +45,9 @@ export default function MontarPrato() {
 
   return (
     <Ecra>
+      {item.foto_url ? (
+        <Image source={{ uri: item.foto_url }} style={{ width: '100%', aspectRatio: 4 / 3, borderRadius: raio }} accessibilityLabel={item.nome} />
+      ) : null}
       <Titulo>{item.nome}</Titulo>
       {item.descricao && <Paragrafo suave>{item.descricao}</Paragrafo>}
       {grupos.map((g) => {

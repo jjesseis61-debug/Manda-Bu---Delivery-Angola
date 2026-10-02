@@ -133,6 +133,7 @@ export type PratoCardapio = {
   disponivel: boolean;
   do_dia: boolean;
   ordem: number;
+  foto_url?: string | null;
 };
 
 export type Relatorio = {

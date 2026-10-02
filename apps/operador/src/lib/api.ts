@@ -127,7 +127,7 @@ export async function lerCardapio(cozinhaId: string): Promise<PratoCardapio[]> {
   return verificar(
     await supabase
       .from('cardapio')
-      .select('id, cozinha_id, nome, descricao, categoria, preco, disponivel, do_dia, ordem')
+      .select('id, cozinha_id, nome, descricao, categoria, preco, disponivel, do_dia, ordem, foto_url')
       .eq('cozinha_id', cozinhaId)
       .order('ordem')
       .order('nome'),
@@ -393,4 +393,14 @@ export async function guardarPacote(p: Omit<PacoteCatalogo, 'id'> & { id?: strin
   const { id, ...dados } = p;
   if (id) verificar(await supabase.from('pacotes').update({ ...dados, atualizado_em: new Date().toISOString() }).eq('id', id));
   else verificar(await supabase.from('pacotes').insert(dados));
+}
+
+// ---------------------------------------------------------------- Fotos dos pratos e das cozinhas
+/** Grava logo a foto (ou a remoção) do prato, sem mexer nos outros campos */
+export async function definirFotoPrato(id: string, fotoUrl: string | null) {
+  verificar(await supabase.from('cardapio').update({ foto_url: fotoUrl, atualizado_em: new Date().toISOString() }).eq('id', id));
+}
+
+export async function definirFotoCozinha(id: string, fotoUrl: string | null) {
+  verificar(await supabase.from('cozinhas').update({ foto_url: fotoUrl, atualizado_em: new Date().toISOString() }).eq('id', id));
 }

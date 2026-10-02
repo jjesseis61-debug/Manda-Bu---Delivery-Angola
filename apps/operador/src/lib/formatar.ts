@@ -111,6 +111,7 @@ export function paraCsv(linhas: (string | number | null | undefined)[][]): strin
 
 const mensagens: Record<string, string> = {
   sem_permissao: 'Não tens permissão para esta acção.',
+  permissao_fotos: 'Autoriza o acesso à câmara ou às fotos nas definições do telemóvel.',
   sem_sessao: 'Entra na tua conta para continuar.',
   motivo_obrigatorio: 'Escreve o motivo.',
   referencia_obrigatoria: 'Escreve a referência do pagamento.',

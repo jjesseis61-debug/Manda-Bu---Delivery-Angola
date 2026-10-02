@@ -1,6 +1,6 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { Image, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 
 import { ComoChegar } from '@/components/ComoChegar';
 import { Aviso, Botao, Cartao, Escolha, Paragrafo, Subtitulo, estilos } from '@/components/ui';
@@ -170,6 +170,13 @@ export default function Inicio() {
               const noCarrinho = carrinho.quantidadeDe(item.id);
               return (
                 <View key={item.id} style={{ backgroundColor: cores.fundoSuave, borderRadius: raio, padding: espaco.m, gap: 4 }}>
+                  {item.foto_url ? (
+                    <Image
+                      source={{ uri: item.foto_url }}
+                      style={{ width: '100%', aspectRatio: 4 / 3, borderRadius: raio, marginBottom: 4 }}
+                      accessibilityLabel={item.nome}
+                    />
+                  ) : null}
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: espaco.m }}>
                     <Text style={{ fontSize: 16, fontWeight: '600', flex: 1 }}>{item.nome}</Text>
                     <Text style={{ fontSize: 16, fontWeight: '700' }}>{formatarKz(item.preco)}</Text>
