@@ -305,3 +305,12 @@ export type PacotesAMinhaVolta = {
   na_minha_zona: number | null;
   poupanca_media_mes: number | null;
 };
+
+/** Atraso avisado num pedido: pela cozinha (com motivo) ou automaticamente */
+export type AtrasoPedido = {
+  minutos: number;
+  motivo: string | null;
+  mais_minutos: number | null;
+  motivo_em: string | null;
+  criado_em: string;
+};

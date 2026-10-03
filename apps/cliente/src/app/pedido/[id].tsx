@@ -6,11 +6,11 @@ import { AcompanharEntrega } from '@/components/AcompanharEntrega';
 import { PartilharCodigo } from '@/components/PartilharCodigo';
 import { PessoasComoTu } from '@/components/PessoasComoTu';
 import { ACarregar, Aviso, Botao, Cartao, Ecra, Linha, Paragrafo, Subtitulo } from '@/components/ui';
-import { avaliacaoPermitida, cancelarPedido, lerPedido, minhaAvaliacao } from '@/lib/api';
+import { atrasoDoPedido, avaliacaoPermitida, cancelarPedido, lerPedido, minhaAvaliacao } from '@/lib/api';
 import { formatarKz, mensagemErro, nomeEstadoPedido } from '@/lib/formatar';
 import { useSessao } from '@/lib/sessao';
 import { cores } from '@/lib/tema';
-import type { Pedido } from '@/lib/tipos';
+import type { AtrasoPedido, Pedido } from '@/lib/tipos';
 
 /** Estado do pedido; com fim=1 é o ecrã de fim de pedido (C6) */
 export default function PedidoDetalhe() {
@@ -21,11 +21,17 @@ export default function PedidoDetalhe() {
   const [erro, setErro] = useState<string | null>(null);
   const [aCancelar, setACancelar] = useState(false);
   const [avaliacao, setAvaliacao] = useState<{ estrelas: number } | 'pode' | null>(null);
+  const [atraso, setAtraso] = useState<AtrasoPedido | null>(null);
 
   const carregar = useCallback(() => {
     lerPedido(String(id))
       .then(async (p) => {
         setPedido(p);
+        if (p && ['pendente', 'confirmado', 'em_preparacao', 'em_entrega'].includes(p.estado)) {
+          setAtraso(await atrasoDoPedido(p.id).catch(() => null));
+        } else {
+          setAtraso(null);
+        }
         if (p?.estado === 'entregue_pago' && ligada('avaliacoes')) {
           const minha = await minhaAvaliacao(p.id);
           setAvaliacao(minha ?? ((await avaliacaoPermitida(p.id)) ? 'pode' : null));
@@ -58,6 +64,14 @@ export default function PedidoDetalhe() {
         )}
         {pedido.motivo_cancelamento && <Paragrafo suave>{pedido.motivo_cancelamento}</Paragrafo>}
       </Cartao>
+
+      {atraso && (
+        <Aviso>
+          {atraso.motivo
+            ? `O teu pedido vai atrasar${atraso.mais_minutos ? ` cerca de ${atraso.mais_minutos} minutos` : ''}: ${atraso.motivo}. Pedimos desculpa pela espera.`
+            : 'O teu pedido está a demorar mais do que o previsto. Já avisámos a cozinha.'}
+        </Aviso>
+      )}
 
       {/* I11: estafeta no mapa enquanto o pedido está a caminho */}
       {pedido.estado === 'em_entrega' && ligada('acompanhamento_entrega') && (

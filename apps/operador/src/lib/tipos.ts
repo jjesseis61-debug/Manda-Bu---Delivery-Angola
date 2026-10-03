@@ -156,6 +156,17 @@ export type ComprovativoCaixa = {
   ia_nota?: string | null;
 };
 
+/** Alerta de um pedido em curso: por confirmar há muito tempo, ou atrasado (com o motivo dado ao cliente) */
+export type AlertaPedido = {
+  pedido_id: string;
+  tipo: 'sem_confirmacao' | 'atraso';
+  minutos: number;
+  motivo: string | null;
+  mais_minutos: number | null;
+  criado_em: string;
+  motivo_em: string | null;
+};
+
 export type EstadoLeitura = 'pendente' | 'a_ler' | 'confere' | 'diverge' | 'ilegivel' | 'indisponivel';
 
 export type EstadoExtrato = 'aguarda_ficheiro' | 'por_ler' | 'a_ler' | 'lido' | 'ilegivel' | 'indisponivel' | 'manual';

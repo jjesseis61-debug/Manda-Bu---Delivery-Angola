@@ -3,6 +3,7 @@
 import { supabase } from './supabase';
 import type {
   AdesaoOperador,
+  AlertaPedido,
   Conciliacao,
   Extrato,
   FechoDiario,
@@ -274,6 +275,16 @@ export async function fecharCaixa(caixaId: string, contado: number, observacao: 
   return verificar(
     await supabase.rpc('fechar_caixa', { p_caixa: caixaId, p_contado: contado, p_observacao: observacao }),
   ) as FechoCaixa;
+}
+
+// ---------------------------------------------------------------- alertas dos pedidos
+export async function alertasAbertos(): Promise<AlertaPedido[]> {
+  return verificar(await supabase.rpc('alertas_abertos')) as AlertaPedido[];
+}
+
+/** Diz ao cliente porque é que o pedido vai atrasar (e, se quiser, quantos minutos mais) */
+export async function informarAtraso(pedidoId: string, motivo: string, maisMinutos: number | null) {
+  verificar(await supabase.rpc('informar_atraso', { p_pedido: pedidoId, p_motivo: motivo, p_mais_minutos: maisMinutos }));
 }
 
 // ---------------------------------------------------------------- conferência financeira

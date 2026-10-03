@@ -4,13 +4,13 @@ import { Image, Linking, Switch, Text, View } from 'react-native';
 
 import { Guarda } from '@/components/Guarda';
 import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Escolha, Paragrafo, Subtitulo } from '@/components/ui';
-import { caixasAbertas, lerCozinhas, marcarPagadorDistinto, mudarEstado, pedidosOperador } from '@/lib/api';
+import { alertasAbertos, caixasAbertas, informarAtraso, lerCozinhas, marcarPagadorDistinto, mudarEstado, pedidosOperador } from '@/lib/api';
 import { formatarData, formatarDia, formatarKz, mensagemErro, nomeEstadoPedido } from '@/lib/formatar';
 import { enviarComprovativo, escolherFoto } from '@/lib/fotos';
 import { usePartilharLocalizacao } from '@/lib/partilharLocalizacao';
 import { useSessao } from '@/lib/sessao';
 import { cores, espaco } from '@/lib/tema';
-import type { Caixa, Cozinha, PedidoOperador } from '@/lib/tipos';
+import type { AlertaPedido, Caixa, Cozinha, PedidoOperador } from '@/lib/tipos';
 
 const METODOS = ['Dinheiro', 'Multicaixa Express', 'TPA', 'Unitel Money', 'Transferência'];
 
@@ -23,7 +23,16 @@ const electronico = (metodo: string) => metodo !== 'Dinheiro';
 function parcelaCompleta(x: Parcela): boolean {
   return Number(x.valor) > 0 && (!electronico(x.metodo) || (x.referencia.trim().length >= 4 && !!x.foto));
 }
-type Accao = { pedido: string; tipo: 'cancelar' | 'entregar' };
+type Accao = { pedido: string; tipo: 'cancelar' | 'entregar' | 'atraso' };
+
+/** Motivos de atraso mais comuns (o texto vai tal e qual para o cliente) */
+const MOTIVOS_ATRASO = [
+  'Muitos pedidos neste momento',
+  'Trânsito',
+  'Chuva',
+  'Falta de um ingrediente, já estamos a resolver',
+  'O estafeta está a terminar outra entrega',
+];
 
 /** Próximo passo de cada estado e quem o pode dar */
 const SEGUINTE: Record<string, { estado: string; rotulo: string; gerir: boolean } | undefined> = {
@@ -49,10 +58,15 @@ export default function Entregas() {
   const [cozinhas, setCozinhas] = useState<Cozinha[]>([]);
   const [filtroCozinha, setFiltroCozinha] = useState('todas');
   const [versao, setVersao] = useState(0);
+  const [alertas, setAlertas] = useState<Record<string, AlertaPedido[]>>({});
+  const [atraso, setAtraso] = useState({ motivo: MOTIVOS_ATRASO[0], outro: '', minutos: '' });
 
   const carregar = useCallback(() => {
-    Promise.all([pedidosOperador(), caixasAbertas(), lerCozinhas().catch(() => [] as Cozinha[])])
-      .then(([p, c, cz]) => {
+    Promise.all([pedidosOperador(), caixasAbertas(), lerCozinhas().catch(() => [] as Cozinha[]), alertasAbertos().catch(() => [] as AlertaPedido[])])
+      .then(([p, c, cz, al]) => {
+        const porPedido: Record<string, AlertaPedido[]> = {};
+        for (const a of al) porPedido[a.pedido_id] = [...(porPedido[a.pedido_id] ?? []), a];
+        setAlertas(porPedido);
         setPedidos(p);
         setCaixas(c);
         setCozinhas(cz);
@@ -196,6 +210,56 @@ export default function Entregas() {
     );
   }
 
+  function painelAtraso(p: PedidoOperador) {
+    const motivo = atraso.motivo === 'outro' ? atraso.outro.trim() : atraso.motivo;
+    return (
+      <View style={{ gap: espaco.s }}>
+        <Text style={{ fontWeight: '700' }}>Porque é que vai atrasar?</Text>
+        <Escolha
+          opcoes={[...MOTIVOS_ATRASO.map((m) => ({ valor: m, rotulo: m })), { valor: 'outro', rotulo: 'Outro…' }]}
+          valor={atraso.motivo}
+          aoMudar={(m) => setAtraso({ ...atraso, motivo: m })}
+        />
+        {atraso.motivo === 'outro' && (
+          <Campo rotulo="Motivo (o cliente vai ler)" value={atraso.outro} maxLength={200} onChangeText={(t) => setAtraso({ ...atraso, outro: t })} />
+        )}
+        <Campo
+          rotulo="Mais quantos minutos? (opcional)"
+          keyboardType="number-pad"
+          value={atraso.minutos}
+          onChangeText={(t) => setAtraso({ ...atraso, minutos: t.replace(/\D/g, '') })}
+        />
+        <Botao
+          titulo="Avisar o cliente"
+          desactivado={!motivo}
+          aCarregar={ocupado === p.pedido_id}
+          aoCarregar={() => correr(p.pedido_id, () => informarAtraso(p.pedido_id, motivo, atraso.minutos ? Number(atraso.minutos) : null))}
+        />
+        <Botao titulo="Voltar" variante="texto" aoCarregar={() => setAccao(null)} />
+      </View>
+    );
+  }
+
+  function avisos(p: PedidoOperador) {
+    const lista = alertas[p.pedido_id] ?? [];
+    const semConfirmacao = lista.find((a) => a.tipo === 'sem_confirmacao');
+    const atrasado = lista.find((a) => a.tipo === 'atraso');
+    return (
+      <>
+        {semConfirmacao && p.estado === 'pendente' && (
+          <Aviso tipo="erro">Por confirmar há mais de {semConfirmacao.minutos} minutos.</Aviso>
+        )}
+        {atrasado && (
+          <Aviso tipo={atrasado.motivo ? 'aviso' : 'erro'}>
+            {atrasado.motivo
+              ? `Atrasado. Cliente avisado: ${atrasado.motivo}${atrasado.mais_minutos ? ` (mais ${atrasado.mais_minutos} min)` : ''}.`
+              : `Atrasado ${atrasado.minutos} min. Diz ao cliente o motivo.`}
+          </Aviso>
+        )}
+      </>
+    );
+  }
+
   function cartao(p: PedidoOperador) {
     const seguinte = SEGUINTE[p.estado];
     const aberto = accao?.pedido === p.pedido_id;
@@ -236,7 +300,9 @@ export default function Entregas() {
           </View>
         )}
 
+        {avisos(p)}
         {aberto && accao?.tipo === 'entregar' && painelEntrega(p)}
+        {aberto && accao?.tipo === 'atraso' && painelAtraso(p)}
         {aberto && accao?.tipo === 'cancelar' && (
           <>
             <Campo rotulo="Motivo do cancelamento" value={motivo} onChangeText={setMotivo} />
@@ -259,6 +325,16 @@ export default function Entregas() {
               />
             )}
             {p.estado === 'em_entrega' && (gerir || entregar) && <Botao titulo="Entregue e pago…" aoCarregar={() => abrirEntrega(p)} />}
+            {(gerir || (entregar && p.estado === 'em_entrega')) && (
+              <Botao
+                titulo="Avisar cliente do atraso…"
+                variante="texto"
+                aoCarregar={() => {
+                  setAtraso({ motivo: MOTIVOS_ATRASO[0], outro: '', minutos: '' });
+                  setAccao({ pedido: p.pedido_id, tipo: 'atraso' });
+                }}
+              />
+            )}
             {gerir && <Botao titulo="Cancelar…" variante="texto" aoCarregar={() => setAccao({ pedido: p.pedido_id, tipo: 'cancelar' })} />}
             {gerir && (
               <Botao

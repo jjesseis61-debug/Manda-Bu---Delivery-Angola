@@ -64,6 +64,8 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 'criar_extrato', 'confirmar_extrato', 'pedir_nova_leitura', 'registar_movimento_extrato',
                 'apagar_movimento_extrato', 'ligar_movimento', 'relatorio_conciliacao', 'fecho_diario',
                 'fecho_mensal', 'historico_pedido', 'extrato_caminho_valido',
+                -- alertas de pedidos parados ou atrasados
+                'informar_atraso', 'alertas_abertos',
                 -- auxiliares usadas em políticas RLS, valores por defeito ou triggers SECURITY INVOKER
                 'cliente_actual', 'cozinha_padrao', 'e_funcionario', 'funcionalidade_activa',
                 'funcionario_actual', 'membro_da_cozinha', 'tem_permissao', 'e_administrador', 'pode_na_cozinha')),

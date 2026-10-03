@@ -57,6 +57,6 @@ export function rotaDaNotificacao(dados: unknown): '/equipa' | '/pacotes' | '/en
   const codigo = (dados as { codigo?: unknown } | null | undefined)?.codigo;
   if (codigo === 'N12') return '/equipa';
   if (codigo === 'N15') return '/pacotes';
-  if (codigo === 'N17') return '/entregas';
+  if (codigo === 'N17' || codigo === 'N18' || codigo === 'N19') return '/entregas';
   return null;
 }

@@ -3,6 +3,7 @@
 import { dispositivoId } from './dispositivo';
 import { supabase } from './supabase';
 import type {
+  AtrasoPedido,
   Amigo,
   AvaliacaoPublica,
   CozinhaParaPedir,
@@ -338,6 +339,14 @@ const camposPedido =
 export async function lerPedidos(): Promise<Pedido[]> {
   const r = await supabase.from('pedidos').select(camposPedido).order('criado_em', { ascending: false }).limit(50);
   return verificar(r) as Pedido[];
+}
+
+/** Atraso avisado num pedido (motivo e nova estimativa), ou null */
+export async function atrasoDoPedido(pedidoId: string): Promise<AtrasoPedido | null> {
+  return verificar(
+    await supabase.from('alertas_pedido').select('minutos, motivo, mais_minutos, motivo_em, criado_em')
+      .eq('pedido_id', pedidoId).eq('tipo', 'atraso').maybeSingle(),
+  ) as AtrasoPedido | null;
 }
 
 export async function lerPedido(id: string): Promise<Pedido | null> {
