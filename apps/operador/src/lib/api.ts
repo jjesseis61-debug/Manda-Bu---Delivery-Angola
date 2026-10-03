@@ -7,6 +7,7 @@ import type {
   CasoConvida,
   CasoInvestigacao,
   PerguntaAnalista,
+  PropostaTurno,
   Estimulo,
   Reclamacao,
   RelatorioReclamacoes,
@@ -648,4 +649,13 @@ export async function decidirCasoConvida(id: string, decisao: string, nota: stri
 
 export async function vigiarDeNovo(id: string) {
   verificar(await supabase.rpc('vigiar_de_novo', { p_id: id }));
+}
+
+// ---------------------------------------------------------------- gerente de turno
+export async function lerPropostasTurno(): Promise<PropostaTurno[]> {
+  return verificar(await supabase.rpc('propostas_turno_lista')) as PropostaTurno[];
+}
+
+export async function decidirPropostaTurno(id: string, aceitar: boolean, motivo: string | null, maisMinutos: number | null) {
+  verificar(await supabase.rpc('decidir_proposta_turno', { p_id: id, p_aceitar: aceitar, p_motivo: motivo, p_mais_minutos: maisMinutos }));
 }

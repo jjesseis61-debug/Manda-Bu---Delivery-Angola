@@ -14,6 +14,7 @@ const ecras: {
   permitir?: (f: Funcionario) => boolean;
 }[] = [
   { rota: '/entregas', titulo: 'Pedidos e entregas', descricao: 'Fila de pedidos, saída e entrega (E1)', permissoes: ['entregas.registar', 'pedidos.gerir'] },
+  { rota: '/turno', titulo: 'Gerente de turno', descricao: 'Sugestões do agente para o turno (aceitar ou recusar)', permissoes: ['pedidos.gerir'] },
   { rota: '/caixa', titulo: 'Caixa', descricao: 'Abrir, sangrias e fecho com a contagem do dinheiro', permissoes: ['vendas.registar'] },
   { rota: '/analista', titulo: 'Analista', descricao: 'Pergunta sobre o negócio e lê o relatório do mês', permissoes: ['analista.usar'] },
   { rota: '/reclamacoes', titulo: 'Reclamações', descricao: 'Análise automática, resposta ao cliente e resumo do mês', permissoes: ['pedidos.gerir', 'clientes.gerir'] },

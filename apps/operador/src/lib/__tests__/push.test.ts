@@ -17,6 +17,7 @@ test('abre o ecrã de cada notificação da equipa', () => {
   expect(rotaDaNotificacao({ codigo: 'N24' })).toBe('/conferencia');
   expect(rotaDaNotificacao({ codigo: 'N25' })).toBe('/analista');
   expect(rotaDaNotificacao({ codigo: 'N26' })).toBe('/vigilancia');
+  expect(rotaDaNotificacao({ codigo: 'N27' })).toBe('/turno');
   expect(rotaDaNotificacao({ codigo: 'N3' })).toBeNull();
   expect(rotaDaNotificacao(undefined)).toBeNull();
 });

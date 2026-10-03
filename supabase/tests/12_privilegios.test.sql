@@ -75,6 +75,8 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 'perguntar_analista', 'pedir_relatorio_analista', 'perguntas_analista_lista',
                 -- vigilante do Convida e Ganha
                 'abrir_vigilancia', 'casos_convida_lista', 'decidir_caso_convida', 'vigiar_de_novo',
+                -- gerente de turno
+                'propostas_turno_lista', 'decidir_proposta_turno',
                 -- auxiliares usadas em políticas RLS, valores por defeito ou triggers SECURITY INVOKER
                 'cliente_actual', 'cozinha_padrao', 'e_funcionario', 'funcionalidade_activa',
                 'funcionario_actual', 'membro_da_cozinha', 'tem_permissao', 'e_administrador', 'pode_na_cozinha')),

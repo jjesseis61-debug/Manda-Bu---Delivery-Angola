@@ -680,3 +680,22 @@ export type PerguntaAnalista = {
   respondida_em: string | null;
   quem: string | null;
 };
+
+export type PropostaTurno = {
+  id: string;
+  cozinha: string;
+  tipo: 'avisar_atraso' | 'confirmar' | 'pausar_prato' | 'reforco' | 'nota';
+  pedido_id: string | null;
+  prato: string | null;
+  prioridade: 'alta' | 'media' | 'baixa';
+  explicacao: string;
+  motivo_cliente: string | null;
+  mais_minutos: number | null;
+  estado: 'pendente' | 'aceite' | 'recusada' | 'expirada';
+  criado_em: string;
+  expira_em: string;
+  decidido_por: string | null;
+  decidido_em: string | null;
+  erro: string | null;
+  cliente: string | null;
+};
