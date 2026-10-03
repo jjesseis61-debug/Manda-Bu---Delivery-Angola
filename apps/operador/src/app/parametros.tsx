@@ -46,6 +46,7 @@ const CAMPOS: { grupo: string; chaves: [string, string][] }[] = [
     chaves: [
       ['prazo_avaliacao_dias', 'Prazo para avaliar (dias)'],
       ['avaliacoes_minimo', 'Avaliações mínimas para mostrar média'],
+      ['tempo_entrega_min', 'Tempo de entrega prometido ao cliente (min)'],
       ['tolerancia_entrega_min', 'Tolerância de entrega (min)'],
     ],
   },

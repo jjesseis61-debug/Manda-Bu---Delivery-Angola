@@ -19,6 +19,8 @@ export type Parametros = {
   limite_parcelamento: number;
   contador_minimo: number;
   tamanho_top: number;
+  /** Minutos até à hora de entrega prometida (o servidor marca-a em cada pedido) */
+  tempo_entrega_min?: number;
 };
 
 export type ChaveFuncionalidade =

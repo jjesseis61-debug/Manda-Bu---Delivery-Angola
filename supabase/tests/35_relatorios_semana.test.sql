@@ -27,7 +27,7 @@ with x as (insert into pedidos (cliente_id, ponto_entrega_id, itens) values (tes
 select testes.def('p2', id) from x;
 reset role;
 select testes.sair();
--- o segundo tinha hora prometida e chegou tarde
+-- todos os pedidos têm hora prometida (+45 min); o segundo chegou tarde
 update pedidos set hora_prometida = now() - interval '2 hours' where id = testes.u('p2');
 select testes.pagar(testes.u('p1'));
 select testes.pagar(testes.u('p2'));
@@ -40,9 +40,9 @@ reset role;
 
 select is(testes.v('rel')::jsonb -> 'prato_mais_pedido' ->> 'nome', 'Chocos', 'prato mais pedido sem ficha técnica: o prato do cardápio com mais unidades');
 select is((testes.v('rel')::jsonb -> 'prato_mais_pedido' ->> 'quantidade')::numeric, 3::numeric, 'e a quantidade só desse prato (2 + 1)');
-select is((testes.v('met')::jsonb ->> 'entregas')::int, 2, 'métricas: contam todas as entregas do turno, com ou sem hora prometida');
-select is((testes.v('met')::jsonb ->> 'entregas_a_horas')::int, 0, 'a entrega com hora prometida chegou tarde');
-select is((testes.v('met')::jsonb ->> 'pct_a_horas')::numeric, 0::numeric, 'a percentagem a horas é só sobre as que tinham hora prometida');
+select is((testes.v('met')::jsonb ->> 'entregas')::int, 2, 'métricas: contam todas as entregas do turno');
+select is((testes.v('met')::jsonb ->> 'entregas_a_horas')::int, 1, 'uma chegou dentro da hora prometida, a outra tarde');
+select is((testes.v('met')::jsonb ->> 'pct_a_horas')::numeric, 50::numeric, 'percentagem a horas: 50%');
 
 select * from finish();
 rollback;

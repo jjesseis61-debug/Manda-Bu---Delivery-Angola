@@ -29,7 +29,7 @@ function itemDoPedido(l: LinhaCarrinho) {
 /** Checkout: endereço, orçamento do servidor, código de convite (C2) e saldo do programa */
 export default function Carrinho() {
   const router = useRouter();
-  const { perfil, ligada } = useSessao();
+  const { perfil, ligada, parametros } = useSessao();
   const carrinho = useCarrinho();
   const [enderecos, setEnderecos] = useState<Endereco[] | null>(null);
   const [pontoId, setPontoId] = useState<string | null>(null);
@@ -247,7 +247,7 @@ export default function Carrinho() {
       <Paragrafo suave>
         {grupo
           ? 'Pagas na entrega. A tua parte da entrega fica fixa quando o grupo fechar.'
-          : 'Pagas na entrega. O valor final é confirmado pelo servidor.'}
+          : `${parametros?.tempo_entrega_min ? `Entrega em cerca de ${parametros.tempo_entrega_min} min. ` : ''}Pagas na entrega. O valor final é confirmado pelo servidor.`}
       </Paragrafo>
     </Ecra>
   );
