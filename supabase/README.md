@@ -33,6 +33,7 @@ Aplicadas por esta ordem. **Uma migração já aplicada nunca se edita:** qualqu
 | `20261002165956_fotos_pratos.sql` | Fotos dos pratos e das cozinhas: bucket público `fotos-pratos` (até 5 MB, JPEG/PNG/WebP); só `cozinhas.gerir` envia, troca ou apaga, e só em `pratos/<id do prato>/…` ou `cozinhas/<id da cozinha>/…`. O endereço público fica em `cardapio.foto_url` / `cozinhas.foto_url`. | aplicada |
 | `20261003060218_zonas_gestao.sql` | Zonas de entrega geridas pela app do operador: `plataforma.parametros` cria, edita e apaga zonas (com auditoria); um ponto de entrega criado pelo cliente tem de ter zona. Sem zonas, nenhum cliente conseguia guardar endereços. | aplicada |
 | `20261003104438_caixa_gestao.sql` | Caixa na app do operador: `abrir_caixa`, `registar_sangria`, `resumo_caixa` e `fechar_caixa` (com `vendas.registar` na cozinha). Uma caixa aberta por posto; o esperado soma a parcela Dinheiro das vendas e os pacotes pagos na loja, menos as sangrias; o fecho guarda o contado e a diferença e a caixa fechada não muda. | aplicada |
+| `20261003110912_avisos_pedidos_envio.sql` | N16 (estado do pedido ao cliente: confirmado, saiu, entregue, cancelado pela cozinha) e N17 (pedido novo à equipa da cozinha). Liga `pg_cron` e `pg_net`, guarda o segredo do envio em `segredos_servidor` (só o servidor) e `agendar_envio(url)` agenda a função `enviar-notificacoes` de minuto a minuto. Fecha `rls_auto_enable` à API. | aplicada; `agendar_jobs()` e `agendar_envio(...)` corridos |
 
 Os números de versão dos ficheiros são os que o Supabase registou ao aplicar, para `supabase migration list` e
 `supabase db push` não voltarem a aplicá-las.
@@ -97,6 +98,7 @@ base de dados.
 | `30_opcoes_stock.test.sql` | I9: receita + opções (o mesmo produto soma-se), stock diário sem movimento, só receita sem opções, prato sem receita só com opções, unidade desconhecida pendente, ingrediente mal escrito não trava a entrega, formato da lista |
 | `31_fotos_pratos.test.sql` | Bucket público de 5 MB; `cozinhas.gerir` envia fotos de pratos e cozinhas e apaga; prato inexistente, pasta ou extensão errada recusados; sem permissão não envia nem apaga; o cliente vê mas não envia |
 | `32_zonas_gestao.test.sql` | `plataforma.parametros` cria e altera zonas (auditadas); sem a permissão, nem o caixa nem o cliente criam; ponto do cliente sem zona recusado, com zona aceite; zona apagada deixa de aparecer |
+| `34_avisos_pedidos.test.sql` | N17 só à equipa da cozinha do pedido, com pratos, bairro e total; N16 em confirmado, saiu e entregue (não em preparação); a cliente que cancela não é avisada, a cozinha que cancela avisa com o motivo; seguem sem interruptor e caducam em 2 h; pedidos de grupo não geram N17; o segredo do envio só o service_role confirma |
 | `33_caixa_gestao.test.sql` | Abre a caixa (uma por posto), quem tem `vendas.registar` vê-a; fora da cozinha ou sem a permissão recusa; o esperado só soma a parcela Dinheiro e os pacotes na loja menos as sangrias; o fecho guarda a diferença; caixa fechada não aceita sangrias, novo fecho nem escrita directa; tudo na auditoria |
 | `15_app_operador.test.sql` | I3: telefone e ligação dos funcionários, painel (O1), verificação e "Confirmar todos" com N3 (O2), levantamentos (O3), embaixadores (O4), fila de entregas e caixas (E1), auditoria de cozinhas e cardápio (O6) |
 
@@ -148,7 +150,8 @@ base de dados.
 | 31 fotos dos pratos | 9/9 | 8/8 (apagar só pela API de Storage) |
 | 32 zonas de entrega | 8/8 | fluxo completo simulado (operador cria a zona, cliente guarda o endereço, orçamento com a taxa) |
 | 33 caixa | 17/17 | 17/17 |
-| **Total** | **625/625** | |
+| 34 avisos dos pedidos | 13/13 | 13/13 |
+| **Total** | **638/638** | |
 
 Na I2 voltaram a correr no Supabase os testes afectados por cada migração (app do cliente: 06, 08, 09, 12 e 13;
 desconto limitado: 02, 09 e 14); os restantes não dependem delas (e todos passam localmente).
@@ -206,3 +209,24 @@ As funções dependem destas colunas do esquema base: `clientes(id, tipo, nome, 
 `direcoes(id, permissoes jsonb)`, `turnos(id, funcionario_id, data, hora_inicio, hora_fim, periodo)`,
 `zonas(id, nome, tipo)`, `pratos_base(id)`, `vendas`, `caixa(data, funcionario_id, fechamento jsonb)`,
 `distribuicoes(quantidade_quebra)` e `auditoria`.
+
+## Notificações push: o que falta para chegarem aos telemóveis
+
+O servidor já põe os avisos na fila e o `pg_cron` chama a função `enviar-notificacoes` todos os
+minutos (ver `select * from cron.job_run_details order by start_time desc`). Falta a parte da Expo e
+do Firebase, que só o dono das contas pode criar:
+
+1. **Expo** (expo.dev, conta gratuita): criar dois projectos, `manda-bue-cliente` e
+   `manda-bue-operador`, e copiar o *Project ID* de cada um para os segredos do repositório
+   `EXPO_PROJECT_ID_CLIENTE` e `EXPO_PROJECT_ID_OPERADOR`.
+2. **Firebase** (console.firebase.google.com): um projecto com duas apps Android,
+   `ao.mandabue.cliente` e `ao.mandabue.operador`. Descarregar o `google-services.json` (serve às
+   duas) e colar o conteúdo no segredo `GOOGLE_SERVICES_JSON`.
+3. **Firebase → Expo**: em Firebase, *Definições do projecto → Contas de serviço → Gerar nova chave
+   privada*; em expo.dev, em cada projecto, *Credentials → Android → FCM V1 service account key*,
+   carregar esse ficheiro.
+4. Gerar APKs novos (o workflow usa os segredos). Ao entrar, a app pede autorização e regista o
+   telemóvel; a partir daí os avisos chegam.
+
+Sem estes passos as apps funcionam normalmente, só não recebem push (os avisos saem da fila sem
+telemóvel a quem entregar).

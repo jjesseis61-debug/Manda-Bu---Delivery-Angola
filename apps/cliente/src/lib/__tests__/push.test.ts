@@ -15,6 +15,8 @@ describe('rotaDaNotificacao', () => {
     expect(rotaDaNotificacao({ codigo: 'N10', codigo_grupo: 'G-ABC123' })).toBe('/grupo/G-ABC123');
     expect(rotaDaNotificacao({ codigo: 'N11', codigo_grupo: 'G-ABC123' })).toBe('/grupo/G-ABC123');
     expect(rotaDaNotificacao({ codigo: 'N13' })).toBe('/pacotes');
+    expect(rotaDaNotificacao({ codigo: 'N16', pedido_id: 'p1' })).toBe('/pedido/p1');
+    expect(rotaDaNotificacao({ codigo: 'N16' })).toBeNull();
     expect(rotaDaNotificacao({ codigo: 'N14' })).toBe('/pacotes');
   });
 

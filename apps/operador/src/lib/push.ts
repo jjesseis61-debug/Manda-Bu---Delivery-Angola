@@ -53,9 +53,10 @@ export async function desactivarPush(): Promise<void> {
 }
 
 /** Ecrã a abrir quando o funcionário toca numa notificação */
-export function rotaDaNotificacao(dados: unknown): '/equipa' | '/pacotes' | null {
+export function rotaDaNotificacao(dados: unknown): '/equipa' | '/pacotes' | '/entregas' | null {
   const codigo = (dados as { codigo?: unknown } | null | undefined)?.codigo;
   if (codigo === 'N12') return '/equipa';
   if (codigo === 'N15') return '/pacotes';
+  if (codigo === 'N17') return '/entregas';
   return null;
 }

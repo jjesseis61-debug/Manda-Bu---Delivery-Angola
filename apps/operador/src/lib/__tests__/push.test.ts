@@ -9,6 +9,7 @@ import { rotaDaNotificacao } from '../push';
 test('abre o ecrã de cada notificação da equipa', () => {
   expect(rotaDaNotificacao({ codigo: 'N12' })).toBe('/equipa');
   expect(rotaDaNotificacao({ codigo: 'N15' })).toBe('/pacotes');
+  expect(rotaDaNotificacao({ codigo: 'N17' })).toBe('/entregas');
   expect(rotaDaNotificacao({ codigo: 'N3' })).toBeNull();
   expect(rotaDaNotificacao(undefined)).toBeNull();
 });

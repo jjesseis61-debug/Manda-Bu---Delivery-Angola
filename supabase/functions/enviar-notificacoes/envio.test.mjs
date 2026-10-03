@@ -13,6 +13,7 @@ globalThis.__criarCliente = () => ({
     if (nome === 'notificacoes_por_enviar') return { data: pendentes.filter((p) => !marcadas.includes(p.id)), error: null };
     if (nome === 'marcar_notificacoes_enviadas') { marcadas.push(...args.p_ids); return { data: args.p_ids.length, error: null }; }
     if (nome === 'desactivar_tokens_push') return { data: args.p_tokens.length, error: null };
+    if (nome === 'segredo_envio_valido') return { data: args.p_segredo === 'segredo-da-bd', error: null };
   },
 });
 globalThis.fetch = async (_u, opt) => {
@@ -57,3 +58,10 @@ pendentes = [n(300, 'cliente', Array.from({ length: 60 }, (_, i) => `a${i}`)), n
 marcadas = []; lotesRecebidos = 0;
 await pedido();
 assert(lotesRecebidos === 2, 'duas notificações de 60 telemóveis vão em 2 lotes, sem se partirem');
+
+// Autorização: o segredo da função ou o guardado na base de dados (o que o cron manda)
+const comSegredo = (v) => handler(new Request('http://x', { method: 'POST', headers: v === null ? {} : { 'x-envio-segredo': v } }));
+pendentes = [];
+assert((await comSegredo('errado')).status === 401, 'segredo errado: 401');
+assert((await comSegredo(null)).status === 401, 'sem segredo: 401');
+assert((await comSegredo('segredo-da-bd')).status === 200, 'segredo guardado na base de dados: aceite');

@@ -1,13 +1,14 @@
-// Envia a fila de notificações (clientes: N2–N11; equipa: N12) pelo serviço de push da Expo.
+// Envia a fila de notificações (clientes: N2–N11, N13, N14, N16; equipa: N12, N15, N17) pelo serviço de push da Expo.
 // A app do cliente e a do operador são projectos Expo diferentes: a Expo recusa um pedido
 // com tokens de projectos diferentes, por isso cada destino segue num pedido à parte.
 //
-// Chamada de minuto a minuto por pg_cron (agendar_envio_notificacoes). Só despacha
+// Chamada de minuto a minuto por pg_cron (agendar_envio). Só despacha
 // o que já está na fila: os textos e os destinatários vêm do servidor
 // (notificacoes_por_enviar) e os interruptores são respeitados lá.
 // Autenticação própria (a função é publicada sem verificação de JWT, porque o pg_cron
 // não tem sessão): o pedido tem de trazer o cabeçalho x-envio-segredo igual ao
-// segredo ENVIO_SEGREDO da função. Sem segredo configurado, recusa tudo.
+// segredo ENVIO_SEGREDO da função (se existir) ou ao segredo guardado na base de dados
+// (segredos_servidor, confirmado por segredo_envio_valido; é o que o cron de agendar_envio manda).
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
@@ -27,17 +28,19 @@ type Mensagem = { to: string; title: string; body: string; sound: 'default'; dat
 type Bilhete = { status: 'ok' | 'error'; details?: { error?: string } };
 
 Deno.serve(async (req) => {
-  const segredo = Deno.env.get('ENVIO_SEGREDO');
-  if (!segredo) {
-    return Response.json({ erro: 'segredo_nao_configurado' }, { status: 503 });
-  }
-  if (req.headers.get('x-envio-segredo') !== segredo) {
-    return Response.json({ erro: 'nao_autorizado' }, { status: 401 });
-  }
-
   const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
     auth: { persistSession: false },
   });
+
+  const recebido = req.headers.get('x-envio-segredo') ?? '';
+  const segredo = Deno.env.get('ENVIO_SEGREDO');
+  const autorizado =
+    recebido !== '' &&
+    ((!!segredo && recebido === segredo) ||
+      (await supabase.rpc('segredo_envio_valido', { p_segredo: recebido })).data === true);
+  if (!autorizado) {
+    return Response.json({ erro: 'nao_autorizado' }, { status: 401 });
+  }
 
   const { data, error } = await supabase.rpc('notificacoes_por_enviar', { p_limite: 200 });
   if (error) {
