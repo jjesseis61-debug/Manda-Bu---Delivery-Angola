@@ -607,22 +607,11 @@ export type Estimulo = {
   decidido_em: string | null;
 };
 
-export type CasoInvestigacao = {
+/** O que os casos dos agentes (investigador, vigilante) têm em comum */
+export type CasoAgente = {
   id: string;
-  funcionario: string;
-  cargo: string | null;
   inicio: string;
   fim: string;
-  sinais: {
-    comprovativos: number;
-    rejeitados: number;
-    nao_conferem: number;
-    ilegiveis: number;
-    sem_extrato: number;
-    valor_sem_extrato: number;
-    caixas_com_diferenca: number;
-    soma_diferencas: number;
-  };
   pontuacao: number;
   estado: 'por_investigar' | 'a_investigar' | 'investigado' | 'indisponivel';
   ia_nota: string | null;
@@ -634,13 +623,44 @@ export type CasoInvestigacao = {
     recomendacao: string;
     perguntas_ao_funcionario: string[];
   } | null;
-  passos: { ferramenta: string; entrada: Record<string, unknown>; resultado: string }[];
+  passos: { ferramenta: string; entrada: Record<string, unknown>; resultado?: string }[];
   investigado_em: string | null;
   decisao: 'sem_problema' | 'erro_operacional' | 'suspeita_confirmada' | null;
   decisao_nota: string | null;
   decidido_por: string | null;
   decidido_em: string | null;
   criado_em: string;
+};
+
+export type CasoInvestigacao = CasoAgente & {
+  funcionario: string;
+  cargo: string | null;
+  sinais: {
+    comprovativos: number;
+    rejeitados: number;
+    nao_conferem: number;
+    ilegiveis: number;
+    sem_extrato: number;
+    valor_sem_extrato: number;
+    caixas_com_diferenca: number;
+    soma_diferencas: number;
+  };
+};
+
+export type CasoConvida = CasoAgente & {
+  indicador: string;
+  codigo: string | null;
+  sinais: {
+    indicados: number;
+    mesmo_local: number;
+    telemovel_partilhado: number;
+    levantamento_para_indicado: number;
+    so_um_pedido: number;
+    indicados_com_14_dias: number;
+    maximo_num_dia: number;
+    ganhos_anulados: number;
+    ganhos_kz: number;
+  };
 };
 
 export type PerguntaAnalista = {

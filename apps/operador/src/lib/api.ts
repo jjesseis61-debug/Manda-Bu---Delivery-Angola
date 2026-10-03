@@ -4,6 +4,7 @@ import { supabase } from './supabase';
 import type {
   AdesaoOperador,
   AlertaPedido,
+  CasoConvida,
   CasoInvestigacao,
   PerguntaAnalista,
   Estimulo,
@@ -630,4 +631,21 @@ export async function pedirRelatorioAnalista(ano: number, mes: number): Promise<
   const id = verificar(await supabase.rpc('pedir_relatorio_analista', { p_ano: ano, p_mes: mes })) as string;
   supabase.functions.invoke('analista', { body: { pergunta_id: id } }).catch(() => undefined);
   return id;
+}
+
+// ---------------------------------------------------------------- vigilante do Convida e Ganha
+export async function lerCasosConvida(): Promise<CasoConvida[]> {
+  return verificar(await supabase.rpc('casos_convida_lista')) as CasoConvida[];
+}
+
+export async function abrirVigilancia(inicio: string, fim: string): Promise<number> {
+  return verificar(await supabase.rpc('abrir_vigilancia', { p_inicio: inicio, p_fim: fim })) as number;
+}
+
+export async function decidirCasoConvida(id: string, decisao: string, nota: string) {
+  verificar(await supabase.rpc('decidir_caso_convida', { p_id: id, p_decisao: decisao, p_nota: nota }));
+}
+
+export async function vigiarDeNovo(id: string) {
+  verificar(await supabase.rpc('vigiar_de_novo', { p_id: id }));
 }
