@@ -1,7 +1,9 @@
 # APKs Android das duas apps para testar no telemóvel, sem conta Expo (EAS).
 # O projecto nativo é gerado com `expo prebuild` e compilado com o Gradle do runner. O APK de
 # release fica assinado com a chave de debug: instala-se directamente, mas não serve para a Play Store.
-# Os APKs ficam nos "Artifacts" de cada execução (separador Actions), durante 14 dias.
+# Os APKs ficam nos "Artifacts" de cada execução (separador Actions), durante 14 dias, e na
+# Release "apk-teste" com um link fixo que não expira e aponta sempre para o último build:
+#   https://github.com/<dono>/<repo>/releases/download/apk-teste/manda-bue-cliente.apk
 name: APK Android
 
 on:
@@ -13,6 +15,9 @@ on:
 concurrency:
   group: apk-${{ github.ref }}
   cancel-in-progress: true
+
+permissions:
+  contents: write
 
 jobs:
   apk:
@@ -58,3 +63,14 @@ jobs:
           name: manda-bue-${{ matrix.app }}-apk
           path: apps/${{ matrix.app }}/android/app/build/outputs/apk/release/*.apk
           retention-days: 14
+      - name: Publicar na Release apk-teste (link fixo)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp android/app/build/outputs/apk/release/app-release.apk manda-bue-${{ matrix.app }}.apk
+          # As duas apps correm em paralelo: se a outra já criou a Release, este create falha e segue
+          gh release view apk-teste >/dev/null 2>&1 || \
+            gh release create apk-teste --prerelease --target "$GITHUB_SHA" --title "APKs de teste" \
+              --notes "APKs de teste das apps Manda Bué (assinados com a chave de debug)." || true
+          gh release upload apk-teste manda-bue-${{ matrix.app }}.apk --clobber
+          gh release edit apk-teste --notes "APKs de teste das apps Manda Bué (assinados com a chave de debug). Último build: ${GITHUB_REF_NAME} @ ${GITHUB_SHA::7}."
