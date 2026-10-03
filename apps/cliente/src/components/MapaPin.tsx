@@ -1,12 +1,14 @@
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import MapView, { Marker, type MapPressEvent } from 'react-native-maps';
 
-import { raio } from '@/lib/tema';
+import { MAPA_NATIVO } from '@/lib/mapaNativo';
+import { cores, raio } from '@/lib/tema';
 
 export type Coordenadas = { latitude: number; longitude: number };
 
 /** Pin no mapa: toca no mapa ou arrasta o pin para marcar o ponto de entrega */
 export function MapaPin({ ponto, aoMudar }: { ponto: Coordenadas; aoMudar: (p: Coordenadas) => void }) {
+  if (!MAPA_NATIVO) return <SemMapa ponto={ponto} />;
   return (
     <View style={estilos.caixa}>
       <MapView
@@ -19,6 +21,21 @@ export function MapaPin({ ponto, aoMudar }: { ponto: Coordenadas; aoMudar: (p: C
   );
 }
 
+/** Sem mapa neste build: o ponto marca-se com "Usar a minha localização" */
+function SemMapa({ ponto }: { ponto: Coordenadas }) {
+  return (
+    <View style={estilos.semMapa}>
+      <Text style={{ color: cores.textoSuave, textAlign: 'center' }}>
+        O mapa ainda não está disponível nesta versão. Usa a tua localização para marcar o ponto de entrega.
+      </Text>
+      <Text style={{ color: cores.textoSuave }}>
+        Ponto: {ponto.latitude.toFixed(5)}, {ponto.longitude.toFixed(5)}
+      </Text>
+    </View>
+  );
+}
+
 const estilos = StyleSheet.create({
   caixa: { height: 260, borderRadius: raio, overflow: 'hidden' },
+  semMapa: { borderRadius: raio, backgroundColor: cores.fundoSuave, padding: 16, gap: 6, alignItems: 'center' },
 });
