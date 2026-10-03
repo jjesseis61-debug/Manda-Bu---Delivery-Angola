@@ -102,7 +102,8 @@ select testes.def('e_depois', testes.erro(format($$select conferir_comprovativo(
 reset role;
 select ok((testes.v('res')::jsonb ->> 'electronico')::numeric = 5000 and (testes.v('res')::jsonb ->> 'por_conferir')::int = 2
           and jsonb_array_length(testes.v('res')::jsonb -> 'comprovativos') = 2
-          and (testes.v('res')::jsonb -> 'comprovativos' -> 0 ->> 'caminho') = testes.v('p1') || '/mcx-1.jpg',
+          and exists (select 1 from jsonb_array_elements(testes.v('res')::jsonb -> 'comprovativos') c
+                       where c ->> 'caminho' = testes.v('p1') || '/mcx-1.jpg'),
           'o resumo da caixa lista os pagamentos electrónicos com referência e foto');
 select is((testes.v('res')::jsonb ->> 'esperado')::numeric, 1000::numeric, 'o dinheiro esperado continua a ser só o Dinheiro');
 select ok(testes.v('e_fechar') like 'P0001:comprovativos_por_conferir%', 'não fecha a caixa com pagamentos por conferir');

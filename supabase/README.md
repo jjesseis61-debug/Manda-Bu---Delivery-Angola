@@ -45,6 +45,8 @@ Aplicadas por esta ordem. **Uma migração já aplicada nunca se edita:** qualqu
 | `20261003201823_avisos_reclamacoes_estimulos.sql` | Textos e validade de N21 a N23; job `mb_estimulos_mensais` (dia 1, 07:00 de Luanda) gera as propostas do mês que acabou. | aplicada |
 | `20261003204853_investigacoes.sql` | Agente investigador financeiro: `sinais_financeiros` (rejeitados, fotos que não conferem, pagamentos sem extrato, caixas com diferença → pontos), `abrir_investigacoes` (quem tem `financas.conferir`; job no dia 3 para o mês anterior), `casos_investigacao_lista`, `decidir_caso` e `investigar_de_novo` (nunca sobre o próprio caso). Ferramentas do agente só de leitura e só do serviço (`agente_comprovativos`, `agente_caixas`, `agente_historico_pedido` sem nome do cliente, `agente_entradas_parecidas`, `agente_referencia`, `agente_equipa`); `registar_investigacao` guarda o dossiê e os passos, com auditoria como "Agente Claude". `historico_pedido` passa a usar `historico_pedido_dados`. Interruptor `agente_investigador` (desligado). | aplicada; `agendar_investigacoes(...)` corrido |
 | `20261003204944_avisos_investigacoes.sql` | N24 (risco alto) a quem confere as finanças, nunca ao investigado; job `mb_investigacoes` (dia 3, 07:00 de Luanda). | aplicada |
+| `20261003210258_analista.sql` | Analista do administrador: permissão `analista.usar`; `perguntar_analista` (limite `analista_perguntas_dia`, 30), `pedir_relatorio_analista` (um por mês; job no dia 2), `perguntas_analista_lista` (cada um vê as suas e os relatórios). Ferramentas agregadas, só de leitura, só do serviço e sem nomes de clientes: `analista_vendas` (agrupadas por dia, semana, mês, cozinha, zona, hora ou dia da semana), `analista_pratos`, `analista_clientes`, `analista_operacao`, `analista_satisfacao`, `analista_equipa`, `analista_financas`. `metricas_funcionario` passa a usar `metricas_funcionario_periodo`. Interruptor `agente_analista` (desligado). | aplicada; `agendar_analista(...)` corrido |
+| `20261003210348_avisos_analista.sql` | N25 (relatório do mês pronto) a quem usa o analista; job `mb_relatorio_analista` (dia 2, 07:00 de Luanda). | aplicada |
 
 Os números de versão dos ficheiros são os que o Supabase registou ao aplicar, para `supabase migration list` e
 `supabase db push` não voltarem a aplicá-las.
@@ -69,6 +71,7 @@ Os jobs respeitam os interruptores: com tudo desligado não enfileiram nada.
 | Função | O que faz | Configuração |
 |---|---|---|
 | `functions/enviar-notificacoes` | Envia a fila (clientes N2–N11; equipa N12) pelo push da Expo, um pedido por app (a Expo recusa tokens de projectos diferentes no mesmo pedido); desactiva tokens rejeitados; marca como enviadas | Publicada sem verificação de JWT, com autenticação própria: segredo `ENVIO_SEGREDO` (obrigatório) no cabeçalho `x-envio-segredo`. Agendar com `select agendar_envio_notificacoes('<url da função>', '<segredo>');` depois de activar `pg_cron` e `pg_net`. |
+| `functions/analista` | Analista do administrador: responde às perguntas da app e faz o relatório mensal, escolhendo as ferramentas de números agregados | Publicada sem verificação de JWT: pelo pg_cron (segredo) responde à mais antiga; pela app só à pergunta indicada (`pergunta_id`). Usa o `ANTHROPIC_API_KEY`. Agendada com `select agendar_analista('<url da função>');` (de minuto a minuto). Só trabalha com o interruptor `agente_analista` ligado |
 | `functions/investigar` | Agente investigador financeiro: o Claude usa ferramentas só de leitura em vários passos e entrega um dossiê (risco, factos, explicações possíveis, perguntas) | Publicada sem verificação de JWT, com o mesmo segredo do envio. Usa o `ANTHROPIC_API_KEY`. Agendada com `select agendar_investigacoes('<url da função>');` (de 5 em 5 minutos, um caso por execução). Só trabalha com o interruptor `agente_investigador` ligado |
 | `functions/analisar-ia` | Analisa com o Claude as reclamações (categoria, gravidade, se os factos dão razão, resposta sugerida) e escreve a mensagem pessoal dos estímulos (Bandura) | Publicada sem verificação de JWT, com o mesmo segredo do envio. Usa o mesmo `ANTHROPIC_API_KEY`; sem ele o gerente decide sem análise e usa-se o texto base. Agendada com `select agendar_analises('<url da função>');` (de 2 em 2 minutos) |
 | `functions/ler-documentos` | Lê com o Claude as fotos dos comprovativos (valor, referência, data) e os extratos (entradas do período); o servidor compara e concilia | Publicada sem verificação de JWT, com o mesmo segredo do envio (`x-envio-segredo`). Segredo `ANTHROPIC_API_KEY` nas Edge Functions; sem ele fica tudo para a conferência à mão. Agendada com `select agendar_leitura('<url da função>');` |
@@ -121,6 +124,7 @@ base de dados.
 | `40_alertas_pedidos.test.sql` | job dá cada alerta uma vez; N18 só aos gerentes da cozinha do pedido, com quem, o quê e há quanto tempo; N19 ao gerente e ao estafeta, N20 à cliente; pedido entregue ou no prazo sem alerta; motivo pelo gerente ou pelo estafeta do pedido (não por outra cozinha); quem vê os alertas; auditoria |
 | `41_reclamacoes_estimulos.test.sql` | avaliação de 1★ vira reclamação e a de 4★ não; botão do pedido (uma vez, só do próprio cliente); N21 só à cozinha do pedido; factos com o atraso real e sem nomes; reserva e falhas da análise; decisão do gerente (só na sua cozinha, uma vez) com N22; relatório do mês; estímulos: mestria, meta atingida e bónus, modelo, meta próxima, clientes que mais compraram; aprovação só pelo administrador, N23, descartado sem aviso, gerar de novo não mexe no aprovado |
 | `42_investigacoes.test.sql` | sinais e pontos (o rejeitado não conta duas vezes); só quem confere abre casos, um por período; reserva única; ferramentas (comprovativos, entradas parecidas, referência, histórico sem nome do cliente, caixas, equipa) só do serviço; dossiê, passos, N24 e auditoria "Agente Claude"; o investigado não vê nem decide o seu caso; interruptor desligado = agente parado |
+| `43_analista.test.sql` | só quem tem `analista.usar` pergunta; limite diário; um relatório por mês; ferramentas (vendas por zona, pratos, clientes, operação, satisfação, finanças) certas e sem nomes de clientes, só do serviço; estímulos com a mesma conta da equipa; reserva única; resposta e N25; cada um vê as suas perguntas e todos os relatórios; interruptor desligado = parado |
 | `33_caixa_gestao.test.sql` | Abre a caixa (uma por posto), quem tem `vendas.registar` vê-a; fora da cozinha ou sem a permissão recusa; o esperado só soma a parcela Dinheiro e os pacotes na loja menos as sangrias; o fecho guarda a diferença; caixa fechada não aceita sangrias, novo fecho nem escrita directa; tudo na auditoria |
 | `15_app_operador.test.sql` | I3: telefone e ligação dos funcionários, painel (O1), verificação e "Confirmar todos" com N3 (O2), levantamentos (O3), embaixadores (O4), fila de entregas e caixas (E1), auditoria de cozinhas e cardápio (O6) |
 
@@ -181,7 +185,8 @@ base de dados.
 | 40 alertas dos pedidos | 18/18 | 17/18 (o n.º 3 difere por desenho: na produção o administrador principal também recebe o N18) |
 | 41 reclamações e estímulos | 34/34 | 34/34 |
 | 42 agente investigador | 21/21 | 20/21 (o n.º 16 difere por desenho: na produção o administrador principal também recebe o N24) |
-| **Total** | **782/782** | |
+| 43 analista do administrador | 20/20 | 19/20 (o n.º 17 difere por desenho: na produção o administrador principal também recebe o N25) |
+| **Total** | **802/802** | |
 
 Na I2 voltaram a correr no Supabase os testes afectados por cada migração (app do cliente: 06, 08, 09, 12 e 13;
 desconto limitado: 02, 09 e 14); os restantes não dependem delas (e todos passam localmente).
@@ -233,6 +238,15 @@ gerente decide sempre na app (Reclamações). Para cada estímulo proposto pede 
 Bandura (mestria, meta próxima, modelo, elogio concreto, tom calmo), a partir do texto base; o administrador
 aprova e pode editar na app (Estímulos do mês). Mesmo segredo `ANTHROPIC_API_KEY`.
 Testes: `node --experimental-strip-types supabase/functions/analisar-ia/analisar.test.mjs`.
+
+### `analista` (analista do administrador)
+
+Quem tem `analista.usar` pergunta na app (ecrã Analista) em linguagem normal; a app chama logo a função e
+o pg_cron apanha o que ficar por responder. O Claude escolhe as ferramentas (vendas, pratos, clientes,
+operação, satisfação, equipa, finanças), compara períodos e responde com os números-chave, as limitações
+e até 3 sugestões. No dia 2 de cada mês faz o relatório do mês anterior e avisa (N25). As ferramentas só
+dão números agregados, sem nomes nem contactos de clientes. Ligar em Parâmetros → `agente_analista`.
+Testes: `node --experimental-strip-types supabase/functions/analista/analista.test.mjs`.
 
 ### `investigar` (agente investigador financeiro)
 

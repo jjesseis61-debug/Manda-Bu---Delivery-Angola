@@ -71,6 +71,8 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 'relatorio_reclamacoes', 'gerar_estimulos', 'estimulos_do_mes', 'decidir_estimulo', 'pedir_nova_analise',
                 -- agente investigador financeiro (as ferramentas do agente são só do serviço)
                 'abrir_investigacoes', 'casos_investigacao_lista', 'decidir_caso', 'investigar_de_novo',
+                -- analista do administrador
+                'perguntar_analista', 'pedir_relatorio_analista', 'perguntas_analista_lista',
                 -- auxiliares usadas em políticas RLS, valores por defeito ou triggers SECURITY INVOKER
                 'cliente_actual', 'cozinha_padrao', 'e_funcionario', 'funcionalidade_activa',
                 'funcionario_actual', 'membro_da_cozinha', 'tem_permissao', 'e_administrador', 'pode_na_cozinha')),

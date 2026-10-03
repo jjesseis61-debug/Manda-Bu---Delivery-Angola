@@ -5,6 +5,7 @@ import type {
   AdesaoOperador,
   AlertaPedido,
   CasoInvestigacao,
+  PerguntaAnalista,
   Estimulo,
   Reclamacao,
   RelatorioReclamacoes,
@@ -611,4 +612,22 @@ export async function decidirCaso(id: string, decisao: string, nota: string) {
 
 export async function investigarDeNovo(id: string) {
   verificar(await supabase.rpc('investigar_de_novo', { p_id: id }));
+}
+
+// ---------------------------------------------------------------- analista do administrador
+export async function lerPerguntasAnalista(): Promise<PerguntaAnalista[]> {
+  return verificar(await supabase.rpc('perguntas_analista_lista')) as PerguntaAnalista[];
+}
+
+/** Faz a pergunta e pede logo a resposta (se a chamada falhar, o servidor responde no minuto seguinte) */
+export async function perguntarAnalista(pergunta: string): Promise<string> {
+  const id = verificar(await supabase.rpc('perguntar_analista', { p_pergunta: pergunta })) as string;
+  supabase.functions.invoke('analista', { body: { pergunta_id: id } }).catch(() => undefined);
+  return id;
+}
+
+export async function pedirRelatorioAnalista(ano: number, mes: number): Promise<string> {
+  const id = verificar(await supabase.rpc('pedir_relatorio_analista', { p_ano: ano, p_mes: mes })) as string;
+  supabase.functions.invoke('analista', { body: { pergunta_id: id } }).catch(() => undefined);
+  return id;
 }

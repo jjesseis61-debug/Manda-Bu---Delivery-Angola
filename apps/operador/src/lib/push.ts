@@ -53,12 +53,13 @@ export async function desactivarPush(): Promise<void> {
 }
 
 /** Ecrã a abrir quando o funcionário toca numa notificação */
-export function rotaDaNotificacao(dados: unknown): '/equipa' | '/pacotes' | '/entregas' | '/reclamacoes' | '/conferencia' | null {
+export function rotaDaNotificacao(dados: unknown): '/equipa' | '/pacotes' | '/entregas' | '/reclamacoes' | '/conferencia' | '/analista' | null {
   const codigo = (dados as { codigo?: unknown } | null | undefined)?.codigo;
   if (codigo === 'N12') return '/equipa';
   if (codigo === 'N15') return '/pacotes';
   if (codigo === 'N17' || codigo === 'N18' || codigo === 'N19') return '/entregas';
   if (codigo === 'N21') return '/reclamacoes';
   if (codigo === 'N24') return '/conferencia';
+  if (codigo === 'N25') return '/analista';
   return null;
 }

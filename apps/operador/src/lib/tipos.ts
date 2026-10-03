@@ -23,7 +23,8 @@ export type Permissao =
   | 'vendas.registar'
   | 'financas.conferir'
   | 'clientes.gerir'
-  | 'equipa.gerir';
+  | 'equipa.gerir'
+  | 'analista.usar';
 
 export type Painel = {
   custo: number;
@@ -640,4 +641,22 @@ export type CasoInvestigacao = {
   decidido_por: string | null;
   decidido_em: string | null;
   criado_em: string;
+};
+
+export type PerguntaAnalista = {
+  id: string;
+  tipo: 'pergunta' | 'relatorio_mensal';
+  pergunta: string;
+  inicio: string | null;
+  fim: string | null;
+  estado: 'pendente' | 'a_responder' | 'respondida' | 'indisponivel';
+  resposta: string | null;
+  numeros: { rotulo: string; valor: string }[];
+  sugestoes: string[];
+  limitacoes: string | null;
+  ia_nota: string | null;
+  passos: number;
+  criado_em: string;
+  respondida_em: string | null;
+  quem: string | null;
 };
