@@ -20,6 +20,7 @@ const ecras: {
   { rota: '/levantamentos', titulo: 'Levantamentos', descricao: 'Aprovar e pagar (O3)', permissoes: ['indicacoes.aprovar_pagamentos'] },
   { rota: '/pacotes', titulo: 'Pacotes do mês', descricao: 'Confirmar pagamentos, reembolsos e catálogo (I12)', permissoes: ['pacotes.gerir'] },
   { rota: '/embaixadores', titulo: 'Embaixadores', descricao: 'Elegíveis e actuais (O4)', permissoes: ['plataforma.parametros'] },
+  { rota: '/zonas', titulo: 'Zonas de entrega', descricao: 'Bairros onde se entrega e a taxa de cada um', permissoes: ['plataforma.parametros'] },
   { rota: '/parametros', titulo: 'Parâmetros e interruptores', descricao: 'Valores do programa e funcionalidades (O5)', permissoes: ['plataforma.parametros'] },
   { rota: '/cozinhas', titulo: 'Cozinhas e cardápio', descricao: 'Perfil, consentimento e pratos (O6)', permissoes: ['cozinhas.gerir'] },
   { rota: '/relatorios', titulo: 'Relatórios de cozinha', descricao: 'Por período, com exportação (O9)', permissoes: ['relatorios.exportar'] },

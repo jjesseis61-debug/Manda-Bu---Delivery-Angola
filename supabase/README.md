@@ -31,6 +31,7 @@ Aplicadas por esta ordem. **Uma migração já aplicada nunca se edita:** qualqu
 | `20261002081819_crescimento_i12_avisos_pacotes.sql` | I12: avisos dos pacotes. N13 (pagamento confirmado), N14 (restam 3 refeições ou menos; e 3 dias antes do fim, pelo job diário `job_n14_pacotes`, agendado em `agendar_jobs` às 8h UTC) e N15 (nova adesão, à equipa com `pacotes.gerir`, via `funcionarios_com_permissao`). Só com o interruptor `pacotes`. | aplicada |
 | `20261002083722_crescimento_i9_opcoes_stock.sql` | I9: `opcoes.componentes` (ingredientes de cada opção, por unidade do prato); `consumir_stock_venda` junta-os à receita do prato na venda gerada do pedido (o mesmo produto soma-se; mesmas regras de conversão e de avisos; um ingrediente mal escrito não trava a entrega). | aplicada |
 | `20261002165956_fotos_pratos.sql` | Fotos dos pratos e das cozinhas: bucket público `fotos-pratos` (até 5 MB, JPEG/PNG/WebP); só `cozinhas.gerir` envia, troca ou apaga, e só em `pratos/<id do prato>/…` ou `cozinhas/<id da cozinha>/…`. O endereço público fica em `cardapio.foto_url` / `cozinhas.foto_url`. | aplicada |
+| `20261003060218_zonas_gestao.sql` | Zonas de entrega geridas pela app do operador: `plataforma.parametros` cria, edita e apaga zonas (com auditoria); um ponto de entrega criado pelo cliente tem de ter zona. Sem zonas, nenhum cliente conseguia guardar endereços. | aplicada |
 
 Os números de versão dos ficheiros são os que o Supabase registou ao aplicar, para `supabase migration list` e
 `supabase db push` não voltarem a aplicá-las.
@@ -94,6 +95,7 @@ base de dados.
 | `29_avisos_pacotes.test.sql` | I12: N15 só a quem tem `pacotes.gerir`, N13 no pagamento, N14 ao ficar com 3 refeições (uma vez) e a 3 dias do fim (uma vez), textos, envio só com o interruptor ligado, funções internas fechadas |
 | `30_opcoes_stock.test.sql` | I9: receita + opções (o mesmo produto soma-se), stock diário sem movimento, só receita sem opções, prato sem receita só com opções, unidade desconhecida pendente, ingrediente mal escrito não trava a entrega, formato da lista |
 | `31_fotos_pratos.test.sql` | Bucket público de 5 MB; `cozinhas.gerir` envia fotos de pratos e cozinhas e apaga; prato inexistente, pasta ou extensão errada recusados; sem permissão não envia nem apaga; o cliente vê mas não envia |
+| `32_zonas_gestao.test.sql` | `plataforma.parametros` cria e altera zonas (auditadas); sem a permissão, nem o caixa nem o cliente criam; ponto do cliente sem zona recusado, com zona aceite; zona apagada deixa de aparecer |
 | `15_app_operador.test.sql` | I3: telefone e ligação dos funcionários, painel (O1), verificação e "Confirmar todos" com N3 (O2), levantamentos (O3), embaixadores (O4), fila de entregas e caixas (E1), auditoria de cozinhas e cardápio (O6) |
 
 ### Como correr
@@ -142,7 +144,8 @@ base de dados.
 | 29 avisos dos pacotes (I12) | 14/14 | 14/14 |
 | 30 opções descontam stock (I9) | 9/9 | 9/9 |
 | 31 fotos dos pratos | 9/9 | 8/8 (apagar só pela API de Storage) |
-| **Total** | **600/600** | |
+| 32 zonas de entrega | 8/8 | fluxo completo simulado (operador cria a zona, cliente guarda o endereço, orçamento com a taxa) |
+| **Total** | **608/608** | |
 
 Na I2 voltaram a correr no Supabase os testes afectados por cada migração (app do cliente: 06, 08, 09, 12 e 13;
 desconto limitado: 02, 09 e 14); os restantes não dependem delas (e todos passam localmente).

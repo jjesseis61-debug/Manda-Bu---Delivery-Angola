@@ -23,6 +23,7 @@ export default function NovoEndereco() {
   const [tipo, setTipo] = useState<'residencial' | 'empresa'>(empresa ? 'empresa' : 'residencial');
   const [zonas, setZonas] = useState<Zona[]>([]);
   const [zonaId, setZonaId] = useState<string>('');
+  const [zonasLidas, setZonasLidas] = useState(false);
   const [referencia, setReferencia] = useState('');
   const [proximo, setProximo] = useState<PontoProximo | null>(null);
   const [usarProximo, setUsarProximo] = useState(false);
@@ -31,7 +32,14 @@ export default function NovoEndereco() {
   const [aGuardar, setAGuardar] = useState(false);
 
   useEffect(() => {
-    lerZonas().then(setZonas).catch((e) => setErro(mensagemErro(e)));
+    lerZonas()
+      .then((z) => {
+        setZonas(z);
+        setZonasLidas(true);
+        // Com um só bairro, fica escolhido
+        if (z.length === 1) setZonaId(z[0].id);
+      })
+      .catch((e) => setErro(mensagemErro(e)));
     lerEnderecos()
       .then((e) => setPrimeiro(e.length === 0))
       .catch(() => undefined);
@@ -126,7 +134,11 @@ export default function NovoEndereco() {
       {precisaZona && (
         <>
           <Subtitulo>Bairro (zona de entrega)</Subtitulo>
-          <Escolha opcoes={zonas.map((z) => ({ valor: z.id, rotulo: z.nome }))} valor={zonaId} aoMudar={setZonaId} />
+          {zonasLidas && zonas.length === 0 ? (
+            <Aviso>Ainda não entregamos em nenhum bairro. Volta a tentar mais tarde ou fala connosco.</Aviso>
+          ) : (
+            <Escolha opcoes={zonas.map((z) => ({ valor: z.id, rotulo: z.nome }))} valor={zonaId} aoMudar={setZonaId} />
+          )}
           <Campo
             rotulo="Referência (ex.: prédio azul, 2.º andar, porta 12)"
             value={referencia}

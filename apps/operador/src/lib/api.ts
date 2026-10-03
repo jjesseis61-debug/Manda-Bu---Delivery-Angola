@@ -8,6 +8,7 @@ import type {
   Cozinha,
   Embaixador,
   PacoteCatalogo,
+  ZonaEntrega,
   ProdutoStock,
   FotoPendente,
   Funcionario,
@@ -403,4 +404,23 @@ export async function definirFotoPrato(id: string, fotoUrl: string | null) {
 
 export async function definirFotoCozinha(id: string, fotoUrl: string | null) {
   verificar(await supabase.from('cozinhas').update({ foto_url: fotoUrl, atualizado_em: new Date().toISOString() }).eq('id', id));
+}
+
+// ---------------------------------------------------------------- Zonas de entrega
+export async function lerZonasEntrega(): Promise<ZonaEntrega[]> {
+  const r = await supabase.from('zonas').select('id, nome, taxa, tipo').is('deletado_em', null).order('nome');
+  return (verificar(r) as ZonaEntrega[]).map((z) => ({ ...z, taxa: Number(z.taxa ?? 0) }));
+}
+
+export async function guardarZonaEntrega(z: Omit<ZonaEntrega, 'id'> & { id?: string }) {
+  const { id, ...dados } = z;
+  const linha = { ...dados, modo_calculo: 'Fixo' };
+  if (id) verificar(await supabase.from('zonas').update({ ...linha, atualizado_em: new Date().toISOString() }).eq('id', id));
+  else verificar(await supabase.from('zonas').insert(linha));
+}
+
+/** Apagar = marcar deletado_em: os pontos e pedidos antigos continuam a apontar para a zona */
+export async function apagarZonaEntrega(id: string) {
+  const agora = new Date().toISOString();
+  verificar(await supabase.from('zonas').update({ deletado_em: agora, atualizado_em: agora }).eq('id', id));
 }

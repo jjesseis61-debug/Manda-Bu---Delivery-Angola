@@ -300,3 +300,6 @@ export type AdesaoOperador = {
   reembolso_previsto: number;
   valor_reembolso: number | null;
 };
+
+/** Zona de entrega (bairro): a taxa aplica-se aos pedidos com pontos nesta zona */
+export type ZonaEntrega = { id: string; nome: string; taxa: number; tipo: 'Própria' | 'Terceirizada' | null };
