@@ -34,6 +34,7 @@ Aplicadas por esta ordem. **Uma migração já aplicada nunca se edita:** qualqu
 | `20261003060218_zonas_gestao.sql` | Zonas de entrega geridas pela app do operador: `plataforma.parametros` cria, edita e apaga zonas (com auditoria); um ponto de entrega criado pelo cliente tem de ter zona. Sem zonas, nenhum cliente conseguia guardar endereços. | aplicada |
 | `20261003104438_caixa_gestao.sql` | Caixa na app do operador: `abrir_caixa`, `registar_sangria`, `resumo_caixa` e `fechar_caixa` (com `vendas.registar` na cozinha). Uma caixa aberta por posto; o esperado soma a parcela Dinheiro das vendas e os pacotes pagos na loja, menos as sangrias; o fecho guarda o contado e a diferença e a caixa fechada não muda. | aplicada |
 | `20261003110912_avisos_pedidos_envio.sql` | N16 (estado do pedido ao cliente: confirmado, saiu, entregue, cancelado pela cozinha) e N17 (pedido novo à equipa da cozinha). Liga `pg_cron` e `pg_net`, guarda o segredo do envio em `segredos_servidor` (só o servidor) e `agendar_envio(url)` agenda a função `enviar-notificacoes` de minuto a minuto. Fecha `rls_auto_enable` à API. | aplicada; `agendar_jobs()` e `agendar_envio(...)` corridos |
+| `20261003122759_relatorios_semana.sql` | Encontrado na simulação de uma semana: o "prato mais pedido" agrupava tudo quando os pratos não têm ficha técnica (agora agrupa pelo prato do cardápio); as métricas por turno só contavam entregas com hora prometida (agora contam todas; "a horas" continua só sobre as que a têm). | aplicada |
 
 Os números de versão dos ficheiros são os que o Supabase registou ao aplicar, para `supabase migration list` e
 `supabase db push` não voltarem a aplicá-las.
@@ -99,6 +100,7 @@ base de dados.
 | `31_fotos_pratos.test.sql` | Bucket público de 5 MB; `cozinhas.gerir` envia fotos de pratos e cozinhas e apaga; prato inexistente, pasta ou extensão errada recusados; sem permissão não envia nem apaga; o cliente vê mas não envia |
 | `32_zonas_gestao.test.sql` | `plataforma.parametros` cria e altera zonas (auditadas); sem a permissão, nem o caixa nem o cliente criam; ponto do cliente sem zona recusado, com zona aceite; zona apagada deixa de aparecer |
 | `34_avisos_pedidos.test.sql` | N17 só à equipa da cozinha do pedido, com pratos, bairro e total; N16 em confirmado, saiu e entregue (não em preparação); a cliente que cancela não é avisada, a cozinha que cancela avisa com o motivo; seguem sem interruptor e caducam em 2 h; pedidos de grupo não geram N17; o segredo do envio só o service_role confirma |
+| `35_relatorios_semana.test.sql` | Prato mais pedido sem ficha técnica = o prato do cardápio com mais unidades; métricas de turno contam todas as entregas e a percentagem a horas só sobre as que tinham hora prometida |
 | `33_caixa_gestao.test.sql` | Abre a caixa (uma por posto), quem tem `vendas.registar` vê-a; fora da cozinha ou sem a permissão recusa; o esperado só soma a parcela Dinheiro e os pacotes na loja menos as sangrias; o fecho guarda a diferença; caixa fechada não aceita sangrias, novo fecho nem escrita directa; tudo na auditoria |
 | `15_app_operador.test.sql` | I3: telefone e ligação dos funcionários, painel (O1), verificação e "Confirmar todos" com N3 (O2), levantamentos (O3), embaixadores (O4), fila de entregas e caixas (E1), auditoria de cozinhas e cardápio (O6) |
 
@@ -151,7 +153,8 @@ base de dados.
 | 32 zonas de entrega | 8/8 | fluxo completo simulado (operador cria a zona, cliente guarda o endereço, orçamento com a taxa) |
 | 33 caixa | 17/17 | 17/17 |
 | 34 avisos dos pedidos | 13/13 | 13/13 |
-| **Total** | **638/638** | |
+| 35 relatórios da semana | 5/5 | 5/5 |
+| **Total** | **643/643** | |
 
 Na I2 voltaram a correr no Supabase os testes afectados por cada migração (app do cliente: 06, 08, 09, 12 e 13;
 desconto limitado: 02, 09 e 14); os restantes não dependem delas (e todos passam localmente).
@@ -230,3 +233,13 @@ do Firebase, que só o dono das contas pode criar:
 
 Sem estes passos as apps funcionam normalmente, só não recebem push (os avisos saem da fila sem
 telemóvel a quem entregar).
+
+## Simulações de operação (`supabase/simulacoes/`)
+
+`semana.sql` simula uma semana de segunda a sábado no Supabase, com as funcionalidades todas ligadas:
+2 cozinhas com gerente e estafeta, 24 clientes registados pelo telemóvel (16 entram com código de
+amigo), caixas abertas e fechadas todos os dias, cerca de 95 pedidos com cancelamentos, entregas em
+dinheiro e Multicaixa, avaliações, um pacote do mês, levantamento do Convida e Ganha, relatórios,
+métricas por turno, destaques, contadores e reconhecimento da equipa. Corre numa só transacção e
+termina com uma excepção que devolve o relatório e **desfaz tudo** (nenhum dado fica). Usa o posto
+"Posto Semana" para não colidir com caixas reais abertas.
