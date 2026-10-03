@@ -225,13 +225,13 @@ export default function Carrinho() {
           <Text style={{ fontSize: 15, flex: 1 }}>
             Pagar com o pacote ({pacote.refeicoes_restantes} {pacote.refeicoes_restantes === 1 ? 'refeição' : 'refeições'})
           </Text>
-          <Switch value={comPacote} onValueChange={setComPacote} trackColor={{ true: cores.marca }} />
+          <Switch thumbColor="#FFFFFF" value={comPacote} onValueChange={setComPacote} trackColor={{ true: cores.marca, false: cores.contorno }} />
         </View>
       )}
       {ligada('indicacao') && saldo > 0 && orc && (
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <Text style={{ fontSize: 15, flex: 1 }}>Usar saldo do Convida e Ganha ({formatarKz(saldo)})</Text>
-          <Switch value={usarSaldo} onValueChange={setUsarSaldo} trackColor={{ true: cores.marca }} />
+          <Switch thumbColor="#FFFFFF" value={usarSaldo} onValueChange={setUsarSaldo} trackColor={{ true: cores.marca, false: cores.contorno }} />
         </View>
       )}
 

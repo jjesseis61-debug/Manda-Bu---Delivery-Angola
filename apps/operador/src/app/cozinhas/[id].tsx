@@ -26,7 +26,7 @@ function Interruptor({ rotulo, valor, aoMudar }: { rotulo: string; valor: boolea
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
       <Text style={{ flex: 1 }}>{rotulo}</Text>
-      <Switch value={valor} onValueChange={aoMudar} trackColor={{ true: cores.marca, false: cores.linha }} />
+      <Switch thumbColor="#FFFFFF" value={valor} onValueChange={aoMudar} trackColor={{ true: cores.marca, false: cores.contorno }} />
     </View>
   );
 }

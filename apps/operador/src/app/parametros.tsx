@@ -122,10 +122,10 @@ export default function Parametros() {
               {funcs.map((f) => (
                 <View key={f.chave} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                   <Text>{f.chave}</Text>
-                  <Switch
+                  <Switch thumbColor="#FFFFFF"
                     value={f.activa}
                     onValueChange={(v) => setConfirmar({ tipo: 'func', chave: f.chave, activa: v })}
-                    trackColor={{ true: cores.marca, false: cores.linha }}
+                    trackColor={{ true: cores.marca, false: cores.contorno }}
                   />
                 </View>
               ))}

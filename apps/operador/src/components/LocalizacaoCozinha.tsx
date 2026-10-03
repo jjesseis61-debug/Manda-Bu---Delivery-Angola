@@ -100,7 +100,7 @@ export function LocalizacaoCozinha({ cozinhaId }: { cozinhaId: string }) {
       )}
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Text style={{ flex: 1 }}>A responsável autorizou mostrar a localização aos clientes</Text>
-        <Switch value={l.publica} onValueChange={(v) => setL({ ...l, publica: v })} trackColor={{ true: cores.marca, false: cores.linha }} />
+        <Switch thumbColor="#FFFFFF" value={l.publica} onValueChange={(v) => setL({ ...l, publica: v })} trackColor={{ true: cores.marca, false: cores.contorno }} />
       </View>
       <Botao titulo="Guardar localização" aCarregar={ocupado} desactivado={lat === null || lng === null} aoCarregar={guardar} />
     </Cartao>

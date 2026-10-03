@@ -178,9 +178,9 @@ export default function Entregas() {
         {entregar && (p.estado === 'em_entrega' || p.estado === 'em_preparacao') && (
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <Text style={{ flex: 1 }}>Quem pagou não é o cliente do pedido</Text>
-            <Switch
+            <Switch thumbColor="#FFFFFF"
               value={!!p.pagador_distinto}
-              trackColor={{ true: cores.marca, false: cores.linha }}
+              trackColor={{ true: cores.marca, false: cores.contorno }}
               onValueChange={(v) => correr(p.pedido_id, () => marcarPagadorDistinto(p.pedido_id, v))}
             />
           </View>

@@ -64,10 +64,10 @@ export function FotoEditavel({
       {erro && <Aviso tipo="erro">{erro}</Aviso>}
       <View style={{ flexDirection: 'row', gap: espaco.s, flexWrap: 'wrap' }}>
         <View style={{ flex: 1 }}>
-          <Botao titulo="Tirar foto" variante="secundario" aCarregar={ocupado} aoCarregar={() => trocar('camera')} />
+          <Botao titulo="Tirar foto" variante="leve" aCarregar={ocupado} aoCarregar={() => trocar('camera')} />
         </View>
         <View style={{ flex: 1 }}>
-          <Botao titulo="Da galeria" variante="secundario" desactivado={ocupado} aoCarregar={() => trocar('galeria')} />
+          <Botao titulo="Da galeria" variante="leve" desactivado={ocupado} aoCarregar={() => trocar('galeria')} />
         </View>
       </View>
       {url && <Botao titulo="Remover foto" variante="texto" desactivado={ocupado} aoCarregar={remover} />}
