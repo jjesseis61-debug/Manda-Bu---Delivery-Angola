@@ -83,6 +83,8 @@ export type Orcamento = {
   taxa_entrega: number;
   desconto: number;
   motivo_desconto: string | null;
+  /** Subtotal mínimo para o desconto de convite (0 = sem mínimo) */
+  desconto_subtotal_minimo?: number;
   total: number;
   /** Pedido de grupo: taxa por pessoa se o grupo fechasse agora (a taxa real é repartida no fecho) */
   taxa_grupo_estimada?: number | null;

@@ -7,6 +7,8 @@ select testes.funcionalidade('indicacao', true);
 select testes.def('paula', testes.cliente('Paula Indicadora'));
 -- 30 ganhos de 1.000 Kz confirmados em minutos sucessivos (saldo 30.000 Kz)
 select testes.ganhos(testes.u('paula'), 30, 1000, now() - interval '2 hours');
+-- levantar exige um pedido seu entregue e pago
+select testes.pagar(testes.pedido(testes.u('paula'), testes.ponto('residencial')));
 
 select testes.entrar(testes.u('paula'));
 select is((select saldo_disponivel from saldo_indicacao where indicador_id = testes.u('paula')), 30000,

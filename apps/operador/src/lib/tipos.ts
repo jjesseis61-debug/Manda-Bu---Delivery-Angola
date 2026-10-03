@@ -122,6 +122,9 @@ export type FechoCaixa = {
   esperado: number;
   contado: number;
   diferenca: number;
+  /** Pagamentos electrónicos rejeitados na conferência (fechos a partir de 3/10/2026) */
+  rejeitados?: number;
+  valor_rejeitado?: number;
   fechado_em: string;
   funcionario_nome: string | null;
   observacao: string | null;
@@ -131,6 +134,21 @@ export type FechoCaixa = {
 export type CaixaGestao = Caixa & { troco_inicial: number | null; funcionario_nome: string | null; fechamento: FechoCaixa | null };
 
 export type Sangria = { valor: number; motivo: string; em: string; funcionario_nome: string | null };
+
+/** Pagamento electrónico registado na entrega, à espera de ser conferido */
+export type ComprovativoCaixa = {
+  id: string;
+  pedido_id: string;
+  cliente_nome: string;
+  metodo: string;
+  valor: number;
+  referencia: string;
+  caminho: string;
+  estado: 'por_conferir' | 'conferido' | 'rejeitado';
+  nota: string | null;
+  registado_por: string | null;
+  criado_em: string;
+};
 
 export type ResumoCaixa = {
   caixa_id: string;
@@ -144,6 +162,11 @@ export type ResumoCaixa = {
   lista_sangrias: Sangria[];
   esperado: number;
   aberta_por: string | null;
+  electronico: number;
+  comprovativos: ComprovativoCaixa[];
+  por_conferir: number;
+  rejeitados: number;
+  valor_rejeitado: number;
 };
 
 export type Cozinha = {

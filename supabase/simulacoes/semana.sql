@@ -143,6 +143,11 @@ begin
         parc := case when apagar <= 0 then '[]'::jsonb
                      when random() < 0.7 then jsonb_build_array(jsonb_build_object('metodo', 'Dinheiro', 'valor', apagar))
                      else jsonb_build_array(jsonb_build_object('metodo', 'Multicaixa Express', 'valor', apagar)) end;
+        -- pagamento electrónico: o estafeta escreve a referência e fotografa o comprovativo
+        if parc <> '[]'::jsonb and parc -> 0 ->> 'metodo' <> 'Dinheiro' then
+          insert into storage.objects (bucket_id, name) values ('comprovativos', pid || '/talao.jpg');
+          parc := jsonb_build_array((parc -> 0) || jsonb_build_object('referencia', 'SIM-' || pid, 'comprovativo', pid || '/talao.jpg'));
+        end if;
         perform mudar_estado_pedido(pid, 'entregue_pago', null, cx, parc);
         execute 'reset role';
         if random() < 0.45 then
@@ -158,11 +163,15 @@ begin
     -- 18:00 fecham as caixas (na quarta faltam 500 Kz na Alexandra)
     perform testes.entrar_funcionario(g_a); perform set_config('role', 'authenticated', true);
     res := resumo_caixa(cx_a);
+    -- o gerente confere os pagamentos electrónicos com o extracto antes de fechar
+    perform conferir_comprovativo(k.id, true) from comprovativos_pagamento k where k.caixa_id = cx_a and k.estado = 'por_conferir';
     perform fechar_caixa(cx_a, (res ->> 'esperado')::numeric - case when d = 2 then 500 else 0 end,
                          case when d = 2 then 'Faltaram 500 Kz' end);
     execute 'reset role';
     perform testes.entrar_funcionario(g_k); perform set_config('role', 'authenticated', true);
     res := resumo_caixa(cx_k);
+    -- o gerente confere os pagamentos electrónicos com o extracto antes de fechar
+    perform conferir_comprovativo(k.id, true) from comprovativos_pagamento k where k.caixa_id = cx_k and k.estado = 'por_conferir';
     perform fechar_caixa(cx_k, (res ->> 'esperado')::numeric, null);
     execute 'reset role';
 

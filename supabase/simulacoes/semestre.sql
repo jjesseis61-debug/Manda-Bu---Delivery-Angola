@@ -2,7 +2,8 @@
 -- termina com uma excepção: devolve o relatório e desfaz tudo (nenhum dado fica guardado).
 -- Acontecimentos: aumento do preço dos Chocos (dia 60), troca do estafeta da Alexandra (dia 45),
 -- novo bairro Talatona (dia 90), Cozinha do Kilamba pausada uma semana (dias 120–126), uma
--- "embaixadora" com 30 amigos, pacote do mês renovado sempre que acaba, levantamentos mensais.
+-- "embaixadora" com 30 amigos, pacote do mês renovado sempre que acaba, levantamentos mensais;
+-- os pagamentos electrónicos levam referência e foto do comprovativo, conferidos antes do fecho.
 -- Limites conhecidos: o servidor não deixa recuar criado_em, por isso tudo o que conta "esta semana"
 -- pela data de criação (limite semanal do Convida e Ganha, médias de avaliação por período, validade
 -- dos pacotes e expiração das ligações aos 60 dias) vê o semestre inteiro como "agora".
@@ -15,7 +16,7 @@ create temp table difs (caixa uuid, dif numeric);
 grant all on difs to public;
 create temp table recusas (dia int, cozinha uuid, motivo text);
 grant all on recusas to public;
-insert into tap_saida (linha) select plan(16);
+insert into tap_saida (linha) select plan(17);
 select testes.funcionalidade(chave, true) from funcionalidades;
 
 do $sim$
@@ -208,6 +209,11 @@ begin
                      when random() < 0.6 then jsonb_build_array(jsonb_build_object('metodo', 'Dinheiro', 'valor', apagar))
                      when random() < 0.6 then jsonb_build_array(jsonb_build_object('metodo', 'Multicaixa Express', 'valor', apagar))
                      else jsonb_build_array(jsonb_build_object('metodo', 'Unitel Money', 'valor', apagar)) end;
+        -- pagamento electrónico: o estafeta escreve a referência e fotografa o comprovativo
+        if parc <> '[]'::jsonb and parc -> 0 ->> 'metodo' <> 'Dinheiro' then
+          insert into storage.objects (bucket_id, name) values ('comprovativos', pid || '/talao.jpg');
+          parc := jsonb_build_array((parc -> 0) || jsonb_build_object('referencia', 'SIM-' || pid, 'comprovativo', pid || '/talao.jpg'));
+        end if;
         perform mudar_estado_pedido(pid, 'entregue_pago', null, cx, parc);
         execute 'reset role';
         if random() < 0.3 then
@@ -229,6 +235,8 @@ begin
     perform testes.entrar_funcionario(g_a); perform set_config('role', 'authenticated', true);
     res := resumo_caixa(cx_a);
     dif := case when random() < 0.08 then (array[-500, -1000, 200])[1 + floor(random() * 3)::int] else 0 end;
+    -- o gerente confere os pagamentos electrónicos com o extracto antes de fechar
+    perform conferir_comprovativo(k.id, true) from comprovativos_pagamento k where k.caixa_id = cx_a and k.estado = 'por_conferir';
     perform fechar_caixa(cx_a, (res ->> 'esperado')::numeric + dif, case when dif <> 0 then 'Contagem não bate' end);
     execute 'reset role';
     insert into difs values (cx_a, dif);
@@ -236,6 +244,8 @@ begin
       perform testes.entrar_funcionario(g_k); perform set_config('role', 'authenticated', true);
       res := resumo_caixa(cx_k);
       dif := case when random() < 0.08 then -500 else 0 end;
+      -- o gerente confere os pagamentos electrónicos com o extracto antes de fechar
+      perform conferir_comprovativo(k.id, true) from comprovativos_pagamento k where k.caixa_id = cx_k and k.estado = 'por_conferir';
       perform fechar_caixa(cx_k, (res ->> 'esperado')::numeric + dif, case when dif <> 0 then 'Contagem não bate' end);
       execute 'reset role';
       insert into difs values (cx_k, dif);
@@ -348,6 +358,13 @@ insert into tap_saida (linha) select ok(exists (select 1 from json_array_element
 insert into tap_saida (linha) select ok((select valor from sim where chave = 'pagos')::int >= 4
           and (select count(*) from notificacoes_fila where codigo = 'N8') = (select valor from sim where chave = 'pagos')::int,
           'levantamentos mensais aprovados e pagos, cada um com aviso N8');
+insert into tap_saida (linha) select ok((select count(*) from pedidos x, jsonb_array_elements(x.parcelas) p
+             where x.dispositivo_id like 'sim-s%' and p ->> 'metodo' <> 'Dinheiro') > 0
+          and (select count(*) from pedidos x, jsonb_array_elements(x.parcelas) p
+                where x.dispositivo_id like 'sim-s%' and p ->> 'metodo' <> 'Dinheiro')
+              = (select count(*) from comprovativos_pagamento k join pedidos x on x.id = k.pedido_id
+                  where x.dispositivo_id like 'sim-s%' and k.estado = 'conferido'),
+          'cada pagamento electrónico tem referência e foto, conferidos antes do fecho da caixa');
 insert into tap_saida (linha) select ok((select valor from sim where chave = 'ms_comparativo')::int < 3000 and (select valor from sim where chave = 'ms_fila')::int < 1000,
           'relatório do semestre em menos de 3 s e fila do operador em menos de 1 s');
 

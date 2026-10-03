@@ -217,6 +217,13 @@ export default function Carrinho() {
           {orc.motivo_desconto === 'limite_local' && (
             <Text style={{ color: cores.aviso, fontSize: 13 }}>{mensagemCodigo('limite_local')}</Text>
           )}
+          {orc.motivo_desconto === 'pedido_minimo' && (
+            <Text style={{ color: cores.aviso, fontSize: 13 }}>
+              {orc.desconto_subtotal_minimo
+                ? `O desconto de convite é para pedidos a partir de ${formatarKz(orc.desconto_subtotal_minimo)} (sem a taxa de entrega).`
+                : mensagemCodigo('pedido_minimo')}
+            </Text>
+          )}
         </Cartao>
       )}
 

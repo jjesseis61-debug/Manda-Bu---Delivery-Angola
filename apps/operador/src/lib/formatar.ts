@@ -75,7 +75,7 @@ export function telefoneInternacional(texto: string): string | null {
 
 export const nomeMotivo: Record<string, string> = {
   limite_semanal: 'Limite semanal atingido',
-  limite_local: 'Muitos indicados no mesmo local residencial',
+  limite_local: 'Muitos amigos da mesma pessoa no mesmo local residencial',
   numero_pagamento_partilhado: 'Mesmo número de levantamento',
   mesmo_dispositivo: 'Mesmo dispositivo',
 };
@@ -122,6 +122,12 @@ const mensagens: Record<string, string> = {
   caixa_ja_aberta: 'Este posto já tem uma caixa aberta. Fecha-a antes de abrir outra.',
   caixa_fechada: 'Esta caixa já foi fechada.',
   caixa_inexistente: 'Caixa não encontrada.',
+  comprovativo_obrigatorio: 'Tira a foto do comprovativo de cada pagamento electrónico.',
+  referencia_repetida: 'Esta referência já foi usada noutro pedido. Confirma o comprovativo.',
+  metodo_invalido: 'Forma de pagamento inválida.',
+  comprovativos_por_conferir: 'Confere os pagamentos electrónicos antes de fechar a caixa.',
+  comprovativo_inexistente: 'Comprovativo não encontrado.',
+  nota_obrigatoria: 'Escreve porque rejeitas este pagamento.',
   posto_invalido: 'Escreve o nome do posto (ex.: Balcão).',
   valor_invalido: 'Valor inválido.',
   cozinha_inexistente: 'Cozinha não encontrada.',

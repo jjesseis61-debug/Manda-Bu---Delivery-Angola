@@ -1,14 +1,15 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Text } from 'react-native';
+import { Image, Text, View } from 'react-native';
 
 import { Guarda } from '@/components/Guarda';
 import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Escolha, Linha, Paragrafo, Subtitulo } from '@/components/ui';
-import { abrirCaixa, caixasRecentes, fecharCaixa, lerCozinhas, registarSangria, resumoCaixa } from '@/lib/api';
+import { abrirCaixa, caixasRecentes, conferirComprovativo, fecharCaixa, lerCozinhas, registarSangria, resumoCaixa } from '@/lib/api';
 import { formatarData, formatarKz, mensagemErro } from '@/lib/formatar';
+import { enderecoComprovativo } from '@/lib/fotos';
 import { useSessao } from '@/lib/sessao';
-import { cores } from '@/lib/tema';
-import type { CaixaGestao, Cozinha, ResumoCaixa } from '@/lib/tipos';
+import { cores, espaco } from '@/lib/tema';
+import type { CaixaGestao, ComprovativoCaixa, Cozinha, ResumoCaixa } from '@/lib/tipos';
 
 type Accao = { caixaId: string; tipo: 'sangria' | 'fecho' } | null;
 
@@ -27,6 +28,8 @@ export default function CaixaEcra() {
   const [erro, setErro] = useState<string | null>(null);
   const [sucesso, setSucesso] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
+  const [fotos, setFotos] = useState<Record<string, string>>({});
+  const [rejeitar, setRejeitar] = useState<{ id: string; nota: string } | null>(null);
 
   const carregar = useCallback(() => {
     Promise.all([caixasRecentes(), lerCozinhas()])
@@ -50,6 +53,7 @@ export default function CaixaEcra() {
       await f();
       setAbrir(null);
       setAccao(null);
+      setRejeitar(null);
       setValor('');
       setTexto('');
       setSucesso(mensagem);
@@ -64,6 +68,71 @@ export default function CaixaEcra() {
   const nomeCozinha = (id: string) => cozinhas.find((c) => c.id === id)?.nome.trim() ?? '';
   const abertas = caixas?.filter((c) => !c.fechamento) ?? [];
   const fechadas = caixas?.filter((c) => c.fechamento).slice(0, 10) ?? [];
+
+  async function verFoto(k: ComprovativoCaixa) {
+    const url = await enderecoComprovativo(k.caminho).catch(() => null);
+    if (url) setFotos((f) => ({ ...f, [k.id]: url }));
+    else setErro('Não foi possível abrir a foto do comprovativo.');
+  }
+
+  /** Pagamento electrónico: referência, foto e conferência (antes de fechar a caixa) */
+  function comprovativo(k: ComprovativoCaixa) {
+    const aRejeitar = rejeitar?.id === k.id;
+    return (
+      <View key={k.id} style={{ gap: espaco.xs, borderTopWidth: 1, borderTopColor: cores.contorno, paddingTop: espaco.s }}>
+        <Linha esquerda={`${k.metodo} · ${k.cliente_nome}`} direita={formatarKz(k.valor)} />
+        <Text>Referência: {k.referencia}</Text>
+        <Text style={{ color: cores.textoSuave }}>
+          {formatarData(k.criado_em, true)}
+          {k.registado_por ? ` · ${k.registado_por}` : ''}
+        </Text>
+        {k.estado !== 'por_conferir' && (
+          <Text style={{ fontWeight: '700', color: k.estado === 'conferido' ? cores.sucesso : cores.erro }}>
+            {k.estado === 'conferido' ? 'Conferido' : `Rejeitado: ${k.nota ?? ''}`}
+          </Text>
+        )}
+        {fotos[k.id] ? (
+          <Image
+            source={{ uri: fotos[k.id] }}
+            accessibilityLabel={`Comprovativo ${k.referencia}`}
+            style={{ width: '100%', height: 260, borderRadius: 8, backgroundColor: cores.contorno }}
+            resizeMode="contain"
+          />
+        ) : (
+          <Botao titulo="Ver foto do comprovativo" variante="texto" aoCarregar={() => verFoto(k)} />
+        )}
+        {k.estado === 'por_conferir' &&
+          (aRejeitar ? (
+            <>
+              <Campo
+                rotulo="Porque rejeitas? (ex.: não aparece no extracto)"
+                value={rejeitar.nota}
+                maxLength={300}
+                onChangeText={(t) => setRejeitar({ id: k.id, nota: t })}
+              />
+              <Botao
+                titulo="Rejeitar pagamento"
+                variante="secundario"
+                desactivado={!rejeitar.nota.trim()}
+                aCarregar={ocupado}
+                aoCarregar={() => correr(() => conferirComprovativo(k.id, false, rejeitar.nota.trim()), 'Pagamento rejeitado.')}
+              />
+              <Botao titulo="Cancelar" variante="texto" aoCarregar={() => setRejeitar(null)} />
+            </>
+          ) : (
+            <View style={{ flexDirection: 'row', gap: espaco.s }}>
+              <Botao
+                titulo="Confere"
+                variante="leve"
+                aCarregar={ocupado}
+                aoCarregar={() => correr(() => conferirComprovativo(k.id, true), 'Pagamento conferido.')}
+              />
+              <Botao titulo="Rejeitar…" variante="texto" aoCarregar={() => setRejeitar({ id: k.id, nota: '' })} />
+            </View>
+          ))}
+      </View>
+    );
+  }
 
   function cartaoAberta(c: CaixaGestao) {
     const r = resumos[c.id];
@@ -90,6 +159,16 @@ export default function CaixaEcra() {
                 Sangria {formatarKz(s.valor)}: {s.motivo}
               </Text>
             ))}
+            {r.comprovativos.length > 0 && (
+              <>
+                <Linha esquerda={`Pagamentos electrónicos (${r.comprovativos.length})`} direita={formatarKz(r.electronico)} />
+                <Text style={{ color: cores.textoSuave }}>
+                  Não entram na caixa: confere cada um com o extracto (Multicaixa, TPA, Unitel Money) antes de fechar.
+                </Text>
+                {r.por_conferir > 0 && <Aviso>Faltam conferir {r.por_conferir}.</Aviso>}
+                {r.comprovativos.map(comprovativo)}
+              </>
+            )}
           </>
         ) : (
           <ACarregar />
@@ -120,9 +199,10 @@ export default function CaixaEcra() {
               </Aviso>
             )}
             <Campo rotulo="Observação (opcional)" value={texto} onChangeText={setTexto} maxLength={300} />
+            {!!r?.por_conferir && <Aviso tipo="erro">Confere os pagamentos electrónicos antes de fechar a caixa.</Aviso>}
             <Botao
               titulo="Fechar caixa"
-              desactivado={valor === ''}
+              desactivado={valor === '' || !!r?.por_conferir}
               aCarregar={ocupado}
               aoCarregar={() => correr(() => fecharCaixa(c.id, Number(valor), texto.trim() || null), 'Caixa fechada.')}
             />
@@ -214,6 +294,12 @@ export default function CaixaEcra() {
               </Text>
               <Linha esquerda="Devia estar" direita={formatarKz(f.esperado)} />
               <Linha esquerda="Contado" direita={formatarKz(f.contado)} />
+              {!!f.rejeitados && (
+                <Text style={{ color: cores.erro }}>
+                  {f.rejeitados} pagamento{f.rejeitados > 1 ? 's' : ''} electrónico{f.rejeitados > 1 ? 's' : ''} rejeitado
+                  {f.rejeitados > 1 ? 's' : ''} ({formatarKz(f.valor_rejeitado ?? 0)})
+                </Text>
+              )}
               <Text style={{ fontWeight: '700', color: f.diferenca === 0 ? cores.sucesso : cores.erro }}>
                 {f.diferenca === 0
                   ? 'Caixa certa'

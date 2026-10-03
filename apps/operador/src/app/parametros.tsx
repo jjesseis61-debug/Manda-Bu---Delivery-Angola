@@ -28,6 +28,7 @@ const CAMPOS: { grupo: string; chaves: [string, string][] }[] = [
       ['raio_mesmo_local_m', 'Raio do mesmo local (m)'],
       ['max_indicados_por_local', 'Máx. indicados por local'],
       ['max_descontos_por_local', 'Máx. descontos por local'],
+      ['desconto_subtotal_minimo', 'Pedido mínimo para o desconto (Kz, 0 = sem mínimo)'],
     ],
   },
   {

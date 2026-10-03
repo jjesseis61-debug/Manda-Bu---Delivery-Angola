@@ -8,14 +8,17 @@ import { supabase } from './supabase';
 export const BUCKET_FOTOS_PRATOS = 'fotos-pratos';
 const LARGURA_MAXIMA = 1200;
 
-/** Abre a câmara ou a galeria (recorte quadrado 4:3) e devolve a foto reduzida, ou null se cancelar */
-export async function escolherFoto(origem: 'camera' | 'galeria'): Promise<string | null> {
+/** Abre a câmara ou a galeria (recorte 4:3) e devolve a foto reduzida, ou null se cancelar.
+ *  Sem recorte (comprovativos): a imagem inteira, para se ler a referência e o valor. */
+export async function escolherFoto(origem: 'camera' | 'galeria', recortar = true): Promise<string | null> {
   const permissao =
     origem === 'camera'
       ? await ImagePicker.requestCameraPermissionsAsync()
       : await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (!permissao.granted) throw new Error('permissao_fotos');
-  const opcoes: ImagePicker.ImagePickerOptions = { mediaTypes: ['images'], allowsEditing: true, aspect: [4, 3], quality: 1 };
+  const opcoes: ImagePicker.ImagePickerOptions = recortar
+    ? { mediaTypes: ['images'], allowsEditing: true, aspect: [4, 3], quality: 1 }
+    : { mediaTypes: ['images'], allowsEditing: false, quality: 1 };
   const r = origem === 'camera' ? await ImagePicker.launchCameraAsync(opcoes) : await ImagePicker.launchImageLibraryAsync(opcoes);
   if (r.canceled || !r.assets[0]) return null;
   const a = r.assets[0];
@@ -54,4 +57,29 @@ export async function enviarFotoPublica(tipo: 'pratos' | 'cozinhas', id: string,
 export async function apagarFotoPublica(url: string | null | undefined): Promise<void> {
   const caminho = caminhoDoEndereco(url);
   if (caminho) await supabase.storage.from(BUCKET_FOTOS_PRATOS).remove([caminho]).then(() => undefined, () => undefined);
+}
+
+// ---------------------------------------------------------------- comprovativos de pagamento
+// Bucket privado `comprovativos`: <pedido_id>/<data>.jpg. Envia quem entrega; vê quem confere a caixa.
+export const BUCKET_COMPROVATIVOS = 'comprovativos';
+
+export function caminhoComprovativo(pedidoId: string, agora: Date = new Date(), n = 0): string {
+  return `${pedidoId}/${agora.getTime()}${n ? `-${n}` : ''}.jpg`;
+}
+
+/** Envia a foto do comprovativo de um pedido e devolve o caminho no bucket (vai na parcela) */
+export async function enviarComprovativo(pedidoId: string, uri: string, n = 0): Promise<string> {
+  const caminho = caminhoComprovativo(pedidoId, new Date(), n);
+  const dados = await (await fetch(uri)).arrayBuffer();
+  const { error } = await supabase.storage
+    .from(BUCKET_COMPROVATIVOS)
+    .upload(caminho, dados, { contentType: 'image/jpeg', upsert: false });
+  if (error) throw error;
+  return caminho;
+}
+
+/** Endereço temporário (10 min) para ver a foto de um comprovativo */
+export async function enderecoComprovativo(caminho: string): Promise<string | null> {
+  const { data } = await supabase.storage.from(BUCKET_COMPROVATIVOS).createSignedUrl(caminho, 600);
+  return data?.signedUrl ?? null;
 }

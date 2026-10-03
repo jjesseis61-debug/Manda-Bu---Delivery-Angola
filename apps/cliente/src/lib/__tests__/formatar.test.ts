@@ -108,6 +108,7 @@ describe('mensagens de erro', () => {
   it('traduz os códigos do servidor', () => {
     expect(mensagemCodigo('proprio_codigo')).toBe('Não podes usar o teu próprio código.');
     expect(mensagemCodigo('limite_local')).toBe('Este convite já foi usado o número máximo de vezes nesta morada.');
+    expect(mensagemCodigo('sem_compra_propria')).toBe('Para levantar o saldo, faz primeiro um pedido teu (entregue e pago).');
     expect(mensagemErro({ message: 'item_indisponivel' })).toBe('Um dos pratos já não está disponível. Actualiza o carrinho.');
   });
   it('tem uma mensagem genérica para erros desconhecidos', () => {

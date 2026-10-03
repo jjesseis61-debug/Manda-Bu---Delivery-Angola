@@ -42,8 +42,11 @@ select ok(testes.v('e_estafeta') like '42501:%', 'sem vendas.registar não abre 
 
 -- Dinheiro que entra: pedido pago com parcela Dinheiro + Multicaixa, pacote pago na loja
 select testes.def('ped', testes.pedido(testes.u('ana')));
+insert into storage.objects (bucket_id, name) values ('comprovativos', testes.v('ped') || '/mcx.jpg');
 update pedidos set caixa_id = testes.u('cx'), estado = 'entregue_pago',
-       parcelas = '[{"metodo":"Dinheiro","valor":2000},{"metodo":"Multicaixa Express","valor":1000}]'
+       parcelas = jsonb_build_array(jsonb_build_object('metodo', 'Dinheiro', 'valor', 2000),
+                                    jsonb_build_object('metodo', 'Multicaixa Express', 'valor', 1000,
+                                                       'referencia', 'MCX 7781', 'comprovativo', testes.v('ped') || '/mcx.jpg'))
  where id = testes.u('ped');
 with p as (insert into pacotes (nome, refeicoes, refeicoes_oferta, valor_refeicao, preco, validade_dias, pausa_max_dias)
            values ('Almoço do Mês', 20, 2, 2000, 40000, 30, 5) returning id)
@@ -66,9 +69,10 @@ select is(testes.v('res')::jsonb -> 'dinheiro_vendas', '2000'::jsonb, 'o caixa s
 select is((testes.v('res')::jsonb ->> 'esperado')::numeric, 45500::numeric,
           'esperado = troco 5000 + dinheiro 2000 + pacote na loja 40000 − sangria 1500');
 
--- Fecho
+-- Fecho (o pagamento por Multicaixa é conferido antes)
 select testes.entrar_funcionario(testes.u('caixa_f'));
 set local role authenticated;
+select conferir_comprovativo((select id from comprovativos_pagamento where pedido_id = testes.u('ped')), true);
 select testes.def('fecho', fechar_caixa(testes.u('cx'), 45000, 'Faltam 500'));
 select testes.def('e_depois', testes.erro(format($$select registar_sangria(%L, 100, 'x')$$, testes.v('cx'))));
 select testes.def('e_refechar', testes.erro(format($$select fechar_caixa(%L, 1)$$, testes.v('cx'))));

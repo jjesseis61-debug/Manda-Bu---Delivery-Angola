@@ -130,6 +130,7 @@ const mensagens: Record<string, string> = {
   limite_local: 'Este convite já foi usado o número máximo de vezes nesta morada.',
   desconto_em_curso: 'O desconto já está num pedido em curso.',
   desconto_usado: 'O desconto de convite já foi usado.',
+  pedido_minimo: 'O desconto de convite é para pedidos a partir do valor mínimo.',
   // registo
   nome_invalido: 'Escreve o teu nome.',
   nif_obrigatorio: 'Para empresas, o NIF é obrigatório.',
@@ -159,6 +160,7 @@ const mensagens: Record<string, string> = {
   // levantamentos (6.7)
   abaixo_minimo: 'O valor está abaixo do mínimo para levantar.',
   saldo_insuficiente: 'Não tens saldo suficiente.',
+  sem_compra_propria: 'Para levantar o saldo, faz primeiro um pedido teu (entregue e pago).',
   metodo_invalido: 'Escolhe Multicaixa Express ou Unitel Money.',
   numero_invalido: 'Número de telefone inválido.',
   token_invalido: 'Não foi possível activar as notificações.',

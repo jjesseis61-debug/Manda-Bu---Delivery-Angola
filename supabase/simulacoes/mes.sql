@@ -157,6 +157,11 @@ begin
                      when random() < 0.65 then jsonb_build_array(jsonb_build_object('metodo', 'Dinheiro', 'valor', apagar))
                      when random() < 0.7 then jsonb_build_array(jsonb_build_object('metodo', 'Multicaixa Express', 'valor', apagar))
                      else jsonb_build_array(jsonb_build_object('metodo', 'Unitel Money', 'valor', apagar)) end;
+        -- pagamento electrónico: o estafeta escreve a referência e fotografa o comprovativo
+        if parc <> '[]'::jsonb and parc -> 0 ->> 'metodo' <> 'Dinheiro' then
+          insert into storage.objects (bucket_id, name) values ('comprovativos', pid || '/talao.jpg');
+          parc := jsonb_build_array((parc -> 0) || jsonb_build_object('referencia', 'SIM-' || pid, 'comprovativo', pid || '/talao.jpg'));
+        end if;
         perform mudar_estado_pedido(pid, 'entregue_pago', null, cx, parc);
         execute 'reset role';
         if random() < 0.35 then
@@ -181,12 +186,16 @@ begin
     perform testes.entrar_funcionario(g_a); perform set_config('role', 'authenticated', true);
     res := resumo_caixa(cx_a);
     dif := case when random() < 0.1 then (array[-500, -1000, 200])[1 + floor(random() * 3)::int] else 0 end;
+    -- o gerente confere os pagamentos electrónicos com o extracto antes de fechar
+    perform conferir_comprovativo(k.id, true) from comprovativos_pagamento k where k.caixa_id = cx_a and k.estado = 'por_conferir';
     perform fechar_caixa(cx_a, (res ->> 'esperado')::numeric + dif, case when dif <> 0 then 'Contagem não bate' end);
     execute 'reset role';
     insert into difs values (cx_a, dif);
     perform testes.entrar_funcionario(g_k); perform set_config('role', 'authenticated', true);
     res := resumo_caixa(cx_k);
     dif := case when random() < 0.1 then -500 else 0 end;
+    -- o gerente confere os pagamentos electrónicos com o extracto antes de fechar
+    perform conferir_comprovativo(k.id, true) from comprovativos_pagamento k where k.caixa_id = cx_k and k.estado = 'por_conferir';
     perform fechar_caixa(cx_k, (res ->> 'esperado')::numeric + dif, case when dif <> 0 then 'Contagem não bate' end);
     execute 'reset role';
     insert into difs values (cx_k, dif);

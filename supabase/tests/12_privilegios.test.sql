@@ -58,6 +58,8 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 'pacotes_a_minha_volta', 'confirmar_pagamento_pacote', 'reembolsar_pacote', 'adesoes_operador',
                 -- caixa na app do operador
                 'abrir_caixa', 'resumo_caixa', 'registar_sangria', 'fechar_caixa',
+                -- comprovativos dos pagamentos electrónicos (conferir; as outras duas são usadas nas políticas do Storage)
+                'conferir_comprovativo', 'comprovativo_caminho_valido', 'comprovativo_visivel',
                 -- auxiliares usadas em políticas RLS, valores por defeito ou triggers SECURITY INVOKER
                 'cliente_actual', 'cozinha_padrao', 'e_funcionario', 'funcionalidade_activa',
                 'funcionario_actual', 'membro_da_cozinha', 'tem_permissao', 'e_administrador', 'pode_na_cozinha')),

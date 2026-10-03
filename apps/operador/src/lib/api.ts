@@ -270,10 +270,20 @@ export async function fecharCaixa(caixaId: string, contado: number, observacao: 
   ) as FechoCaixa;
 }
 
+/** Confere (ou rejeita, com nota) um pagamento electrónico da caixa */
+export async function conferirComprovativo(id: string, conferido: boolean, nota: string | null = null) {
+  verificar(await supabase.rpc('conferir_comprovativo', { p_comprovativo: id, p_conferido: conferido, p_nota: nota }));
+}
+
 export async function mudarEstado(
   pedidoId: string,
   estado: string,
-  extra: { motivo?: string; caixa?: string; parcelas?: { metodo: string; valor: number }[] } = {},
+  extra: {
+    motivo?: string;
+    caixa?: string;
+    /** Pagamentos electrónicos levam a referência e o caminho da foto do comprovativo */
+    parcelas?: { metodo: string; valor: number; referencia?: string; comprovativo?: string }[];
+  } = {},
 ) {
   verificar(
     await supabase.rpc('mudar_estado_pedido', {
