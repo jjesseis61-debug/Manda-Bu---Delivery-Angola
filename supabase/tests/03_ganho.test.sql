@@ -2,6 +2,8 @@
 begin;
 \ir _helpers.psql
 select plan(30);
+-- os limites por local seguem os valores por defeito (a produção pode ter outros)
+update parametros set max_indicados_por_local = 3, max_descontos_por_local = 3, raio_mesmo_local_m = 25 where unico;
 
 select testes.funcionalidade('indicacao', true);
 select testes.def('ana', testes.cliente('Ana Indicadora'));
