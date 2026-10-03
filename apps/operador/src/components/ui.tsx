@@ -93,7 +93,7 @@ export function Campo(props: TextInputProps & { rotulo: string }) {
   return (
     <View style={{ marginBottom: espaco.m }}>
       <Text style={estilos.rotulo}>{rotulo}</Text>
-      <TextInput placeholderTextColor={cores.textoSuave} style={[estilos.campo, style]} {...resto} />
+      <TextInput accessibilityLabel={rotulo} placeholderTextColor={cores.textoSuave} style={[estilos.campo, style]} {...resto} />
     </View>
   );
 }

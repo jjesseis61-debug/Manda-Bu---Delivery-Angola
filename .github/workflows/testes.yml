@@ -31,6 +31,7 @@ jobs:
           node-version: 22
       - run: node --experimental-strip-types supabase/functions/enviar-notificacoes/envio.test.mjs
       - run: node --experimental-strip-types supabase/functions/ler-documentos/leitura.test.mjs
+      - run: node --experimental-strip-types supabase/functions/analisar-ia/analisar.test.mjs
 
   apps:
     name: App do ${{ matrix.app }}

@@ -4,6 +4,9 @@ import { supabase } from './supabase';
 import type {
   AdesaoOperador,
   AlertaPedido,
+  Estimulo,
+  Reclamacao,
+  RelatorioReclamacoes,
   Conciliacao,
   Extrato,
   FechoDiario,
@@ -545,4 +548,49 @@ export async function guardarZonaEntrega(z: Omit<ZonaEntrega, 'id'> & { id?: str
 export async function apagarZonaEntrega(id: string) {
   const agora = new Date().toISOString();
   verificar(await supabase.from('zonas').update({ deletado_em: agora, atualizado_em: agora }).eq('id', id));
+}
+
+// ---------------------------------------------------------------- reclamações e estímulos
+export async function lerReclamacoes(estado: 'aberta' | 'resolvida' | 'todas'): Promise<Reclamacao[]> {
+  return verificar(await supabase.rpc('reclamacoes_lista', { p_estado: estado })) as Reclamacao[];
+}
+
+export async function decidirReclamacao(
+  id: string,
+  procedente: boolean,
+  resposta: string,
+  categoria: string | null,
+  compensacao: string,
+  valor: number | null,
+) {
+  verificar(
+    await supabase.rpc('decidir_reclamacao', {
+      p_id: id,
+      p_procedente: procedente,
+      p_resposta: resposta,
+      p_categoria: categoria,
+      p_compensacao: compensacao,
+      p_valor: valor,
+    }),
+  );
+}
+
+export async function relatorioReclamacoes(ano: number, mes: number): Promise<RelatorioReclamacoes> {
+  return verificar(await supabase.rpc('relatorio_reclamacoes', { p_ano: ano, p_mes: mes })) as RelatorioReclamacoes;
+}
+
+export async function pedirNovaAnalise(tipo: 'reclamacao' | 'estimulo', id: string) {
+  verificar(await supabase.rpc('pedir_nova_analise', { p_tipo: tipo, p_id: id }));
+}
+
+export async function gerarEstimulos(ano: number, mes: number): Promise<number> {
+  return verificar(await supabase.rpc('gerar_estimulos', { p_ano: ano, p_mes: mes })) as number;
+}
+
+export async function estimulosDoMes(ano: number, mes: number): Promise<Estimulo[]> {
+  return verificar(await supabase.rpc('estimulos_do_mes', { p_ano: ano, p_mes: mes })) as Estimulo[];
+}
+
+export async function decidirEstimulo(id: string, aprovar: boolean, bonus: number | null, mensagem: string | null) {
+  verificar(await supabase.rpc('decidir_estimulo', { p_id: id, p_aprovar: aprovar, p_bonus: bonus, p_mensagem: mensagem }));
 }

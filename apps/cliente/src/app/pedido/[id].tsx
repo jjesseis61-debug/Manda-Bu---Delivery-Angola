@@ -5,12 +5,20 @@ import { Text } from 'react-native';
 import { AcompanharEntrega } from '@/components/AcompanharEntrega';
 import { PartilharCodigo } from '@/components/PartilharCodigo';
 import { PessoasComoTu } from '@/components/PessoasComoTu';
-import { ACarregar, Aviso, Botao, Cartao, Ecra, Linha, Paragrafo, Subtitulo } from '@/components/ui';
-import { atrasoDoPedido, avaliacaoPermitida, cancelarPedido, lerPedido, minhaAvaliacao } from '@/lib/api';
+import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Linha, Paragrafo, Subtitulo } from '@/components/ui';
+import {
+  atrasoDoPedido,
+  avaliacaoPermitida,
+  cancelarPedido,
+  fazerReclamacao,
+  lerPedido,
+  minhaAvaliacao,
+  minhasReclamacoes,
+} from '@/lib/api';
 import { formatarKz, mensagemErro, nomeEstadoPedido } from '@/lib/formatar';
 import { useSessao } from '@/lib/sessao';
 import { cores } from '@/lib/tema';
-import type { AtrasoPedido, Pedido } from '@/lib/tipos';
+import type { AtrasoPedido, MinhaReclamacao, Pedido } from '@/lib/tipos';
 
 /** Estado do pedido; com fim=1 é o ecrã de fim de pedido (C6) */
 export default function PedidoDetalhe() {
@@ -22,6 +30,10 @@ export default function PedidoDetalhe() {
   const [aCancelar, setACancelar] = useState(false);
   const [avaliacao, setAvaliacao] = useState<{ estrelas: number } | 'pode' | null>(null);
   const [atraso, setAtraso] = useState<AtrasoPedido | null>(null);
+  const [reclamacoes, setReclamacoes] = useState<MinhaReclamacao[]>([]);
+  const [reclamar, setReclamar] = useState<string | null>(null);
+  const [aEnviar, setAEnviar] = useState(false);
+  const [erroReclamacao, setErroReclamacao] = useState<string | null>(null);
 
   const carregar = useCallback(() => {
     lerPedido(String(id))
@@ -32,6 +44,7 @@ export default function PedidoDetalhe() {
         } else {
           setAtraso(null);
         }
+        if (p) setReclamacoes(await minhasReclamacoes(p.id).catch(() => []));
         if (p?.estado === 'entregue_pago' && ligada('avaliacoes')) {
           const minha = await minhaAvaliacao(p.id);
           setAvaliacao(minha ?? ((await avaliacaoPermitida(p.id)) ? 'pode' : null));
@@ -43,6 +56,26 @@ export default function PedidoDetalhe() {
 
   if (erro) return <Ecra><Aviso tipo="erro">{erro}</Aviso></Ecra>;
   if (!pedido) return <ACarregar />;
+
+  const podeReclamar =
+    pedido.estado !== 'pendente' &&
+    Date.now() - new Date(pedido.criado_em).getTime() < 7 * 24 * 3600 * 1000 &&
+    !reclamacoes.some((r) => r.origem === 'cliente');
+
+  async function enviarReclamacao() {
+    if (!pedido || reclamar === null) return;
+    setAEnviar(true);
+    setErroReclamacao(null);
+    try {
+      await fazerReclamacao(pedido.id, reclamar.trim());
+      setReclamar(null);
+      setReclamacoes(await minhasReclamacoes(pedido.id));
+    } catch (e) {
+      setErroReclamacao(mensagemErro(e));
+    } finally {
+      setAEnviar(false);
+    }
+  }
 
   const total = pedido.subtotal + pedido.taxa_entrega - pedido.desconto_indicacao;
   const fimDePedido = fim === '1';
@@ -106,6 +139,37 @@ export default function PedidoDetalhe() {
         <Paragrafo suave>
           A tua avaliação: <Text style={{ color: cores.destaque }}>{'★'.repeat(avaliacao.estrelas)}</Text>
         </Paragrafo>
+      )}
+
+      {/* Reclamações: o cliente conta o que aconteceu; a cozinha responde (N22) */}
+      {reclamacoes.map((r) => (
+        <Cartao key={r.id}>
+          <Subtitulo>A tua reclamação</Subtitulo>
+          {r.texto && <Paragrafo>{r.texto}</Paragrafo>}
+          {r.estado === 'resolvida' && r.resposta ? (
+            <Paragrafo>Resposta: {r.resposta}</Paragrafo>
+          ) : (
+            <Paragrafo suave>Recebemos. A cozinha vai ver o que aconteceu e responde-te em breve.</Paragrafo>
+          )}
+        </Cartao>
+      ))}
+      {podeReclamar && reclamar === null && (
+        <Botao titulo="Tenho uma reclamação" variante="texto" aoCarregar={() => setReclamar('')} />
+      )}
+      {reclamar !== null && (
+        <Cartao>
+          <Campo
+            rotulo="O que correu mal?"
+            value={reclamar}
+            onChangeText={setReclamar}
+            maxLength={500}
+            multiline
+            placeholder="Por exemplo: faltou o sumo, chegou frio, demorou muito…"
+          />
+          {erroReclamacao && <Aviso tipo="erro">{erroReclamacao}</Aviso>}
+          <Botao titulo="Enviar reclamação" desactivado={reclamar.trim().length < 5} aCarregar={aEnviar} aoCarregar={enviarReclamacao} />
+          <Botao titulo="Cancelar" variante="texto" aoCarregar={() => setReclamar(null)} />
+        </Cartao>
       )}
 
       {pedido.estado === 'pendente' && (

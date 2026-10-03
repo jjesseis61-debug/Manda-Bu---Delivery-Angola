@@ -21,7 +21,9 @@ export type Permissao =
   | 'equipa.reconhecer'
   | 'pacotes.gerir'
   | 'vendas.registar'
-  | 'financas.conferir';
+  | 'financas.conferir'
+  | 'clientes.gerir'
+  | 'equipa.gerir';
 
 export type Painel = {
   custo: number;
@@ -515,3 +517,91 @@ export type AdesaoOperador = {
 
 /** Zona de entrega (bairro): a taxa aplica-se aos pedidos com pontos nesta zona */
 export type ZonaEntrega = { id: string; nome: string; taxa: number; tipo: 'Própria' | 'Terceirizada' | null };
+
+export type FactosReclamacao = {
+  pedido: {
+    feito_as: string;
+    estado: string;
+    itens: { nome: string; qtd: number }[];
+    total_kz: number;
+    hora_prometida: string | null;
+    confirmado_as: string | null;
+    saiu_as: string | null;
+    entregue_as: string | null;
+    minutos_de_atraso_na_entrega: number | null;
+    minutos_ate_entregar: number | null;
+    motivo_cancelamento: string | null;
+  } | null;
+  alertas: { tipo: string; minutos: number; motivo_dado: string | null }[];
+  comprovativo_rejeitado: boolean;
+  cliente: { pedidos_90_dias: number; reclamacoes_90_dias: number; reclamacoes_com_razao_90_dias: number } | null;
+};
+
+export type Reclamacao = {
+  id: string;
+  pedido_id: string;
+  criado_em: string;
+  origem: 'avaliacao' | 'cliente';
+  estrelas: number | null;
+  texto: string | null;
+  cliente_nome: string;
+  cozinha: string | null;
+  estafeta: string | null;
+  estado: 'aberta' | 'resolvida';
+  ia_estado: 'pendente' | 'a_analisar' | 'analisada' | 'indisponivel';
+  ia_categoria: string | null;
+  ia_gravidade: string | null;
+  ia_procedente: 'sim' | 'nao' | 'incerto' | null;
+  ia_fundamento: string | null;
+  ia_resumo: string | null;
+  ia_accao: string | null;
+  ia_resposta: string | null;
+  ia_compensacao: string | null;
+  ia_nota: string | null;
+  procedente: boolean | null;
+  categoria: string | null;
+  resposta: string | null;
+  compensacao: string | null;
+  compensacao_valor: number | null;
+  decidido_por: string | null;
+  decidido_em: string | null;
+  factos: FactosReclamacao;
+};
+
+export type RelatorioReclamacoes = {
+  total: number;
+  abertas: number;
+  procedentes: number;
+  horas_ate_responder: number | null;
+  compensacoes_kz: number;
+  ia_concordou: number;
+  ia_com_opiniao: number;
+  por_categoria: { categoria: string; total: number; procedentes: number }[];
+  por_cozinha: { cozinha: string | null; total: number; procedentes: number }[];
+  por_estafeta: { estafeta: string; total: number; procedentes: number }[];
+};
+
+export type MetricasEstimulo = Record<string, number | null>;
+
+export type Estimulo = {
+  id: string;
+  tipo: 'funcionario' | 'cliente';
+  nome: string;
+  cargo: string | null;
+  metricas: { mes: MetricasEstimulo; anterior: MetricasEstimulo };
+  foco: string | null;
+  conquista: string | null;
+  modelo: string | null;
+  meta: { metrica: string; valor: number } | null;
+  meta_anterior: { metrica: string; valor: number; atingida: boolean } | null;
+  mensagem: string;
+  ia_estado: 'pendente' | 'a_analisar' | 'analisada' | 'indisponivel';
+  ia_mensagem: string | null;
+  ia_nota: string | null;
+  bonus_sugerido: number;
+  bonus: number | null;
+  mensagem_final: string | null;
+  estado: 'proposto' | 'aprovado' | 'descartado';
+  decidido_por: string | null;
+  decidido_em: string | null;
+};

@@ -314,3 +314,14 @@ export type AtrasoPedido = {
   motivo_em: string | null;
   criado_em: string;
 };
+
+export type MinhaReclamacao = {
+  id: string;
+  pedido_id: string;
+  origem: 'avaliacao' | 'cliente';
+  texto: string | null;
+  estado: 'aberta' | 'resolvida';
+  resposta: string | null;
+  criado_em: string;
+  decidido_em: string | null;
+};

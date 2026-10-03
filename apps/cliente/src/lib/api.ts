@@ -4,6 +4,7 @@ import { dispositivoId } from './dispositivo';
 import { supabase } from './supabase';
 import type {
   AtrasoPedido,
+  MinhaReclamacao,
   Amigo,
   AvaliacaoPublica,
   CozinhaParaPedir,
@@ -531,4 +532,13 @@ export async function fecharGrupo(grupoId: string): Promise<void> {
 
 export async function cancelarGrupo(grupoId: string, motivo: string | null): Promise<void> {
   verificar(await supabase.rpc('cancelar_grupo', { p_grupo: grupoId, p_motivo: motivo }));
+}
+
+/** Reclamações do cliente sobre um pedido (o texto, o estado e a resposta da cozinha) */
+export async function minhasReclamacoes(pedidoId: string): Promise<MinhaReclamacao[]> {
+  return verificar(await supabase.rpc('minhas_reclamacoes', { p_pedido: pedidoId })) as MinhaReclamacao[];
+}
+
+export async function fazerReclamacao(pedidoId: string, texto: string): Promise<string> {
+  return verificar(await supabase.rpc('fazer_reclamacao', { p_pedido: pedidoId, p_texto: texto })) as string;
 }

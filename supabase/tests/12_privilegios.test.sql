@@ -66,6 +66,9 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 'fecho_mensal', 'historico_pedido', 'extrato_caminho_valido',
                 -- alertas de pedidos parados ou atrasados
                 'informar_atraso', 'alertas_abertos',
+                -- reclamações (análise automática) e estímulos mensais
+                'fazer_reclamacao', 'minhas_reclamacoes', 'reclamacoes_lista', 'decidir_reclamacao',
+                'relatorio_reclamacoes', 'gerar_estimulos', 'estimulos_do_mes', 'decidir_estimulo', 'pedir_nova_analise',
                 -- auxiliares usadas em políticas RLS, valores por defeito ou triggers SECURITY INVOKER
                 'cliente_actual', 'cozinha_padrao', 'e_funcionario', 'funcionalidade_activa',
                 'funcionario_actual', 'membro_da_cozinha', 'tem_permissao', 'e_administrador', 'pode_na_cozinha')),

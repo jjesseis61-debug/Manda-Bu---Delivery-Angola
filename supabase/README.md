@@ -40,6 +40,9 @@ Aplicadas por esta ordem. **Uma migração já aplicada nunca se edita:** qualqu
 | `20261003152851_seguranca_pagamentos.sql` | Análise de fraude: (1) o limite "mesmo local" conta só os amigos **da mesma pessoa** (vizinhos de prédio convidados por pessoas diferentes já não se bloqueiam); (2) levantar o dinheiro das indicações exige um pedido próprio entregue e pago (`sem_compra_propria`); (3) desconto de convite só a partir de `parametros.desconto_subtotal_minimo` (2 000 Kz; 0 desliga; o orçamento devolve `pedido_minimo`); (4) pagamentos electrónicos na entrega (Multicaixa Express, TPA, Unitel Money, Transferência) exigem referência e foto do comprovativo (bucket privado `comprovativos`, tabela `comprovativos_pagamento`, referência única por método), e o gerente confere ou rejeita cada um (`conferir_comprovativo`) antes de `fechar_caixa`; formas de pagamento fora da lista são recusadas. | aplicada |
 | `20261003170433_conferencia_ia.sql` | Conferência financeira: leitura automática (Claude) da foto de cada comprovativo (`ia_estado`: confere / diverge / ilegível / indisponível — só um aviso; o gerente confere sempre); extratos do banco, Multicaixa ou Unitel Money (bucket privado `extratos`, tabelas `extratos` e `extrato_movimentos`) lidos automaticamente ou escritos à mão; conciliação (referência, ou valor e data ±2 dias) com comprovativos sem extrato e entradas sem comprovativo; `fecho_diario`, `fecho_mensal` (com sinais por funcionário) e `historico_pedido` (quem fez cada passo). Permissão nova `financas.conferir`. | aplicada |
 | `20261003172236_alertas_pedidos.sql` | Alertas dos pedidos (job `mb_alertas_pedidos`, de minuto a minuto): por confirmar há mais de `alerta_confirmacao_min` (7) → N18 aos gerentes da cozinha e ao administrador principal; passou a hora prometida há mais de `alerta_atraso_min` (5) → N19 aos gerentes e ao estafeta e N20 ao cliente. `informar_atraso` (gerente da cozinha ou estafeta que leva o pedido) diz ao cliente o motivo e a nova estimativa; `alertas_abertos` para o ecrã das entregas. Tabela `alertas_pedido` (um por pedido e tipo), tudo na auditoria. | aplicada |
+| `20261003201550_reclamacoes.sql` | Reclamações: avaliação com até `reclamacao_estrelas_max` (2) estrelas ou o botão "Tenho uma reclamação" no pedido (`fazer_reclamacao`, até 7 dias, uma por pedido). N21 aos gerentes; `factos_reclamacao` junta horas, atraso real, alertas, itens e histórico do cliente (sem nomes) para a análise automática; `reclamacoes_lista`, `decidir_reclamacao` (resposta N22 e compensação) e `relatorio_reclamacoes` (por motivo, cozinha, estafeta e acerto da análise). O cliente só vê texto, estado e resposta (`minhas_reclamacoes`). | aplicada |
+| `20261003201735_estimulos_mensais.sql` | Estímulos mensais (Albert Bandura): `metricas_funcionario` (entregas, % a horas, estrelas, vendas ao balcão, confirmações, reclamações com razão, comprovativos rejeitados) e `metricas_cliente`; `gerar_estimulos` compara cada pessoa consigo própria, dá uma meta próxima, o melhor registo da equipa como modelo e o bónus sugerido só se a meta anterior foi atingida (`estimulo_bonus_meta`, `estimulo_premio_cliente`, `estimulo_top_clientes`). `decidir_estimulo` (o administrador aprova, edita bónus e mensagem) → N23. `reservar_analises` / `registar_analise_reclamacao` / `registar_mensagem_estimulo` para a Edge Function `analisar-ia`; `agendar_analises(url)`. | aplicada; `agendar_analises(...)` corrido |
+| `20261003201823_avisos_reclamacoes_estimulos.sql` | Textos e validade de N21 a N23; job `mb_estimulos_mensais` (dia 1, 07:00 de Luanda) gera as propostas do mês que acabou. | aplicada |
 
 Os números de versão dos ficheiros são os que o Supabase registou ao aplicar, para `supabase migration list` e
 `supabase db push` não voltarem a aplicá-las.
@@ -64,6 +67,7 @@ Os jobs respeitam os interruptores: com tudo desligado não enfileiram nada.
 | Função | O que faz | Configuração |
 |---|---|---|
 | `functions/enviar-notificacoes` | Envia a fila (clientes N2–N11; equipa N12) pelo push da Expo, um pedido por app (a Expo recusa tokens de projectos diferentes no mesmo pedido); desactiva tokens rejeitados; marca como enviadas | Publicada sem verificação de JWT, com autenticação própria: segredo `ENVIO_SEGREDO` (obrigatório) no cabeçalho `x-envio-segredo`. Agendar com `select agendar_envio_notificacoes('<url da função>', '<segredo>');` depois de activar `pg_cron` e `pg_net`. |
+| `functions/analisar-ia` | Analisa com o Claude as reclamações (categoria, gravidade, se os factos dão razão, resposta sugerida) e escreve a mensagem pessoal dos estímulos (Bandura) | Publicada sem verificação de JWT, com o mesmo segredo do envio. Usa o mesmo `ANTHROPIC_API_KEY`; sem ele o gerente decide sem análise e usa-se o texto base. Agendada com `select agendar_analises('<url da função>');` (de 2 em 2 minutos) |
 | `functions/ler-documentos` | Lê com o Claude as fotos dos comprovativos (valor, referência, data) e os extratos (entradas do período); o servidor compara e concilia | Publicada sem verificação de JWT, com o mesmo segredo do envio (`x-envio-segredo`). Segredo `ANTHROPIC_API_KEY` nas Edge Functions; sem ele fica tudo para a conferência à mão. Agendada com `select agendar_leitura('<url da função>');` |
 
 ## Testes
@@ -112,6 +116,7 @@ base de dados.
 | `38_seguranca_pagamentos.test.sql` | quem envia a foto do comprovativo; sem referência, sem foto ou com a foto de outro pedido → recusado; método inventado recusado; referência repetida recusada; resumo da caixa com os comprovativos; fecho bloqueado até conferir; rejeitar exige nota; levantamento sem compra própria recusado; desconto abaixo do mínimo; limite por morada contado por quem convida |
 | `39_conferencia_ia.test.sql` | reserva da leitura (sem ler duas vezes); confere / diverge / 3 falhas → indisponível; só o serviço regista leituras; extrato: permissões, ficheiro uma vez, leitura e conciliação por referência e por valor; entradas à mão, ligação única, apagar com motivo; fecho do dia (avisos com quem registou) e do mês (por funcionário); histórico do pedido e quem o pode ver |
 | `40_alertas_pedidos.test.sql` | job dá cada alerta uma vez; N18 só aos gerentes da cozinha do pedido, com quem, o quê e há quanto tempo; N19 ao gerente e ao estafeta, N20 à cliente; pedido entregue ou no prazo sem alerta; motivo pelo gerente ou pelo estafeta do pedido (não por outra cozinha); quem vê os alertas; auditoria |
+| `41_reclamacoes_estimulos.test.sql` | avaliação de 1★ vira reclamação e a de 4★ não; botão do pedido (uma vez, só do próprio cliente); N21 só à cozinha do pedido; factos com o atraso real e sem nomes; reserva e falhas da análise; decisão do gerente (só na sua cozinha, uma vez) com N22; relatório do mês; estímulos: mestria, meta atingida e bónus, modelo, meta próxima, clientes que mais compraram; aprovação só pelo administrador, N23, descartado sem aviso, gerar de novo não mexe no aprovado |
 | `33_caixa_gestao.test.sql` | Abre a caixa (uma por posto), quem tem `vendas.registar` vê-a; fora da cozinha ou sem a permissão recusa; o esperado só soma a parcela Dinheiro e os pacotes na loja menos as sangrias; o fecho guarda a diferença; caixa fechada não aceita sangrias, novo fecho nem escrita directa; tudo na auditoria |
 | `15_app_operador.test.sql` | I3: telefone e ligação dos funcionários, painel (O1), verificação e "Confirmar todos" com N3 (O2), levantamentos (O3), embaixadores (O4), fila de entregas e caixas (E1), auditoria de cozinhas e cardápio (O6) |
 
@@ -170,7 +175,8 @@ base de dados.
 | 38 segurança dos pagamentos e do Convida e Ganha | 27/27 | 27/27 |
 | 39 conferência (leitura automática, extratos, fechos, histórico) | 27/27 | 27/27 |
 | 40 alertas dos pedidos | 18/18 | 17/18 (o n.º 3 difere por desenho: na produção o administrador principal também recebe o N18) |
-| **Total** | **727/727** | |
+| 41 reclamações e estímulos | 34/34 | 34/34 |
+| **Total** | **761/761** | |
 
 Na I2 voltaram a correr no Supabase os testes afectados por cada migração (app do cliente: 06, 08, 09, 12 e 13;
 desconto limitado: 02, 09 e 14); os restantes não dependem delas (e todos passam localmente).
@@ -213,6 +219,15 @@ resultado no servidor, que compara e concilia. **Precisa do segredo `ANTHROPIC_A
 Functions (Supabase → Edge Functions → Secrets). Sem ele, os documentos ficam "leitura automática
 indisponível" e a conferência faz-se à mão na app (Caixa e Conferência). Depois de configurar a chave,
 "Ler de novo" pede outra leitura. Testes: `node --experimental-strip-types supabase/functions/ler-documentos/leitura.test.mjs`.
+
+### `analisar-ia` (reclamações e estímulos)
+
+Corre de 2 em 2 minutos (`agendar_analises(url)`). Para cada reclamação aberta envia ao Claude o texto do
+cliente (como dado, nunca como instruções) e os factos registados pelo servidor, e guarda a sugestão; o
+gerente decide sempre na app (Reclamações). Para cada estímulo proposto pede a mensagem pessoal seguindo
+Bandura (mestria, meta próxima, modelo, elogio concreto, tom calmo), a partir do texto base; o administrador
+aprova e pode editar na app (Estímulos do mês). Mesmo segredo `ANTHROPIC_API_KEY`.
+Testes: `node --experimental-strip-types supabase/functions/analisar-ia/analisar.test.mjs`.
 
 A CI (`.github/workflows/testes.yml`) corre em cada PR a base de dados, a Edge Function e as duas apps.
 

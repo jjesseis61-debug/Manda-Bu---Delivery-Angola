@@ -18,6 +18,7 @@ describe('rotaDaNotificacao', () => {
     expect(rotaDaNotificacao({ codigo: 'N16', pedido_id: 'p1' })).toBe('/pedido/p1');
     expect(rotaDaNotificacao({ codigo: 'N16' })).toBeNull();
     expect(rotaDaNotificacao({ codigo: 'N20', pedido_id: 'p2' })).toBe('/pedido/p2');
+    expect(rotaDaNotificacao({ codigo: 'N22', pedido_id: 'p3' })).toBe('/pedido/p3');
     expect(rotaDaNotificacao({ codigo: 'N14' })).toBe('/pacotes');
   });
 

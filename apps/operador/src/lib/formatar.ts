@@ -218,6 +218,11 @@ const mensagens: Record<string, string> = {
   grupo_em_preparacao: 'O grupo já está em preparação e não pode ser cancelado.',
   pedido_inexistente: 'O pedido já não existe.',
   funcionalidade_inexistente: 'Funcionalidade desconhecida.',
+  reclamacao_inexistente: 'A reclamação já não existe.',
+  reclamacao_decidida: 'Esta reclamação já foi respondida.',
+  resposta_obrigatoria: 'Escreve a resposta ao cliente.',
+  estimulo_inexistente: 'O estímulo já não existe.',
+  estimulo_decidido: 'Este estímulo já foi decidido.',
 };
 
 export function mensagemErro(erro: unknown): string {
@@ -243,3 +248,39 @@ export function componentesParaGuardar(
     .map((l) => ({ produto_id: l.produto_id, quantidade: Number(l.quantidade.replace(',', '.')), unidade: l.unidade.trim() }))
     .filter((l) => l.produto_id && Number.isFinite(l.quantidade) && l.quantidade > 0);
 }
+
+export const nomeCategoria: Record<string, string> = {
+  atraso: 'Atraso',
+  qualidade: 'Qualidade da comida',
+  quantidade: 'Faltou alguma coisa',
+  pedido_errado: 'Pedido errado',
+  estafeta: 'Estafeta',
+  pagamento: 'Pagamento',
+  app: 'App',
+  outro: 'Outro',
+};
+
+export const nomeCompensacao: Record<string, string> = {
+  nenhuma: 'Nenhuma',
+  pedido_desculpa: 'Pedido de desculpa',
+  desconto: 'Desconto no próximo',
+  reembolso_parcial: 'Reembolso parcial',
+  reembolso_total: 'Reembolso total',
+};
+
+/** O que a análise automática achou da reclamação, numa linha */
+export function textoAnalise(r: { ia_estado: string; ia_procedente: string | null; ia_gravidade: string | null; ia_nota: string | null }): string {
+  if (r.ia_estado === 'pendente' || r.ia_estado === 'a_analisar') return 'Análise automática: a analisar…';
+  if (r.ia_estado === 'indisponivel') return `Análise automática indisponível${r.ia_nota ? ` (${r.ia_nota})` : ''}: decide pelos factos.`;
+  const razao = r.ia_procedente === 'sim' ? 'os factos dão razão ao cliente' : r.ia_procedente === 'nao' ? 'os factos não dão razão ao cliente' : 'os factos não chegam para saber';
+  return `Análise automática: ${razao}${r.ia_gravidade ? ` · gravidade ${r.ia_gravidade === 'media' ? 'média' : r.ia_gravidade}` : ''}.`;
+}
+
+/** Nome da métrica dos estímulos */
+export const nomeMetrica: Record<string, string> = {
+  pct_a_horas: '% a horas',
+  entregas: 'entregas',
+  vendas_balcao: 'vendas ao balcão',
+  confirmados: 'pedidos confirmados',
+  pedidos: 'pedidos',
+};
