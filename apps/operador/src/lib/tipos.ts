@@ -20,7 +20,8 @@ export type Permissao =
   | 'avaliacoes.moderar'
   | 'equipa.reconhecer'
   | 'pacotes.gerir'
-  | 'vendas.registar';
+  | 'vendas.registar'
+  | 'financas.conferir';
 
 export type Painel = {
   custo: number;
@@ -148,6 +149,150 @@ export type ComprovativoCaixa = {
   nota: string | null;
   registado_por: string | null;
   criado_em: string;
+  /** Leitura automática da foto (só um aviso: quem confere é o gerente) */
+  ia_estado?: EstadoLeitura;
+  ia_valor?: number | null;
+  ia_referencia?: string | null;
+  ia_nota?: string | null;
+};
+
+export type EstadoLeitura = 'pendente' | 'a_ler' | 'confere' | 'diverge' | 'ilegivel' | 'indisponivel';
+
+export type EstadoExtrato = 'aguarda_ficheiro' | 'por_ler' | 'a_ler' | 'lido' | 'ilegivel' | 'indisponivel' | 'manual';
+
+export type Extrato = {
+  id: string;
+  conta: string;
+  periodo_inicio: string;
+  periodo_fim: string;
+  caminho: string | null;
+  tipo_ficheiro: 'pdf' | 'imagem' | null;
+  estado: EstadoExtrato;
+  ia_nota: string | null;
+  criado_em: string;
+};
+
+export type MovimentoExtrato = {
+  id: string;
+  extrato_id: string;
+  data: string;
+  valor: number;
+  referencia: string | null;
+  descricao: string | null;
+  origem: 'ia' | 'manual';
+  comprovativo_id: string | null;
+  ligacao: 'automatica' | 'manual' | null;
+};
+
+export type ComprovativoSemExtrato = {
+  comprovativo_id: string;
+  pedido_id: string;
+  cliente_nome: string;
+  metodo: string;
+  valor: number;
+  referencia: string;
+  dia: string;
+  estado: 'por_conferir' | 'conferido' | 'rejeitado';
+  ia_estado: EstadoLeitura;
+  registado_por: string | null;
+  conferido_por: string | null;
+};
+
+export type MovimentoSemComprovativo = {
+  movimento_id: string;
+  extrato_id: string;
+  conta: string;
+  data: string;
+  valor: number;
+  referencia: string | null;
+  descricao: string | null;
+  origem: 'ia' | 'manual';
+};
+
+export type Conciliacao = {
+  inicio: string;
+  fim: string;
+  encontrados: { comprovativo_id: string; pedido_id: string; valor: number; referencia: string; dia: string; ligacao: string | null }[];
+  comprovativos_sem_extrato: ComprovativoSemExtrato[];
+  aguardam_extrato: number;
+  movimentos_sem_comprovativo: MovimentoSemComprovativo[];
+  totais: { comprovativos: number; encontrados: number; sem_extrato: number; movimentos: number; movimentos_sem_comprovativo: number };
+};
+
+export type AlertaFecho = {
+  tipo: string;
+  caixa_id?: string;
+  posto?: string;
+  comprovativo_id?: string;
+  pedido_id?: string;
+  metodo?: string;
+  valor?: number;
+  referencia?: string;
+  ia_valor?: number | null;
+  ia_referencia?: string | null;
+  quem?: string | null;
+};
+
+export type FechoDiario = {
+  dia: string;
+  caixas: {
+    caixa_id: string;
+    posto: string;
+    cozinha: string;
+    aberta_por: string | null;
+    fechada: boolean;
+    fechada_por: string | null;
+    esperado: number | null;
+    contado: number | null;
+    diferenca: number | null;
+    electronico: number;
+    por_conferir: number;
+    rejeitados: number;
+    ia_alertas: number;
+  }[];
+  pedidos_entregues: number;
+  cancelados: number;
+  vendido: number;
+  electronico: number;
+  diferenca_caixas: number;
+  caixas_abertas: number;
+  alertas: AlertaFecho[];
+};
+
+export type FechoMensal = {
+  ano: number;
+  mes: number;
+  inicio: string;
+  fim: string;
+  dias: { dia: string; pedidos: number; vendido: number; dinheiro: number; electronico: number; diferenca_caixas: number }[];
+  totais: { pedidos: number; vendido: number; dinheiro: number; electronico: number; diferenca_caixas: number; caixas_por_fechar: number };
+  conciliacao: Conciliacao;
+  por_funcionario: {
+    funcionario_id: string;
+    nome: string;
+    comprovativos: number;
+    rejeitados: number;
+    ia_alertas: number;
+    sem_extrato: number;
+    valor_sem_extrato: number;
+    conferiu: number;
+    conferiu_sem_extrato: number;
+    diferenca_caixas: number;
+  }[];
+};
+
+export type EventoPedido = { em: string; acao: string; quem: string | null; detalhe: Record<string, unknown> | null };
+
+export type HistoricoPedido = {
+  pedido_id: string;
+  estado: string;
+  cliente: string | null;
+  cozinha: string | null;
+  entregador: string | null;
+  caixa: string | null;
+  valor: number;
+  parcelas: { metodo: string; valor: number; referencia?: string }[];
+  eventos: EventoPedido[];
 };
 
 export type ResumoCaixa = {

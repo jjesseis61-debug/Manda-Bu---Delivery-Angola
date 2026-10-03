@@ -1,11 +1,11 @@
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Image, Text, View } from 'react-native';
 
 import { Guarda } from '@/components/Guarda';
 import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Escolha, Linha, Paragrafo, Subtitulo } from '@/components/ui';
-import { abrirCaixa, caixasRecentes, conferirComprovativo, fecharCaixa, lerCozinhas, registarSangria, resumoCaixa } from '@/lib/api';
-import { formatarData, formatarKz, mensagemErro } from '@/lib/formatar';
+import { abrirCaixa, caixasRecentes, conferirComprovativo, fecharCaixa, lerCozinhas, pedirNovaLeitura, registarSangria, resumoCaixa } from '@/lib/api';
+import { formatarData, formatarKz, mensagemErro, textoLeitura } from '@/lib/formatar';
 import { enderecoComprovativo } from '@/lib/fotos';
 import { useSessao } from '@/lib/sessao';
 import { cores, espaco } from '@/lib/tema';
@@ -18,6 +18,7 @@ const soDigitos = (t: string) => t.replace(/\D/g, '');
 /** Caixa: abrir (posto e troco), sangrias e fecho com a contagem do dinheiro (regras 7 e 8) */
 export default function CaixaEcra() {
   const { funcionario, pode } = useSessao();
+  const router = useRouter();
   const [caixas, setCaixas] = useState<CaixaGestao[] | null>(null);
   const [resumos, setResumos] = useState<Record<string, ResumoCaixa>>({});
   const [cozinhas, setCozinhas] = useState<Cozinha[]>([]);
@@ -82,6 +83,11 @@ export default function CaixaEcra() {
       <View key={k.id} style={{ gap: espaco.xs, borderTopWidth: 1, borderTopColor: cores.contorno, paddingTop: espaco.s }}>
         <Linha esquerda={`${k.metodo} · ${k.cliente_nome}`} direita={formatarKz(k.valor)} />
         <Text>Referência: {k.referencia}</Text>
+        {k.ia_estado && (
+          <Text style={{ color: textoLeitura(k.ia_estado).alerta ? cores.erro : cores.textoSuave, fontWeight: textoLeitura(k.ia_estado).alerta ? '700' : '400' }}>
+            {textoLeitura(k.ia_estado, k.ia_valor, k.ia_referencia).texto}
+          </Text>
+        )}
         <Text style={{ color: cores.textoSuave }}>
           {formatarData(k.criado_em, true)}
           {k.registado_por ? ` · ${k.registado_por}` : ''}
@@ -101,6 +107,20 @@ export default function CaixaEcra() {
         ) : (
           <Botao titulo="Ver foto do comprovativo" variante="texto" aoCarregar={() => verFoto(k)} />
         )}
+        <View style={{ flexDirection: 'row', gap: espaco.s, flexWrap: 'wrap' }}>
+          <Botao
+            titulo="Histórico do pedido"
+            variante="texto"
+            aoCarregar={() => router.push({ pathname: '/pedido/[id]', params: { id: k.pedido_id } })}
+          />
+          {(k.ia_estado === 'ilegivel' || k.ia_estado === 'indisponivel') && k.estado === 'por_conferir' && (
+            <Botao
+              titulo="Ler de novo"
+              variante="texto"
+              aoCarregar={() => correr(() => pedirNovaLeitura('comprovativo', k.id), 'Nova leitura pedida.')}
+            />
+          )}
+        </View>
         {k.estado === 'por_conferir' &&
           (aRejeitar ? (
             <>

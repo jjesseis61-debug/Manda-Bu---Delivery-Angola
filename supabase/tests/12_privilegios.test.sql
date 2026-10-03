@@ -60,6 +60,10 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 'abrir_caixa', 'resumo_caixa', 'registar_sangria', 'fechar_caixa',
                 -- comprovativos dos pagamentos electrónicos (conferir; as outras duas são usadas nas políticas do Storage)
                 'conferir_comprovativo', 'comprovativo_caminho_valido', 'comprovativo_visivel',
+                -- conferência financeira (extratos, fechos, histórico do pedido)
+                'criar_extrato', 'confirmar_extrato', 'pedir_nova_leitura', 'registar_movimento_extrato',
+                'apagar_movimento_extrato', 'ligar_movimento', 'relatorio_conciliacao', 'fecho_diario',
+                'fecho_mensal', 'historico_pedido', 'extrato_caminho_valido',
                 -- auxiliares usadas em políticas RLS, valores por defeito ou triggers SECURITY INVOKER
                 'cliente_actual', 'cozinha_padrao', 'e_funcionario', 'funcionalidade_activa',
                 'funcionario_actual', 'membro_da_cozinha', 'tem_permissao', 'e_administrador', 'pode_na_cozinha')),

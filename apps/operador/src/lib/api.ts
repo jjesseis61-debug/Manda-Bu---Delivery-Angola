@@ -3,6 +3,12 @@
 import { supabase } from './supabase';
 import type {
   AdesaoOperador,
+  Conciliacao,
+  Extrato,
+  FechoDiario,
+  FechoMensal,
+  HistoricoPedido,
+  MovimentoExtrato,
   Caixa,
   CaixaGestao,
   ComentarioModeracao,
@@ -268,6 +274,68 @@ export async function fecharCaixa(caixaId: string, contado: number, observacao: 
   return verificar(
     await supabase.rpc('fechar_caixa', { p_caixa: caixaId, p_contado: contado, p_observacao: observacao }),
   ) as FechoCaixa;
+}
+
+// ---------------------------------------------------------------- conferência financeira
+export async function lerExtratos(): Promise<Extrato[]> {
+  return verificar(
+    await supabase.from('extratos').select('id, conta, periodo_inicio, periodo_fim, caminho, tipo_ficheiro, estado, ia_nota, criado_em')
+      .order('criado_em', { ascending: false }).limit(40),
+  ) as Extrato[];
+}
+
+export async function lerMovimentos(extratoId: string): Promise<MovimentoExtrato[]> {
+  return verificar(
+    await supabase.from('extrato_movimentos')
+      .select('id, extrato_id, data, valor, referencia, descricao, origem, comprovativo_id, ligacao')
+      .eq('extrato_id', extratoId).order('data').order('valor'),
+  ) as MovimentoExtrato[];
+}
+
+export async function criarExtrato(conta: string, inicio: string, fim: string): Promise<string> {
+  return verificar(await supabase.rpc('criar_extrato', { p_conta: conta, p_inicio: inicio, p_fim: fim })) as string;
+}
+
+/** Ficheiro já enviado (caminho) ou null para escrever as entradas à mão */
+export async function confirmarExtrato(extratoId: string, caminho: string | null) {
+  verificar(await supabase.rpc('confirmar_extrato', { p_extrato: extratoId, p_caminho: caminho }));
+}
+
+export async function pedirNovaLeitura(tipo: 'extrato' | 'comprovativo', id: string) {
+  verificar(await supabase.rpc('pedir_nova_leitura', { p_tipo: tipo, p_id: id }));
+}
+
+export async function registarMovimento(extratoId: string, data: string, valor: number, referencia: string | null, descricao: string | null) {
+  return verificar(
+    await supabase.rpc('registar_movimento_extrato', {
+      p_extrato: extratoId, p_data: data, p_valor: valor, p_referencia: referencia, p_descricao: descricao,
+    }),
+  ) as string;
+}
+
+export async function apagarMovimento(movimentoId: string, motivo: string) {
+  verificar(await supabase.rpc('apagar_movimento_extrato', { p_movimento: movimentoId, p_motivo: motivo }));
+}
+
+/** Liga (ou desliga, com null) uma entrada do extrato a um comprovativo */
+export async function ligarMovimento(movimentoId: string, comprovativoId: string | null) {
+  verificar(await supabase.rpc('ligar_movimento', { p_movimento: movimentoId, p_comprovativo: comprovativoId }));
+}
+
+export async function relatorioConciliacao(inicio: string, fim: string): Promise<Conciliacao> {
+  return verificar(await supabase.rpc('relatorio_conciliacao', { p_inicio: inicio, p_fim: fim })) as Conciliacao;
+}
+
+export async function fechoDiario(dia: string, cozinhaId: string | null = null): Promise<FechoDiario> {
+  return verificar(await supabase.rpc('fecho_diario', { p_dia: dia, p_cozinha: cozinhaId })) as FechoDiario;
+}
+
+export async function fechoMensal(ano: number, mes: number): Promise<FechoMensal> {
+  return verificar(await supabase.rpc('fecho_mensal', { p_ano: ano, p_mes: mes })) as FechoMensal;
+}
+
+export async function historicoPedido(pedidoId: string): Promise<HistoricoPedido> {
+  return verificar(await supabase.rpc('historico_pedido', { p_pedido: pedidoId })) as HistoricoPedido;
 }
 
 /** Confere (ou rejeita, com nota) um pagamento electrónico da caixa */

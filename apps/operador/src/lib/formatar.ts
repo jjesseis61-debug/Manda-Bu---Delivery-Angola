@@ -95,6 +95,71 @@ export const nomeEstadoPedido: Record<string, string> = {
   estornado: 'Estornado',
 };
 
+/** Leitura automática de um comprovativo, em palavras */
+export function textoLeitura(estado: string | undefined, valor?: number | null, referencia?: string | null): { texto: string; alerta: boolean } {
+  switch (estado) {
+    case 'confere':
+      return { texto: 'Leitura automática: valor e referência conferem.', alerta: false };
+    case 'diverge':
+      return {
+        texto: `Leitura automática NÃO confere: leu ${valor != null ? formatarKz(valor) : 'outro valor'}${referencia ? `, ref. ${referencia}` : ''}.`,
+        alerta: true,
+      };
+    case 'ilegivel':
+      return { texto: 'Leitura automática: foto ilegível. Confere com atenção.', alerta: true };
+    case 'indisponivel':
+      return { texto: 'Leitura automática indisponível: confere à mão.', alerta: false };
+    case 'pendente':
+    case 'a_ler':
+      return { texto: 'Leitura automática a decorrer…', alerta: false };
+    default:
+      return { texto: '', alerta: false };
+  }
+}
+
+export const nomeEstadoExtrato: Record<string, string> = {
+  aguarda_ficheiro: 'À espera do ficheiro',
+  por_ler: 'À espera da leitura automática',
+  a_ler: 'A ler…',
+  lido: 'Lido automaticamente',
+  ilegivel: 'Ilegível: escreve as entradas à mão',
+  indisponivel: 'Leitura automática indisponível: escreve as entradas à mão',
+  manual: 'Entradas escritas à mão',
+};
+
+/** Um passo do histórico do pedido, em palavras */
+export function descreverEvento(acao: string, d: Record<string, unknown> | null): string {
+  const kz = (v: unknown) => formatarKz(Number(v));
+  switch (acao) {
+    case 'pedido_criado':
+      return 'Fez o pedido';
+    case 'pedido_estado':
+      return `Mudou para «${nomeEstadoPedido[String(d?.para)] ?? String(d?.para)}»${d?.motivo ? ` (${String(d.motivo)})` : ''}`;
+    case 'pedido_pagador_distinto':
+      return 'Marcou "pago por outra pessoa"';
+    case 'venda_gerada':
+      return `Venda registada (${kz(d?.valor_final)}${d?.posto ? `, caixa ${String(d.posto)}` : ''})`;
+    case 'comprovativo_registado':
+      return `Registou o pagamento ${String(d?.metodo ?? '')} de ${kz(d?.valor)}, ref. ${String(d?.referencia ?? '')}`;
+    case 'comprovativo_lido':
+      return textoLeitura(String(d?.resultado), d?.valor as number | null, d?.referencia as string | null).texto;
+    case 'comprovativo_conferido':
+      return `Conferiu o pagamento ref. ${String(d?.referencia ?? '')}`;
+    case 'comprovativo_rejeitado':
+      return `Rejeitou o pagamento ref. ${String(d?.referencia ?? '')}: ${String(d?.nota ?? '')}`;
+    case 'leitura_pedida':
+      return 'Pediu outra leitura automática';
+    case 'extrato_automatica':
+    case 'extrato_manual':
+    case 'extrato_ligado':
+      return `Encontrado no extrato ${String(d?.conta ?? '')} (${formatarDia(String(d?.data ?? ''))}, ${kz(d?.valor)})`;
+    case 'caixa_fechada':
+      return `Fechou a caixa ${String(d?.posto ?? '')}`;
+    default:
+      return acao.replace(/_/g, ' ');
+  }
+}
+
 /** Linhas CSV (separador ";" e vírgula decimal, como o Excel em português) */
 export function paraCsv(linhas: (string | number | null | undefined)[][]): string {
   return linhas
@@ -122,6 +187,13 @@ const mensagens: Record<string, string> = {
   caixa_ja_aberta: 'Este posto já tem uma caixa aberta. Fecha-a antes de abrir outra.',
   caixa_fechada: 'Esta caixa já foi fechada.',
   caixa_inexistente: 'Caixa não encontrada.',
+  conta_invalida: 'Escreve o nome da conta (ex.: Multicaixa Express BAI).',
+  extrato_inexistente: 'Extrato não encontrado.',
+  ficheiro_inexistente: 'O ficheiro do extrato não chegou. Tenta enviar outra vez.',
+  movimento_inexistente: 'Entrada do extrato não encontrada.',
+  comprovativo_ja_ligado: 'Esse comprovativo já está ligado a outra entrada do extrato.',
+  data_fora_do_periodo: 'A data está fora do período do extrato.',
+  tipo_invalido: 'Pedido inválido.',
   comprovativo_obrigatorio: 'Tira a foto do comprovativo de cada pagamento electrónico.',
   referencia_repetida: 'Esta referência já foi usada noutro pedido. Confirma o comprovativo.',
   metodo_invalido: 'Forma de pagamento inválida.',

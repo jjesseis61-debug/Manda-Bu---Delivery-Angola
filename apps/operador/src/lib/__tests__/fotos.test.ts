@@ -1,6 +1,7 @@
 /// <reference types="jest" />
 jest.mock('../supabase', () => ({ supabase: {} }));
 jest.mock('expo-image-picker', () => ({}));
+jest.mock('expo-document-picker', () => ({}));
 jest.mock('expo-image-manipulator', () => ({}));
 
 import { caminhoDoEndereco, caminhoFoto } from '../fotos';

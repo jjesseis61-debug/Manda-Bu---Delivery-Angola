@@ -38,6 +38,7 @@ Aplicadas por esta ordem. **Uma migração já aplicada nunca se edita:** qualqu
 | `20261003123551_hora_entrega_estimada.sql` | Cada pedido fica com `hora_prometida` definida pelo servidor: pedido normal = hora do pedido + `parametros.tempo_entrega_min` (45 min, ajustável de 10 a 240); pedido de grupo = hora de entrega do grupo. O cliente vê "Entrega prevista" e as entregas a horas passam a ser medidas. | aplicada |
 | `20261003143204_indicacao_mesmo_local_rapido.sql` | Encontrado no teste de 6 meses: o limite "indicados no mesmo local" percorria todos os ganhos de indicação e calculava a distância a cada um, por isso cada entrega de um amigo indicado ficava mais lenta à medida que o programa crescia (o mesmo no limite de descontos por local). Agora usa `pontos_entrega_proximos(ponto)`: caixa de coordenadas com índice e depois a distância exacta — o mesmo resultado que `mesmo_ponto_entrega`. O semestre simulado passou de mais de 60 s para 29 s no Supabase. | aplicada |
 | `20261003152851_seguranca_pagamentos.sql` | Análise de fraude: (1) o limite "mesmo local" conta só os amigos **da mesma pessoa** (vizinhos de prédio convidados por pessoas diferentes já não se bloqueiam); (2) levantar o dinheiro das indicações exige um pedido próprio entregue e pago (`sem_compra_propria`); (3) desconto de convite só a partir de `parametros.desconto_subtotal_minimo` (2 000 Kz; 0 desliga; o orçamento devolve `pedido_minimo`); (4) pagamentos electrónicos na entrega (Multicaixa Express, TPA, Unitel Money, Transferência) exigem referência e foto do comprovativo (bucket privado `comprovativos`, tabela `comprovativos_pagamento`, referência única por método), e o gerente confere ou rejeita cada um (`conferir_comprovativo`) antes de `fechar_caixa`; formas de pagamento fora da lista são recusadas. | aplicada |
+| `20261003170433_conferencia_ia.sql` | Conferência financeira: leitura automática (Claude) da foto de cada comprovativo (`ia_estado`: confere / diverge / ilegível / indisponível — só um aviso; o gerente confere sempre); extratos do banco, Multicaixa ou Unitel Money (bucket privado `extratos`, tabelas `extratos` e `extrato_movimentos`) lidos automaticamente ou escritos à mão; conciliação (referência, ou valor e data ±2 dias) com comprovativos sem extrato e entradas sem comprovativo; `fecho_diario`, `fecho_mensal` (com sinais por funcionário) e `historico_pedido` (quem fez cada passo). Permissão nova `financas.conferir`. | aplicada |
 
 Os números de versão dos ficheiros são os que o Supabase registou ao aplicar, para `supabase migration list` e
 `supabase db push` não voltarem a aplicá-las.
@@ -62,6 +63,7 @@ Os jobs respeitam os interruptores: com tudo desligado não enfileiram nada.
 | Função | O que faz | Configuração |
 |---|---|---|
 | `functions/enviar-notificacoes` | Envia a fila (clientes N2–N11; equipa N12) pelo push da Expo, um pedido por app (a Expo recusa tokens de projectos diferentes no mesmo pedido); desactiva tokens rejeitados; marca como enviadas | Publicada sem verificação de JWT, com autenticação própria: segredo `ENVIO_SEGREDO` (obrigatório) no cabeçalho `x-envio-segredo`. Agendar com `select agendar_envio_notificacoes('<url da função>', '<segredo>');` depois de activar `pg_cron` e `pg_net`. |
+| `functions/ler-documentos` | Lê com o Claude as fotos dos comprovativos (valor, referência, data) e os extratos (entradas do período); o servidor compara e concilia | Publicada sem verificação de JWT, com o mesmo segredo do envio (`x-envio-segredo`). Segredo `ANTHROPIC_API_KEY` nas Edge Functions; sem ele fica tudo para a conferência à mão. Agendada com `select agendar_leitura('<url da função>');` |
 
 ## Testes
 
@@ -107,6 +109,7 @@ base de dados.
 | `36_hora_entrega_estimada.test.sql` | 45 min por defeito; pedido normal + 45 min (a hora mandada pelo telemóvel é ignorada); pedido de grupo = hora do grupo; a direcção ajusta; fora de 10–240 recusado |
 | `37_indicacao_mesmo_local.test.sql` | pontos próximos = exactamente os de `mesmo_ponto_entrega` (400 pontos ao acaso); 24 m conta e 26 m não; outro tipo de local não conta; o raio segue o parâmetro; a função não está na API |
 | `38_seguranca_pagamentos.test.sql` | quem envia a foto do comprovativo; sem referência, sem foto ou com a foto de outro pedido → recusado; método inventado recusado; referência repetida recusada; resumo da caixa com os comprovativos; fecho bloqueado até conferir; rejeitar exige nota; levantamento sem compra própria recusado; desconto abaixo do mínimo; limite por morada contado por quem convida |
+| `39_conferencia_ia.test.sql` | reserva da leitura (sem ler duas vezes); confere / diverge / 3 falhas → indisponível; só o serviço regista leituras; extrato: permissões, ficheiro uma vez, leitura e conciliação por referência e por valor; entradas à mão, ligação única, apagar com motivo; fecho do dia (avisos com quem registou) e do mês (por funcionário); histórico do pedido e quem o pode ver |
 | `33_caixa_gestao.test.sql` | Abre a caixa (uma por posto), quem tem `vendas.registar` vê-a; fora da cozinha ou sem a permissão recusa; o esperado só soma a parcela Dinheiro e os pacotes na loja menos as sangrias; o fecho guarda a diferença; caixa fechada não aceita sangrias, novo fecho nem escrita directa; tudo na auditoria |
 | `15_app_operador.test.sql` | I3: telefone e ligação dos funcionários, painel (O1), verificação e "Confirmar todos" com N3 (O2), levantamentos (O3), embaixadores (O4), fila de entregas e caixas (E1), auditoria de cozinhas e cardápio (O6) |
 
@@ -163,7 +166,8 @@ base de dados.
 | 36 hora de entrega estimada | 5/5 | 5/5 |
 | 37 indicados no mesmo local (rápido) | 6/6 | 6/6 |
 | 38 segurança dos pagamentos e do Convida e Ganha | 27/27 | 27/27 |
-| **Total** | **682/682** | |
+| 39 conferência (leitura automática, extratos, fechos, histórico) | 27/27 | 27/27 |
+| **Total** | **709/709** | |
 
 Na I2 voltaram a correr no Supabase os testes afectados por cada migração (app do cliente: 06, 08, 09, 12 e 13;
 desconto limitado: 02, 09 e 14); os restantes não dependem delas (e todos passam localmente).
@@ -197,6 +201,15 @@ mostra sem políticas `notificacoes_fila`, `contadores_zona` e `dispositivos_pus
 Nas correcções de 2 de Outubro correram no Supabase o 23 (7/7) e o 24 (11/11, com o utilizador da Auth apagado de
 facto). A Edge Function `enviar-notificacoes` passou à versão 4 (marca as notificações como enviadas lote a lote) e
 tem testes próprios em Node, sem Deno: `node --experimental-strip-types supabase/functions/enviar-notificacoes/envio.test.mjs`.
+
+### `ler-documentos` (leitura automática dos comprovativos e extratos)
+
+Corre de minuto a minuto (`agendar_leitura(url)`, mesmo segredo do envio de avisos). Lê com o Claude
+(`claude-opus-5-5`, saída estruturada) as fotos dos comprovativos e os extratos (PDF ou foto) e regista o
+resultado no servidor, que compara e concilia. **Precisa do segredo `ANTHROPIC_API_KEY`** nas Edge
+Functions (Supabase → Edge Functions → Secrets). Sem ele, os documentos ficam "leitura automática
+indisponível" e a conferência faz-se à mão na app (Caixa e Conferência). Depois de configurar a chave,
+"Ler de novo" pede outra leitura. Testes: `node --experimental-strip-types supabase/functions/ler-documentos/leitura.test.mjs`.
 
 A CI (`.github/workflows/testes.yml`) corre em cada PR a base de dados, a Edge Function e as duas apps.
 

@@ -1,4 +1,4 @@
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { Image, Linking, Switch, Text, View } from 'react-native';
 
@@ -35,6 +35,7 @@ const SEGUINTE: Record<string, { estado: string; rotulo: string; gerir: boolean 
 /** E1. Entregas: pedidos por ponto de entrega, estados, caixa e formas de pagamento */
 export default function Entregas() {
   const { pode } = useSessao();
+  const router = useRouter();
   const gerir = pode('pedidos.gerir');
   const entregar = pode('entregas.registar');
   const [pedidos, setPedidos] = useState<PedidoOperador[] | null>(null);
@@ -259,6 +260,13 @@ export default function Entregas() {
             )}
             {p.estado === 'em_entrega' && (gerir || entregar) && <Botao titulo="Entregue e pago…" aoCarregar={() => abrirEntrega(p)} />}
             {gerir && <Botao titulo="Cancelar…" variante="texto" aoCarregar={() => setAccao({ pedido: p.pedido_id, tipo: 'cancelar' })} />}
+            {gerir && (
+              <Botao
+                titulo="Histórico"
+                variante="texto"
+                aoCarregar={() => router.push({ pathname: '/pedido/[id]', params: { id: p.pedido_id } })}
+              />
+            )}
           </View>
         )}
       </Cartao>

@@ -12,6 +12,7 @@ jest.mock('@/lib/api', () => ({
   registarSangria: jest.fn(),
   fecharCaixa: jest.fn(),
   conferirComprovativo: jest.fn(),
+  pedirNovaLeitura: jest.fn(),
 }));
 jest.mock('@/lib/fotos', () => ({ enderecoComprovativo: jest.fn() }));
 const mockSessao = { carregado: true, sessao: {}, funcionario: { id: 'f1', cozinhas_equipa: ['c1'] }, pode: () => true };

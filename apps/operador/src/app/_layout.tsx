@@ -38,6 +38,8 @@ export default function LayoutRaiz() {
         <Stack.Screen name="verificacao" options={{ title: 'Verificação' }} />
         <Stack.Screen name="levantamentos" options={{ title: 'Levantamentos' }} />
         <Stack.Screen name="caixa" options={{ title: 'Caixa' }} />
+        <Stack.Screen name="conferencia" options={{ title: 'Conferência' }} />
+        <Stack.Screen name="pedido/[id]" options={{ title: 'Histórico do pedido' }} />
         <Stack.Screen name="pacotes" options={{ title: 'Pacotes do mês' }} />
         <Stack.Screen name="zonas" options={{ title: 'Zonas de entrega' }} />
         <Stack.Screen name="embaixadores" options={{ title: 'Embaixadores' }} />

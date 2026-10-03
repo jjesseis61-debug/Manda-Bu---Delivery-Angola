@@ -1,6 +1,7 @@
 // Fotos dos pratos e das cozinhas: escolher (câmara ou galeria), reduzir para JPEG e enviar para o
 // bucket público `fotos-pratos`. O endereço público fica no prato ou na cozinha.
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
+import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 
 import { supabase } from './supabase';
@@ -82,4 +83,35 @@ export async function enviarComprovativo(pedidoId: string, uri: string, n = 0): 
 export async function enderecoComprovativo(caminho: string): Promise<string | null> {
   const { data } = await supabase.storage.from(BUCKET_COMPROVATIVOS).createSignedUrl(caminho, 600);
   return data?.signedUrl ?? null;
+}
+
+// ---------------------------------------------------------------- extratos
+// Bucket privado `extratos`: <extrato_id>/<data>.pdf|jpg. Só quem tem financas.conferir envia e vê.
+export const BUCKET_EXTRATOS = 'extratos';
+
+export type FicheiroEscolhido = { uri: string; tipo: 'application/pdf' | 'image/jpeg' | 'image/png' };
+
+/** Escolhe o extrato no telemóvel (PDF ou imagem); null se cancelar */
+export async function escolherFicheiroExtrato(): Promise<FicheiroEscolhido | null> {
+  const r = await DocumentPicker.getDocumentAsync({ type: ['application/pdf', 'image/*'], copyToCacheDirectory: true });
+  if (r.canceled || !r.assets[0]) return null;
+  const a = r.assets[0];
+  const tipo = a.mimeType === 'application/pdf' || a.name?.toLowerCase().endsWith('.pdf')
+    ? 'application/pdf'
+    : a.mimeType === 'image/png' ? 'image/png' : 'image/jpeg';
+  return { uri: a.uri, tipo };
+}
+
+export function caminhoExtrato(extratoId: string, tipo: FicheiroEscolhido['tipo'], agora: Date = new Date()): string {
+  const ext = tipo === 'application/pdf' ? 'pdf' : tipo === 'image/png' ? 'png' : 'jpg';
+  return `${extratoId}/${agora.getTime()}.${ext}`;
+}
+
+/** Envia o ficheiro do extrato e devolve o caminho no bucket */
+export async function enviarExtrato(extratoId: string, ficheiro: FicheiroEscolhido): Promise<string> {
+  const caminho = caminhoExtrato(extratoId, ficheiro.tipo);
+  const dados = await (await fetch(ficheiro.uri)).arrayBuffer();
+  const { error } = await supabase.storage.from(BUCKET_EXTRATOS).upload(caminho, dados, { contentType: ficheiro.tipo, upsert: false });
+  if (error) throw error;
+  return caminho;
 }
