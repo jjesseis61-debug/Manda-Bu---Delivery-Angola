@@ -4,6 +4,7 @@ import { supabase } from './supabase';
 import type {
   AdesaoOperador,
   Caixa,
+  CaixaGestao,
   ComentarioModeracao,
   Cozinha,
   Embaixador,
@@ -28,6 +29,8 @@ import type {
   Reconhecimento,
   Relatorio,
   TipoReconhecimento,
+  FechoCaixa,
+  ResumoCaixa,
 } from './tipos';
 
 function verificar<T>(r: { data: T | null; error: { message: string } | null }): T {
@@ -235,6 +238,36 @@ export async function caixasAbertas(): Promise<Caixa[]> {
   return verificar(
     await supabase.from('caixa').select('id, posto, data, cozinha_id').is('fechamento', null).order('data', { ascending: false }),
   ) as Caixa[];
+}
+
+// ---------------------------------------------------------------- Caixa
+/** Caixas abertas e as últimas fechadas (as mais recentes primeiro) */
+export async function caixasRecentes(): Promise<CaixaGestao[]> {
+  return verificar(
+    await supabase
+      .from('caixa')
+      .select('id, posto, data, cozinha_id, troco_inicial, funcionario_nome, fechamento')
+      .order('criado_em', { ascending: false })
+      .limit(20),
+  ) as CaixaGestao[];
+}
+
+export async function resumoCaixa(caixaId: string): Promise<ResumoCaixa> {
+  return verificar(await supabase.rpc('resumo_caixa', { p_caixa: caixaId })) as ResumoCaixa;
+}
+
+export async function abrirCaixa(cozinhaId: string, posto: string, troco: number): Promise<string> {
+  return verificar(await supabase.rpc('abrir_caixa', { p_cozinha: cozinhaId, p_posto: posto, p_troco: troco })) as string;
+}
+
+export async function registarSangria(caixaId: string, valor: number, motivo: string) {
+  verificar(await supabase.rpc('registar_sangria', { p_caixa: caixaId, p_valor: valor, p_motivo: motivo }));
+}
+
+export async function fecharCaixa(caixaId: string, contado: number, observacao: string | null): Promise<FechoCaixa> {
+  return verificar(
+    await supabase.rpc('fechar_caixa', { p_caixa: caixaId, p_contado: contado, p_observacao: observacao }),
+  ) as FechoCaixa;
 }
 
 export async function mudarEstado(

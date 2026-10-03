@@ -14,6 +14,7 @@ const ecras: {
   permitir?: (f: Funcionario) => boolean;
 }[] = [
   { rota: '/entregas', titulo: 'Pedidos e entregas', descricao: 'Fila de pedidos, saída e entrega (E1)', permissoes: ['entregas.registar', 'pedidos.gerir'] },
+  { rota: '/caixa', titulo: 'Caixa', descricao: 'Abrir, sangrias e fecho com a contagem do dinheiro', permissoes: ['vendas.registar'] },
   { rota: '/grupos', titulo: 'Grupos do dia', descricao: 'Pedidos de grupo juntos para preparar e expedir (O10)', permissoes: ['pedidos.gerir', 'entregas.registar'] },
   { rota: '/painel', titulo: 'Painel do programa', descricao: 'Custo, vendas por indicação, retenção (O1)', permissoes: ['indicacoes.ver'] },
   { rota: '/verificacao', titulo: 'Verificação', descricao: 'Ganhos em verificação (O2)', permissoes: ['indicacoes.verificar'] },

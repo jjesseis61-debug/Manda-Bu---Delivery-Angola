@@ -19,7 +19,8 @@ export type Permissao =
   | 'entregas.registar'
   | 'avaliacoes.moderar'
   | 'equipa.reconhecer'
-  | 'pacotes.gerir';
+  | 'pacotes.gerir'
+  | 'vendas.registar';
 
 export type Painel = {
   custo: number;
@@ -112,6 +113,38 @@ export type PedidoOperador = {
 };
 
 export type Caixa = { id: string; posto: string; data: string; cozinha_id: string };
+
+export type FechoCaixa = {
+  troco_inicial: number;
+  dinheiro_vendas: number;
+  dinheiro_pacotes: number;
+  sangrias: number;
+  esperado: number;
+  contado: number;
+  diferenca: number;
+  fechado_em: string;
+  funcionario_nome: string | null;
+  observacao: string | null;
+};
+
+/** Caixa com o fecho (null enquanto está aberta) */
+export type CaixaGestao = Caixa & { troco_inicial: number | null; funcionario_nome: string | null; fechamento: FechoCaixa | null };
+
+export type Sangria = { valor: number; motivo: string; em: string; funcionario_nome: string | null };
+
+export type ResumoCaixa = {
+  caixa_id: string;
+  posto: string;
+  troco_inicial: number;
+  dinheiro_vendas: number;
+  pedidos: number;
+  dinheiro_pacotes: number;
+  pacotes: number;
+  sangrias: number;
+  lista_sangrias: Sangria[];
+  esperado: number;
+  aberta_por: string | null;
+};
 
 export type Cozinha = {
   id: string;
