@@ -199,7 +199,7 @@ const mensagens: Record<string, string> = {
   metodo_invalido: 'Forma de pagamento inválida.',
   comprovativos_por_conferir: 'Confere os pagamentos electrónicos antes de fechar a caixa.',
   comprovativo_inexistente: 'Comprovativo não encontrado.',
-  nota_obrigatoria: 'Escreve porque rejeitas este pagamento.',
+  nota_obrigatoria: 'Escreve uma nota a explicar a decisão.',
   posto_invalido: 'Escreve o nome do posto (ex.: Balcão).',
   valor_invalido: 'Valor inválido.',
   cozinha_inexistente: 'Cozinha não encontrada.',
@@ -223,6 +223,9 @@ const mensagens: Record<string, string> = {
   resposta_obrigatoria: 'Escreve a resposta ao cliente.',
   estimulo_inexistente: 'O estímulo já não existe.',
   estimulo_decidido: 'Este estímulo já foi decidido.',
+  caso_inexistente: 'O caso já não existe.',
+  caso_decidido: 'Este caso já foi decidido.',
+  funcionalidade_inactiva: 'Esta funcionalidade está desligada. Liga-a em Parâmetros e interruptores.',
 };
 
 export function mensagemErro(erro: unknown): string {

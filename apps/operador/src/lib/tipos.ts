@@ -605,3 +605,39 @@ export type Estimulo = {
   decidido_por: string | null;
   decidido_em: string | null;
 };
+
+export type CasoInvestigacao = {
+  id: string;
+  funcionario: string;
+  cargo: string | null;
+  inicio: string;
+  fim: string;
+  sinais: {
+    comprovativos: number;
+    rejeitados: number;
+    nao_conferem: number;
+    ilegiveis: number;
+    sem_extrato: number;
+    valor_sem_extrato: number;
+    caixas_com_diferenca: number;
+    soma_diferencas: number;
+  };
+  pontuacao: number;
+  estado: 'por_investigar' | 'a_investigar' | 'investigado' | 'indisponivel';
+  ia_nota: string | null;
+  risco: 'baixo' | 'medio' | 'alto' | null;
+  resumo: string | null;
+  conclusao: {
+    factos: { texto: string; pedido_id: string | null }[];
+    explicacoes_possiveis: string[];
+    recomendacao: string;
+    perguntas_ao_funcionario: string[];
+  } | null;
+  passos: { ferramenta: string; entrada: Record<string, unknown>; resultado: string }[];
+  investigado_em: string | null;
+  decisao: 'sem_problema' | 'erro_operacional' | 'suspeita_confirmada' | null;
+  decisao_nota: string | null;
+  decidido_por: string | null;
+  decidido_em: string | null;
+  criado_em: string;
+};

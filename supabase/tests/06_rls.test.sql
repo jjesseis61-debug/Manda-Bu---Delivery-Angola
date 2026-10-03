@@ -62,7 +62,7 @@ select is(testes.v('codigos_b')::int,    0, 'A não lê o código de B');
 select is(testes.v('clientes_todos')::int, 0, 'tabelas base com RLS: cliente não lista clientes');
 select is(testes.v('enderecos_meus')::int, 1, 'A lê o seu endereço');
 select is(testes.v('pedidos_meus')::int,   1, 'A lê o seu pedido');
-select is(testes.v('interruptores')::int, 14, 'A lê os interruptores');
+select is(testes.v('interruptores')::int, 15, 'A lê os interruptores');
 select matches(testes.v('erro_fila'), '^42501', 'fila de notificações só para o serviço');
 
 -- B lê os seus próprios dados

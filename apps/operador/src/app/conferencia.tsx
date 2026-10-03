@@ -3,6 +3,7 @@ import { useCallback, useState } from 'react';
 import { Text, View } from 'react-native';
 
 import { Guarda } from '@/components/Guarda';
+import { Investigacoes } from '@/components/Investigacoes';
 import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Escolha, Linha, Paragrafo, Subtitulo } from '@/components/ui';
 import {
   apagarMovimento,
@@ -21,7 +22,7 @@ import { enviarExtrato, escolherFicheiroExtrato, escolherFoto, type FicheiroEsco
 import { cores, espaco } from '@/lib/tema';
 import type { AlertaFecho, Extrato, FechoDiario, FechoMensal, MovimentoExtrato } from '@/lib/tipos';
 
-type Separador = 'dia' | 'mes' | 'extratos';
+type Separador = 'dia' | 'mes' | 'extratos' | 'investigacoes';
 const DIA = /^\d{4}-\d{2}-\d{2}$/;
 const MES = /^\d{4}-\d{2}$/;
 
@@ -402,6 +403,7 @@ export default function Conferencia() {
             { valor: 'dia', rotulo: 'Fecho do dia' },
             { valor: 'mes', rotulo: 'Fecho do mês' },
             { valor: 'extratos', rotulo: 'Extratos' },
+            { valor: 'investigacoes', rotulo: 'Investigações' },
           ]}
           valor={sep}
           aoMudar={(v) => setSep(v as Separador)}
@@ -411,6 +413,7 @@ export default function Conferencia() {
         {sep === 'dia' && separadorDia()}
         {sep === 'mes' && separadorMes()}
         {sep === 'extratos' && separadorExtratos()}
+        {sep === 'investigacoes' && <Investigacoes inicioPadrao={`${mes}-01`} fimPadrao={diaLuanda()} />}
       </Ecra>
     </Guarda>
   );

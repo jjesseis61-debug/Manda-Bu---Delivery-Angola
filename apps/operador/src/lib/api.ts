@@ -4,6 +4,7 @@ import { supabase } from './supabase';
 import type {
   AdesaoOperador,
   AlertaPedido,
+  CasoInvestigacao,
   Estimulo,
   Reclamacao,
   RelatorioReclamacoes,
@@ -593,4 +594,21 @@ export async function estimulosDoMes(ano: number, mes: number): Promise<Estimulo
 
 export async function decidirEstimulo(id: string, aprovar: boolean, bonus: number | null, mensagem: string | null) {
   verificar(await supabase.rpc('decidir_estimulo', { p_id: id, p_aprovar: aprovar, p_bonus: bonus, p_mensagem: mensagem }));
+}
+
+// ---------------------------------------------------------------- agente investigador
+export async function lerCasosInvestigacao(): Promise<CasoInvestigacao[]> {
+  return verificar(await supabase.rpc('casos_investigacao_lista')) as CasoInvestigacao[];
+}
+
+export async function abrirInvestigacoes(inicio: string, fim: string): Promise<number> {
+  return verificar(await supabase.rpc('abrir_investigacoes', { p_inicio: inicio, p_fim: fim })) as number;
+}
+
+export async function decidirCaso(id: string, decisao: string, nota: string) {
+  verificar(await supabase.rpc('decidir_caso', { p_id: id, p_decisao: decisao, p_nota: nota }));
+}
+
+export async function investigarDeNovo(id: string) {
+  verificar(await supabase.rpc('investigar_de_novo', { p_id: id }));
 }
