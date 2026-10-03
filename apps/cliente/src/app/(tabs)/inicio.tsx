@@ -6,6 +6,7 @@ import { ComoChegar } from '@/components/ComoChegar';
 import { Aviso, Botao, Cartao, Escolha, Paragrafo, Subtitulo, estilos } from '@/components/ui';
 import {
   contadorZona,
+  cozinhaPadrao,
   cozinhasParaPedir,
   lerCardapio,
   lerCozinhaPublica,
@@ -54,8 +55,10 @@ export default function Inicio() {
         }
       } else {
         setCozinhas([]);
+        // Sem multi_cozinha o servidor manda todos os pedidos para a cozinha padrão: só os pratos dela
+        escolhida = await cozinhaPadrao();
       }
-      const [itens, ends] = await Promise.all([lerCardapio(ligada('multi_cozinha') ? escolhida : null), lerEnderecos()]);
+      const [itens, ends] = await Promise.all([lerCardapio(escolhida), lerEnderecos()]);
       setCardapio(itens);
       setEnderecos(ends);
       setMontaveis(

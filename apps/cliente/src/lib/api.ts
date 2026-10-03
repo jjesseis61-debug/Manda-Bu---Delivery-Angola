@@ -83,6 +83,11 @@ export async function descontoGarantido(clienteId: string): Promise<number | nul
 }
 
 // ---------------------------------------------------------------- cardápio e cozinha
+/** Sem multi_cozinha, todos os pedidos vão para esta cozinha (a mais antiga activa) */
+export async function cozinhaPadrao(): Promise<string | null> {
+  return verificar(await supabase.rpc('cozinha_padrao')) as string | null;
+}
+
 export async function lerCardapio(cozinhaId?: string | null): Promise<ItemCardapio[]> {
   let q = supabase
     .from('cardapio')
