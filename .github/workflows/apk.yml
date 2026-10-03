@@ -6,11 +6,16 @@
 #   https://github.com/<dono>/<repo>/releases/download/apk-teste/manda-bue-cliente.apk
 name: APK Android
 
+# Só quando se pede (Actions → APK Android → Run workflow), para poupar os minutos do GitHub:
+# cada compilação das duas apps gasta cerca de 80 minutos.
 on:
   workflow_dispatch:
-  push:
-    branches: [main, 'claude/**']
-    paths: ['apps/**', '.github/workflows/apk.yml']
+    inputs:
+      app:
+        description: 'Que app compilar'
+        type: choice
+        options: [ambas, cliente, operador]
+        default: ambas
 
 concurrency:
   group: apk-${{ github.ref }}
@@ -27,7 +32,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        app: [cliente, operador]
+        app: ${{ fromJSON(inputs.app == 'cliente' && '["cliente"]' || inputs.app == 'operador' && '["operador"]' || '["cliente","operador"]') }}
     defaults:
       run:
         working-directory: apps/${{ matrix.app }}
