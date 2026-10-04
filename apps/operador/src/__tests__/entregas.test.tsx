@@ -2,7 +2,7 @@
 import { act, fireEvent, renderRouter, waitFor } from 'expo-router/testing-library';
 
 import Entregas from '@/app/entregas';
-import { alertasAbertos, caixasAbertas, informarAtraso, lerCozinhas, pedidosOperador } from '@/lib/api';
+import { alertasAbertos, caixasAbertas, informarAtraso, lerCozinhas, mudarEstado, pedidosOperador } from '@/lib/api';
 
 jest.mock('@/lib/api', () => ({
   pedidosOperador: jest.fn(),
@@ -44,4 +44,25 @@ test('mostra os pedidos parados e atrasados e avisa o cliente do motivo', async 
     fireEvent.press(ecra.getByText('Avisar o cliente'));
   });
   expect(informarAtraso).toHaveBeenCalledWith('p2', 'Trânsito', 15);
+});
+
+test('cancelar: a cozinha escolhe o motivo da lista ou escreve outro', async () => {
+  (pedidosOperador as jest.Mock).mockResolvedValue([pedido('p1', 'confirmado', 'Ana')]);
+  (caixasAbertas as jest.Mock).mockResolvedValue([]);
+  (lerCozinhas as jest.Mock).mockResolvedValue([]);
+  (alertasAbertos as jest.Mock).mockResolvedValue([]);
+  (mudarEstado as jest.Mock).mockResolvedValue(undefined);
+  const ecra = renderRouter({ entregas: Entregas }, { initialUrl: '/entregas' });
+  await waitFor(() => expect(ecra.getByText('Cancelar…')).toBeTruthy());
+  fireEvent.press(ecra.getByText('Cancelar…'));
+  expect(ecra.getByText('O cliente recebe um pedido de desculpa com o motivo e não paga nada.')).toBeTruthy();
+  fireEvent.press(ecra.getByText('Outro…'));
+  fireEvent.changeText(ecra.getByLabelText('Motivo (o cliente vai ler)'), '   ');
+  fireEvent.press(ecra.getByText('Cancelar pedido'));
+  expect(mudarEstado).not.toHaveBeenCalled();
+  fireEvent.press(ecra.getByText('Avaria na cozinha (gás, luz ou equipamento)'));
+  await act(async () => {
+    fireEvent.press(ecra.getByText('Cancelar pedido'));
+  });
+  expect(mudarEstado).toHaveBeenCalledWith('p1', 'cancelado', { motivo: 'Avaria na cozinha (gás, luz ou equipamento)' });
 });

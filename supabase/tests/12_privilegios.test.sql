@@ -88,6 +88,8 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 'componentes_dos_pratos',
                 -- doses do dia que restam de cada prato
                 'doses_cardapio',
+                -- justificação do cancelamento (o cliente só lê a dos seus pedidos)
+                'justificacao_cancelamento',
                 -- auxiliares usadas em políticas RLS, valores por defeito ou triggers SECURITY INVOKER
                 'cliente_actual', 'cozinha_padrao', 'e_funcionario', 'funcionalidade_activa',
                 'funcionario_actual', 'membro_da_cozinha', 'tem_permissao', 'e_administrador', 'pode_na_cozinha')),

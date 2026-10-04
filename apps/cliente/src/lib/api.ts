@@ -353,6 +353,11 @@ export async function atrasoDoPedido(pedidoId: string): Promise<AtrasoPedido | n
   ) as AtrasoPedido | null;
 }
 
+/** Justificação do cancelamento de um pedido meu (null se não estiver cancelado) */
+export async function justificacaoCancelamento(pedidoId: string): Promise<string | null> {
+  return verificar(await supabase.rpc('justificacao_cancelamento', { p_pedido: pedidoId })) as string | null;
+}
+
 export async function lerPedido(id: string): Promise<Pedido | null> {
   return verificar(await supabase.from('pedidos').select(camposPedido).eq('id', id).maybeSingle()) as Pedido | null;
 }

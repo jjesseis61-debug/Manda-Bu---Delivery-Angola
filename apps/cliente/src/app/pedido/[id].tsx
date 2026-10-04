@@ -11,6 +11,7 @@ import {
   avaliacaoPermitida,
   cancelarPedido,
   fazerReclamacao,
+  justificacaoCancelamento,
   lerPedido,
   minhaAvaliacao,
   minhasReclamacoes,
@@ -30,6 +31,7 @@ export default function PedidoDetalhe() {
   const [aCancelar, setACancelar] = useState(false);
   const [avaliacao, setAvaliacao] = useState<{ estrelas: number } | 'pode' | null>(null);
   const [atraso, setAtraso] = useState<AtrasoPedido | null>(null);
+  const [justificacao, setJustificacao] = useState<string | null>(null);
   const [reclamacoes, setReclamacoes] = useState<MinhaReclamacao[]>([]);
   const [reclamar, setReclamar] = useState<string | null>(null);
   const [aEnviar, setAEnviar] = useState(false);
@@ -44,6 +46,7 @@ export default function PedidoDetalhe() {
         } else {
           setAtraso(null);
         }
+        setJustificacao(p?.estado === 'cancelado' ? await justificacaoCancelamento(p.id).catch(() => null) : null);
         if (p) setReclamacoes(await minhasReclamacoes(p.id).catch(() => []));
         if (p?.estado === 'entregue_pago' && ligada('avaliacoes')) {
           const minha = await minhaAvaliacao(p.id);
@@ -95,7 +98,9 @@ export default function PedidoDetalhe() {
             Entrega prevista: {new Date(pedido.hora_prometida).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}
           </Paragrafo>
         )}
-        {pedido.motivo_cancelamento && <Paragrafo suave>{pedido.motivo_cancelamento}</Paragrafo>}
+        {pedido.estado === 'cancelado' && (justificacao ?? pedido.motivo_cancelamento) && (
+          <Paragrafo>{justificacao ?? pedido.motivo_cancelamento}</Paragrafo>
+        )}
       </Cartao>
 
       {atraso && (

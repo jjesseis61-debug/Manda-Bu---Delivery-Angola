@@ -34,6 +34,14 @@ const MOTIVOS_ATRASO = [
   'O estafeta está a terminar outra entrega',
 ];
 
+/** Motivos de cancelamento: o cliente lê uma frase revista para cada um (servidor: frase_motivo_cancelamento) */
+const MOTIVOS_CANCELAMENTO = [
+  'Acabou um ingrediente',
+  'Avaria na cozinha (gás, luz ou equipamento)',
+  'A cozinha não conseguiria entregar a horas',
+  'Endereço fora da zona de entrega',
+];
+
 /** Próximo passo de cada estado e quem o pode dar */
 const SEGUINTE: Record<string, { estado: string; rotulo: string; gerir: boolean } | undefined> = {
   pendente: { estado: 'confirmado', rotulo: 'Confirmar pedido', gerir: true },
@@ -51,7 +59,7 @@ export default function Entregas() {
   const [caixas, setCaixas] = useState<Caixa[]>([]);
   const [erro, setErro] = useState<string | null>(null);
   const [accao, setAccao] = useState<Accao | null>(null);
-  const [motivo, setMotivo] = useState('');
+  const [cancelar, setCancelar] = useState({ motivo: '', outro: '' });
   const [caixa, setCaixa] = useState<string | null>(null);
   const [parcelas, setParcelas] = useState<Parcela[]>([]);
   const [ocupado, setOcupado] = useState<string | null>(null);
@@ -95,13 +103,15 @@ export default function Entregas() {
     setAccao({ pedido: p.pedido_id, tipo: 'entregar' });
   }
 
+  const motivoCancelamento = cancelar.motivo === 'outro' ? cancelar.outro.trim() : cancelar.motivo;
+
   async function correr(id: string, f: () => Promise<unknown>) {
     setErro(null);
     setOcupado(id);
     try {
       await f();
       setAccao(null);
-      setMotivo('');
+      setCancelar({ motivo: '', outro: '' });
       carregar();
     } catch (e) {
       setErro(mensagemErro(e));
@@ -304,16 +314,26 @@ export default function Entregas() {
         {aberto && accao?.tipo === 'entregar' && painelEntrega(p)}
         {aberto && accao?.tipo === 'atraso' && painelAtraso(p)}
         {aberto && accao?.tipo === 'cancelar' && (
-          <>
-            <Campo rotulo="Motivo do cancelamento" value={motivo} onChangeText={setMotivo} />
+          <View style={{ gap: espaco.s }}>
+            <Text style={{ fontWeight: '700' }}>Porque é que a cozinha tem de cancelar?</Text>
+            <Escolha
+              opcoes={[...MOTIVOS_CANCELAMENTO.map((m) => ({ valor: m, rotulo: m })), { valor: 'outro', rotulo: 'Outro…' }]}
+              valor={cancelar.motivo}
+              aoMudar={(m) => setCancelar({ ...cancelar, motivo: m })}
+            />
+            {cancelar.motivo === 'outro' && (
+              <Campo rotulo="Motivo (o cliente vai ler)" value={cancelar.outro} maxLength={200}
+                onChangeText={(t) => setCancelar({ ...cancelar, outro: t })} />
+            )}
+            <Paragrafo suave>O cliente recebe um pedido de desculpa com o motivo e não paga nada.</Paragrafo>
             <Botao
               titulo="Cancelar pedido"
-              desactivado={!motivo.trim()}
+              desactivado={!motivoCancelamento}
               aCarregar={ocupado === p.pedido_id}
-              aoCarregar={() => correr(p.pedido_id, () => mudarEstado(p.pedido_id, 'cancelado', { motivo: motivo.trim() }))}
+              aoCarregar={() => correr(p.pedido_id, () => mudarEstado(p.pedido_id, 'cancelado', { motivo: motivoCancelamento }))}
             />
             <Botao titulo="Voltar" variante="texto" aoCarregar={() => setAccao(null)} />
-          </>
+          </View>
         )}
         {!aberto && (
           <View style={{ gap: espaco.s }}>

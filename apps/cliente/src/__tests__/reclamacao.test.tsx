@@ -2,7 +2,7 @@
 import { act, fireEvent, renderRouter, waitFor } from 'expo-router/testing-library';
 
 import PedidoDetalhe from '@/app/pedido/[id]';
-import { fazerReclamacao, lerPedido, minhasReclamacoes } from '@/lib/api';
+import { fazerReclamacao, justificacaoCancelamento, lerPedido, minhasReclamacoes } from '@/lib/api';
 
 jest.mock('@/lib/api', () => ({
   lerPedido: jest.fn(),
@@ -12,6 +12,7 @@ jest.mock('@/lib/api', () => ({
   cancelarPedido: jest.fn(),
   minhasReclamacoes: jest.fn(),
   fazerReclamacao: jest.fn(),
+  justificacaoCancelamento: jest.fn(),
 }));
 jest.mock('@/components/AcompanharEntrega', () => ({ AcompanharEntrega: () => null }));
 jest.mock('@/components/PessoasComoTu', () => ({ PessoasComoTu: () => null }));
@@ -59,4 +60,14 @@ test('mostra a resposta da cozinha', async () => {
   await waitFor(() => expect(ecra.getByText('Resposta: Tens razão, pedimos desculpa.')).toBeTruthy());
   // a reclamação veio da avaliação: ainda pode reclamar pelo botão
   expect(ecra.getByText('Tenho uma reclamação')).toBeTruthy();
+});
+
+test('pedido cancelado pela cozinha: mostra a justificação completa do servidor', async () => {
+  (lerPedido as jest.Mock).mockResolvedValue({ ...pedido, estado: 'cancelado', motivo_cancelamento: 'Acabou um ingrediente' });
+  (minhasReclamacoes as jest.Mock).mockResolvedValue([]);
+  (justificacaoCancelamento as jest.Mock).mockResolvedValue('Lamentamos muito: tivemos de cancelar o teu pedido de Muamba.');
+  const ecra = abrir();
+  await waitFor(() => expect(ecra.getByText('Lamentamos muito: tivemos de cancelar o teu pedido de Muamba.')).toBeTruthy());
+  expect(justificacaoCancelamento).toHaveBeenCalledWith('p1');
+  expect(ecra.queryByText('Acabou um ingrediente')).toBeNull();
 });

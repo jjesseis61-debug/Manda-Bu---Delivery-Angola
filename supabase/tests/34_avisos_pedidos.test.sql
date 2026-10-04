@@ -66,7 +66,8 @@ reset role;
 select is((select count(*)::int from notificacoes_fila where codigo = 'N16' and dados ->> 'pedido_id' = testes.v('p2')), 0,
           'a cliente que cancela não recebe aviso');
 select is((select (texto_notificacao(codigo, dados)).corpo from notificacoes_fila where codigo = 'N16' and dados ->> 'pedido_id' = testes.v('p3')),
-          'Pedimos desculpa: a cozinha teve de cancelar o teu pedido (Acabou o peixe). Não te cobramos nada. Podes escolher outro prato.', 'cancelado pela cozinha: desculpa, o motivo e o passo seguinte');
+          'Lamentamos: tivemos de cancelar o teu pedido de Chocos pelo seguinte motivo: acabou o peixe. Não tens nada a pagar.',
+          'cancelado pela cozinha: assume, diz o prato e o motivo, e que não há nada a pagar');
 
 -- Envio: N16/N17 saem sem interruptor; ficam velhos ao fim de 2 horas
 select ok(exists (select 1 from notificacoes_por_enviar(1000) where codigo = 'N16')
