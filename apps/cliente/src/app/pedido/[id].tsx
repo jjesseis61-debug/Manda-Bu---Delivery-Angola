@@ -103,6 +103,15 @@ export default function PedidoDetalhe() {
         )}
       </Cartao>
 
+      {/* A resposta da cozinha à reclamação em destaque, logo ao abrir (não escondida no fundo) */}
+      {reclamacoes
+        .filter((r) => r.estado === 'resolvida' && r.resposta)
+        .map((r) => (
+          <Aviso key={r.id} tipo="sucesso">
+            A cozinha respondeu à tua reclamação{r.texto ? ` ("${r.texto}")` : ''}: {r.resposta}
+          </Aviso>
+        ))}
+
       {atraso && (
         <Aviso>
           {atraso.motivo
@@ -146,18 +155,16 @@ export default function PedidoDetalhe() {
         </Paragrafo>
       )}
 
-      {/* Reclamações: o cliente conta o que aconteceu; a cozinha responde (N22) */}
-      {reclamacoes.map((r) => (
-        <Cartao key={r.id}>
-          <Subtitulo>A tua reclamação</Subtitulo>
-          {r.texto && <Paragrafo>{r.texto}</Paragrafo>}
-          {r.estado === 'resolvida' && r.resposta ? (
-            <Paragrafo>Resposta: {r.resposta}</Paragrafo>
-          ) : (
+      {/* Reclamações ainda sem resposta: a resposta, quando chega, sobe para o aviso em destaque lá em cima (e N22) */}
+      {reclamacoes
+        .filter((r) => !(r.estado === 'resolvida' && r.resposta))
+        .map((r) => (
+          <Cartao key={r.id}>
+            <Subtitulo>A tua reclamação</Subtitulo>
+            {r.texto && <Paragrafo>{r.texto}</Paragrafo>}
             <Paragrafo suave>Recebemos. A cozinha vai ver o que aconteceu e responde-te em breve.</Paragrafo>
-          )}
-        </Cartao>
-      ))}
+          </Cartao>
+        ))}
       {podeReclamar && reclamar === null && (
         <Botao titulo="Tenho uma reclamação" variante="texto" aoCarregar={() => setReclamar('')} />
       )}

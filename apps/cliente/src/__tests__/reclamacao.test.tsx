@@ -57,7 +57,9 @@ test('mostra a resposta da cozinha', async () => {
       resposta: 'Tens razão, pedimos desculpa.', criado_em: new Date().toISOString(), decidido_em: new Date().toISOString() },
   ]);
   const ecra = abrir();
-  await waitFor(() => expect(ecra.getByText('Resposta: Tens razão, pedimos desculpa.')).toBeTruthy());
+  await waitFor(() =>
+    expect(ecra.getByText(/A cozinha respondeu à tua reclamação.*Tens razão, pedimos desculpa\./)).toBeTruthy(),
+  );
   // a reclamação veio da avaliação: ainda pode reclamar pelo botão
   expect(ecra.getByText('Tenho uma reclamação')).toBeTruthy();
 });
