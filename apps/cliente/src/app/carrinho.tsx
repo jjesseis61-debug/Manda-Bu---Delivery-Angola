@@ -262,6 +262,7 @@ export default function Carrinho() {
           ? 'Pagas na entrega. A tua parte da entrega fica fixa quando o grupo fechar.'
           : `${parametros?.tempo_entrega_min ? `Entrega em cerca de ${parametros.tempo_entrega_min} min. ` : ''}Pagas na entrega. O valor final é confirmado pelo servidor.`}
       </Paragrafo>
+      <Paragrafo suave>Preços com IVA incluído, quando aplicável. A fatura é emitida na cozinha, na entrega.</Paragrafo>
     </Ecra>
   );
 }

@@ -146,6 +146,10 @@ export default function PedidoDetalhe() {
           forte
         />
       </Cartao>
+      <Paragrafo suave>
+        Este é o resumo da tua encomenda, não é uma fatura. A fatura é emitida na cozinha, na entrega. Preços com IVA
+        incluído, quando aplicável.
+      </Paragrafo>
 
       {/* C9: avaliar até ao prazo; depois de avaliado mostra as estrelas dadas */}
       {avaliacao === 'pode' && <Botao titulo="Avaliar pedido" aoCarregar={() => router.push(`/avaliar/${pedido.id}`)} />}
