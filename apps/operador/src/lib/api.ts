@@ -9,6 +9,8 @@ import type {
   PerguntaAnalista,
   PropostaTurno,
   PlanoCompras,
+  ConversaResumo,
+  ConversaDetalhe,
   Estimulo,
   Reclamacao,
   RelatorioReclamacoes,
@@ -675,4 +677,21 @@ export async function pedirPlanoCompras(cozinhaId: string): Promise<string> {
 
 export async function marcarCompra(planoId: string, indice: number, estado: 'pendente' | 'comprado' | 'ignorado') {
   verificar(await supabase.rpc('marcar_compra', { p_plano: planoId, p_indice: indice, p_estado: estado }));
+}
+
+// ---------------------------------------------------------------- atendimento ao cliente
+export async function lerConversasAtendimento(): Promise<ConversaResumo[]> {
+  return verificar(await supabase.rpc('conversas_atendimento_lista')) as ConversaResumo[];
+}
+
+export async function lerConversaAtendimento(id: string): Promise<ConversaDetalhe> {
+  return verificar(await supabase.rpc('conversa_atendimento', { p_id: id })) as ConversaDetalhe;
+}
+
+export async function responderAtendimento(id: string, texto: string) {
+  verificar(await supabase.rpc('responder_atendimento', { p_id: id, p_texto: texto }));
+}
+
+export async function mudarConversaAtendimento(id: string, estado: 'agente' | 'fechada') {
+  verificar(await supabase.rpc('mudar_conversa_atendimento', { p_id: id, p_estado: estado }));
 }

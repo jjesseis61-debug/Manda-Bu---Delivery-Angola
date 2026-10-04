@@ -60,6 +60,7 @@ export default function LayoutRaiz() {
           <Stack.Screen name="enderecos/index" options={{ title: 'Endereços' }} />
           <Stack.Screen name="montar/[id]" options={{ title: 'Montar o prato' }} />
           <Stack.Screen name="pacotes" options={{ title: 'Pacote do mês' }} />
+          <Stack.Screen name="ajuda" options={{ title: 'Ajuda' }} />
           <Stack.Screen name="apagar-conta" options={{ title: 'Apagar a conta' }} />
           <Stack.Screen name="politica-privacidade" options={{ title: 'Política de privacidade' }} />
           <Stack.Screen name="enderecos/novo" options={{ title: 'Novo endereço' }} />

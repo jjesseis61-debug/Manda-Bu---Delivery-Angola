@@ -37,7 +37,8 @@ export type ChaveFuncionalidade =
   | 'pratos_montaveis'
   | 'como_chegar'
   | 'acompanhamento_entrega'
-  | 'pacotes';
+  | 'pacotes'
+  | 'agente_atendimento';
 
 export type Funcionalidades = Partial<Record<ChaveFuncionalidade, boolean>>;
 
@@ -324,4 +325,19 @@ export type MinhaReclamacao = {
   resposta: string | null;
   criado_em: string;
   decidido_em: string | null;
+};
+
+export type MensagemAtendimento = {
+  id: string;
+  autor: 'cliente' | 'agente' | 'funcionario' | 'sistema';
+  texto: string;
+  criado_em: string;
+  quem: string | null;
+};
+
+export type ConversaAtendimento = {
+  conversa_id: string;
+  estado: 'agente' | 'humano' | 'fechada';
+  a_escrever: boolean;
+  mensagens: MensagemAtendimento[];
 };

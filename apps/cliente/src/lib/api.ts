@@ -3,6 +3,7 @@
 import { dispositivoId } from './dispositivo';
 import { supabase } from './supabase';
 import type {
+  ConversaAtendimento,
   AtrasoPedido,
   MinhaReclamacao,
   Amigo,
@@ -541,4 +542,19 @@ export async function minhasReclamacoes(pedidoId: string): Promise<MinhaReclamac
 
 export async function fazerReclamacao(pedidoId: string, texto: string): Promise<string> {
   return verificar(await supabase.rpc('fazer_reclamacao', { p_pedido: pedidoId, p_texto: texto })) as string;
+}
+
+// ---------------------------------------------------------------- atendimento ao cliente
+export async function minhaConversaAtendimento(): Promise<ConversaAtendimento | null> {
+  return (verificar(await supabase.rpc('minha_conversa_atendimento')) as ConversaAtendimento | null) ?? null;
+}
+
+/** Envia a mensagem e chama logo o assistente (o pg_cron apanha-a se esta chamada falhar) */
+export async function enviarMensagemAtendimento(texto: string): Promise<void> {
+  const r = verificar(await supabase.rpc('enviar_mensagem_atendimento', { p_texto: texto })) as { conversa_id: string; estado: string };
+  if (r.estado === 'agente') supabase.functions.invoke('atendimento', { body: { conversa_id: r.conversa_id } }).catch(() => undefined);
+}
+
+export async function pedirPessoaAtendimento(): Promise<void> {
+  verificar(await supabase.rpc('pedir_pessoa_atendimento'));
 }

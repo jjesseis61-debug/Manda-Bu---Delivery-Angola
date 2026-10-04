@@ -53,6 +53,8 @@ Aplicadas por esta ordem. **Uma migração já aplicada nunca se edita:** qualqu
 | `20261003223842_avisos_turno.sql` | N27 (sugestões do gerente de turno) aos gerentes da cozinha; caduca em 30 minutos. | aplicada |
 | `20261004041451_stock_compras.sql` | Agente de stock e compras: `planos_compras` (um plano automático por cozinha e por dia, ou pedido na app com `stock.gerir`, até `compras_pedidos_dia` por dia); ferramentas só de leitura e do serviço, sem dados de clientes (`stk_saldos` com consumo, cobertura em dias e validades ainda em stock por FIFO aproximado; `stk_consumo_diario`; `stk_precos` por fornecedor; `stk_compras_diarias`; `stk_reconciliacao` enviado − devolvido − quebra − consumido; `stk_procura`); `registar_plano_compras` valida cada compra e alerta e avisa com o N28; `marcar_compra` (comprado/ignorado/pendente, com auditoria). Nada é escrito no stock. Interruptor `agente_compras` (desligado). | aplicada; `agendar_compras(...)` corrido |
 | `20261004041603_avisos_compras.sql` | N28 (compras para hoje ou alertas graves) a quem trata do stock da cozinha, vale 24 horas; job `mb_planos_compras` (todos os dias, 06:15 de Luanda). | aplicada |
+| `20261004043207_atendimento.sql` | Atendimento ao cliente: `conversas_atendimento` e `mensagens_atendimento` (o cliente lê só as suas; quem tem a permissão nova `atendimento.responder` lê todas); `enviar_mensagem_atendimento` (sessão de cliente, até `atendimento_mensagens_dia` por dia), `minha_conversa_atendimento`, `pedir_pessoa_atendimento`; ferramentas só de leitura e do serviço, sempre da conversa reservada (`atd_pedidos`, `atd_conta` sem apelido nem telefone, `atd_informacoes`); `reservar_atendimento` (não reserva duas vezes enquanto o agente responde) e `registar_atendimento` (três erros ou sem chave = passa para uma pessoa); `conversas_atendimento_lista`, `conversa_atendimento` (telefone só com `clientes.gerir`), `responder_atendimento` (N30) e `mudar_conversa_atendimento` (devolver ao agente ou fechar, com auditoria). Interruptor `agente_atendimento` (desligado). | aplicada; `agendar_atendimento(...)` corrido |
+| `20261004043300_avisos_atendimento.sql` | N29 (a conversa precisa de uma pessoa, com o primeiro nome e o motivo; vale 24 horas, não se repete em 10 minutos) a quem tem `atendimento.responder`; N30 (resposta de uma pessoa) ao cliente. | aplicada |
 
 Os números de versão dos ficheiros são os que o Supabase registou ao aplicar, para `supabase migration list` e
 `supabase db push` não voltarem a aplicá-las.
@@ -80,6 +82,7 @@ Os jobs respeitam os interruptores: com tudo desligado não enfileiram nada.
 | `functions/vigiar` | Vigilante do Convida e Ganha: o Claude investiga um indicador com sinais (indicados, pedidos, levantamentos, rede, comparação) e entrega um dossiê | Publicada sem verificação de JWT, com o mesmo segredo do envio. Usa o `ANTHROPIC_API_KEY`. Agendada com `select agendar_vigilancia('<url da função>');` (de 5 em 5 minutos). Só trabalha com o interruptor `agente_vigilante` ligado |
 | `functions/turno` | Gerente de turno: de 5 em 5 minutos, quando uma cozinha tem algo a pedir atenção, o Claude (modelo mais leve) lê a situação, pode abrir o histórico de um pedido e propõe acções ao gerente | Publicada sem verificação de JWT, com o mesmo segredo do envio. Usa o `ANTHROPIC_API_KEY`. Agendada com `select agendar_turno('<url da função>');` (de 5 em 5 minutos). Só trabalha com o interruptor `agente_turno` ligado e nas horas de serviço |
 | `functions/compras` | Agente de stock e compras: o Claude lê os saldos, o consumo, os preços, as compras do dia, a reconciliação e a procura e entrega o plano de compras com alertas | Publicada sem verificação de JWT: pelo pg_cron (segredo) prepara o plano mais antigo; pela app só o plano indicado (`plano_id`). Usa o `ANTHROPIC_API_KEY`. Agendada com `select agendar_compras('<url da função>');` (de 5 em 5 minutos). Só trabalha com o interruptor `agente_compras` ligado |
+| `functions/atendimento` | Atendimento ao cliente: o Claude (modelo mais leve) responde na conversa com os pedidos e a conta desse cliente e a informação pública, e passa a uma pessoa quando é preciso | Publicada sem verificação de JWT: pelo pg_cron (segredo) responde à conversa mais antiga; pela app só à conversa indicada (`conversa_id`) e só se tiver uma mensagem à espera. Usa o `ANTHROPIC_API_KEY`; sem ele, a conversa passa para uma pessoa. Agendada com `select agendar_atendimento('<url da função>');` (de minuto a minuto). Só trabalha com o interruptor `agente_atendimento` ligado |
 | `functions/analista` | Analista do administrador: responde às perguntas da app e faz o relatório mensal, escolhendo as ferramentas de números agregados | Publicada sem verificação de JWT: pelo pg_cron (segredo) responde à mais antiga; pela app só à pergunta indicada (`pergunta_id`). Usa o `ANTHROPIC_API_KEY`. Agendada com `select agendar_analista('<url da função>');` (de minuto a minuto). Só trabalha com o interruptor `agente_analista` ligado |
 | `functions/investigar` | Agente investigador financeiro: o Claude usa ferramentas só de leitura em vários passos e entrega um dossiê (risco, factos, explicações possíveis, perguntas) | Publicada sem verificação de JWT, com o mesmo segredo do envio. Usa o `ANTHROPIC_API_KEY`. Agendada com `select agendar_investigacoes('<url da função>');` (de 5 em 5 minutos, um caso por execução). Só trabalha com o interruptor `agente_investigador` ligado |
 | `functions/analisar-ia` | Analisa com o Claude as reclamações (categoria, gravidade, se os factos dão razão, resposta sugerida) e escreve a mensagem pessoal dos estímulos (Bandura) | Publicada sem verificação de JWT, com o mesmo segredo do envio. Usa o mesmo `ANTHROPIC_API_KEY`; sem ele o gerente decide sem análise e usa-se o texto base. Agendada com `select agendar_analises('<url da função>');` (de 2 em 2 minutos) |
@@ -137,6 +140,7 @@ base de dados.
 | `44_vigilancia_convida.test.sql` | histórico do mesmo telemóvel em duas contas; sinais e pontos de uma rede (mesmo local, telemóvel, levantamento para um indicado, só o pedido do desconto, muitos no mesmo dia) e de um indicador normal (0); só quem verifica abre casos; ferramentas certas, sem nomes nem telefones e só do serviço; dossiê, N26 com o código; decisão uma vez; interruptor desligado = parado |
 | `45_gerente_turno.test.sql` | escolha da cozinha a analisar (uma vez de 5 em 5 minutos); situação com os pedidos em curso e o atraso, estafetas e pratos, sem nomes de clientes; propostas validadas e sem repetir; N27 só aos gerentes da cozinha; cada gerente decide só as da sua cozinha; aceitar avisa o cliente com o motivo editado, confirma o pedido ou pausa o prato (auditoria); decide-se uma vez; caducam em 30 minutos; interruptor desligado = parado |
 | `46_stock_compras.test.sql` | saldos, consumo e cobertura da cozinha (sem os de outra cozinha); validades só das entradas ainda em stock; produto sem consumo; preços por fornecedor; consumo dia a dia; reconciliação com 500 g sem explicação; compras do dia, encomendas e receitas; job diário; só quem trata do stock pede (sem duplicar o plano por preparar); reserva uma vez; plano validado; N28 só a quem trata do stock da cozinha; cada um vê e marca só as suas cozinhas (auditoria); três erros = indisponível; limite diário; interruptor desligado = parado |
+| `47_atendimento.test.sql` | cada cliente com sessão abre a sua conversa; reserva sem respostas em dobro (uma mensagem nova enquanto o agente responde volta a pôr a conversa por responder); ferramentas só com os pedidos e a conta do próprio cliente, sem apelido nem telefone; resposta do agente; passagem para uma pessoa com N29 só a quem atende e sem repetir; resposta de uma pessoa com N30; cada cliente vê só a sua conversa; devolver ao agente e fechar (auditoria); três erros = pessoa; o cliente pede uma pessoa; limite diário; interruptor desligado = parado |
 | `33_caixa_gestao.test.sql` | Abre a caixa (uma por posto), quem tem `vendas.registar` vê-a; fora da cozinha ou sem a permissão recusa; o esperado só soma a parcela Dinheiro e os pacotes na loja menos as sangrias; o fecho guarda a diferença; caixa fechada não aceita sangrias, novo fecho nem escrita directa; tudo na auditoria |
 | `15_app_operador.test.sql` | I3: telefone e ligação dos funcionários, painel (O1), verificação e "Confirmar todos" com N3 (O2), levantamentos (O3), embaixadores (O4), fila de entregas e caixas (E1), auditoria de cozinhas e cardápio (O6) |
 
@@ -201,7 +205,8 @@ base de dados.
 | 44 vigilante do Convida e Ganha | 17/17 | 17/17 (o n.º 12 corrigido: procurava "923", que também aparece em identificadores) |
 | 45 gerente de turno | 15/15 | 15/15 (o n.º 4 corrigido: assumia que o prato do teste era o primeiro do cardápio) |
 | 46 stock e compras | 17/17 | 17/17 |
-| **Total** | **851/851** | |
+| 47 atendimento ao cliente | 17/17 | 17/17 (o n.º 6 corrigido: assumia que o prato do teste era o primeiro da lista) |
+| **Total** | **868/868** | |
 
 Na I2 voltaram a correr no Supabase os testes afectados por cada migração (app do cliente: 06, 08, 09, 12 e 13;
 desconto limitado: 02, 09 e 14); os restantes não dependem delas (e todos passam localmente).
@@ -281,6 +286,17 @@ conta; e alertas de validades, saídas sem explicação nas distribuições, pre
 quem trata do stock marca cada compra como feita ou ignorada e as entradas continuam a ser registadas como hoje.
 Avisa (N28) quando há compras para hoje ou alertas graves. Ligar em Parâmetros → `agente_compras`. Testes:
 `node --experimental-strip-types supabase/functions/compras/compras.test.mjs`.
+
+### `atendimento` (atendimento ao cliente)
+
+O cliente escreve no ecrã Ajuda (só aparece com `agente_atendimento` ligado) e a app chama logo a função; o
+pg_cron apanha, de minuto a minuto, o que ficar por responder. O Claude vê o primeiro nome e as últimas mensagens,
+consulta os pedidos e a conta desse cliente (nunca o telefone, a morada nem outros clientes) e a informação
+pública, e responde em poucas frases. Não promete reembolsos, compensações nem descontos e não mexe em pedidos:
+reclamações, alergias, pagamentos e pedidos de uma pessoa passam para quem tem `atendimento.responder` (N29),
+que responde no ecrã Atendimento da app do operador (N30 ao cliente), devolve ao assistente ou termina. Se o
+Claude falhar três vezes, ou sem a chave, a conversa passa logo para uma pessoa. Testes:
+`node --experimental-strip-types supabase/functions/atendimento/atendimento.test.mjs`.
 
 ### `analista` (analista do administrador)
 

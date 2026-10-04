@@ -177,6 +177,10 @@ const mensagens: Record<string, string> = {
   grupo_fechado: 'Este grupo já fechou. Já não é possível juntar pedidos.',
   grupo_em_preparacao: 'O grupo já está a ser preparado e não pode ser cancelado.',
   funcionalidade_inactiva: 'Esta funcionalidade não está disponível.',
+  // atendimento
+  texto_invalido: 'Escreve a mensagem (até 1000 caracteres).',
+  limite_diario: 'Chegaste ao limite de mensagens de hoje. Tenta amanhã.',
+  sem_conversa: 'Escreve primeiro a tua pergunta.',
   sem_permissao: 'Não tens permissão para isto.',
 };
 

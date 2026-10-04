@@ -229,6 +229,9 @@ const mensagens: Record<string, string> = {
   proposta_expirada: 'Esta sugestão já foi decidida ou caducou.',
   limite_diario: 'Chegaste ao limite de hoje. Tenta amanhã.',
   plano_inexistente: 'O plano de compras já não existe.',
+  conversa_inexistente: 'A conversa já não existe.',
+  conversa_fechada: 'Esta conversa já terminou.',
+  texto_invalido: 'Escreve a resposta (até 1500 caracteres).',
   texto_curto: 'Escreve a pergunta com um pouco mais de detalhe.',
   funcionalidade_inactiva: 'Esta funcionalidade está desligada. Liga-a em Parâmetros e interruptores.',
 };

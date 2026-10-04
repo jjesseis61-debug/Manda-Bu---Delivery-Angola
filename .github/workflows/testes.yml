@@ -37,6 +37,7 @@ jobs:
       - run: node --experimental-strip-types supabase/functions/vigiar/vigiar.test.mjs
       - run: node --experimental-strip-types supabase/functions/turno/turno.test.mjs
       - run: node --experimental-strip-types supabase/functions/compras/compras.test.mjs
+      - run: node --experimental-strip-types supabase/functions/atendimento/atendimento.test.mjs
 
   apps:
     name: App do ${{ matrix.app }}

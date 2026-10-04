@@ -79,6 +79,9 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 'propostas_turno_lista', 'decidir_proposta_turno',
                 -- stock e compras
                 'planos_compras_lista', 'pedir_plano_compras', 'marcar_compra',
+                -- atendimento ao cliente
+                'enviar_mensagem_atendimento', 'minha_conversa_atendimento', 'pedir_pessoa_atendimento',
+                'conversas_atendimento_lista', 'conversa_atendimento', 'responder_atendimento', 'mudar_conversa_atendimento',
                 -- auxiliares usadas em políticas RLS, valores por defeito ou triggers SECURITY INVOKER
                 'cliente_actual', 'cozinha_padrao', 'e_funcionario', 'funcionalidade_activa',
                 'funcionario_actual', 'membro_da_cozinha', 'tem_permissao', 'e_administrador', 'pode_na_cozinha')),

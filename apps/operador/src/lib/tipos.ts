@@ -25,7 +25,8 @@ export type Permissao =
   | 'clientes.gerir'
   | 'equipa.gerir'
   | 'analista.usar'
-  | 'stock.gerir';
+  | 'stock.gerir'
+  | 'atendimento.responder';
 
 export type Painel = {
   custo: number;
@@ -734,4 +735,25 @@ export type PlanoCompras = {
   alertas: AlertaCompra[];
   criado_em: string;
   pronto_em: string | null;
+};
+
+export type ConversaResumo = {
+  id: string;
+  cliente: string;
+  estado: 'agente' | 'humano' | 'fechada';
+  motivo: string | null;
+  atendido_por: string | null;
+  ultima_mensagem_em: string;
+  ultima_mensagem: string | null;
+  ultima_do_cliente: boolean | null;
+};
+
+export type ConversaDetalhe = {
+  id: string;
+  estado: 'agente' | 'humano' | 'fechada';
+  motivo: string | null;
+  cliente: string;
+  telefone: string | null;
+  mensagens: { id: string; autor: 'cliente' | 'agente' | 'funcionario' | 'sistema'; texto: string; criado_em: string; quem: string | null }[];
+  pedidos: { pedido_id: string; feito_em: string; estado: string; itens: string | null; total_kz: number }[];
 };
