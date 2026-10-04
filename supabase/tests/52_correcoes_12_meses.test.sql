@@ -2,7 +2,7 @@
 -- da cozinha pelo último pedido; rejeições do investigador pela taxa; limpeza diária de notificações e auditoria
 begin;
 \ir _helpers.psql
-select plan(10);
+select plan(11);
 
 -- (a) Nenhuma regra de acesso chama as funções da sessão linha a linha (só dentro de "(SELECT …)")
 select is((select string_agg(tablename || '.' || policyname, ', ')
@@ -92,6 +92,34 @@ select ok(testes.v('e_apagar') like '42501:auditoria_imutavel%' and testes.v('e_
           and not has_function_privilege('authenticated', 'limpar_dados()', 'execute')
           and not has_function_privilege('anon', 'limpar_dados()', 'execute'),
           'fora da limpeza a auditoria continua imutável (e nunca com menos de dois anos); as apps não chamam a limpeza');
+
+-- (e) Segurança: a justificação de cancelamento só para o dono (teste de ataque)
+with z2 as (insert into zonas (nome, tipo, taxa) values ('Zseg', 'Própria', 400) returning id) select testes.def('zseg', id) from z2;
+with m2 as (insert into cardapio (nome, preco) values ('Prato Seg', 3000) returning id) select testes.def('mseg', id) from m2;
+select testes.def('dono_s', testes.cliente('Dono Seg'));
+select testes.def('outro_s', testes.cliente('Outro Seg'));
+select testes.def('ponto_s', testes.ponto('residencial', null, null, testes.u('zseg')));
+insert into enderecos_cliente (cliente_id, ponto_entrega_id) values (testes.u('dono_s'), testes.u('ponto_s'));
+with p2 as (insert into pedidos (cliente_id, ponto_entrega_id, itens) values (testes.u('dono_s'), testes.u('ponto_s'),
+     jsonb_build_array(jsonb_build_object('cardapio_id', testes.u('mseg'), 'qtd', 1))) returning id) select testes.def('ped_s', id) from p2;
+select testes.def('ger_s', testes.funcionario('Gerente Seg', array['pedidos.gerir']));
+insert into turnos (data, funcionario_id, cozinha_id) values (current_date, testes.u('ger_s'), cozinha_padrao());
+select testes.entrar_funcionario(testes.u('ger_s')); set local role authenticated;
+select mudar_estado_pedido(testes.u('ped_s'), 'cancelado', 'Acabou o gás', null, null);
+reset role; select testes.sair();
+select testes.entrar(testes.u('dono_s')); set local role authenticated;
+select testes.def('js_dono', justificacao_cancelamento(testes.u('ped_s')));
+reset role; select testes.sair();
+select testes.entrar(testes.u('outro_s')); set local role authenticated;
+select testes.def('js_outro', justificacao_cancelamento(testes.u('ped_s')));
+reset role; select testes.sair();
+select testes.entrar_funcionario(testes.u('ger_s')); set local role authenticated;
+select testes.def('js_semcli', justificacao_cancelamento(testes.u('ped_s')));
+reset role; select testes.sair();
+select testes.def('js_servico', (texto_notificacao('N16', jsonb_build_object('pedido_id', testes.u('ped_s'), 'estado', 'cancelado', 'motivo', 'Acabou o gás'))).corpo);
+select ok(testes.v('js_dono') like 'Lamentamos muito:%' and testes.v('js_outro') is null and testes.v('js_semcli') is null
+          and testes.v('js_servico') like 'Lamentamos:%',
+          'justificação de cancelamento: só o dono a lê; outro cliente e sessão sem cliente são bloqueados; o envio (serviço) mantém o texto');
 
 select * from finish();
 rollback;

@@ -63,6 +63,7 @@ select testes.entrar_funcionario(testes.u('gerente'));
 set local role authenticated;
 select mudar_estado_pedido(testes.u('p3'), 'cancelado', 'Acabou o peixe', null, null);
 reset role;
+select testes.sair();   -- o corpo da N16 é construído pelo envio (serviço), não por uma sessão de cliente
 select is((select count(*)::int from notificacoes_fila where codigo = 'N16' and dados ->> 'pedido_id' = testes.v('p2')), 0,
           'a cliente que cancela não recebe aviso');
 select is((select (texto_notificacao(codigo, dados)).corpo from notificacoes_fila where codigo = 'N16' and dados ->> 'pedido_id' = testes.v('p3')),

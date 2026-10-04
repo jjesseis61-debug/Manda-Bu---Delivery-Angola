@@ -64,6 +64,7 @@ Aplicadas por esta ordem. **Uma migração já aplicada nunca se edita:** qualqu
 | `20261004105853_relatorio_cozinha_rapido.sql` | `relatorio_cozinha`: a retenção usa o último pedido de cada cliente em vez de comparar com todos os pedidos (mesmo resultado; um ano: 12,8 s → 0,19 s). | aplicada |
 | `20261004105901_investigador_taxa_rejeicao.sql` | `sinais_financeiros`: os comprovativos rejeitados contam acima de 2 % dos comprovativos do período (`rejeitados_tolerados`); com poucos comprovativos nada é tolerado. Agosto simulado: 14 → 2 casos. | aplicada |
 | `29991231000004_limpeza_dados.sql` | `limpar_dados()` diária (03:45): apaga as notificações enviadas ou descartadas há mais de 90 dias e a auditoria com mais de dois anos (a única excepção à auditoria imutável, só para esta tarefa); job `mb_limpeza_dados`. | **por aplicar** (o pedido de aplicação foi cancelado duas vezes) |
+| `20261004123008_justificacao_so_dono.sql` | Teste de segurança: `justificacao_cancelamento` só para o dono. Antes, uma sessão autenticada sem cliente (ou de outro cliente) podia lê-la sabendo o id; agora bloqueia-se qualquer sessão `authenticated` que não seja o dono, deixando passar só o envio (serviço) que mantém o texto da N16. | aplicada |
 
 Os números de versão dos ficheiros são os que o Supabase registou ao aplicar, para `supabase migration list` e
 `supabase db push` não voltarem a aplicá-las.
@@ -154,7 +155,7 @@ base de dados.
 | `49_componentes_cliente.test.sql` | valor de cada ingrediente (custo × margem × IVA × quantidade; sem custo = 0) sem mostrar custos; tirar ingredientes desconta e põe "sem ..." no nome; só da receita, sem repetir nem tirar todos; ajustes da app ignorados; prato a 0 Kz com preço das opções e recusado sem elas; interruptor desligado; o pedido fica com o preço do servidor; o stock não desconta o que foi tirado |
 | `50_doses_categorias.test.sql` | categorias limpas (espaços, maiúscula, grafia existente, vazia sem categoria); sem doses não há limite; lançar doses; cada pedido gasta; não se pede mais do que restam (no pedido e no orçamento); o cancelado devolve; a 0 fica esgotado; relançar conta a partir daí e as de ontem já não limitam |
 | `51_cancelamento_justificado.test.sql` | regista quem cancelou; versão completa e curta (N16) com o prato e o motivo da lista; mais pratos, pacote e saldo devolvidos; frases de cada motivo e texto livre arrumado; cancelado pelo próprio cliente; outro cliente não lê; privilégios |
-| `52_correcoes_12_meses.test.sql` | nenhuma regra de acesso chama as funções da sessão linha a linha (e cada cliente continua a ver só os seus pedidos); retenção do relatório da cozinha aos 30/60/90 dias; rejeições toleradas até 2 % (0, 9 e 3 pontos); limpeza das notificações (> 90 dias) e da auditoria (> 2 anos), auditoria imutável fora disso, limpeza só do servidor |
+| `52_correcoes_12_meses.test.sql` | nenhuma regra de acesso chama as funções da sessão linha a linha (e cada cliente continua a ver só os seus pedidos); retenção do relatório da cozinha aos 30/60/90 dias; rejeições toleradas até 2 % (0, 9 e 3 pontos); limpeza das notificações (> 90 dias) e da auditoria (> 2 anos), auditoria imutável fora disso, limpeza só do servidor | ; justificação de cancelamento só para o dono (outro cliente e sessão sem cliente bloqueados; o envio mantém o texto) |
 | `33_caixa_gestao.test.sql` | Abre a caixa (uma por posto), quem tem `vendas.registar` vê-a; fora da cozinha ou sem a permissão recusa; o esperado só soma a parcela Dinheiro e os pacotes na loja menos as sangrias; o fecho guarda a diferença; caixa fechada não aceita sangrias, novo fecho nem escrita directa; tudo na auditoria |
 | `15_app_operador.test.sql` | I3: telefone e ligação dos funcionários, painel (O1), verificação e "Confirmar todos" com N3 (O2), levantamentos (O3), embaixadores (O4), fila de entregas e caixas (E1), auditoria de cozinhas e cardápio (O6) |
 
@@ -224,7 +225,7 @@ base de dados.
 | 49 ingredientes que o cliente tira | 12/12 | 12/12 (e o 25 voltou a correr: 14/14) |
 | 50 doses do dia e categorias | 9/9 | 9/9 |
 | (42 com mais um teste: o N24 não rotula a pessoa) | 22/22 | |
-| **Total** | **918/918** | |
+| **Total** | **919/919** | |
 
 Na I2 voltaram a correr no Supabase os testes afectados por cada migração (app do cliente: 06, 08, 09, 12 e 13;
 desconto limitado: 02, 09 e 14); os restantes não dependem delas (e todos passam localmente).
