@@ -17,6 +17,7 @@ import {
 } from '@/lib/api';
 import { useCarrinho } from '@/lib/carrinho';
 import { formatarKz, formatarMedia, mensagemErro } from '@/lib/formatar';
+import { gruposEsgotados } from '@/lib/opcoes';
 import { useSessao } from '@/lib/sessao';
 import { cores, espaco, raio } from '@/lib/tema';
 import type { CozinhaParaPedir, Endereco, ItemCardapio, MediasAvaliacoes } from '@/lib/tipos';
@@ -33,6 +34,7 @@ export default function Inicio() {
   const [cozinhas, setCozinhas] = useState<CozinhaParaPedir[]>([]);
   // I9: pratos com opções (abrem o ecrã de montar em vez de irem direito ao carrinho)
   const [montaveis, setMontaveis] = useState<Set<string>>(new Set());
+  const [esgotados, setEsgotados] = useState<Set<string>>(new Set());
   const cozinhaId = carrinho.cozinhaActual?.id ?? null;
   // Referência ao carrinho para o carregamento não depender de cada prato adicionado
   const carrinhoRef = useRef(carrinho);
@@ -61,11 +63,10 @@ export default function Inicio() {
       const [itens, ends] = await Promise.all([lerCardapio(escolhida), lerEnderecos()]);
       setCardapio(itens);
       setEnderecos(ends);
-      setMontaveis(
-        ligada('pratos_montaveis')
-          ? new Set((await lerOpcoes(itens.map((i) => i.id))).filter((g) => g.opcoes.length > 0).map((g) => g.cardapio_id))
-          : new Set(),
-      );
+      // I9: pratos com opções abrem o ecrã de montar; um grupo obrigatório sem opções disponíveis esgota o prato
+      const grupos = ligada('pratos_montaveis') ? await lerOpcoes(itens.map((i) => i.id)) : [];
+      setMontaveis(new Set(grupos.filter((g) => g.opcoes.length > 0).map((g) => g.cardapio_id)));
+      setEsgotados(new Set(grupos.filter((g) => gruposEsgotados([g]).length > 0).map((g) => g.cardapio_id)));
       // C7: contador do bairro do endereço principal (o servidor devolve null abaixo do mínimo)
       const zona = ends[0]?.pontos_entrega?.zona_id;
       setContador(ligada('contadores_zona') && zona ? await contadorZona(zona) : null);
@@ -208,16 +209,20 @@ export default function Inicio() {
                   })()}
                   <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: espaco.m }}>
                     {noCarrinho > 0 && <Text style={{ color: cores.marca, fontWeight: '600' }}>{noCarrinho} no carrinho</Text>}
-                    <Pressable
-                      accessibilityRole="button"
-                      onPress={() =>
-                        montaveis.has(item.id)
-                          ? router.push({ pathname: '/montar/[id]', params: { id: item.id } })
-                          : carrinho.adicionar(item)
-                      }
-                      style={{ backgroundColor: cores.marcaClara, borderRadius: 20, paddingHorizontal: espaco.l, paddingVertical: 6 }}>
-                      <Text style={{ color: cores.marca, fontWeight: '700' }}>{montaveis.has(item.id) ? 'Montar' : 'Adicionar'}</Text>
-                    </Pressable>
+                    {esgotados.has(item.id) ? (
+                      <Text style={{ color: cores.textoSuave, fontWeight: '700' }}>Esgotado</Text>
+                    ) : (
+                      <Pressable
+                        accessibilityRole="button"
+                        onPress={() =>
+                          montaveis.has(item.id)
+                            ? router.push({ pathname: '/montar/[id]', params: { id: item.id } })
+                            : carrinho.adicionar(item)
+                        }
+                        style={{ backgroundColor: cores.marcaClara, borderRadius: 20, paddingHorizontal: espaco.l, paddingVertical: 6 }}>
+                        <Text style={{ color: cores.marca, fontWeight: '700' }}>{montaveis.has(item.id) ? 'Montar' : 'Adicionar'}</Text>
+                      </Pressable>
+                    )}
                   </View>
                 </View>
               );

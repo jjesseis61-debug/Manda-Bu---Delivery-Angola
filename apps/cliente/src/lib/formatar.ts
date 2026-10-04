@@ -140,7 +140,7 @@ const mensagens: Record<string, string> = {
   pedido_vazio: 'O carrinho está vazio.',
   item_indisponivel: 'Um dos pratos já não está disponível. Actualiza o carrinho.',
   opcao_invalida: 'Uma das opções escolhidas já não está disponível. Volta a montar o prato.',
-  opcoes_em_falta: 'Falta escolher uma opção obrigatória do prato.',
+  opcoes_em_falta: 'Falta escolher uma opção obrigatória de um prato montado, ou já não há nenhuma disponível. Volta a montar o prato.',
   opcoes_a_mais: 'Escolheste opções a mais para um dos pratos.',
   posicao_invalida: 'Localização inválida.',
   pacotes_inactivos: 'Os pacotes não estão disponíveis neste momento.',

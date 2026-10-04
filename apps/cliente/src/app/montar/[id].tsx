@@ -6,7 +6,7 @@ import { ACarregar, Aviso, Botao, Ecra, Paragrafo, Subtitulo, Titulo } from '@/c
 import { lerItemCardapio, lerOpcoes } from '@/lib/api';
 import { useCarrinho } from '@/lib/carrinho';
 import { formatarKz, mensagemErro } from '@/lib/formatar';
-import { alternar, gruposEmFalta, opcoesEscolhidas, precoMontado, regraGrupo } from '@/lib/opcoes';
+import { alternar, gruposEmFalta, gruposEsgotados, opcoesEscolhidas, precoMontado, regraGrupo } from '@/lib/opcoes';
 import { useSessao } from '@/lib/sessao';
 import { cores, espaco, raio } from '@/lib/tema';
 import type { GrupoOpcoes, ItemCardapio } from '@/lib/tipos';
@@ -26,7 +26,8 @@ export default function MontarPrato() {
     Promise.all([lerItemCardapio(String(id)), lerOpcoes([String(id)])])
       .then(([i, g]) => {
         setItem(i);
-        setGrupos(g.filter((x) => x.opcoes.length > 0));
+        // Grupos opcionais sem opções disponíveis não aparecem; os obrigatórios ficam para mostrar que esgotaram
+        setGrupos(g.filter((x) => x.opcoes.length > 0 || x.minimo > 0));
       })
       .catch((e) => {
         setErro(mensagemErro(e));
@@ -41,6 +42,7 @@ export default function MontarPrato() {
   if (item === null) return <Ecra><Aviso tipo="erro">{erro ?? 'Este prato já não está disponível.'}</Aviso></Ecra>;
 
   const opcoes = opcoesEscolhidas(grupos, escolhidas);
+  const esgotados = gruposEsgotados(grupos);
   const faltam = gruposEmFalta(grupos, escolhidas);
 
   return (
@@ -84,10 +86,14 @@ export default function MontarPrato() {
           </View>
         );
       })}
-      {faltam.length > 0 && <Paragrafo suave>Falta escolher: {faltam.join(', ')}.</Paragrafo>}
+      {esgotados.length > 0 ? (
+        <Aviso>{`Esgotado de momento: não há nenhuma opção disponível em ${esgotados.join(', ')}.`}</Aviso>
+      ) : (
+        faltam.length > 0 && <Paragrafo suave>Falta escolher: {faltam.join(', ')}.</Paragrafo>
+      )}
       <Botao
-        titulo={`Adicionar · ${formatarKz(precoMontado(item.preco, opcoes))}`}
-        desactivado={faltam.length > 0}
+        titulo={esgotados.length > 0 ? 'Esgotado' : `Adicionar · ${formatarKz(precoMontado(item.preco, opcoes))}`}
+        desactivado={faltam.length > 0 || esgotados.length > 0}
         aoCarregar={() => {
           carrinho.adicionar(item, opcoes);
           // Aberto por link não há ecrã anterior: segue para o início

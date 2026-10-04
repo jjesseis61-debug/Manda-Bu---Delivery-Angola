@@ -18,6 +18,14 @@ export function gruposEmFalta(grupos: GrupoOpcoes[], escolhidas: string[]): stri
     .map((g) => g.nome);
 }
 
+/**
+ * Grupos obrigatórios sem nenhuma opção disponível (ex.: acabaram todas as bases): o prato não se pode montar,
+ * porque o servidor recusaria o pedido. A app mostra-o como esgotado em vez de o deixar adicionar.
+ */
+export function gruposEsgotados(grupos: GrupoOpcoes[]): string[] {
+  return grupos.filter((g) => g.minimo > 0 && g.opcoes.length === 0).map((g) => g.nome);
+}
+
 /** Opções escolhidas pela ordem dos grupos, com o preço extra */
 export function opcoesEscolhidas(grupos: GrupoOpcoes[], escolhidas: string[]): OpcaoEscolhida[] {
   return grupos.flatMap((g) =>
