@@ -89,12 +89,12 @@ VERIFICACOES = [
      'Ninguém levantou ou gastou mais do que ganhou.'),
     ('Refeições do pacote batem com os pedidos',
      """select a.id, a.refeicoes_usadas,
-               (select coalesce(sum(refeicoes_pacote), 0) from pedidos p where p.adesao_pacote_id = a.id and p.estado <> 'cancelado') as nos_pedidos
+               (select coalesce(sum(refeicoes_pacote), 0) from pedidos p where p.adesao_pacote_id = a.id and p.estado not in ('cancelado', 'estornado')) as nos_pedidos
           from adesoes_pacote a
          where a.refeicoes_usadas <> (select coalesce(sum(refeicoes_pacote), 0) from pedidos p
-                                        where p.adesao_pacote_id = a.id and p.estado <> 'cancelado')
+                                        where p.adesao_pacote_id = a.id and p.estado not in ('cancelado', 'estornado'))
             or a.refeicoes_usadas > a.refeicoes + a.refeicoes_oferta""",
-     'Usadas = soma das refeições nos pedidos não cancelados (os cancelados devolvem); nunca acima do total.'),
+     'Usadas = soma das refeições nos pedidos não cancelados nem estornados (esses devolvem); nunca acima do total.'),
     ('Stock: cada venda com receita descontou os ingredientes uma vez',
      """select v.id from vendas v
          where v.origem = 'App cliente' and v.prato_base_id is not null and v.qtd > 0

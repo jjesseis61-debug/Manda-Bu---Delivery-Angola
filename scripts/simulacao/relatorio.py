@@ -122,12 +122,12 @@ def main():
     rel['privacidade'] = {'clientes_testados': len(clientes), 'viram_dados_de_outros': falhas}
 
     # ------------------------------------------------------------------ desempenho com o volume de um ano
-    adm_uid = q(bd, 'select f.auth_user_id from funcionarios f join direcoes d on d.id = f.direcao_id order by jsonb_object_length(d.permissoes) desc limit 1')[0][0]
+    adm_uid = q(bd, 'select f.auth_user_id from funcionarios f join direcoes d on d.id = f.direcao_id where f.nome like %s limit 1', ('Jesse%',))[0][0]
     ger = q(bd, "select f.auth_user_id, t.cozinha_id from funcionarios f join turnos t on t.funcionario_id = f.id where f.nome like 'Gerente%%' limit 1")[0]
     cli = q(bd, 'select auth_user_id from clientes c where deletado_em is null order by (select count(*) from pedidos p where p.cliente_id = c.id) desc limit 1')[0][0]
     testes = [
         ('pedidos_operador (gerente)', ger[0], 'select count(*) from pedidos_operador()', None),
-        ('relatorio_cozinha do ano (gerente)', ger[0], "select relatorio_cozinha(%s, (now() - interval '365 days')::date, now()::date)", (ger[1],)),
+        ('relatorio_cozinha do ano (administrador)', adm_uid, "select relatorio_cozinha(%s, (now() - interval '365 days')::date, now()::date)", (ger[1],)),
         ('relatorio_comparativo do ano', adm_uid, "select count(*) from relatorio_comparativo((now() - interval '365 days')::date, now()::date)", None),
         ('painel_programa do ano', adm_uid, "select painel_programa((now() - interval '365 days')::date, now()::date)", None),
         ('fecho_mensal', adm_uid, 'select fecho_mensal(extract(year from now())::int, extract(month from now())::int)', None),
