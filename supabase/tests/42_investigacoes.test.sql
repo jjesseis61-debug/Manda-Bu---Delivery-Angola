@@ -2,7 +2,7 @@
 -- resultado com aviso N24 (nunca ao próprio), decisão humana e quem vê os casos
 begin;
 \ir _helpers.psql
-select plan(21);
+select plan(22);
 
 select testes.funcionalidade('agente_investigador', true);
 select testes.def('cz', cozinha_padrao());
@@ -102,6 +102,10 @@ select results_eq(format($$select estado, risco, conclusao ->> 'recomendacao', j
 select is((select array_agg(funcionario_id order by funcionario_id) from notificacoes_fila where codigo = 'N24'),
           (select array_agg(x order by x) from unnest(array[testes.u('joana'), testes.u('marta')]) x),
           'N24 a quem confere as finanças');
+select ok((select bool_and((texto_notificacao(codigo, dados)).corpo like 'Pagamentos a confirmar de %: há diferenças por explicar. Abre a Conferência para ver os factos e decidir.'
+                           and (texto_notificacao(codigo, dados)).corpo not ilike '%risco%')
+             from notificacoes_fila where codigo = 'N24'),
+          'N24 diz o que há a confirmar, sem rotular a pessoa com "risco"');
 select ok(exists (select 1 from auditoria where acao = 'caso_investigado' and funcionario_nome = 'Agente Claude' and ref_id = testes.u('caso')),
           'fica na auditoria como "Agente Claude"');
 

@@ -143,7 +143,7 @@ export default function Carrinho() {
   if (carrinho.linhas.length === 0) {
     return (
       <Ecra>
-        <Paragrafo suave>O carrinho está vazio.</Paragrafo>
+        <Paragrafo suave>O carrinho está vazio. Escolhe um prato do dia para começar.</Paragrafo>
         <Botao titulo="Ver o cardápio" aoCarregar={() => router.replace('/inicio')} />
       </Ecra>
     );
@@ -226,7 +226,7 @@ export default function Carrinho() {
           {orc.motivo_desconto === 'pedido_minimo' && (
             <Text style={{ color: cores.aviso, fontSize: 13 }}>
               {orc.desconto_subtotal_minimo
-                ? `O desconto de convite é para pedidos a partir de ${formatarKz(orc.desconto_subtotal_minimo)} (sem a taxa de entrega).`
+                ? `Junta mais ${formatarKz(Math.max(orc.desconto_subtotal_minimo - orc.subtotal, 0))} ao pedido para usares o teu desconto de convite (pedidos a partir de ${formatarKz(orc.desconto_subtotal_minimo)}, sem a taxa de entrega).`
                 : mensagemCodigo('pedido_minimo')}
             </Text>
           )}

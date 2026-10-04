@@ -38,7 +38,7 @@ export default function Entrar() {
     setAEnviar(true);
     const { error } = await supabase.auth.verifyOtp({ phone: enviadoPara, token: codigo.trim(), type: 'sms' });
     setAEnviar(false);
-    if (error) setErro('Código errado ou expirado.');
+    if (error) setErro('O código não está certo ou já expirou. Pede um novo: chega em segundos.');
     else router.replace('/');
   }
 

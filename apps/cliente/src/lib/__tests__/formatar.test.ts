@@ -74,6 +74,8 @@ describe('textoRegras (4.13)', () => {
     expect(regras[1]).toBe('O teu amigo ganha 500 Kz de desconto no primeiro pedido.');
     expect(regras[2]).toContain('a partir de 2.000 Kz');
     expect(regras[2]).toContain('Acima de 10.000 Kz por semana');
+    // A regra das contas falsas fica no fim, dita como garantia de justiça e não como ameaça
+    expect(regras.at(-1)).toBe('Para ser justo para todos, os ganhos de contas falsas ou de pedidos não pagos não contam.');
   });
 });
 

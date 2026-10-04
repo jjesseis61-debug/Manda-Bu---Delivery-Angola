@@ -25,7 +25,9 @@ export default function Pedidos() {
   if (!pedidos) return <ACarregar />;
   return (
     <Ecra>
-      {pedidos.length === 0 && <Paragrafo suave>Ainda não fizeste nenhum pedido.</Paragrafo>}
+      {pedidos.length === 0 && (
+        <Paragrafo suave>Faz o teu primeiro pedido: escolhe um prato no Início e recebe-o em casa ou no trabalho.</Paragrafo>
+      )}
       {pedidos.map((p) => (
         <Pressable key={p.id} onPress={() => router.push({ pathname: '/pedido/[id]', params: { id: p.id } })}>
           <Cartao>

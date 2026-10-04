@@ -58,6 +58,7 @@ Aplicadas por esta ordem. **Uma migração já aplicada nunca se edita:** qualqu
 | `20261004052612_contactos.sql` | Contactos públicos: gerais em `parametros` (`contacto_telefone`, `contacto_whatsapp`, `contacto_email`, `contacto_horario`, `contacto_morada`, editados em Parâmetros com `alterar_parametros`) e de cada cozinha (`telefone_publico`, `whatsapp_publico`, `horario_publico`, com `cozinhas.gerir`), validados no servidor; `contactos()` (só com sessão) devolve só estes campos, sem cozinhas inactivas ou sem contactos; `atd_informacoes` passa a incluí-los. | aplicada |
 | `20261004055108_componentes_cliente.sql` | Pratos montáveis (regras 1 e 2): o cliente tira ingredientes da receita e não paga o que tirou; `valor_componente` (custo × margem × IVA, proporcional à quantidade; 0 sem custo), `componentes_dos_pratos` (o que a app mostra, sem custos nem margens), `excluir_componentes` (da receita, sem repetir, sem tirar todos); `orcamento_pedido` desconta-os, põe "sem ..." no nome e deixa de aceitar ajustes de quantidade da app. O preço do cardápio pode ser 0 quando vem das opções; um item a 0 Kz sem opções é recusado (`item_sem_preco`). | aplicada |
 | `20261004064855_doses_categorias.sql` | Doses do dia: `cardapio.doses_dia` (null = sem limite) e `doses_definidas_em`; `doses_restantes` (lançadas − pedidos desde então, sem cancelados; só no dia), `doses_cardapio` para as apps; o pedido da app trava o prato e recusa se não houver doses (`doses_esgotadas`), e o orçamento já avisa. Categorias: o trigger `trg_0_normalizar` tira espaços, põe a primeira letra maiúscula e usa a grafia que a cozinha já tem; as existentes foram corrigidas. | aplicada |
+| `20261004081002_textos_bandura.sql` | Textos das notificações revistos à luz de Albert Bandura: N4 (o sucesso primeiro, a verificação como procedimento), N5 (objectivo pequeno: "basta um colega pedir"), N16 cancelado (desculpa, não se cobra nada, passo seguinte), N24 e N26 sem rótulos de "risco alto" (factos a confirmar, a decisão é humana). | aplicada |
 
 Os números de versão dos ficheiros são os que o Supabase registou ao aplicar, para `supabase migration list` e
 `supabase db push` não voltarem a aplicá-las.
@@ -215,7 +216,8 @@ base de dados.
 | 48 contactos | 9/9 | 9/9 |
 | 49 ingredientes que o cliente tira | 12/12 | 12/12 (e o 25 voltou a correr: 14/14) |
 | 50 doses do dia e categorias | 9/9 | 9/9 |
-| **Total** | **898/898** | |
+| (42 com mais um teste: o N24 não rotula a pessoa) | 22/22 | |
+| **Total** | **899/899** | |
 
 Na I2 voltaram a correr no Supabase os testes afectados por cada migração (app do cliente: 06, 08, 09, 12 e 13;
 desconto limitado: 02, 09 e 14); os restantes não dependem delas (e todos passam localmente).

@@ -80,8 +80,8 @@ export function textoRegras(p: Parametros): string[] {
     `Ganhas ${formatarKz(p.ganho_por_pedido)} por cada pedido dos amigos que convidares, durante ${p.duracao_dias} dias a contar do primeiro pedido deles. Não há limite de ganhos.`,
     `O teu amigo ganha ${formatarKz(p.desconto_indicado)} de desconto no primeiro pedido.`,
     `Levantas o saldo a partir de ${formatarKz(p.levantamento_minimo)} ou usas em refeições. Acima de ${formatarKz(p.limite_verificacao_semanal)} por semana, confirmamos os pedidos antes de pagar.`,
-    'Ganhos de contas falsas ou pedidos não pagos são anulados.',
     'Os teus ganhos podem aparecer na lista de destaques com um nome fictício. Podes sair da lista quando quiseres.',
+    'Para ser justo para todos, os ganhos de contas falsas ou de pedidos não pagos não contam.',
   ];
 }
 
@@ -185,7 +185,7 @@ const mensagens: Record<string, string> = {
   texto_invalido: 'Escreve a mensagem (até 1000 caracteres).',
   limite_diario: 'Chegaste ao limite de mensagens de hoje. Tenta amanhã.',
   sem_conversa: 'Escreve primeiro a tua pergunta.',
-  sem_permissao: 'Não tens permissão para isto.',
+  sem_permissao: 'Esta opção não está disponível na tua conta.',
 };
 
 /** Extrai o código de um erro do Supabase (mensagem = código) e devolve o texto para o cliente */

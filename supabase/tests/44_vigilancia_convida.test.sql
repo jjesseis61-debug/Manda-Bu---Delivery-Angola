@@ -111,9 +111,9 @@ select is(registar_vigilancia(testes.u('caso'), 'investigado',
               "explicacoes_possiveis": ["família na mesma casa"], "recomendacao": "Suspender os ganhos em verificação",
               "perguntas_ao_funcionario": []}'::jsonb, '[{"ferramenta": "indicados"}]'::jsonb), 'investigado', 'regista o dossiê');
 select is((select (texto_notificacao(codigo, dados)).corpo from notificacoes_fila where codigo = 'N26' and funcionario_id = testes.u('vera')),
-          format('Convida e Ganha: risco alto no código %s. Indicados na casa da indicadora, telemóvel partilhado e levantamento para um indicado.',
+          format('Convida e Ganha: o código %s tem sinais a confirmar. Abre a Vigilância para ver os factos e decidir.',
                  (select codigo from codigos_indicacao where cliente_id = testes.u('carla'))),
-          'N26 a quem verifica, com o código (não o nome)');
+          'N26 a quem verifica, com o código (não o nome) e sem rótulos');
 select testes.entrar_funcionario(testes.u('vera'));
 set local role authenticated;
 select testes.def('lista', casos_convida_lista());
