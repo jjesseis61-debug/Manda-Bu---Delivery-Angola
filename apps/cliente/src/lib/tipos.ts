@@ -248,6 +248,8 @@ export type GrupoOpcoes = {
   opcoes: Opcao[];
 };
 export type OpcaoEscolhida = { id: string; nome: string; preco_extra: number };
+/** Ingrediente da receita que o cliente pode tirar; valor = o que deixa de pagar (calculado no servidor) */
+export type ComponentePrato = { cardapio_id: string; produto_id: string; nome: string; quantidade: number; unidade: string | null; valor: number };
 
 // I10 · Como chegar
 export type LocalizacaoCozinha = {

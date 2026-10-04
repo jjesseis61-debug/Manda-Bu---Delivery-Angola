@@ -102,7 +102,8 @@ export default function EditarCozinha() {
   if (!cozinha) return <Guarda permissoes={['cozinhas.gerir']}>{erro ? <Aviso tipo="erro">{erro}</Aviso> : <ACarregar />}</Guarda>;
 
   const contactosValidos = [cozinha.telefone_publico, cozinha.whatsapp_publico].every((t) => !t || telefoneValido(t));
-  const precoValido = prato !== null && /^\d+$/.test(prato.preco) && Number(prato.preco) > 0;
+  // 0 Kz só para pratos montáveis cujo preço vem todo das opções (o servidor recusa-o sem opções obrigatórias)
+  const precoValido = prato !== null && /^\d+$/.test(prato.preco);
 
   return (
     <Guarda permissoes={['cozinhas.gerir']}>
@@ -218,6 +219,9 @@ export default function EditarCozinha() {
                     keyboardType="number-pad"
                     onChangeText={(t) => setPrato({ ...prato, preco: t.replace(/\D/g, '') })}
                   />
+                  {prato.preco === '0' && (
+                    <Aviso>Preço 0: só para pratos montáveis em que o preço vem das opções obrigatórias (em Opções).</Aviso>
+                  )}
                   <Campo
                     rotulo="Ordem no cardápio"
                     value={prato.ordem}

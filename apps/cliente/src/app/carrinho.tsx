@@ -21,9 +21,14 @@ function textoPacoteCarrinho(pacote: MeuPacote | null, linhas: LinhaCarrinho[], 
   return `${n} ${n === 1 ? 'refeição' : 'refeições'}${entrega}`;
 }
 
-/** O que segue para o servidor: o prato, a quantidade e os ids das opções (o preço é calculado lá) */
+/** O que segue para o servidor: o prato, a quantidade, os ids das opções e dos ingredientes tirados (o preço é calculado lá) */
 function itemDoPedido(l: LinhaCarrinho) {
-  return { cardapio_id: l.item.id, qtd: l.qtd, ...(l.opcoes.length > 0 ? { opcoes: l.opcoes.map((o) => o.id) } : {}) };
+  return {
+    cardapio_id: l.item.id,
+    qtd: l.qtd,
+    ...(l.opcoes.length > 0 ? { opcoes: l.opcoes.map((o) => o.id) } : {}),
+    ...(l.tirados.length > 0 ? { componentes_excluidos: l.tirados.map((c) => c.produto_id) } : {}),
+  };
 }
 
 /** Checkout: endereço, orçamento do servidor, código de convite (C2) e saldo do programa */
@@ -152,6 +157,7 @@ export default function Carrinho() {
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 15 }}>{l.item.nome}</Text>
             {l.opcoes.length > 0 && <Text style={{ color: cores.textoSuave }}>{l.opcoes.map((o) => o.nome).join(', ')}</Text>}
+            {l.tirados.length > 0 && <Text style={{ color: cores.textoSuave }}>Sem {l.tirados.map((c) => c.nome.toLowerCase()).join(', ')}</Text>}
           </View>
           <Pressable accessibilityLabel="Menos" onPress={() => carrinho.alterar(l.chave, l.qtd - 1)} hitSlop={8}>
             <Text style={{ fontSize: 22, color: cores.marca, width: 24, textAlign: 'center' }}>−</Text>

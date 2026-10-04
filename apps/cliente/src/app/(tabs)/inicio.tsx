@@ -11,13 +11,14 @@ import {
   lerCardapio,
   lerCozinhaPublica,
   lerEnderecos,
+  lerComponentes,
   lerOpcoes,
   mediasAvaliacoes,
   type Cozinha,
 } from '@/lib/api';
 import { useCarrinho } from '@/lib/carrinho';
 import { formatarKz, formatarMedia, mensagemErro } from '@/lib/formatar';
-import { gruposEsgotados } from '@/lib/opcoes';
+import { gruposEsgotados, precoMinimo } from '@/lib/opcoes';
 import { useSessao } from '@/lib/sessao';
 import { cores, espaco, raio } from '@/lib/tema';
 import type { CozinhaParaPedir, Endereco, ItemCardapio, MediasAvaliacoes } from '@/lib/tipos';
@@ -35,6 +36,8 @@ export default function Inicio() {
   // I9: pratos com opções (abrem o ecrã de montar em vez de irem direito ao carrinho)
   const [montaveis, setMontaveis] = useState<Set<string>>(new Set());
   const [esgotados, setEsgotados] = useState<Set<string>>(new Set());
+  /** Pratos montáveis com grupos obrigatórios: preço mais baixo possível ("desde ...") */
+  const [desde, setDesde] = useState<Map<string, number>>(new Map());
   const cozinhaId = carrinho.cozinhaActual?.id ?? null;
   // Referência ao carrinho para o carregamento não depender de cada prato adicionado
   const carrinhoRef = useRef(carrinho);
@@ -64,8 +67,20 @@ export default function Inicio() {
       setCardapio(itens);
       setEnderecos(ends);
       // I9: pratos com opções abrem o ecrã de montar; um grupo obrigatório sem opções disponíveis esgota o prato
-      const grupos = ligada('pratos_montaveis') ? await lerOpcoes(itens.map((i) => i.id)) : [];
-      setMontaveis(new Set(grupos.filter((g) => g.opcoes.length > 0).map((g) => g.cardapio_id)));
+      const [grupos, componentes] = ligada('pratos_montaveis')
+        ? await Promise.all([lerOpcoes(itens.map((i) => i.id)), lerComponentes(itens.map((i) => i.id)).catch(() => [])])
+        : [[], []];
+      // Também se monta um prato cuja receita tem ingredientes que se podem tirar (mais do que um)
+      const comIngredientes = itens.filter((i) => componentes.filter((c) => c.cardapio_id === i.id).length > 1).map((i) => i.id);
+      setMontaveis(new Set([...grupos.filter((g) => g.opcoes.length > 0).map((g) => g.cardapio_id), ...comIngredientes]));
+      setDesde(
+        new Map(
+          itens
+            .map((i) => [i.id, i.preco, grupos.filter((g) => g.cardapio_id === i.id && g.minimo > 0)] as const)
+            .filter(([, , gs]) => gs.length > 0)
+            .map(([id, preco, gs]) => [id, precoMinimo(preco, gs)]),
+        ),
+      );
       setEsgotados(new Set(grupos.filter((g) => gruposEsgotados([g]).length > 0).map((g) => g.cardapio_id)));
       // C7: contador do bairro do endereço principal (o servidor devolve null abaixo do mínimo)
       const zona = ends[0]?.pontos_entrega?.zona_id;
@@ -189,7 +204,9 @@ export default function Inicio() {
                   ) : null}
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: espaco.m }}>
                     <Text style={{ fontSize: 16, fontWeight: '600', flex: 1 }}>{item.nome}</Text>
-                    <Text style={{ fontSize: 16, fontWeight: '700' }}>{formatarKz(item.preco)}</Text>
+                    <Text style={{ fontSize: 16, fontWeight: '700' }}>
+                      {desde.has(item.id) ? `desde ${formatarKz(desde.get(item.id))}` : formatarKz(item.preco)}
+                    </Text>
                   </View>
                   {item.descricao ? <Text style={{ color: cores.textoSuave }}>{item.descricao}</Text> : null}
                   {(() => {

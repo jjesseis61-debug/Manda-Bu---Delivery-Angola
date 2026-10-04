@@ -1,6 +1,6 @@
 /// <reference types="jest" />
 import { urlComoChegar, haQuantoTempo, regiaoPara } from '../mapa';
-import { alternar, chaveLinha, gruposEmFalta, gruposEsgotados, opcoesEscolhidas, precoMontado, regraGrupo } from '../opcoes';
+import { alternar, chaveLinha, gruposEmFalta, gruposEsgotados, opcoesEscolhidas, precoMinimo, precoMontado, regraGrupo } from '../opcoes';
 import type { GrupoOpcoes } from '../tipos';
 
 const base: GrupoOpcoes = {
@@ -32,6 +32,20 @@ describe('prato montável', () => {
     const escolhidas = opcoesEscolhidas([base, extras], ['arroz', 'ovo', 'banana']);
     expect(precoMontado(7500, escolhidas)).toBe(8000);
     expect(precoMontado(7500, [])).toBe(7500);
+  });
+
+  it('ingredientes tirados descontam no preço e separam as linhas do carrinho', () => {
+    const cebola = { cardapio_id: 'm', produto_id: 'cebola', nome: 'Cebola', quantidade: 50, unidade: 'g', valor: 25 };
+    expect(precoMontado(4000, [], [cebola])).toBe(3975);
+    expect(precoMontado(10, [], [{ ...cebola, valor: 50 }])).toBe(0);
+    expect(chaveLinha('m', [], [cebola])).not.toBe(chaveLinha('m', []));
+  });
+
+  it('"desde": o prato com a opção mais barata de cada grupo obrigatório', () => {
+    const proteina = { ...base, id: 'g3', nome: 'Proteína',
+      opcoes: [{ id: 'frango', nome: 'Frango', preco_extra: 3000, ordem: 1 }, { id: 'peixe', nome: 'Peixe', preco_extra: 500, ordem: 2 }] };
+    const bases = { ...base, opcoes: [{ id: 'arroz', nome: 'Arroz', preco_extra: 1000, ordem: 1 }, { id: 'batata', nome: 'Batata', preco_extra: 550, ordem: 2 }] };
+    expect(precoMinimo(0, [bases, proteina])).toBe(1050);
   });
 
   it('o botão só liga com os grupos obrigatórios escolhidos', () => {

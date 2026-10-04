@@ -3,6 +3,7 @@
 import { dispositivoId } from './dispositivo';
 import { supabase } from './supabase';
 import type {
+  ComponentePrato,
   Contactos,
   ConversaAtendimento,
   AtrasoPedido,
@@ -277,7 +278,7 @@ export async function criarEndereco(dados: {
 }
 
 // ---------------------------------------------------------------- pedidos
-export type ItemCarrinho = { cardapio_id: string; qtd: number; opcoes?: string[] };
+export type ItemCarrinho = { cardapio_id: string; qtd: number; opcoes?: string[]; componentes_excluidos?: string[] };
 
 export async function orcamento(
   itens: ItemCarrinho[],
@@ -563,4 +564,10 @@ export async function pedirPessoaAtendimento(): Promise<void> {
 // ---------------------------------------------------------------- contactos
 export async function lerContactos(): Promise<Contactos> {
   return verificar(await supabase.rpc('contactos')) as Contactos;
+}
+
+// ---------------------------------------------------------------- ingredientes que se podem tirar (pratos montáveis)
+export async function lerComponentes(cardapioIds: string[]): Promise<ComponentePrato[]> {
+  if (cardapioIds.length === 0) return [];
+  return verificar(await supabase.rpc('componentes_dos_pratos', { p_cardapio: cardapioIds })) as ComponentePrato[];
 }
