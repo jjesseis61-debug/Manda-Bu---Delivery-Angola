@@ -24,7 +24,8 @@ export type Permissao =
   | 'financas.conferir'
   | 'clientes.gerir'
   | 'equipa.gerir'
-  | 'analista.usar';
+  | 'analista.usar'
+  | 'stock.gerir';
 
 export type Painel = {
   custo: number;
@@ -698,4 +699,39 @@ export type PropostaTurno = {
   decidido_em: string | null;
   erro: string | null;
   cliente: string | null;
+};
+
+export type ItemCompra = {
+  produto_id: string | null;
+  produto: string;
+  quantidade: number;
+  unidade: string | null;
+  urgencia: 'hoje' | 'esta_semana' | 'proxima_semana';
+  custo_estimado: number | null;
+  fornecedor: string | null;
+  motivo: string;
+  estado: 'pendente' | 'comprado' | 'ignorado';
+  decidido_por?: string | null;
+};
+
+export type AlertaCompra = {
+  tipo: 'validade' | 'desvio' | 'preco' | 'ruptura' | 'dados' | 'outro';
+  gravidade: 'alta' | 'media' | 'baixa';
+  produto: string | null;
+  texto: string;
+};
+
+export type PlanoCompras = {
+  id: string;
+  cozinha_id: string;
+  cozinha: string;
+  dia: string;
+  origem: 'automatico' | 'pedido';
+  pedido_por: string | null;
+  estado: 'pendente' | 'a_preparar' | 'pronto' | 'indisponivel';
+  resumo: string | null;
+  compras: ItemCompra[];
+  alertas: AlertaCompra[];
+  criado_em: string;
+  pronto_em: string | null;
 };

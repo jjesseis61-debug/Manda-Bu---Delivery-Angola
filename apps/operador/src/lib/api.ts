@@ -8,6 +8,7 @@ import type {
   CasoInvestigacao,
   PerguntaAnalista,
   PropostaTurno,
+  PlanoCompras,
   Estimulo,
   Reclamacao,
   RelatorioReclamacoes,
@@ -658,4 +659,20 @@ export async function lerPropostasTurno(): Promise<PropostaTurno[]> {
 
 export async function decidirPropostaTurno(id: string, aceitar: boolean, motivo: string | null, maisMinutos: number | null) {
   verificar(await supabase.rpc('decidir_proposta_turno', { p_id: id, p_aceitar: aceitar, p_motivo: motivo, p_mais_minutos: maisMinutos }));
+}
+
+// ---------------------------------------------------------------- stock e compras
+export async function lerPlanosCompras(): Promise<PlanoCompras[]> {
+  return verificar(await supabase.rpc('planos_compras_lista')) as PlanoCompras[];
+}
+
+/** Pede um plano agora e chama logo o agente (o pg_cron apanha-o se esta chamada falhar) */
+export async function pedirPlanoCompras(cozinhaId: string): Promise<string> {
+  const id = verificar(await supabase.rpc('pedir_plano_compras', { p_cozinha: cozinhaId })) as string;
+  supabase.functions.invoke('compras', { body: { plano_id: id } }).catch(() => undefined);
+  return id;
+}
+
+export async function marcarCompra(planoId: string, indice: number, estado: 'pendente' | 'comprado' | 'ignorado') {
+  verificar(await supabase.rpc('marcar_compra', { p_plano: planoId, p_indice: indice, p_estado: estado }));
 }

@@ -51,6 +51,8 @@ Aplicadas por esta ordem. **Uma migração já aplicada nunca se edita:** qualqu
 | `20261003213144_avisos_vigilancia.sql` | N26 (risco alto) a quem verifica os ganhos, com o código do indicador; job `mb_vigilancia` (segunda-feira, 06:30 de Luanda). | aplicada |
 | `20261003215915_gerente_turno.sql` | Gerente de turno: `propostas_turno` (avisar o cliente de um atraso, confirmar, pausar um prato, reforço de estafetas, nota; caducam em 30 minutos; não se repetem enquanto pendentes) e `turno_analises`; `situacao_turno` (fila, atrasos, estafetas de turno, pratos e vendas do dia, sem nomes de clientes) e `turno_precisa_atencao` (só então se chama o Claude); `reservar_turno` (nas horas `turno_hora_inicio`–`turno_hora_fim`, cada cozinha no máximo de 5 em 5 minutos), `registar_propostas_turno` (valida cada proposta), `propostas_turno_lista` e `decidir_proposta_turno` (ao aceitar, a acção corre com as permissões do gerente: `informar_atraso`, `mudar_estado_pedido` ou pausa do prato com auditoria). Interruptor `agente_turno` (desligado). | aplicada; `agendar_turno(...)` corrido |
 | `20261003223842_avisos_turno.sql` | N27 (sugestões do gerente de turno) aos gerentes da cozinha; caduca em 30 minutos. | aplicada |
+| `20261004041451_stock_compras.sql` | Agente de stock e compras: `planos_compras` (um plano automático por cozinha e por dia, ou pedido na app com `stock.gerir`, até `compras_pedidos_dia` por dia); ferramentas só de leitura e do serviço, sem dados de clientes (`stk_saldos` com consumo, cobertura em dias e validades ainda em stock por FIFO aproximado; `stk_consumo_diario`; `stk_precos` por fornecedor; `stk_compras_diarias`; `stk_reconciliacao` enviado − devolvido − quebra − consumido; `stk_procura`); `registar_plano_compras` valida cada compra e alerta e avisa com o N28; `marcar_compra` (comprado/ignorado/pendente, com auditoria). Nada é escrito no stock. Interruptor `agente_compras` (desligado). | aplicada; `agendar_compras(...)` corrido |
+| `20261004041603_avisos_compras.sql` | N28 (compras para hoje ou alertas graves) a quem trata do stock da cozinha, vale 24 horas; job `mb_planos_compras` (todos os dias, 06:15 de Luanda). | aplicada |
 
 Os números de versão dos ficheiros são os que o Supabase registou ao aplicar, para `supabase migration list` e
 `supabase db push` não voltarem a aplicá-las.
@@ -77,6 +79,7 @@ Os jobs respeitam os interruptores: com tudo desligado não enfileiram nada.
 | `functions/enviar-notificacoes` | Envia a fila (clientes N2–N11; equipa N12) pelo push da Expo, um pedido por app (a Expo recusa tokens de projectos diferentes no mesmo pedido); desactiva tokens rejeitados; marca como enviadas | Publicada sem verificação de JWT, com autenticação própria: segredo `ENVIO_SEGREDO` (obrigatório) no cabeçalho `x-envio-segredo`. Agendar com `select agendar_envio_notificacoes('<url da função>', '<segredo>');` depois de activar `pg_cron` e `pg_net`. |
 | `functions/vigiar` | Vigilante do Convida e Ganha: o Claude investiga um indicador com sinais (indicados, pedidos, levantamentos, rede, comparação) e entrega um dossiê | Publicada sem verificação de JWT, com o mesmo segredo do envio. Usa o `ANTHROPIC_API_KEY`. Agendada com `select agendar_vigilancia('<url da função>');` (de 5 em 5 minutos). Só trabalha com o interruptor `agente_vigilante` ligado |
 | `functions/turno` | Gerente de turno: de 5 em 5 minutos, quando uma cozinha tem algo a pedir atenção, o Claude (modelo mais leve) lê a situação, pode abrir o histórico de um pedido e propõe acções ao gerente | Publicada sem verificação de JWT, com o mesmo segredo do envio. Usa o `ANTHROPIC_API_KEY`. Agendada com `select agendar_turno('<url da função>');` (de 5 em 5 minutos). Só trabalha com o interruptor `agente_turno` ligado e nas horas de serviço |
+| `functions/compras` | Agente de stock e compras: o Claude lê os saldos, o consumo, os preços, as compras do dia, a reconciliação e a procura e entrega o plano de compras com alertas | Publicada sem verificação de JWT: pelo pg_cron (segredo) prepara o plano mais antigo; pela app só o plano indicado (`plano_id`). Usa o `ANTHROPIC_API_KEY`. Agendada com `select agendar_compras('<url da função>');` (de 5 em 5 minutos). Só trabalha com o interruptor `agente_compras` ligado |
 | `functions/analista` | Analista do administrador: responde às perguntas da app e faz o relatório mensal, escolhendo as ferramentas de números agregados | Publicada sem verificação de JWT: pelo pg_cron (segredo) responde à mais antiga; pela app só à pergunta indicada (`pergunta_id`). Usa o `ANTHROPIC_API_KEY`. Agendada com `select agendar_analista('<url da função>');` (de minuto a minuto). Só trabalha com o interruptor `agente_analista` ligado |
 | `functions/investigar` | Agente investigador financeiro: o Claude usa ferramentas só de leitura em vários passos e entrega um dossiê (risco, factos, explicações possíveis, perguntas) | Publicada sem verificação de JWT, com o mesmo segredo do envio. Usa o `ANTHROPIC_API_KEY`. Agendada com `select agendar_investigacoes('<url da função>');` (de 5 em 5 minutos, um caso por execução). Só trabalha com o interruptor `agente_investigador` ligado |
 | `functions/analisar-ia` | Analisa com o Claude as reclamações (categoria, gravidade, se os factos dão razão, resposta sugerida) e escreve a mensagem pessoal dos estímulos (Bandura) | Publicada sem verificação de JWT, com o mesmo segredo do envio. Usa o mesmo `ANTHROPIC_API_KEY`; sem ele o gerente decide sem análise e usa-se o texto base. Agendada com `select agendar_analises('<url da função>');` (de 2 em 2 minutos) |
@@ -133,6 +136,7 @@ base de dados.
 | `43_analista.test.sql` | só quem tem `analista.usar` pergunta; limite diário; um relatório por mês; ferramentas (vendas por zona, pratos, clientes, operação, satisfação, finanças) certas e sem nomes de clientes, só do serviço; estímulos com a mesma conta da equipa; reserva única; resposta e N25; cada um vê as suas perguntas e todos os relatórios; interruptor desligado = parado |
 | `44_vigilancia_convida.test.sql` | histórico do mesmo telemóvel em duas contas; sinais e pontos de uma rede (mesmo local, telemóvel, levantamento para um indicado, só o pedido do desconto, muitos no mesmo dia) e de um indicador normal (0); só quem verifica abre casos; ferramentas certas, sem nomes nem telefones e só do serviço; dossiê, N26 com o código; decisão uma vez; interruptor desligado = parado |
 | `45_gerente_turno.test.sql` | escolha da cozinha a analisar (uma vez de 5 em 5 minutos); situação com os pedidos em curso e o atraso, estafetas e pratos, sem nomes de clientes; propostas validadas e sem repetir; N27 só aos gerentes da cozinha; cada gerente decide só as da sua cozinha; aceitar avisa o cliente com o motivo editado, confirma o pedido ou pausa o prato (auditoria); decide-se uma vez; caducam em 30 minutos; interruptor desligado = parado |
+| `46_stock_compras.test.sql` | saldos, consumo e cobertura da cozinha (sem os de outra cozinha); validades só das entradas ainda em stock; produto sem consumo; preços por fornecedor; consumo dia a dia; reconciliação com 500 g sem explicação; compras do dia, encomendas e receitas; job diário; só quem trata do stock pede (sem duplicar o plano por preparar); reserva uma vez; plano validado; N28 só a quem trata do stock da cozinha; cada um vê e marca só as suas cozinhas (auditoria); três erros = indisponível; limite diário; interruptor desligado = parado |
 | `33_caixa_gestao.test.sql` | Abre a caixa (uma por posto), quem tem `vendas.registar` vê-a; fora da cozinha ou sem a permissão recusa; o esperado só soma a parcela Dinheiro e os pacotes na loja menos as sangrias; o fecho guarda a diferença; caixa fechada não aceita sangrias, novo fecho nem escrita directa; tudo na auditoria |
 | `15_app_operador.test.sql` | I3: telefone e ligação dos funcionários, painel (O1), verificação e "Confirmar todos" com N3 (O2), levantamentos (O3), embaixadores (O4), fila de entregas e caixas (E1), auditoria de cozinhas e cardápio (O6) |
 
@@ -196,7 +200,8 @@ base de dados.
 | 43 analista do administrador | 20/20 | 19/20 (o n.º 17 difere por desenho: na produção o administrador principal também recebe o N25) |
 | 44 vigilante do Convida e Ganha | 17/17 | 17/17 (o n.º 12 corrigido: procurava "923", que também aparece em identificadores) |
 | 45 gerente de turno | 15/15 | 15/15 (o n.º 4 corrigido: assumia que o prato do teste era o primeiro do cardápio) |
-| **Total** | **834/834** | |
+| 46 stock e compras | 17/17 | 17/17 |
+| **Total** | **851/851** | |
 
 Na I2 voltaram a correr no Supabase os testes afectados por cada migração (app do cliente: 06, 08, 09, 12 e 13;
 desconto limitado: 02, 09 e 14); os restantes não dependem delas (e todos passam localmente).
@@ -266,6 +271,16 @@ saído, cancelamentos seguidos, fila grande para os estafetas). Propõe no máxi
 recusa no ecrã Gerente de turno (aviso N27) e, ao aceitar, a acção é feita em nome dele. Usa um modelo mais
 leve por correr muitas vezes. Ligar em Parâmetros → `agente_turno`. Testes:
 `node --experimental-strip-types supabase/functions/turno/turno.test.mjs`.
+
+### `compras` (stock e compras)
+
+Todos os dias às 06:15 de Luanda (e quando quem trata do stock pede no ecrã Stock e compras) prepara o plano de
+compras de cada cozinha com movimentos de stock: o que comprar, quanto na unidade de compra (cerca de 7 dias de
+consumo mais 2 de margem, contando com as encomendas), com que urgência, o custo estimado e o fornecedor mais em
+conta; e alertas de validades, saídas sem explicação nas distribuições, preços a subir e dados estranhos. Só lê:
+quem trata do stock marca cada compra como feita ou ignorada e as entradas continuam a ser registadas como hoje.
+Avisa (N28) quando há compras para hoje ou alertas graves. Ligar em Parâmetros → `agente_compras`. Testes:
+`node --experimental-strip-types supabase/functions/compras/compras.test.mjs`.
 
 ### `analista` (analista do administrador)
 

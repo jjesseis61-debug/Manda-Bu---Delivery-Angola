@@ -227,7 +227,8 @@ const mensagens: Record<string, string> = {
   caso_decidido: 'Este caso já foi decidido.',
   proposta_inexistente: 'A sugestão já não existe.',
   proposta_expirada: 'Esta sugestão já foi decidida ou caducou.',
-  limite_diario: 'Chegaste ao limite de perguntas de hoje. Tenta amanhã.',
+  limite_diario: 'Chegaste ao limite de hoje. Tenta amanhã.',
+  plano_inexistente: 'O plano de compras já não existe.',
   texto_curto: 'Escreve a pergunta com um pouco mais de detalhe.',
   funcionalidade_inactiva: 'Esta funcionalidade está desligada. Liga-a em Parâmetros e interruptores.',
 };
