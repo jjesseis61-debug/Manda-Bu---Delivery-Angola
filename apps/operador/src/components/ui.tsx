@@ -1,6 +1,7 @@
-import type { ReactNode } from 'react';
+import { useContext, type ReactNode } from 'react';
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -10,20 +11,29 @@ import {
   type TextInputProps,
   type ViewStyle,
 } from 'react-native';
+import { HeaderHeightContext } from 'expo-router/react-navigation';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { cores, espaco, raio } from '@/lib/tema';
 
+/**
+ * Ecrã com conteúdo que rola. O teclado não tapa os campos: com o Android em ecrã inteiro (edge-to-edge, a regra
+ * desde o Expo 54) o sistema já não encolhe a janela, por isso o KeyboardAvoidingView reserva o espaço do teclado
+ * (descontando o cabeçalho, que fica por cima) e o campo com o cursor continua visível.
+ */
 export function Ecra({ children, rolar = true }: { children: ReactNode; rolar?: boolean }) {
+  const alturaCabecalho = useContext(HeaderHeightContext) ?? 0;
   return (
     <SafeAreaView style={estilos.ecra} edges={['bottom', 'left', 'right']}>
-      {rolar ? (
-        <ScrollView contentContainerStyle={estilos.conteudo} keyboardShouldPersistTaps="handled">
-          {children}
-        </ScrollView>
-      ) : (
-        <View style={[estilos.conteudo, { flex: 1 }]}>{children}</View>
-      )}
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" keyboardVerticalOffset={alturaCabecalho}>
+        {rolar ? (
+          <ScrollView contentContainerStyle={estilos.conteudo} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+            {children}
+          </ScrollView>
+        ) : (
+          <View style={[estilos.conteudo, { flex: 1 }]}>{children}</View>
+        )}
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
