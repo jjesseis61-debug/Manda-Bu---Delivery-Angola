@@ -1,8 +1,8 @@
 -- Limpeza diária para a base de dados não crescer sem fim (encontrado no teste de 12 meses: 655 MB num ano,
 -- sobretudo notificações e auditoria). Apaga as notificações já enviadas ou descartadas há mais de 90 dias e
--- a auditoria com mais de um ano. Pedidos, vendas, caixas, ganhos e stock não são tocados.
+-- a auditoria com mais de dois anos. Pedidos, vendas, caixas, ganhos e stock não são tocados.
 -- A auditoria continua imutável para todos; a única excepção é esta tarefa do servidor, e só para linhas
--- com mais de um ano.
+-- com mais de dois anos.
 
 create or replace function auditoria_imutavel() returns trigger
 language plpgsql set search_path = public as $$
@@ -12,9 +12,9 @@ begin
      and (to_jsonb(new) - 'sincronizado_em') = (to_jsonb(old) - 'sincronizado_em') then
     return new;
   end if;
-  -- Limpeza do servidor (limpar_dados): só linhas com mais de um ano
+  -- Limpeza do servidor (limpar_dados): só linhas com mais de dois anos
   if tg_op = 'DELETE' and current_setting('mb.limpeza', true) = 'auditoria'
-     and old.criado_em < now() - interval '365 days' then
+     and old.criado_em < now() - interval '730 days' then
     return old;
   end if;
   raise exception 'auditoria_imutavel' using errcode = '42501';
@@ -30,7 +30,7 @@ begin
    where criado_em < now() - interval '90 days' and (enviada_em is not null or deletado_em is not null);
   get diagnostics v_notif = row_count;
   perform set_config('mb.limpeza', 'auditoria', true);
-  delete from auditoria where criado_em < now() - interval '365 days';
+  delete from auditoria where criado_em < now() - interval '730 days';
   get diagnostics v_aud = row_count;
   perform set_config('mb.limpeza', '', true);
   if v_notif + v_aud > 0 then

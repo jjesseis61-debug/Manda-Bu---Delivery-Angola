@@ -119,7 +119,7 @@ produção):
 | (a) Regras de acesso com `(select …)` (93 regras) | aplicada na produção | cliente vê os seus pedidos: 8,6 s → 0,05 s |
 | (b) Retenção do relatório da cozinha | aplicada na produção | relatório do ano: 12,8 s → 0,19 s, resultado igual |
 | (c) Investigador: rejeições pela taxa (tolerância de 2 %) | aplicada na produção | casos de agosto: 14 → 2 |
-| (d) Limpeza diária (notificações > 90 dias, auditoria > 1 ano) | por aplicar | — |
+| (d) Limpeza diária (notificações > 90 dias, auditoria > 2 anos) | por aplicar | — |
 
 Testes: 918/918 na base local. Na produção, com rollback:
 - teste 52 (partes a, b e c): 7 de 7;

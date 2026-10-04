@@ -74,8 +74,8 @@ insert into notificacoes_fila (cliente_id, codigo, dados, criado_em, enviada_em,
   (testes.u('ana'), 'N16', '{"t": "recente enviada"}', now() - interval '10 days', now() - interval '10 days', null),
   (testes.u('ana'), 'N3', '{"t": "velha por enviar"}', now() - interval '100 days', null, null);
 insert into auditoria (acao, detalhe, criado_em, data) values
-  ('teste_velha', '{}', now() - interval '400 days', now() - interval '400 days'),
-  ('teste_recente', '{}', now() - interval '200 days', now() - interval '200 days');
+  ('teste_velha', '{}', now() - interval '800 days', now() - interval '800 days'),
+  ('teste_recente', '{}', now() - interval '500 days', now() - interval '500 days');
 select testes.def('e_apagar', testes.erro($$delete from auditoria where acao = 'teste_velha'$$));
 select testes.def('e_recente', testes.erro($$select set_config('mb.limpeza', 'auditoria', true);
                                             delete from auditoria where acao = 'teste_recente'$$));
@@ -87,11 +87,11 @@ select is((select string_agg(dados ->> 't', ', ' order by dados ->> 't') from no
 select ok(not exists (select 1 from auditoria where acao = 'teste_velha')
           and exists (select 1 from auditoria where acao = 'teste_recente')
           and exists (select 1 from auditoria where acao = 'limpeza_dados'),
-          'apaga a auditoria com mais de um ano e regista a limpeza');
+          'apaga a auditoria com mais de dois anos (a de 500 dias fica) e regista a limpeza');
 select ok(testes.v('e_apagar') like '42501:auditoria_imutavel%' and testes.v('e_recente') like '42501:auditoria_imutavel%'
           and not has_function_privilege('authenticated', 'limpar_dados()', 'execute')
           and not has_function_privilege('anon', 'limpar_dados()', 'execute'),
-          'fora da limpeza a auditoria continua imutável (e nunca com menos de um ano); as apps não chamam a limpeza');
+          'fora da limpeza a auditoria continua imutável (e nunca com menos de dois anos); as apps não chamam a limpeza');
 
 select * from finish();
 rollback;
