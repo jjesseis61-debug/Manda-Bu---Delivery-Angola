@@ -111,3 +111,18 @@ produção):
   os planos e as análises, que ficam à espera.
 - O envio real das notificações push e as fotos (só os caminhos e as regras do armazenamento).
 - As apps em si: os ecrãs têm os seus testes Jest; aqui exercitou-se o servidor como as apps o usam.
+
+## Correcções (4 out. 2026)
+
+| | Estado | Medido na base com um ano de dados |
+|---|---|---|
+| (a) Regras de acesso com `(select …)` (93 regras) | aplicada na produção | cliente vê os seus pedidos: 8,6 s → 0,05 s |
+| (b) Retenção do relatório da cozinha | aplicada na produção | relatório do ano: 12,8 s → 0,19 s, resultado igual |
+| (c) Investigador: rejeições pela taxa (tolerância de 2 %) | aplicada na produção | casos de agosto: 14 → 2 |
+| (d) Limpeza diária (notificações > 90 dias, auditoria > 1 ano) | por aplicar | — |
+
+Testes: 918/918 na base local. Na produção, com rollback:
+- teste 52 (partes a, b e c): 7 de 7;
+- regras de acesso (06): 29 de 29;
+- tabelas base (22): 25 de 26. O que falha conta os administradores e encontra também o administrador real que já existe.
+- investigador (42): 21 de 22. O que falha espera que o aviso N24 vá só para as duas pessoas das finanças do teste, e ele vai também para o administrador real.
