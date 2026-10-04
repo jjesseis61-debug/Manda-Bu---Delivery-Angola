@@ -341,3 +341,16 @@ export type ConversaAtendimento = {
   a_escrever: boolean;
   mensagens: MensagemAtendimento[];
 };
+
+export type Contacto = {
+  telefone: string | null;
+  whatsapp: string | null;
+  email?: string | null;
+  horario: string | null;
+  morada?: string | null;
+};
+
+export type Contactos = {
+  geral: Contacto;
+  cozinhas: (Contacto & { id: string; nome: string; estado: 'activa' | 'pausada' })[];
+};

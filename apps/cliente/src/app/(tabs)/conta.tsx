@@ -17,6 +17,7 @@ export default function Conta() {
         {ligada('indicacao') && perfil?.codigo && <Linha esquerda="Código de convite" direita={perfil.codigo} />}
       </Cartao>
       {ligada('agente_atendimento') && <Botao titulo="Ajuda" variante="secundario" aoCarregar={() => router.push('/ajuda')} />}
+      <Botao titulo="Contactos" variante="secundario" aoCarregar={() => router.push('/contactos')} />
       <Botao titulo="Endereços" variante="secundario" aoCarregar={() => router.push('/enderecos')} />
       {ligada('pacotes') && <Botao titulo="Pacote do mês" variante="secundario" aoCarregar={() => router.push('/pacotes')} />}
       {(ligada('indicacao') || ligada('destaques')) && (

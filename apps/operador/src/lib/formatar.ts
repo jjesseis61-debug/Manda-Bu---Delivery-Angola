@@ -295,3 +295,12 @@ export const nomeMetrica: Record<string, string> = {
   confirmados: 'pedidos confirmados',
   pedidos: 'pedidos',
 };
+
+/** Telefone ou WhatsApp público: só algarismos e espaços, 9 a 20, com + opcional (como no servidor) */
+export function telefoneValido(t: string): boolean {
+  return /^\+?[0-9 ]{9,20}$/.test(t.trim());
+}
+
+export function emailValido(t: string): boolean {
+  return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(t.trim()) && t.trim().length <= 120;
+}

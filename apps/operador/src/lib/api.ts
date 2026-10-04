@@ -119,7 +119,7 @@ export async function lerFuncionalidades(): Promise<{ chave: string; activa: boo
   }[];
 }
 
-export async function alterarParametros(valores: Record<string, number | string>) {
+export async function alterarParametros(valores: Record<string, number | string | null>) {
   verificar(await supabase.rpc('alterar_parametros', { p_valores: valores }));
 }
 
@@ -132,7 +132,7 @@ export async function lerCozinhas(): Promise<Cozinha[]> {
   return verificar(
     await supabase
       .from('cozinhas')
-      .select('id, nome, responsavel, foto_url, historia, estado, consentimento_publico')
+      .select('id, nome, responsavel, foto_url, historia, estado, consentimento_publico, telefone_publico, whatsapp_publico, horario_publico')
       .is('deletado_em', null)
       .order('criado_em'),
   ) as Cozinha[];

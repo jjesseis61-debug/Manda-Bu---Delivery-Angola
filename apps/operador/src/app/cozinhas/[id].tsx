@@ -7,7 +7,7 @@ import { Guarda } from '@/components/Guarda';
 import { LocalizacaoCozinha } from '@/components/LocalizacaoCozinha';
 import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Escolha, Paragrafo, Subtitulo } from '@/components/ui';
 import { definirFotoCozinha, definirFotoPrato, guardarCozinha, guardarPrato, lerCardapio, lerCozinhas } from '@/lib/api';
-import { formatarKz, mensagemErro } from '@/lib/formatar';
+import { formatarKz, mensagemErro, telefoneValido } from '@/lib/formatar';
 import { cores, espaco } from '@/lib/tema';
 import type { Cozinha, PratoCardapio } from '@/lib/tipos';
 
@@ -18,6 +18,9 @@ const VAZIA: Omit<Cozinha, 'id'> = {
   historia: null,
   estado: 'activa',
   consentimento_publico: false,
+  telefone_publico: null,
+  whatsapp_publico: null,
+  horario_publico: null,
 };
 
 type PratoEditado = Omit<PratoCardapio, 'id' | 'preco' | 'ordem'> & { id?: string; preco: string; ordem: string };
@@ -72,8 +75,15 @@ export default function EditarCozinha() {
 
   function guardar() {
     if (!cozinha) return;
+    const limpo = (t: string | null) => t?.trim() || null;
+    const dados = {
+      ...cozinha,
+      telefone_publico: limpo(cozinha.telefone_publico),
+      whatsapp_publico: limpo(cozinha.whatsapp_publico),
+      horario_publico: limpo(cozinha.horario_publico),
+    };
     correr(async () => {
-      await guardarCozinha(nova ? cozinha : { ...cozinha, id });
+      await guardarCozinha(nova ? dados : { ...dados, id });
       if (nova) router.back();
       else carregar();
     }, 'Cozinha guardada.');
@@ -91,6 +101,7 @@ export default function EditarCozinha() {
 
   if (!cozinha) return <Guarda permissoes={['cozinhas.gerir']}>{erro ? <Aviso tipo="erro">{erro}</Aviso> : <ACarregar />}</Guarda>;
 
+  const contactosValidos = [cozinha.telefone_publico, cozinha.whatsapp_publico].every((t) => !t || telefoneValido(t));
   const precoValido = prato !== null && /^\d+$/.test(prato.preco) && Number(prato.preco) > 0;
 
   return (
@@ -131,7 +142,35 @@ export default function EditarCozinha() {
           valor={cozinha.consentimento_publico}
           aoMudar={(v) => setCozinha({ ...cozinha, consentimento_publico: v })}
         />
-        <Botao titulo="Guardar cozinha" aCarregar={ocupado} desactivado={!cozinha.nome.trim() || !cozinha.responsavel?.trim()} aoCarregar={guardar} />
+        <Subtitulo>Contactos para os clientes</Subtitulo>
+        <Paragrafo suave>Aparecem em Contactos e na página da cozinha. Deixa em branco o que não quiseres mostrar.</Paragrafo>
+        <Campo
+          rotulo="Telefone da cozinha"
+          value={cozinha.telefone_publico ?? ''}
+          keyboardType="phone-pad"
+          maxLength={20}
+          onChangeText={(t) => setCozinha({ ...cozinha, telefone_publico: t.trim() ? t : null })}
+        />
+        <Campo
+          rotulo="WhatsApp da cozinha"
+          value={cozinha.whatsapp_publico ?? ''}
+          keyboardType="phone-pad"
+          maxLength={20}
+          onChangeText={(t) => setCozinha({ ...cozinha, whatsapp_publico: t.trim() ? t : null })}
+        />
+        <Campo
+          rotulo="Horário da cozinha"
+          value={cozinha.horario_publico ?? ''}
+          maxLength={120}
+          onChangeText={(t) => setCozinha({ ...cozinha, horario_publico: t.trim() ? t : null })}
+        />
+        {!contactosValidos && <Aviso>O telefone e o WhatsApp levam só algarismos (9 a 20), com + opcional.</Aviso>}
+        <Botao
+          titulo="Guardar cozinha"
+          aCarregar={ocupado}
+          desactivado={!cozinha.nome.trim() || !cozinha.responsavel?.trim() || !contactosValidos}
+          aoCarregar={guardar}
+        />
 
         {!nova && <LocalizacaoCozinha cozinhaId={id} />}
 

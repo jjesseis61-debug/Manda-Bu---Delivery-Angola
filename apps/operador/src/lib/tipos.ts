@@ -338,6 +338,10 @@ export type Cozinha = {
   historia: string | null;
   estado: 'activa' | 'pausada' | 'inactiva';
   consentimento_publico: boolean;
+  /** Contactos mostrados aos clientes (Contactos e página da cozinha) */
+  telefone_publico: string | null;
+  whatsapp_publico: string | null;
+  horario_publico: string | null;
 };
 
 export type PratoCardapio = {

@@ -3,6 +3,7 @@
 import { dispositivoId } from './dispositivo';
 import { supabase } from './supabase';
 import type {
+  Contactos,
   ConversaAtendimento,
   AtrasoPedido,
   MinhaReclamacao,
@@ -557,4 +558,9 @@ export async function enviarMensagemAtendimento(texto: string): Promise<void> {
 
 export async function pedirPessoaAtendimento(): Promise<void> {
   verificar(await supabase.rpc('pedir_pessoa_atendimento'));
+}
+
+// ---------------------------------------------------------------- contactos
+export async function lerContactos(): Promise<Contactos> {
+  return verificar(await supabase.rpc('contactos')) as Contactos;
 }
