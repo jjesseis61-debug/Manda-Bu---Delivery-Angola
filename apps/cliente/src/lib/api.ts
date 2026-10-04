@@ -571,3 +571,8 @@ export async function lerComponentes(cardapioIds: string[]): Promise<ComponenteP
   if (cardapioIds.length === 0) return [];
   return verificar(await supabase.rpc('componentes_dos_pratos', { p_cardapio: cardapioIds })) as ComponentePrato[];
 }
+
+/** Doses que restam hoje dos pratos com limite (a cozinha lançou quantas tem) */
+export async function lerDoses(cozinhaId: string): Promise<{ cardapio_id: string; restantes: number }[]> {
+  return verificar(await supabase.rpc('doses_cardapio', { p_cozinha: cozinhaId })) as { cardapio_id: string; restantes: number }[];
+}

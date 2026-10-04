@@ -9,6 +9,7 @@ import type {
   PerguntaAnalista,
   PropostaTurno,
   PlanoCompras,
+  DosesPrato,
   ConversaResumo,
   ConversaDetalhe,
   Estimulo,
@@ -148,7 +149,7 @@ export async function lerCardapio(cozinhaId: string): Promise<PratoCardapio[]> {
   return verificar(
     await supabase
       .from('cardapio')
-      .select('id, cozinha_id, nome, descricao, categoria, preco, disponivel, do_dia, ordem, foto_url')
+      .select('id, cozinha_id, nome, descricao, categoria, preco, disponivel, do_dia, ordem, foto_url, doses_dia')
       .eq('cozinha_id', cozinhaId)
       .order('ordem')
       .order('nome'),
@@ -159,6 +160,11 @@ export async function guardarPrato(p: Omit<PratoCardapio, 'id'> & { id?: string 
   const { id, ...dados } = p;
   if (id) verificar(await supabase.from('cardapio').update({ ...dados, atualizado_em: new Date().toISOString() }).eq('id', id));
   else verificar(await supabase.from('cardapio').insert(dados));
+}
+
+/** Doses que restam hoje dos pratos com limite (as de dias anteriores já não contam) */
+export async function lerDosesCardapio(cozinhaId: string): Promise<DosesPrato[]> {
+  return verificar(await supabase.rpc('doses_cardapio', { p_cozinha: cozinhaId })) as DosesPrato[];
 }
 
 // ---------------------------------------------------------------- I9: opções dos pratos

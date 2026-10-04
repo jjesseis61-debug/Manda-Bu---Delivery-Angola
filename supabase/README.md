@@ -57,6 +57,7 @@ Aplicadas por esta ordem. **Uma migração já aplicada nunca se edita:** qualqu
 | `20261004043300_avisos_atendimento.sql` | N29 (a conversa precisa de uma pessoa, com o primeiro nome e o motivo; vale 24 horas, não se repete em 10 minutos) a quem tem `atendimento.responder`; N30 (resposta de uma pessoa) ao cliente. | aplicada |
 | `20261004052612_contactos.sql` | Contactos públicos: gerais em `parametros` (`contacto_telefone`, `contacto_whatsapp`, `contacto_email`, `contacto_horario`, `contacto_morada`, editados em Parâmetros com `alterar_parametros`) e de cada cozinha (`telefone_publico`, `whatsapp_publico`, `horario_publico`, com `cozinhas.gerir`), validados no servidor; `contactos()` (só com sessão) devolve só estes campos, sem cozinhas inactivas ou sem contactos; `atd_informacoes` passa a incluí-los. | aplicada |
 | `20261004055108_componentes_cliente.sql` | Pratos montáveis (regras 1 e 2): o cliente tira ingredientes da receita e não paga o que tirou; `valor_componente` (custo × margem × IVA, proporcional à quantidade; 0 sem custo), `componentes_dos_pratos` (o que a app mostra, sem custos nem margens), `excluir_componentes` (da receita, sem repetir, sem tirar todos); `orcamento_pedido` desconta-os, põe "sem ..." no nome e deixa de aceitar ajustes de quantidade da app. O preço do cardápio pode ser 0 quando vem das opções; um item a 0 Kz sem opções é recusado (`item_sem_preco`). | aplicada |
+| `20261004064855_doses_categorias.sql` | Doses do dia: `cardapio.doses_dia` (null = sem limite) e `doses_definidas_em`; `doses_restantes` (lançadas − pedidos desde então, sem cancelados; só no dia), `doses_cardapio` para as apps; o pedido da app trava o prato e recusa se não houver doses (`doses_esgotadas`), e o orçamento já avisa. Categorias: o trigger `trg_0_normalizar` tira espaços, põe a primeira letra maiúscula e usa a grafia que a cozinha já tem; as existentes foram corrigidas. | aplicada |
 
 Os números de versão dos ficheiros são os que o Supabase registou ao aplicar, para `supabase migration list` e
 `supabase db push` não voltarem a aplicá-las.
@@ -145,6 +146,7 @@ base de dados.
 | `47_atendimento.test.sql` | cada cliente com sessão abre a sua conversa; reserva sem respostas em dobro (uma mensagem nova enquanto o agente responde volta a pôr a conversa por responder); ferramentas só com os pedidos e a conta do próprio cliente, sem apelido nem telefone; resposta do agente; passagem para uma pessoa com N29 só a quem atende e sem repetir; resposta de uma pessoa com N30; cada cliente vê só a sua conversa; devolver ao agente e fechar (auditoria); três erros = pessoa; o cliente pede uma pessoa; limite diário; interruptor desligado = parado |
 | `48_contactos.test.sql` | só quem gere os parâmetros muda os contactos gerais e só quem gere as cozinhas os da cozinha; telefones e email inválidos recusados; o cliente vê os gerais e os da cozinha (mesmo sem perfil público), sem cozinhas inactivas ou sem contactos e sem o nome da responsável; sem sessão não se lê; o assistente conhece-os; apagar um contacto |
 | `49_componentes_cliente.test.sql` | valor de cada ingrediente (custo × margem × IVA × quantidade; sem custo = 0) sem mostrar custos; tirar ingredientes desconta e põe "sem ..." no nome; só da receita, sem repetir nem tirar todos; ajustes da app ignorados; prato a 0 Kz com preço das opções e recusado sem elas; interruptor desligado; o pedido fica com o preço do servidor; o stock não desconta o que foi tirado |
+| `50_doses_categorias.test.sql` | categorias limpas (espaços, maiúscula, grafia existente, vazia sem categoria); sem doses não há limite; lançar doses; cada pedido gasta; não se pede mais do que restam (no pedido e no orçamento); o cancelado devolve; a 0 fica esgotado; relançar conta a partir daí e as de ontem já não limitam |
 | `33_caixa_gestao.test.sql` | Abre a caixa (uma por posto), quem tem `vendas.registar` vê-a; fora da cozinha ou sem a permissão recusa; o esperado só soma a parcela Dinheiro e os pacotes na loja menos as sangrias; o fecho guarda a diferença; caixa fechada não aceita sangrias, novo fecho nem escrita directa; tudo na auditoria |
 | `15_app_operador.test.sql` | I3: telefone e ligação dos funcionários, painel (O1), verificação e "Confirmar todos" com N3 (O2), levantamentos (O3), embaixadores (O4), fila de entregas e caixas (E1), auditoria de cozinhas e cardápio (O6) |
 
@@ -212,7 +214,8 @@ base de dados.
 | 47 atendimento ao cliente | 17/17 | 17/17 (o n.º 6 corrigido: assumia que o prato do teste era o primeiro da lista) |
 | 48 contactos | 9/9 | 9/9 |
 | 49 ingredientes que o cliente tira | 12/12 | 12/12 (e o 25 voltou a correr: 14/14) |
-| **Total** | **889/889** | |
+| 50 doses do dia e categorias | 9/9 | 9/9 |
+| **Total** | **898/898** | |
 
 Na I2 voltaram a correr no Supabase os testes afectados por cada migração (app do cliente: 06, 08, 09, 12 e 13;
 desconto limitado: 02, 09 e 14); os restantes não dependem delas (e todos passam localmente).

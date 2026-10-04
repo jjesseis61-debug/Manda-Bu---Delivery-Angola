@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { Image, Pressable, Text, View } from 'react-native';
 
 import { ACarregar, Aviso, Botao, Ecra, Paragrafo, Subtitulo, Titulo } from '@/components/ui';
-import { lerComponentes, lerItemCardapio, lerOpcoes } from '@/lib/api';
+import { lerComponentes, lerDoses, lerItemCardapio, lerOpcoes } from '@/lib/api';
 import { useCarrinho } from '@/lib/carrinho';
 import { formatarKz, mensagemErro } from '@/lib/formatar';
 import { alternar, gruposEmFalta, gruposEsgotados, opcoesEscolhidas, precoMontado, regraGrupo } from '@/lib/opcoes';
@@ -25,12 +25,14 @@ export default function MontarPrato() {
   const [escolhidas, setEscolhidas] = useState<string[]>([]);
   const [componentes, setComponentes] = useState<ComponentePrato[]>([]);
   const [tirados, setTirados] = useState<string[]>([]);
+  const [semDoses, setSemDoses] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([lerItemCardapio(String(id)), lerOpcoes([String(id)]), lerComponentes([String(id)]).catch(() => [])])
       .then(([i, g, c]) => {
         setItem(i);
+        if (i) lerDoses(i.cozinha_id).then((ds) => setSemDoses(ds.some((d) => d.cardapio_id === i.id && d.restantes === 0)), () => undefined);
         // Só se pode tirar ingredientes quando a receita tem mais do que um (não se tira tudo)
         setComponentes(c.length > 1 ? c : []);
         // Grupos opcionais sem opções disponíveis não aparecem; os obrigatórios ficam para mostrar que esgotaram
@@ -50,7 +52,7 @@ export default function MontarPrato() {
 
   const opcoes = opcoesEscolhidas(grupos, escolhidas);
   const semEstes = componentes.filter((c) => tirados.includes(c.produto_id));
-  const esgotados = gruposEsgotados(grupos);
+  const esgotados = [...gruposEsgotados(grupos), ...(semDoses ? ['as doses de hoje'] : [])];
   const faltam = gruposEmFalta(grupos, escolhidas);
 
   return (
@@ -129,7 +131,7 @@ export default function MontarPrato() {
         </View>
       )}
       {esgotados.length > 0 ? (
-        <Aviso>{`Esgotado de momento: não há nenhuma opção disponível em ${esgotados.join(', ')}.`}</Aviso>
+        <Aviso>{semDoses ? 'Esgotado: acabaram as doses de hoje.' : `Esgotado de momento: não há nenhuma opção disponível em ${esgotados.join(', ')}.`}</Aviso>
       ) : (
         faltam.length > 0 && <Paragrafo suave>Falta escolher: {faltam.join(', ')}.</Paragrafo>
       )}

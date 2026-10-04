@@ -7,6 +7,7 @@ import MontarPrato from '@/app/montar/[id]';
 const mockAdicionar = jest.fn();
 const mockBaseEsgotada = { valor: false };
 const mockComponentes: { valor: unknown[] } = { valor: [] };
+const mockDoses: { valor: unknown[] } = { valor: [] };
 jest.mock('@/lib/sessao', () => ({ useSessao: () => ({ carregado: true, ligada: () => true }) }));
 jest.mock('@/lib/carrinho', () => ({ useCarrinho: () => ({ adicionar: mockAdicionar }) }));
 jest.mock('@/lib/api', () => ({
@@ -14,6 +15,7 @@ jest.mock('@/lib/api', () => ({
     id: 'm', nome: 'Muamba', descricao: null, categoria: null, preco: 2500, foto_url: null, do_dia: false, cozinha_id: 'k', prato_base_id: null,
   }),
   lerComponentes: async () => mockComponentes.valor,
+  lerDoses: async () => mockDoses.valor,
   lerOpcoes: async () => [
     { id: 'g1', cardapio_id: 'm', nome: 'Base', minimo: 1, maximo: 1, ordem: 1,
       opcoes: mockBaseEsgotada.valor ? [] : [{ id: 'funge', nome: 'Funge', preco_extra: 0, ordem: 1 }, { id: 'arroz', nome: 'Arroz', preco_extra: 0, ordem: 2 }] },
@@ -70,4 +72,16 @@ test('tirar ingredientes: o preço desce pelo valor de cada um e fica sempre pel
     [expect.objectContaining({ produto_id: 'cebola', valor: 25 })],
   );
   mockComponentes.valor = [];
+});
+
+test('acabaram as doses de hoje: o prato aparece esgotado', async () => {
+  mockAdicionar.mockClear();
+  mockDoses.valor = [{ cardapio_id: 'm', restantes: 0 }];
+  const ecra = renderRouter({ 'montar/[id]': MontarPrato, inicio: () => <Text>Início</Text> }, { initialUrl: '/montar/m' });
+  await act(async () => undefined);
+  expect(ecra.getByText('Esgotado: acabaram as doses de hoje.')).toBeTruthy();
+  fireEvent.press(ecra.getByText('Funge'));
+  fireEvent.press(ecra.getByText('Esgotado'));
+  expect(mockAdicionar).not.toHaveBeenCalled();
+  mockDoses.valor = [];
 });

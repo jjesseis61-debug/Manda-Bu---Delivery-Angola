@@ -355,7 +355,12 @@ export type PratoCardapio = {
   do_dia: boolean;
   ordem: number;
   foto_url?: string | null;
+  /** Doses lançadas para hoje (null = sem limite) */
+  doses_dia?: number | null;
 };
+
+/** Doses que restam hoje de um prato com limite */
+export type DosesPrato = { cardapio_id: string; restantes: number; lancadas: number };
 
 export type Relatorio = {
   pedidos_por_dia: { dia: string; pedidos: number }[];

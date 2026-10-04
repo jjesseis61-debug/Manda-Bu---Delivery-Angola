@@ -12,6 +12,7 @@ import {
   lerCozinhaPublica,
   lerEnderecos,
   lerComponentes,
+  lerDoses,
   lerOpcoes,
   mediasAvaliacoes,
   type Cozinha,
@@ -38,6 +39,8 @@ export default function Inicio() {
   const [esgotados, setEsgotados] = useState<Set<string>>(new Set());
   /** Pratos montáveis com grupos obrigatórios: preço mais baixo possível ("desde ...") */
   const [desde, setDesde] = useState<Map<string, number>>(new Map());
+  /** Doses que restam hoje (só os pratos em que a cozinha lançou doses) */
+  const [doses, setDoses] = useState<Map<string, number>>(new Map());
   const cozinhaId = carrinho.cozinhaActual?.id ?? null;
   // Referência ao carrinho para o carregamento não depender de cada prato adicionado
   const carrinhoRef = useRef(carrinho);
@@ -65,6 +68,7 @@ export default function Inicio() {
       }
       const [itens, ends] = await Promise.all([lerCardapio(escolhida), lerEnderecos()]);
       setCardapio(itens);
+      setDoses(new Map(itens[0] ? (await lerDoses(itens[0].cozinha_id).catch(() => [])).map((d) => [d.cardapio_id, d.restantes]) : []));
       setEnderecos(ends);
       // I9: pratos com opções abrem o ecrã de montar; um grupo obrigatório sem opções disponíveis esgota o prato
       const [grupos, componentes] = ligada('pratos_montaveis')
@@ -226,7 +230,10 @@ export default function Inicio() {
                   })()}
                   <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: espaco.m }}>
                     {noCarrinho > 0 && <Text style={{ color: cores.marca, fontWeight: '600' }}>{noCarrinho} no carrinho</Text>}
-                    {esgotados.has(item.id) ? (
+                    {!esgotados.has(item.id) && doses.has(item.id) && doses.get(item.id)! > 0 && doses.get(item.id)! <= 5 && (
+                      <Text style={{ color: cores.aviso, fontWeight: '600' }}>{`Restam ${doses.get(item.id)}`}</Text>
+                    )}
+                    {esgotados.has(item.id) || doses.get(item.id) === 0 ? (
                       <Text style={{ color: cores.textoSuave, fontWeight: '700' }}>Esgotado</Text>
                     ) : (
                       <Pressable

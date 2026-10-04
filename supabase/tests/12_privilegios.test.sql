@@ -86,6 +86,8 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 'contactos',
                 -- ingredientes que o cliente pode tirar (pratos montáveis)
                 'componentes_dos_pratos',
+                -- doses do dia que restam de cada prato
+                'doses_cardapio',
                 -- auxiliares usadas em políticas RLS, valores por defeito ou triggers SECURITY INVOKER
                 'cliente_actual', 'cozinha_padrao', 'e_funcionario', 'funcionalidade_activa',
                 'funcionario_actual', 'membro_da_cozinha', 'tem_permissao', 'e_administrador', 'pode_na_cozinha')),
