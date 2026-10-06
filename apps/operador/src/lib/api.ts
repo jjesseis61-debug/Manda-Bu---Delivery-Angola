@@ -43,6 +43,8 @@ import type {
   PalavraFiltrada,
   PedidoOperador,
   Periodo,
+  PessoalItem,
+  PosicaoEstafeta,
   PratoCardapio,
   Reconhecimento,
   Relatorio,
@@ -700,4 +702,52 @@ export async function responderAtendimento(id: string, texto: string) {
 
 export async function mudarConversaAtendimento(id: string, estado: 'agente' | 'fechada') {
   verificar(await supabase.rpc('mudar_conversa_atendimento', { p_id: id, p_estado: estado }));
+}
+
+// ---------------------------------------------------------------- Pessoal (só administrador principal)
+export async function listarPessoal(): Promise<PessoalItem[]> {
+  return (verificar(await supabase.rpc('listar_pessoal')) as PessoalItem[]) ?? [];
+}
+
+export async function criarFuncionario(dados: {
+  nome: string;
+  cargo: string | null;
+  telefone: string | null;
+  estafeta: boolean;
+}): Promise<string> {
+  return verificar(
+    await supabase.rpc('criar_funcionario', {
+      p_nome: dados.nome,
+      p_cargo: dados.cargo,
+      p_telefone: dados.telefone,
+      p_estafeta: dados.estafeta,
+    }),
+  ) as string;
+}
+
+export async function editarFuncionario(dados: {
+  id: string;
+  nome: string;
+  cargo: string | null;
+  estafeta: boolean;
+  activo: boolean;
+}) {
+  verificar(
+    await supabase.rpc('editar_funcionario', {
+      p_id: dados.id,
+      p_nome: dados.nome,
+      p_cargo: dados.cargo,
+      p_estafeta: dados.estafeta,
+      p_activo: dados.activo,
+    }),
+  );
+}
+
+export async function definirTelefoneFuncionario(id: string, telefone: string | null) {
+  verificar(await supabase.rpc('definir_telefone_funcionario', { p_funcionario: id, p_telefone: telefone }));
+}
+
+// ---------------------------------------------------------------- Mapa de estafetas (despacho)
+export async function posicoesEstafetas(cozinhaId: string): Promise<PosicaoEstafeta[]> {
+  return (verificar(await supabase.rpc('posicoes_estafetas', { p_cozinha: cozinhaId })) as PosicaoEstafeta[]) ?? [];
 }

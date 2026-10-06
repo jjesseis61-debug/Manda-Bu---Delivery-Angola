@@ -8,6 +8,27 @@ export type Funcionario = {
   cozinhas_equipa: string[];
 };
 
+/** Linha do cadastro de pessoal (só o administrador principal) */
+export type PessoalItem = {
+  id: string;
+  nome: string;
+  cargo: string | null;
+  telefone: string | null;
+  administrador_principal: boolean;
+  estafeta: boolean;
+  activo: boolean;
+};
+
+/** Posição de um estafeta de serviço, para o mapa de acompanhamento do despacho */
+export type PosicaoEstafeta = {
+  funcionario_id: string;
+  nome: string;
+  lat: number;
+  lng: number;
+  pedidos_a_levar: number;
+  atualizado_em: string;
+};
+
 export type Permissao =
   | 'indicacoes.ver'
   | 'indicacoes.verificar'

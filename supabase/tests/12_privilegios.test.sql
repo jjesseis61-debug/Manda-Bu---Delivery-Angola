@@ -90,6 +90,8 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 'doses_cardapio',
                 -- justificação do cancelamento (o cliente só lê a dos seus pedidos)
                 'justificacao_cancelamento',
+                -- cadastro de pessoal (só administrador principal) e mapa de estafetas (despacho)
+                'listar_pessoal', 'criar_funcionario', 'editar_funcionario', 'posicoes_estafetas',
                 -- auxiliares usadas em políticas RLS, valores por defeito ou triggers SECURITY INVOKER
                 'cliente_actual', 'cozinha_padrao', 'e_funcionario', 'funcionalidade_activa',
                 'funcionario_actual', 'membro_da_cozinha', 'tem_permissao', 'e_administrador', 'pode_na_cozinha')),

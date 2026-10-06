@@ -15,6 +15,7 @@ const ecras: {
 }[] = [
   { rota: '/entregas', titulo: 'Pedidos e entregas', descricao: 'Fila de pedidos, saída e entrega (E1)', permissoes: ['entregas.registar', 'pedidos.gerir'] },
   { rota: '/turno', titulo: 'Gerente de turno', descricao: 'Sugestões do agente para o turno (aceitar ou recusar)', permissoes: ['pedidos.gerir'] },
+  { rota: '/estafetas', titulo: 'Estafetas no mapa', descricao: 'Acompanhar ao vivo os estafetas de serviço (despacho)', permissoes: ['pedidos.gerir'] },
   { rota: '/compras', titulo: 'Stock e compras', descricao: 'Plano de compras do agente e alertas do stock', permissoes: ['stock.gerir'] },
   { rota: '/atendimento', titulo: 'Atendimento', descricao: 'Conversas dos clientes que o assistente passou para uma pessoa', permissoes: ['atendimento.responder'] },
   { rota: '/caixa', titulo: 'Caixa', descricao: 'Abrir, sangrias e fecho com a contagem do dinheiro', permissoes: ['vendas.registar'] },
@@ -32,6 +33,7 @@ const ecras: {
   { rota: '/zonas', titulo: 'Zonas de entrega', descricao: 'Bairros onde se entrega e a taxa de cada um', permissoes: ['plataforma.parametros'] },
   { rota: '/parametros', titulo: 'Parâmetros e interruptores', descricao: 'Valores do programa e funcionalidades (O5)', permissoes: ['plataforma.parametros'] },
   { rota: '/cozinhas', titulo: 'Cozinhas e cardápio', descricao: 'Perfil, consentimento e pratos (O6)', permissoes: ['cozinhas.gerir'] },
+  { rota: '/pessoal', titulo: 'Pessoal', descricao: 'Cadastrar estafetas e funcionários, telefone de login e permissões', permissoes: [], permitir: (f) => f.administrador_principal },
   { rota: '/relatorios', titulo: 'Relatórios de cozinha', descricao: 'Por período, com exportação (O9)', permissoes: ['relatorios.exportar'] },
   { rota: '/moderacao', titulo: 'Moderação', descricao: 'Comentários das avaliações e palavras filtradas (O7)', permissoes: ['avaliacoes.moderar'] },
   {
