@@ -4,7 +4,7 @@ import { Pressable, Text, View } from 'react-native';
 
 import { ACarregar, Aviso, Cartao, Ecra, Paragrafo } from '@/components/ui';
 import { lerPedidos } from '@/lib/api';
-import { formatarKz, mensagemErro, nomeEstadoPedido } from '@/lib/formatar';
+import { corEstadoPedido, formatarKz, mensagemErro, nomeEstadoPedido } from '@/lib/formatar';
 import { cores } from '@/lib/tema';
 import type { Pedido } from '@/lib/tipos';
 
@@ -31,8 +31,13 @@ export default function Pedidos() {
       {pedidos.map((p) => (
         <Pressable key={p.id} onPress={() => router.push({ pathname: '/pedido/[id]', params: { id: p.id } })}>
           <Cartao>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Text style={{ fontWeight: '700', fontSize: 15 }}>{nomeEstadoPedido[p.estado]}</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 }}>
+                <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: corEstadoPedido[p.estado] }} />
+                <Text style={{ fontWeight: '700', fontSize: 15, color: corEstadoPedido[p.estado] }}>
+                  {nomeEstadoPedido[p.estado]}
+                </Text>
+              </View>
               <Text style={{ fontWeight: '700', fontSize: 15 }}>
                 {formatarKz(p.subtotal + p.taxa_entrega - p.desconto_indicacao)}
               </Text>

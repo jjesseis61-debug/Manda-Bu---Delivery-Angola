@@ -1,6 +1,6 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Text } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { AcompanharEntrega } from '@/components/AcompanharEntrega';
 import { PartilharCodigo } from '@/components/PartilharCodigo';
@@ -16,7 +16,7 @@ import {
   minhaAvaliacao,
   minhasReclamacoes,
 } from '@/lib/api';
-import { formatarKz, mensagemErro, nomeEstadoPedido } from '@/lib/formatar';
+import { corEstadoPedido, formatarKz, mensagemErro, nomeEstadoPedido } from '@/lib/formatar';
 import { useSessao } from '@/lib/sessao';
 import { cores } from '@/lib/tema';
 import type { AtrasoPedido, MinhaReclamacao, Pedido } from '@/lib/tipos';
@@ -92,7 +92,10 @@ export default function PedidoDetalhe() {
       {saldo === 'falhou' && <Aviso>Não foi possível usar o saldo neste pedido. Pagas o valor total na entrega.</Aviso>}
 
       <Cartao>
-        <Text style={{ fontSize: 18, fontWeight: '700', color: cores.marca }}>{nomeEstadoPedido[pedido.estado]}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <View style={{ width: 11, height: 11, borderRadius: 6, backgroundColor: corEstadoPedido[pedido.estado] }} />
+          <Text style={{ fontSize: 18, fontWeight: '700', color: corEstadoPedido[pedido.estado] }}>{nomeEstadoPedido[pedido.estado]}</Text>
+        </View>
         {pedido.hora_prometida && (
           <Paragrafo suave>
             Entrega prevista: {new Date(pedido.hora_prometida).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}

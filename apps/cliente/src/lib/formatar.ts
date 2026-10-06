@@ -108,6 +108,17 @@ export const nomeEstadoPedido: Record<EstadoPedido, string> = {
   estornado: 'Estornado',
 };
 
+/** Cor de cada estado, para um sinal visual na lista e no detalhe (sempre a par do texto, nunca só a cor) */
+export const corEstadoPedido: Record<EstadoPedido, string> = {
+  pendente: '#1565C0', // Recebido — azul
+  confirmado: '#00695C', // Confirmado — verde-azulado
+  em_preparacao: '#8A5A00', // Em preparação — âmbar
+  em_entrega: '#6A1B9A', // A caminho — roxo
+  entregue_pago: '#1E7D32', // Entregue — verde
+  cancelado: '#5F6368', // Cancelado — cinzento
+  estornado: '#5F6368', // Estornado — cinzento
+};
+
 export const nomeMetodo: Record<string, string> = {
   multicaixa_express: 'Multicaixa Express',
   unitel_money: 'Unitel Money',
