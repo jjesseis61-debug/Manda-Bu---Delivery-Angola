@@ -92,6 +92,8 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 'justificacao_cancelamento',
                 -- cadastro de pessoal (só administrador principal) e mapa de estafetas (despacho)
                 'listar_pessoal', 'criar_funcionario', 'editar_funcionario', 'posicoes_estafetas',
+                -- pedidos agendados (fila do que vem)
+                'pedidos_agendados',
                 -- auxiliares usadas em políticas RLS, valores por defeito ou triggers SECURITY INVOKER
                 'cliente_actual', 'cozinha_padrao', 'e_funcionario', 'funcionalidade_activa',
                 'funcionario_actual', 'membro_da_cozinha', 'tem_permissao', 'e_administrador', 'pode_na_cozinha')),

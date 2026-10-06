@@ -27,6 +27,8 @@ type Carrinho = {
   cozinha: CozinhaCarrinho | null;
   /** Mudar de cozinha esvazia o carrinho (os pratos são de outra cozinha) */
   definirCozinha: (c: CozinhaCarrinho | null) => void;
+  /** Repõe o carrinho com estas linhas e cozinha (usado por "Pedir de novo") */
+  repor: (novas: LinhaCarrinho[], coz: CozinhaCarrinho | null) => void;
   /** Cozinha dos pratos a escolher: a do grupo, se houver; senão a escolhida */
   cozinhaActual: CozinhaCarrinho | null;
 };
@@ -73,6 +75,11 @@ export function CarrinhoProvider({ children }: { children: ReactNode }) {
         setCozinha(c);
       },
       cozinhaActual: grupo ? { id: grupo.cozinhaId, nome: grupo.cozinhaNome } : cozinha,
+      repor: (novas, coz) => {
+        setGrupo(null);
+        setCozinha(coz);
+        setLinhas(novas);
+      },
     }),
     [linhas, grupo, cozinha],
   );

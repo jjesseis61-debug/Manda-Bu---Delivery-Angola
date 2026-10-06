@@ -4,13 +4,13 @@ import { Image, Linking, Switch, Text, View } from 'react-native';
 
 import { Guarda } from '@/components/Guarda';
 import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Escolha, Paragrafo, Subtitulo } from '@/components/ui';
-import { alertasAbertos, caixasAbertas, informarAtraso, lerCozinhas, marcarPagadorDistinto, mudarEstado, pedidosOperador } from '@/lib/api';
+import { alertasAbertos, caixasAbertas, informarAtraso, lerCozinhas, marcarPagadorDistinto, mudarEstado, pedidosAgendados, pedidosOperador } from '@/lib/api';
 import { formatarData, formatarDia, formatarKz, mensagemErro, nomeEstadoPedido } from '@/lib/formatar';
 import { enviarComprovativo, escolherFoto } from '@/lib/fotos';
 import { usePartilharLocalizacao } from '@/lib/partilharLocalizacao';
 import { useSessao } from '@/lib/sessao';
 import { cores, espaco } from '@/lib/tema';
-import type { AlertaPedido, Caixa, Cozinha, PedidoOperador } from '@/lib/tipos';
+import type { AlertaPedido, Caixa, Cozinha, PedidoAgendado, PedidoOperador } from '@/lib/tipos';
 
 const METODOS = ['Dinheiro', 'Multicaixa Express', 'TPA', 'Unitel Money', 'Transferência'];
 
@@ -68,16 +68,24 @@ export default function Entregas() {
   const [versao, setVersao] = useState(0);
   const [alertas, setAlertas] = useState<Record<string, AlertaPedido[]>>({});
   const [atraso, setAtraso] = useState({ motivo: MOTIVOS_ATRASO[0], outro: '', minutos: '' });
+  const [agendados, setAgendados] = useState<PedidoAgendado[]>([]);
 
   const carregar = useCallback(() => {
-    Promise.all([pedidosOperador(), caixasAbertas(), lerCozinhas().catch(() => [] as Cozinha[]), alertasAbertos().catch(() => [] as AlertaPedido[])])
-      .then(([p, c, cz, al]) => {
+    Promise.all([
+      pedidosOperador(),
+      caixasAbertas(),
+      lerCozinhas().catch(() => [] as Cozinha[]),
+      alertasAbertos().catch(() => [] as AlertaPedido[]),
+      pedidosAgendados().catch(() => [] as PedidoAgendado[]),
+    ])
+      .then(([p, c, cz, al, ag]) => {
         const porPedido: Record<string, AlertaPedido[]> = {};
         for (const a of al) porPedido[a.pedido_id] = [...(porPedido[a.pedido_id] ?? []), a];
         setAlertas(porPedido);
         setPedidos(p);
         setCaixas(c);
         setCozinhas(cz);
+        setAgendados(ag);
         setVersao((v) => v + 1);
       })
       .catch((e) => setErro(mensagemErro(e)));
@@ -388,6 +396,27 @@ export default function Entregas() {
             aoMudar={setFiltroCozinha}
           />
         )}
+        {(() => {
+          const vis = agendados.filter((a) => filtroCozinha === 'todas' || a.cozinha_id === filtroCozinha);
+          if (vis.length === 0) return null;
+          return (
+            <Cartao estilo={{ gap: espaco.s }}>
+              <Subtitulo>Agendados ({vis.length})</Subtitulo>
+              {vis.map((a) => (
+                <View key={a.pedido_id} style={{ borderTopWidth: 1, borderTopColor: cores.linha, paddingTop: espaco.xs }}>
+                  <Text style={{ fontWeight: '600', color: cores.texto }}>
+                    {formatarData(a.agendado_para)} · {a.cliente_nome}
+                  </Text>
+                  <Text style={{ color: cores.textoSuave }}>
+                    {a.itens.map((i) => `${i.qtd}× ${i.nome}`).join(', ')}
+                    {a.zona_nome ? ` · ${a.zona_nome}` : ''}
+                  </Text>
+                </View>
+              ))}
+              <Paragrafo suave>Preparar na altura certa — entram na fila cerca de 90 min antes.</Paragrafo>
+            </Cartao>
+          );
+        })()}
         {!pedidos && !erro && <ACarregar />}
         {pedidos && pedidos.length === 0 && <Paragrafo suave>Sem pedidos em curso.</Paragrafo>}
         <Botao titulo="Actualizar" variante="texto" aoCarregar={carregar} />

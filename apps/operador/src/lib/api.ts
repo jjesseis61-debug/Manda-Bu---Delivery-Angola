@@ -41,6 +41,7 @@ import type {
   OpcaoPrato,
   Painel,
   PalavraFiltrada,
+  PedidoAgendado,
   PedidoOperador,
   Periodo,
   PessoalItem,
@@ -745,6 +746,11 @@ export async function editarFuncionario(dados: {
 
 export async function definirTelefoneFuncionario(id: string, telefone: string | null) {
   verificar(await supabase.rpc('definir_telefone_funcionario', { p_funcionario: id, p_telefone: telefone }));
+}
+
+// ---------------------------------------------------------------- Pedidos agendados
+export async function pedidosAgendados(): Promise<PedidoAgendado[]> {
+  return (verificar(await supabase.rpc('pedidos_agendados')) as PedidoAgendado[]) ?? [];
 }
 
 // ---------------------------------------------------------------- Mapa de estafetas (despacho)

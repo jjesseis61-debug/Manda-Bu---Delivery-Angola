@@ -310,6 +310,7 @@ export async function criarPedido(dados: {
   cozinhaId?: string | null;
   itens: ItemCarrinho[];
   observacoes: string;
+  agendadoPara?: string | null;
 }): Promise<string> {
   const r = await supabase.from('pedidos').insert({
     id: dados.id,
@@ -319,6 +320,7 @@ export async function criarPedido(dados: {
     cozinha_id: dados.cozinhaId ?? null,
     itens: dados.itens,
     observacoes: dados.observacoes.trim() || null,
+    agendado_para: dados.agendadoPara ?? null,
     dispositivo_id: await dispositivoId(),
   });
   if (r.error && (r.error as { code?: string }).code === '23505') {
@@ -338,7 +340,7 @@ export async function cancelarPedido(pedidoId: string): Promise<void> {
 }
 
 const camposPedido =
-  'id, criado_em, estado, itens, subtotal, taxa_entrega, desconto_indicacao, credito_indicacao_usado, pago_pacote, refeicoes_pacote, observacoes, motivo_cancelamento, hora_prometida, entregue_em';
+  'id, criado_em, estado, itens, subtotal, taxa_entrega, desconto_indicacao, credito_indicacao_usado, pago_pacote, refeicoes_pacote, observacoes, motivo_cancelamento, hora_prometida, entregue_em, agendado_para';
 
 export async function lerPedidos(): Promise<Pedido[]> {
   const r = await supabase.from('pedidos').select(camposPedido).order('criado_em', { ascending: false }).limit(50);

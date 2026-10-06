@@ -146,6 +146,7 @@ export type Pedido = {
   motivo_cancelamento: string | null;
   hora_prometida: string | null;
   entregue_em: string | null;
+  agendado_para: string | null;
 };
 
 export type Zona = { id: string; nome: string; taxa: number | null };

@@ -12,6 +12,7 @@ jest.mock('@/lib/api', () => ({
   informarAtraso: jest.fn(),
   mudarEstado: jest.fn(),
   marcarPagadorDistinto: jest.fn(),
+  pedidosAgendados: jest.fn().mockResolvedValue([]),
 }));
 jest.mock('@/lib/fotos', () => ({ enviarComprovativo: jest.fn(), escolherFoto: jest.fn() }));
 jest.mock('@/lib/partilharLocalizacao', () => ({ usePartilharLocalizacao: () => ({ aCaminho: 0, erro: null }) }));

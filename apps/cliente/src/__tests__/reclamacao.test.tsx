@@ -19,6 +19,7 @@ jest.mock('@/components/PessoasComoTu', () => ({ PessoasComoTu: () => null }));
 jest.mock('@/components/PartilharCodigo', () => ({ PartilharCodigo: () => null }));
 const mockSessao = { carregado: true, ligada: () => false };
 jest.mock('@/lib/sessao', () => ({ useSessao: () => mockSessao }));
+jest.mock('@/lib/carrinho', () => ({ useCarrinho: () => ({ repor: jest.fn() }) }));
 
 const pedido = {
   id: 'p1', criado_em: new Date().toISOString(), estado: 'entregue_pago',

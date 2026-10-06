@@ -1,9 +1,10 @@
-import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, Switch, Text, View } from 'react-native';
 
 import { CampoCodigo } from '@/components/CampoCodigo';
 import { Aviso, Botao, Campo, Cartao, Ecra, Escolha, Linha, Paragrafo, Subtitulo } from '@/components/ui';
+import { faixasAgendamento } from '@/lib/agendar';
 import { criarPedido, lerEnderecos, lerSaldo, meuPacote, orcamento as pedirOrcamento, usarCredito, usarPacote } from '@/lib/api';
 import { type LinhaCarrinho, useCarrinho } from '@/lib/carrinho';
 import { novoId } from '@/lib/dispositivo';
@@ -45,6 +46,10 @@ export default function Carrinho() {
   const [pacote, setPacote] = useState<MeuPacote | null>(null);
   const [comPacote, setComPacote] = useState(true);
   const [observacoes, setObservacoes] = useState('');
+  const { faltam } = useLocalSearchParams<{ faltam?: string }>();
+  const faixas = useMemo(() => faixasAgendamento(), []);
+  const [agendarMaisTarde, setAgendarMaisTarde] = useState(false);
+  const [agendadoPara, setAgendadoPara] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [aEnviar, setAEnviar] = useState(false);
   const [versao, setVersao] = useState(0);
@@ -113,6 +118,7 @@ export default function Carrinho() {
         cozinhaId: grupo ? null : (carrinho.cozinhaActual?.id ?? null),
         itens: carrinho.linhas.map(itemDoPedido),
         observacoes,
+        agendadoPara: grupo ? null : agendarMaisTarde ? agendadoPara : null,
       });
       // O pacote paga primeiro; o saldo cobre só o que faltar
       let pagoPacote = 0;
@@ -151,6 +157,7 @@ export default function Carrinho() {
 
   return (
     <Ecra>
+      {faltam && <Aviso>Alguns pratos já não estão disponíveis e ficaram de fora: {faltam}. Confere o pedido.</Aviso>}
       {ligada('multi_cozinha') && carrinho.cozinhaActual && <Subtitulo>{carrinho.cozinhaActual.nome}</Subtitulo>}
       {carrinho.linhas.map((l) => (
         <View key={l.chave} style={{ flexDirection: 'row', alignItems: 'center', gap: espaco.m }}>
@@ -246,6 +253,31 @@ export default function Carrinho() {
           <Text style={{ fontSize: 15, flex: 1 }}>Usar saldo do Convida e Ganha ({formatarKz(saldo)})</Text>
           <Switch thumbColor="#FFFFFF" value={usarSaldo} onValueChange={setUsarSaldo} trackColor={{ true: cores.marca, false: cores.contorno }} />
         </View>
+      )}
+
+      {!grupo && (
+        <Cartao>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text style={{ fontSize: 15, flex: 1 }}>Entregar mais tarde</Text>
+            <Switch
+              thumbColor="#FFFFFF"
+              value={agendarMaisTarde}
+              onValueChange={(v) => {
+                setAgendarMaisTarde(v);
+                setAgendadoPara(v ? (faixas[0]?.valor ?? null) : null);
+              }}
+              trackColor={{ true: cores.marca, false: cores.contorno }}
+            />
+          </View>
+          {agendarMaisTarde && faixas.length > 0 && (
+            <Escolha
+              opcoes={faixas.map((f) => ({ valor: f.valor, rotulo: f.rotulo }))}
+              valor={agendadoPara ?? faixas[0].valor}
+              aoMudar={setAgendadoPara}
+            />
+          )}
+          {agendarMaisTarde && faixas.length === 0 && <Paragrafo suave>Sem horários disponíveis de momento.</Paragrafo>}
+        </Cartao>
       )}
 
       <Campo

@@ -19,6 +19,18 @@ export type PessoalItem = {
   activo: boolean;
 };
 
+/** Pedido agendado para mais tarde (fila do que vem, para a cozinha preparar na altura) */
+export type PedidoAgendado = {
+  pedido_id: string;
+  agendado_para: string;
+  cozinha_id: string;
+  cliente_nome: string;
+  itens: { nome: string; qtd: number }[];
+  a_pagar: number;
+  ponto_referencia: string | null;
+  zona_nome: string | null;
+};
+
 /** Posição de um estafeta de serviço, para o mapa de acompanhamento do despacho */
 export type PosicaoEstafeta = {
   funcionario_id: string;

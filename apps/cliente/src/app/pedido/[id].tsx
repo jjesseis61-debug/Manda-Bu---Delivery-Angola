@@ -6,6 +6,9 @@ import { AcompanharEntrega } from '@/components/AcompanharEntrega';
 import { PartilharCodigo } from '@/components/PartilharCodigo';
 import { PessoasComoTu } from '@/components/PessoasComoTu';
 import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Linha, Paragrafo, Subtitulo } from '@/components/ui';
+import { rotuloAgendamento } from '@/lib/agendar';
+import { useCarrinho } from '@/lib/carrinho';
+import { montarRepeticao } from '@/lib/repetir';
 import {
   atrasoDoPedido,
   avaliacaoPermitida,
@@ -26,6 +29,8 @@ export default function PedidoDetalhe() {
   const router = useRouter();
   const { id, fim, saldo, pacote } = useLocalSearchParams<{ id: string; fim?: string; saldo?: string; pacote?: string }>();
   const { ligada } = useSessao();
+  const carrinho = useCarrinho();
+  const [aRepetir, setARepetir] = useState(false);
   const [pedido, setPedido] = useState<Pedido | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [aCancelar, setACancelar] = useState(false);
@@ -80,8 +85,29 @@ export default function PedidoDetalhe() {
     }
   }
 
+  async function pedirDeNovo() {
+    if (!pedido) return;
+    setErro(null);
+    setARepetir(true);
+    try {
+      const { linhas, cozinha, faltam } = await montarRepeticao(pedido.itens);
+      if (linhas.length === 0) {
+        setErro('Os pratos deste pedido já não estão disponíveis.');
+        return;
+      }
+      carrinho.repor(linhas, cozinha);
+      router.push({ pathname: '/carrinho', params: faltam.length > 0 ? { faltam: faltam.join(', ') } : {} });
+    } catch (e) {
+      setErro(mensagemErro(e));
+    } finally {
+      setARepetir(false);
+    }
+  }
+
   const total = pedido.subtotal + pedido.taxa_entrega - pedido.desconto_indicacao;
   const fimDePedido = fim === '1';
+  const terminado = ['entregue_pago', 'cancelado', 'estornado'].includes(pedido.estado);
+  const agendadoFuturo = pedido.agendado_para && !terminado && new Date(pedido.agendado_para) > new Date();
 
   return (
     <Ecra>
@@ -96,7 +122,10 @@ export default function PedidoDetalhe() {
           <View style={{ width: 11, height: 11, borderRadius: 6, backgroundColor: corEstadoPedido[pedido.estado] }} />
           <Text style={{ fontSize: 18, fontWeight: '700', color: corEstadoPedido[pedido.estado] }}>{nomeEstadoPedido[pedido.estado]}</Text>
         </View>
-        {pedido.hora_prometida && (
+        {agendadoFuturo && pedido.agendado_para && (
+          <Paragrafo suave>Agendado para {rotuloAgendamento(pedido.agendado_para)}.</Paragrafo>
+        )}
+        {pedido.hora_prometida && !agendadoFuturo && (
           <Paragrafo suave>
             Entrega prevista: {new Date(pedido.hora_prometida).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}
           </Paragrafo>
@@ -153,6 +182,8 @@ export default function PedidoDetalhe() {
         Este é o resumo da tua encomenda, não é uma fatura. A fatura é emitida na cozinha, na entrega. Preços com IVA
         incluído, quando aplicável.
       </Paragrafo>
+
+      {terminado && <Botao titulo="Pedir de novo" aCarregar={aRepetir} aoCarregar={pedirDeNovo} />}
 
       {/* C9: avaliar até ao prazo; depois de avaliado mostra as estrelas dadas */}
       {avaliacao === 'pode' && <Botao titulo="Avaliar pedido" aoCarregar={() => router.push(`/avaliar/${pedido.id}`)} />}
