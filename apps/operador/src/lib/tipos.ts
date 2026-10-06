@@ -31,6 +31,15 @@ export type PedidoAgendado = {
   zona_nome: string | null;
 };
 
+/** Sugestão de despacho: um pedido pronto a sair e o estafeta online mais perto */
+export type SugestaoDespacho = {
+  pedido_id: string;
+  zona: string;
+  referencia: string | null;
+  itens: { nome: string; qtd: number }[];
+  sugestao: { funcionario_id: string; nome: string; distancia_km: number; pedidos_a_levar: number } | null;
+};
+
 /** Posição de um estafeta de serviço, para o mapa de acompanhamento do despacho */
 export type PosicaoEstafeta = {
   funcionario_id: string;

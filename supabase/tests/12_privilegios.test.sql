@@ -94,6 +94,8 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 'listar_pessoal', 'criar_funcionario', 'editar_funcionario', 'posicoes_estafetas',
                 -- pedidos agendados (fila do que vem)
                 'pedidos_agendados',
+                -- sugestão de despacho por proximidade
+                'sugestao_despacho',
                 -- auxiliares usadas em políticas RLS, valores por defeito ou triggers SECURITY INVOKER
                 'cliente_actual', 'cozinha_padrao', 'e_funcionario', 'funcionalidade_activa',
                 'funcionario_actual', 'membro_da_cozinha', 'tem_permissao', 'e_administrador', 'pode_na_cozinha')),

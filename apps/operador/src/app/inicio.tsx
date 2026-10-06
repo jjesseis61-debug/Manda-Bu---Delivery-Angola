@@ -15,7 +15,7 @@ const ecras: {
 }[] = [
   { rota: '/entregas', titulo: 'Pedidos e entregas', descricao: 'Fila de pedidos, saída e entrega (E1)', permissoes: ['entregas.registar', 'pedidos.gerir'] },
   { rota: '/turno', titulo: 'Gerente de turno', descricao: 'Sugestões do agente para o turno (aceitar ou recusar)', permissoes: ['pedidos.gerir'] },
-  { rota: '/estafetas', titulo: 'Estafetas no mapa', descricao: 'Acompanhar ao vivo os estafetas de serviço (despacho)', permissoes: ['pedidos.gerir'] },
+  { rota: '/estafetas', titulo: 'Estafetas e despacho', descricao: 'Mapa dos estafetas ao vivo e sugestão de quem leva cada pedido', permissoes: ['pedidos.gerir'] },
   { rota: '/compras', titulo: 'Stock e compras', descricao: 'Plano de compras do agente e alertas do stock', permissoes: ['stock.gerir'] },
   { rota: '/atendimento', titulo: 'Atendimento', descricao: 'Conversas dos clientes que o assistente passou para uma pessoa', permissoes: ['atendimento.responder'] },
   { rota: '/caixa', titulo: 'Caixa', descricao: 'Abrir, sangrias e fecho com a contagem do dinheiro', permissoes: ['vendas.registar'] },

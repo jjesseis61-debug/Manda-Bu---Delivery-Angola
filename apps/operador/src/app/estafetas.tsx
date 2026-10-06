@@ -1,15 +1,15 @@
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
-import { Text } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { Text, View } from 'react-native';
 
 import { Guarda } from '@/components/Guarda';
 import { MapaEstafetas } from '@/components/MapaEstafetas';
 import { ACarregar, Aviso, Cartao, Ecra, Escolha, Linha, Paragrafo, Subtitulo } from '@/components/ui';
-import { lerCozinhas, posicoesEstafetas } from '@/lib/api';
+import { lerCozinhas, posicoesEstafetas, sugestaoDespacho } from '@/lib/api';
 import { mensagemErro } from '@/lib/formatar';
 import { useSessao } from '@/lib/sessao';
-import { cores } from '@/lib/tema';
-import type { Cozinha, PosicaoEstafeta } from '@/lib/tipos';
+import { cores, espaco } from '@/lib/tema';
+import type { Cozinha, PosicaoEstafeta, SugestaoDespacho } from '@/lib/tipos';
 
 const INTERVALO_MS = 10_000;
 
@@ -19,6 +19,7 @@ export default function Estafetas() {
   const [cozinhas, setCozinhas] = useState<Cozinha[]>([]);
   const [cozinhaId, setCozinhaId] = useState<string | null>(null);
   const [estafetas, setEstafetas] = useState<PosicaoEstafeta[] | null>(null);
+  const [despacho, setDespacho] = useState<SugestaoDespacho[]>([]);
   const [erro, setErro] = useState<string | null>(null);
 
   useFocusEffect(
@@ -37,7 +38,7 @@ export default function Estafetas() {
     useCallback(() => {
       if (!cozinhaId) return;
       let activo = true;
-      const ler = () =>
+      const ler = () => {
         posicoesEstafetas(cozinhaId)
           .then((e) => {
             if (activo) setEstafetas(e);
@@ -45,6 +46,12 @@ export default function Estafetas() {
           .catch((e) => {
             if (activo) setErro(mensagemErro(e));
           });
+        sugestaoDespacho(cozinhaId)
+          .then((d) => {
+            if (activo) setDespacho(d);
+          })
+          .catch(() => undefined);
+      };
       void ler();
       const t = setInterval(ler, INTERVALO_MS);
       return () => {
@@ -53,6 +60,16 @@ export default function Estafetas() {
       };
     }, [cozinhaId]),
   );
+
+  const porZona = useMemo(() => {
+    const m = new Map<string, SugestaoDespacho[]>();
+    for (const d of despacho) {
+      const lista = m.get(d.zona) ?? [];
+      lista.push(d);
+      m.set(d.zona, lista);
+    }
+    return [...m.entries()];
+  }, [despacho]);
 
   return (
     <Guarda permissoes={['pedidos.gerir']}>
@@ -81,8 +98,37 @@ export default function Estafetas() {
             ))}
           </>
         )}
+        {porZona.length > 0 && (
+          <>
+            <Subtitulo>Despacho sugerido</Subtitulo>
+            {porZona.map(([zona, lista]) => (
+              <Cartao key={zona} estilo={{ gap: espaco.s }}>
+                <Text style={{ fontWeight: '700', color: cores.texto }}>
+                  {zona} · {lista.length} {lista.length === 1 ? 'pedido' : 'pedidos'}
+                </Text>
+                {lista.map((d) => (
+                  <View key={d.pedido_id} style={{ borderTopWidth: 1, borderTopColor: cores.linha, paddingTop: espaco.xs }}>
+                    <Text style={{ color: cores.texto }}>
+                      {d.itens.map((i) => `${i.qtd}× ${i.nome}`).join(', ')}
+                      {d.referencia ? ` · ${d.referencia}` : ''}
+                    </Text>
+                    <Text style={{ color: d.sugestao ? cores.sucesso : cores.textoSuave, fontSize: 13 }}>
+                      {d.sugestao
+                        ? `Sugerido: ${d.sugestao.nome} (${String(d.sugestao.distancia_km).replace('.', ',')} km · ${d.sugestao.pedidos_a_levar} a levar)`
+                        : 'Sem estafeta online perto — atribui manualmente'}
+                    </Text>
+                  </View>
+                ))}
+              </Cartao>
+            ))}
+            <Paragrafo suave>
+              Pedidos da mesma zona com o mesmo estafeta sugerido podem ir na mesma viagem. É só sugestão — o estafeta
+              marca "em entrega" como sempre.
+            </Paragrafo>
+          </>
+        )}
         <Paragrafo suave>
-          Só aparece enquanto o estafeta tem pedidos a caminho. Guardamos só a última posição, sem histórico de
+          O mapa só aparece enquanto o estafeta tem pedidos a caminho. Guardamos só a última posição, sem histórico de
           percursos. Precisa do interruptor "acompanhamento_entrega" ligado.
         </Paragrafo>
       </Ecra>

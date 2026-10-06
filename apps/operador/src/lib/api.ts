@@ -46,6 +46,7 @@ import type {
   Periodo,
   PessoalItem,
   PosicaoEstafeta,
+  SugestaoDespacho,
   PratoCardapio,
   Reconhecimento,
   Relatorio,
@@ -756,4 +757,8 @@ export async function pedidosAgendados(): Promise<PedidoAgendado[]> {
 // ---------------------------------------------------------------- Mapa de estafetas (despacho)
 export async function posicoesEstafetas(cozinhaId: string): Promise<PosicaoEstafeta[]> {
   return (verificar(await supabase.rpc('posicoes_estafetas', { p_cozinha: cozinhaId })) as PosicaoEstafeta[]) ?? [];
+}
+
+export async function sugestaoDespacho(cozinhaId: string): Promise<SugestaoDespacho[]> {
+  return (verificar(await supabase.rpc('sugestao_despacho', { p_cozinha: cozinhaId })) as SugestaoDespacho[]) ?? [];
 }
