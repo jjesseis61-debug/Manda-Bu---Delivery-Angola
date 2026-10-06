@@ -96,6 +96,9 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 'pedidos_agendados',
                 -- sugestão de despacho por proximidade
                 'sugestao_despacho',
+                -- conta de empresa (B2B)
+                'criar_empresa', 'editar_empresa', 'listar_empresas', 'empresa_adicionar_membro',
+                'empresa_remover_membro', 'empresa_membros_lista', 'relatorio_empresa', 'minha_empresa',
                 -- auxiliares usadas em políticas RLS, valores por defeito ou triggers SECURITY INVOKER
                 'cliente_actual', 'cozinha_padrao', 'e_funcionario', 'funcionalidade_activa',
                 'funcionario_actual', 'membro_da_cozinha', 'tem_permissao', 'e_administrador', 'pode_na_cozinha')),

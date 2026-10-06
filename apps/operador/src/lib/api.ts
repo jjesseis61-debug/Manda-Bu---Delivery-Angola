@@ -45,7 +45,10 @@ import type {
   PedidoOperador,
   Periodo,
   PessoalItem,
+  Empresa,
+  EmpresaMembro,
   PosicaoEstafeta,
+  RelatorioEmpresa,
   SugestaoDespacho,
   PratoCardapio,
   Reconhecimento,
@@ -761,4 +764,33 @@ export async function posicoesEstafetas(cozinhaId: string): Promise<PosicaoEstaf
 
 export async function sugestaoDespacho(cozinhaId: string): Promise<SugestaoDespacho[]> {
   return (verificar(await supabase.rpc('sugestao_despacho', { p_cozinha: cozinhaId })) as SugestaoDespacho[]) ?? [];
+}
+
+// ---------------------------------------------------------------- Conta de empresa (B2B)
+export async function listarEmpresas(): Promise<Empresa[]> {
+  return (verificar(await supabase.rpc('listar_empresas')) as Empresa[]) ?? [];
+}
+
+export async function criarEmpresa(nome: string, limite: number): Promise<string> {
+  return verificar(await supabase.rpc('criar_empresa', { p_nome: nome, p_limite: limite })) as string;
+}
+
+export async function editarEmpresa(id: string, nome: string, limite: number, activa: boolean) {
+  verificar(await supabase.rpc('editar_empresa', { p_id: id, p_nome: nome, p_limite: limite, p_activa: activa }));
+}
+
+export async function empresaMembrosLista(empresaId: string): Promise<EmpresaMembro[]> {
+  return (verificar(await supabase.rpc('empresa_membros_lista', { p_empresa: empresaId })) as EmpresaMembro[]) ?? [];
+}
+
+export async function empresaAdicionarMembro(empresaId: string, codigo: string) {
+  verificar(await supabase.rpc('empresa_adicionar_membro', { p_empresa: empresaId, p_codigo: codigo }));
+}
+
+export async function empresaRemoverMembro(empresaId: string, clienteId: string) {
+  verificar(await supabase.rpc('empresa_remover_membro', { p_empresa: empresaId, p_cliente: clienteId }));
+}
+
+export async function relatorioEmpresa(empresaId: string, ano: number, mes: number): Promise<RelatorioEmpresa> {
+  return verificar(await supabase.rpc('relatorio_empresa', { p_empresa: empresaId, p_ano: ano, p_mes: mes })) as RelatorioEmpresa;
 }

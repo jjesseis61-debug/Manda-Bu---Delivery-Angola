@@ -21,6 +21,7 @@ const ecras: {
   { rota: '/caixa', titulo: 'Caixa', descricao: 'Abrir, sangrias e fecho com a contagem do dinheiro', permissoes: ['vendas.registar'] },
   { rota: '/analista', titulo: 'Analista', descricao: 'Pergunta sobre o negócio e lê o relatório do mês', permissoes: ['analista.usar'] },
   { rota: '/reclamacoes', titulo: 'Reclamações', descricao: 'Análise automática, resposta ao cliente e resumo do mês', permissoes: ['pedidos.gerir', 'clientes.gerir'] },
+  { rota: '/empresas', titulo: 'Empresas (B2B)', descricao: 'Contas de empresa: almoços dos funcionários e fatura mensal', permissoes: ['clientes.gerir'] },
   { rota: '/estimulos', titulo: 'Estímulos do mês', descricao: 'Desempenho, metas e bónus da equipa e dos melhores clientes', permissoes: ['equipa.gerir'] },
   { rota: '/conferencia', titulo: 'Conferência', descricao: 'Fecho do dia e do mês, extratos e comprovativos', permissoes: ['financas.conferir'] },
   { rota: '/grupos', titulo: 'Grupos do dia', descricao: 'Pedidos de grupo juntos para preparar e expedir (O10)', permissoes: ['pedidos.gerir', 'entregas.registar'] },

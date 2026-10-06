@@ -31,6 +31,16 @@ export type PedidoAgendado = {
   zona_nome: string | null;
 };
 
+/** Conta de empresa (B2B) */
+export type Empresa = { id: string; nome: string; limite_refeicao: number; activa: boolean; membros: number };
+export type EmpresaMembro = { cliente_id: string; nome: string; codigo: string | null };
+export type RelatorioEmpresa = {
+  empresa: string | null;
+  mes: string;
+  total: number;
+  pedidos: { data: string; cliente: string; valor: number; itens: string | null }[];
+};
+
 /** Sugestão de despacho: um pedido pronto a sair e o estafeta online mais perto */
 export type SugestaoDespacho = {
   pedido_id: string;

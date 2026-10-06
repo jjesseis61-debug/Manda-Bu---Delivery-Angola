@@ -5,13 +5,13 @@ import { Pressable, Switch, Text, View } from 'react-native';
 import { CampoCodigo } from '@/components/CampoCodigo';
 import { Aviso, Botao, Campo, Cartao, Ecra, Escolha, Linha, Paragrafo, Subtitulo } from '@/components/ui';
 import { faixasAgendamento } from '@/lib/agendar';
-import { criarPedido, lerEnderecos, lerSaldo, meuPacote, orcamento as pedirOrcamento, usarCredito, usarPacote } from '@/lib/api';
+import { criarPedido, lerEnderecos, lerSaldo, meuPacote, minhaEmpresa, orcamento as pedirOrcamento, usarCredito, usarPacote } from '@/lib/api';
 import { type LinhaCarrinho, useCarrinho } from '@/lib/carrinho';
 import { novoId } from '@/lib/dispositivo';
 import { formatarKz, mensagemCodigo, mensagemErro } from '@/lib/formatar';
 import { useSessao } from '@/lib/sessao';
 import { cores, espaco } from '@/lib/tema';
-import type { Endereco, MeuPacote, Orcamento } from '@/lib/tipos';
+import type { Endereco, MeuPacote, MinhaEmpresa, Orcamento } from '@/lib/tipos';
 
 /** I12: quantas refeições o pacote vai pagar (o valor exacto é calculado no servidor) */
 function textoPacoteCarrinho(pacote: MeuPacote | null, linhas: LinhaCarrinho[], emGrupo: boolean): string {
@@ -50,6 +50,8 @@ export default function Carrinho() {
   const faixas = useMemo(() => faixasAgendamento(), []);
   const [agendarMaisTarde, setAgendarMaisTarde] = useState(false);
   const [agendadoPara, setAgendadoPara] = useState<string | null>(null);
+  const [empresa, setEmpresa] = useState<MinhaEmpresa | null>(null);
+  const [contaEmpresa, setContaEmpresa] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [aEnviar, setAEnviar] = useState(false);
   const [versao, setVersao] = useState(0);
@@ -76,6 +78,10 @@ export default function Carrinho() {
           .then((m) => setPacote(m?.em_vigor ? m : null))
           .catch(() => setPacote(null));
       }
+      // Conta de empresa (B2B), se o cliente for membro
+      minhaEmpresa()
+        .then(setEmpresa)
+        .catch(() => setEmpresa(null));
     }, [perfil, ligada]),
   );
 
@@ -119,6 +125,7 @@ export default function Carrinho() {
         itens: carrinho.linhas.map(itemDoPedido),
         observacoes,
         agendadoPara: grupo ? null : agendarMaisTarde ? agendadoPara : null,
+        empresaId: !grupo && empresa && contaEmpresa ? empresa.empresa_id : null,
       });
       // O pacote paga primeiro; o saldo cobre só o que faltar
       let pagoPacote = 0;
@@ -253,6 +260,22 @@ export default function Carrinho() {
           <Text style={{ fontSize: 15, flex: 1 }}>Usar saldo do Convida e Ganha ({formatarKz(saldo)})</Text>
           <Switch thumbColor="#FFFFFF" value={usarSaldo} onValueChange={setUsarSaldo} trackColor={{ true: cores.marca, false: cores.contorno }} />
         </View>
+      )}
+
+      {!grupo && empresa && (
+        <Cartao>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text style={{ fontSize: 15, flex: 1 }}>
+              Pôr na conta da {empresa.nome} (a empresa paga até {formatarKz(empresa.limite_refeicao)})
+            </Text>
+            <Switch
+              thumbColor="#FFFFFF"
+              value={contaEmpresa}
+              onValueChange={setContaEmpresa}
+              trackColor={{ true: cores.marca, false: cores.contorno }}
+            />
+          </View>
+        </Cartao>
       )}
 
       {!grupo && (

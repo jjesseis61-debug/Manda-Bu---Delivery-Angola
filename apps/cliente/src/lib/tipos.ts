@@ -147,7 +147,12 @@ export type Pedido = {
   hora_prometida: string | null;
   entregue_em: string | null;
   agendado_para: string | null;
+  empresa_id: string | null;
+  valor_empresa: number;
 };
+
+/** Conta de empresa do cliente (se for membro activo) */
+export type MinhaEmpresa = { empresa_id: string; nome: string; limite_refeicao: number };
 
 export type Zona = { id: string; nome: string; taxa: number | null };
 

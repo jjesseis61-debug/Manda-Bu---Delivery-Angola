@@ -21,6 +21,7 @@ import type {
   LocalizacaoCozinha,
   MetodoPacote,
   MeuPacote,
+  MinhaEmpresa,
   MediasAvaliacoes,
   MeuGrupo,
   MinhaPosicao,
@@ -311,6 +312,7 @@ export async function criarPedido(dados: {
   itens: ItemCarrinho[];
   observacoes: string;
   agendadoPara?: string | null;
+  empresaId?: string | null;
 }): Promise<string> {
   const r = await supabase.from('pedidos').insert({
     id: dados.id,
@@ -321,6 +323,7 @@ export async function criarPedido(dados: {
     itens: dados.itens,
     observacoes: dados.observacoes.trim() || null,
     agendado_para: dados.agendadoPara ?? null,
+    empresa_id: dados.empresaId ?? null,
     dispositivo_id: await dispositivoId(),
   });
   if (r.error && (r.error as { code?: string }).code === '23505') {
@@ -329,6 +332,10 @@ export async function criarPedido(dados: {
   }
   verificar(r);
   return dados.id;
+}
+
+export async function minhaEmpresa(): Promise<MinhaEmpresa | null> {
+  return (verificar(await supabase.rpc('minha_empresa')) as MinhaEmpresa | null) ?? null;
 }
 
 export async function usarCredito(pedidoId: string, valor: number): Promise<number> {
@@ -340,7 +347,7 @@ export async function cancelarPedido(pedidoId: string): Promise<void> {
 }
 
 const camposPedido =
-  'id, criado_em, estado, itens, subtotal, taxa_entrega, desconto_indicacao, credito_indicacao_usado, pago_pacote, refeicoes_pacote, observacoes, motivo_cancelamento, hora_prometida, entregue_em, agendado_para';
+  'id, criado_em, estado, itens, subtotal, taxa_entrega, desconto_indicacao, credito_indicacao_usado, pago_pacote, refeicoes_pacote, observacoes, motivo_cancelamento, hora_prometida, entregue_em, agendado_para, empresa_id, valor_empresa';
 
 export async function lerPedidos(): Promise<Pedido[]> {
   const r = await supabase.from('pedidos').select(camposPedido).order('criado_em', { ascending: false }).limit(50);

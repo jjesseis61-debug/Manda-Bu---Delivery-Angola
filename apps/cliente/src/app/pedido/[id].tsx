@@ -172,9 +172,12 @@ export default function PedidoDetalhe() {
             direita={`−${formatarKz(pedido.pago_pacote)}`}
           />
         )}
+        {(pedido.valor_empresa ?? 0) > 0 && (
+          <Linha esquerda="Pago pela empresa" direita={`−${formatarKz(pedido.valor_empresa)}`} />
+        )}
         <Linha
           esquerda="A pagar na entrega"
-          direita={formatarKz(total - pedido.credito_indicacao_usado - (pedido.pago_pacote ?? 0))}
+          direita={formatarKz(total - pedido.credito_indicacao_usado - (pedido.pago_pacote ?? 0) - (pedido.valor_empresa ?? 0))}
           forte
         />
       </Cartao>
