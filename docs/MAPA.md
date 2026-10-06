@@ -20,12 +20,17 @@ passou a ser **opcional** — um "upgrade" estético, não um requisito.
 O MapLibre tem código nativo, por isso só entra na app **no próximo build (APK)**. Até lá, o
 código está pronto e testado, mas o APK atual ainda mostra o mapa antigo.
 
-## Volume de utilização (OpenStreetMap)
+## Fornecedor de tiles
 
-Os tiles públicos do OpenStreetMap chegam bem para o volume inicial. Se um dia o volume crescer,
-podes apontar para um fornecedor próprio (com plano gratuito e **sem cartão**, ex.: MapTiler ou
-Stadia Maps) definindo, no build, a variável `EXPO_PUBLIC_MAPA_TILES_URL` no formato
-`https://.../{z}/{x}/{y}.png`. A app passa a usá-la sem mudar código.
+Por defeito a app usa o **OpenFreeMap** (`https://tiles.openfreemap.org/styles/bright`): tiles
+vetoriais de dados OpenStreetMap, **sem API key, sem limites e com uso comercial permitido**, feito
+para apps. (O servidor público de tiles do próprio OpenStreetMap **bloqueia o uso por apps**, por
+isso não se usa diretamente — daria mapa em branco.)
+
+Se um dia quiseres garantir disponibilidade contratual, podes apontar para um fornecedor próprio
+(ex.: MapTiler ou Stadia Maps, com plano gratuito e **sem cartão**) definindo, no build, a variável
+`EXPO_PUBLIC_MAPA_TILES_URL` no formato raster `https://.../{z}/{x}/{y}.png`. A app passa a usá-la
+sem mudar código.
 
 ## Detalhe técnico
 

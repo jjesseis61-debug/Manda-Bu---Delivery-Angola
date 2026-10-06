@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import type { NativeSyntheticEvent } from 'react-native';
 import MapView, { Marker, type MapPressEvent } from 'react-native-maps';
 
-import { estiloOsm } from '@/lib/mapaEstilo';
+import { estiloMapa } from '@/lib/mapaEstilo';
 import { GOOGLE_DISPONIVEL } from '@/lib/mapaNativo';
 import { useSessao } from '@/lib/sessao';
 import { cores, raio } from '@/lib/tema';
@@ -38,7 +38,7 @@ function Osm({ ponto, aoMudar }: { ponto: Coordenadas; aoMudar: (p: Coordenadas)
   return (
     <Map
       style={StyleSheet.absoluteFill}
-      mapStyle={estiloOsm}
+      mapStyle={estiloMapa}
       logo={false}
       compass={false}
       touchRotate={false}

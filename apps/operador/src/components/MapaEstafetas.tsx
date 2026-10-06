@@ -1,7 +1,7 @@
 import { Camera, Map, Marker } from '@maplibre/maplibre-react-native';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { estiloOsm } from '@/lib/mapaEstilo';
+import { estiloMapa } from '@/lib/mapaEstilo';
 import { cores, raio } from '@/lib/tema';
 import type { PosicaoEstafeta } from '@/lib/tipos';
 
@@ -9,23 +9,25 @@ import type { PosicaoEstafeta } from '@/lib/tipos';
 export function MapaEstafetas({ estafetas, altura = 300 }: { estafetas: PosicaoEstafeta[]; altura?: number }) {
   const lats = estafetas.map((e) => e.lat);
   const lngs = estafetas.map((e) => e.lng);
-  const umSo = estafetas.length === 1;
+  const oeste = Math.min(...lngs);
+  const este = Math.max(...lngs);
+  const sul = Math.min(...lats);
+  const norte = Math.max(...lats);
+  // Estafetas quase no mesmo sítio: centra, não faz zoom excessivo
+  const juntos = estafetas.length === 1 || (este - oeste < 0.004 && norte - sul < 0.004);
   return (
     <View style={[estilos.caixa, { height: altura }]}>
       <Map
         style={StyleSheet.absoluteFill}
-        mapStyle={estiloOsm}
+        mapStyle={estiloMapa}
         logo={false}
         compass={false}
         touchRotate={false}
         touchPitch={false}>
-        {umSo ? (
-          <Camera center={[lngs[0], lats[0]]} zoom={14} />
+        {juntos ? (
+          <Camera center={[(oeste + este) / 2, (sul + norte) / 2]} zoom={14} />
         ) : (
-          <Camera
-            bounds={[Math.min(...lngs), Math.min(...lats), Math.max(...lngs), Math.max(...lats)]}
-            padding={{ top: 48, right: 48, bottom: 48, left: 48 }}
-          />
+          <Camera bounds={[oeste, sul, este, norte]} padding={{ top: 48, right: 48, bottom: 48, left: 48 }} />
         )}
         {estafetas.map((e) => (
           <Marker key={e.funcionario_id} id={e.funcionario_id} lngLat={[e.lng, e.lat]}>

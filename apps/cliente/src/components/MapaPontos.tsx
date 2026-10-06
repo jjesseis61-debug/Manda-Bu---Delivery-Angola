@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 
 import { limitesPara, regiaoPara } from '@/lib/mapa';
-import { estiloOsm } from '@/lib/mapaEstilo';
+import { estiloMapa } from '@/lib/mapaEstilo';
 import { GOOGLE_DISPONIVEL } from '@/lib/mapaNativo';
 import { useSessao } from '@/lib/sessao';
 import { raio } from '@/lib/tema';
@@ -39,10 +39,12 @@ function Google({ marcadores }: { marcadores: Marcador[] }) {
 
 function Osm({ marcadores }: { marcadores: Marcador[] }) {
   const [oeste, sul, este, norte] = limitesPara(marcadores);
+  // Pontos quase no mesmo sítio (ex.: estafeta junto ao destino): centra, não faz zoom excessivo
+  const juntos = marcadores.length === 1 || (este - oeste < 0.004 && norte - sul < 0.004);
   return (
     <Map
       style={StyleSheet.absoluteFill}
-      mapStyle={estiloOsm}
+      mapStyle={estiloMapa}
       logo={false}
       compass={false}
       dragPan={false}
@@ -50,8 +52,8 @@ function Osm({ marcadores }: { marcadores: Marcador[] }) {
       doubleTapZoom={false}
       touchRotate={false}
       touchPitch={false}>
-      {marcadores.length === 1 ? (
-        <Camera center={[marcadores[0].lng, marcadores[0].lat]} zoom={14} />
+      {juntos ? (
+        <Camera center={[(oeste + este) / 2, (sul + norte) / 2]} zoom={15} />
       ) : (
         <Camera bounds={[oeste, sul, este, norte]} padding={{ top: 40, right: 40, bottom: 40, left: 40 }} />
       )}
