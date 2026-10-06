@@ -22,6 +22,13 @@ export function regiaoPara(pontos: Ponto[]) {
   };
 }
 
+/** Limites [oeste, sul, este, norte] que contêm todos os pontos (para enquadrar o mapa OSM) */
+export function limitesPara(pontos: Ponto[]): [number, number, number, number] {
+  const lats = pontos.map((p) => p.lat);
+  const lngs = pontos.map((p) => p.lng);
+  return [Math.min(...lngs), Math.min(...lats), Math.max(...lngs), Math.max(...lats)];
+}
+
 /** "há 20 s", "há 3 min" */
 export function haQuantoTempo(iso: string, agora = Date.now()): string {
   const s = Math.max(0, Math.round((agora - new Date(iso).getTime()) / 1000));

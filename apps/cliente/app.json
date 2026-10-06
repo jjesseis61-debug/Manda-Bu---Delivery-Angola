@@ -48,7 +48,8 @@
           "photosPermission": "A Manda Bué usa as tuas fotos só para as juntares às avaliações que escreves.",
           "cameraPermission": false
         }
-      ]
+      ],
+      "@maplibre/maplibre-react-native"
     ],
     "scheme": "mandabue",
     "experiments": {

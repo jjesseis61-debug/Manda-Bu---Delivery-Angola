@@ -1,13 +1,15 @@
-import { mapaDisponivel } from '../mapaNativo';
+import { googleDisponivel } from '../mapaNativo';
 
-describe('mapaDisponivel', () => {
-  it('no Android só há mapa com a chave do Google Maps no build', () => {
-    expect(mapaDisponivel('android', { mapaGoogle: true })).toBe(true);
-    expect(mapaDisponivel('android', { mapaGoogle: false })).toBe(false);
-    expect(mapaDisponivel('android', undefined)).toBe(false);
+describe('googleDisponivel', () => {
+  it('no Android o Google Maps só está disponível com a chave no build', () => {
+    expect(googleDisponivel('android', { mapaGoogle: true })).toBe(true);
+    expect(googleDisponivel('android', { mapaGoogle: false })).toBe(false);
+    expect(googleDisponivel('android', undefined)).toBe(false);
   });
 
   it('no iOS usa-se o Apple Maps, sem chave', () => {
-    expect(mapaDisponivel('ios', undefined)).toBe(true);
+    expect(googleDisponivel('ios', undefined)).toBe(true);
   });
+
+  // Sem Google, a app mostra o OpenStreetMap (grátis); o interruptor `mapa_google` é que decide.
 });

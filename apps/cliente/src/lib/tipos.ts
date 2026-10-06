@@ -38,7 +38,8 @@ export type ChaveFuncionalidade =
   | 'como_chegar'
   | 'acompanhamento_entrega'
   | 'pacotes'
-  | 'agente_atendimento';
+  | 'agente_atendimento'
+  | 'mapa_google';
 
 export type Funcionalidades = Partial<Record<ChaveFuncionalidade, boolean>>;
 

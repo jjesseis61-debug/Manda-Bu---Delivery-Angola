@@ -7,7 +7,7 @@ import { MapaPin, type Coordenadas } from '@/components/MapaPin';
 import { Aviso, Botao, Campo, Cartao, Ecra, Escolha, Paragrafo, Subtitulo } from '@/components/ui';
 import { criarEndereco, lerEnderecos, lerZonas, pontosProximos, type PontoProximo } from '@/lib/api';
 import { mensagemErro } from '@/lib/formatar';
-import { MAPA_NATIVO } from '@/lib/mapaNativo';
+import { HA_MAPA } from '@/lib/mapaNativo';
 import { useSessao } from '@/lib/sessao';
 import type { Zona } from '@/lib/tipos';
 
@@ -60,7 +60,7 @@ export default function NovoEndereco() {
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') {
       setErro(
-        MAPA_NATIVO
+        HA_MAPA
           ? 'Sem autorização para usar a localização. Marca o ponto no mapa.'
           : 'Sem autorização para usar a localização. Autoriza a localização nas definições do telemóvel para marcar o ponto.',
       );
@@ -106,7 +106,7 @@ export default function NovoEndereco() {
         }}
       />
       <Botao titulo="Usar a minha localização" variante="secundario" aoCarregar={aMinhaLocalizacao} />
-      {!marcado && MAPA_NATIVO && <Paragrafo suave>Toca no mapa ou arrasta o pin para o sítio exacto da entrega.</Paragrafo>}
+      {!marcado && HA_MAPA && <Paragrafo suave>Toca no mapa para marcar o sítio exacto da entrega.</Paragrafo>}
 
       {!empresa && (
         <Escolha
