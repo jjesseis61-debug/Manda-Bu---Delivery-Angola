@@ -39,7 +39,8 @@ export type ChaveFuncionalidade =
   | 'acompanhamento_entrega'
   | 'pacotes'
   | 'agente_atendimento'
-  | 'mapa_google';
+  | 'mapa_google'
+  | 'rota_google';
 
 export type Funcionalidades = Partial<Record<ChaveFuncionalidade, boolean>>;
 
@@ -276,6 +277,10 @@ export type PosicaoEntrega = {
   destino?: Ponto | null;
   distancia_km?: number | null;
   minutos?: number | null;
+  /** 'google' = rota por estrada com trânsito; 'estimativa' = distância em linha recta */
+  fonte?: 'google' | 'estimativa' | null;
+  /** Linha da rota (polyline codificada do Google), quando há rota por estrada */
+  polyline?: string | null;
 };
 
 // I12 · Pacotes pré-pagos

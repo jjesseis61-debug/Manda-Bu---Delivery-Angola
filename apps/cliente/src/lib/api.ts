@@ -161,6 +161,19 @@ export async function posicaoEntrega(pedidoId: string): Promise<PosicaoEntrega> 
   return verificar(await supabase.rpc('posicao_entrega', { p_pedido: pedidoId })) as PosicaoEntrega;
 }
 
+/**
+ * Gate B: pede ao serviço para actualizar a rota por estrada (Google) deste pedido. Só tem efeito
+ * com o interruptor `rota_google` e a chave no servidor; caso contrário não faz nada. O resultado
+ * fica em cache e é lido no próximo posicaoEntrega. Nunca estoura (fire-and-forget).
+ */
+export async function refrescarRota(pedidoId: string): Promise<void> {
+  try {
+    await supabase.functions.invoke('rota-estafeta', { body: { pedido: pedidoId } });
+  } catch {
+    // Sem rota do Google, fica a estimativa por distância — não é erro para o cliente
+  }
+}
+
 /** Cozinhas que aceitam pedidos (I8); com multi_cozinha desligado, só a cozinha por defeito */
 export async function cozinhasParaPedir(): Promise<CozinhaParaPedir[]> {
   return verificar(await supabase.rpc('cozinhas_para_pedir')) as CozinhaParaPedir[];

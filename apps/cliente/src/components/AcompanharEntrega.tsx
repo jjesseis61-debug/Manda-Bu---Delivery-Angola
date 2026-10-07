@@ -1,22 +1,26 @@
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Dimensions, Modal, Text, View } from 'react-native';
 
 import { Cartao, Paragrafo } from '@/components/ui';
-import { posicaoEntrega } from '@/lib/api';
-import { haQuantoTempo } from '@/lib/mapa';
+import { posicaoEntrega, refrescarRota } from '@/lib/api';
+import { descodificarPolyline, haQuantoTempo } from '@/lib/mapa';
+import { useSessao } from '@/lib/sessao';
 import { cores, espaco } from '@/lib/tema';
 import type { PosicaoEntrega } from '@/lib/tipos';
 
 import { MapaPontos, type Marcador } from './MapaPontos';
 
 const INTERVALO_MS = 10_000;
+const INTERVALO_ROTA_MS = 60_000; // Gate B: pedir a rota por estrada no máximo 1×/min (controla o custo)
 
 /** I11. Onde está o estafeta, actualizado a cada 10 s enquanto o ecrã está aberto e o pedido a caminho */
 export function AcompanharEntrega({ pedidoId, aoTerminar }: { pedidoId: string; aoTerminar: () => void }) {
+  const { ligada } = useSessao();
   const [posicao, setPosicao] = useState<PosicaoEntrega | null>(null);
   // Mapa de rota em ecrã inteiro (abre ao tocar no mapa pequeno)
   const [emEcraInteiro, setEmEcraInteiro] = useState(false);
+  const rotaGoogle = ligada('rota_google');
 
   useFocusEffect(
     useCallback(() => {
@@ -32,12 +36,21 @@ export function AcompanharEntrega({ pedidoId, aoTerminar }: { pedidoId: string; 
           .catch(() => undefined);
       void ler();
       const t = setInterval(ler, INTERVALO_MS);
+      // Gate B: actualiza a rota por estrada em ritmo lento (só tem efeito com `rota_google` + chave)
+      let tRota: ReturnType<typeof setInterval> | null = null;
+      if (rotaGoogle) {
+        void refrescarRota(pedidoId);
+        tRota = setInterval(() => void refrescarRota(pedidoId), INTERVALO_ROTA_MS);
+      }
       return () => {
         activo = false;
         clearInterval(t);
+        if (tRota) clearInterval(tRota);
       };
-    }, [pedidoId, aoTerminar]),
+    }, [pedidoId, aoTerminar, rotaGoogle]),
   );
+
+  const rota = useMemo(() => descodificarPolyline(posicao?.polyline), [posicao?.polyline]);
 
   if (!posicao?.activo) return null;
   const marcadores: Marcador[] = [];
@@ -46,6 +59,7 @@ export function AcompanharEntrega({ pedidoId, aoTerminar }: { pedidoId: string; 
     marcadores.push({ lat: posicao.destino.lat, lng: posicao.destino.lng, titulo: 'Entrega', cor: '#1E88E5' });
   }
   const tempo = posicao.minutos != null ? `Chega daqui a ~${posicao.minutos} min` : 'O estafeta está a caminho';
+  const origem = posicao.fonte === 'google' ? 'Rota por estrada, com trânsito.' : 'Tempo estimado pela distância.';
 
   return (
     <Cartao>
@@ -54,7 +68,7 @@ export function AcompanharEntrega({ pedidoId, aoTerminar }: { pedidoId: string; 
           <Text style={{ fontSize: 16, fontWeight: '700' }}>{tempo}</Text>
           {marcadores.length > 0 && (
             <>
-              <MapaPontos marcadores={marcadores} interactivo />
+              <MapaPontos marcadores={marcadores} interactivo rota={rota} />
               <Text
                 accessibilityRole="button"
                 accessibilityLabel="Abrir o mapa de rota em ecrã inteiro"
@@ -66,7 +80,7 @@ export function AcompanharEntrega({ pedidoId, aoTerminar }: { pedidoId: string; 
           )}
           <Paragrafo suave>
             {posicao.distancia_km != null ? `A ${String(posicao.distancia_km).replace('.', ',')} km · ` : ''}
-            actualizado {haQuantoTempo(posicao.estafeta.actualizado_em)}. Tempo estimado pela distância.
+            actualizado {haQuantoTempo(posicao.estafeta.actualizado_em)}. {origem}
           </Paragrafo>
 
           <Modal visible={emEcraInteiro} animationType="slide" onRequestClose={() => setEmEcraInteiro(false)}>
@@ -80,7 +94,7 @@ export function AcompanharEntrega({ pedidoId, aoTerminar }: { pedidoId: string; 
                   Fechar
                 </Text>
               </View>
-              <MapaPontos marcadores={marcadores} interactivo altura={Dimensions.get('window').height - 160} />
+              <MapaPontos marcadores={marcadores} interactivo rota={rota} altura={Dimensions.get('window').height - 160} />
               <Paragrafo suave>
                 🔴 Estafeta · 🔵 Entrega. {posicao.distancia_km != null ? `A ${String(posicao.distancia_km).replace('.', ',')} km · ` : ''}
                 actualizado {haQuantoTempo(posicao.estafeta.actualizado_em)}.

@@ -32,6 +32,25 @@ Se um dia quiseres garantir disponibilidade contratual, podes apontar para um fo
 `EXPO_PUBLIC_MAPA_TILES_URL` no formato raster `https://.../{z}/{x}/{y}.png`. A app passa a usá-la
 sem mudar código.
 
+## Dois "gates" independentes (OSM por base, Google cirúrgico)
+
+A app está pronta para os dois mapas, com **fallback total**: faltando qualquer chave, corre 100% em
+OpenStreetMap/MapLibre.
+
+- **Gate A — mapa visível.** Por defeito OSM/MapLibre. Com a chave `GOOGLE_MAPS_ANDROID_API_KEY` no
+  build e o interruptor `mapa_google` ligado, troca para Google (Android) / Apple Maps (iOS). Sem
+  chave, continua em OSM mesmo com o interruptor ligado. (Já configurado no `app.config.js`.)
+- **Gate B — rota/ETA.** Por defeito o tempo é estimado pela distância em linha recta. Com o
+  interruptor `rota_google` ligado **e** a chave `GOOGLE_ROTAS_API_KEY` no servidor (secret), a
+  edge function `rota-estafeta` calcula a rota por estrada com trânsito (Google Directions), guarda-a
+  em `rotas_estafeta` (cache) e o `posicao_entrega` usa-a enquanto recente (< 2 min); a app mostra a
+  **linha da rota** no mapa e "Rota por estrada, com trânsito". Sem a chave ou com o interruptor
+  desligado, volta tudo à estimativa.
+
+O Gate B vive no servidor (edge function + secret), por isso **liga-se/desliga-se sem APK novo**; só o
+Gate A (mapa visível em Google) é que precisa de build com a chave nativa. Para controlar o custo, o
+Gate B só corre com o pedido a caminho e pede a rota ao Google no máximo 1×/minuto por pedido.
+
 ## Detalhe técnico
 
 - `apps/cliente/src/lib/mapaEstilo.ts` — estilo raster do OpenStreetMap (atribuição "© OpenStreetMap").

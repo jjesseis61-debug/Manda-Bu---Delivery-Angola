@@ -34,3 +34,32 @@ export function haQuantoTempo(iso: string, agora = Date.now()): string {
   const s = Math.max(0, Math.round((agora - new Date(iso).getTime()) / 1000));
   return s < 60 ? `há ${s} s` : `há ${Math.round(s / 60)} min`;
 }
+
+/**
+ * Descodifica uma "encoded polyline" do Google (algoritmo público) numa lista de pontos,
+ * para desenhar a linha da rota no mapa. Devolve [] se a string for vazia/inválida.
+ */
+export function descodificarPolyline(codificada: string | null | undefined): Ponto[] {
+  if (!codificada) return [];
+  const pontos: Ponto[] = [];
+  let indice = 0;
+  let lat = 0;
+  let lng = 0;
+  const proximo = (): number => {
+    let resultado = 0;
+    let turno = 0;
+    let byte: number;
+    do {
+      byte = codificada.charCodeAt(indice++) - 63;
+      resultado |= (byte & 0x1f) << turno;
+      turno += 5;
+    } while (byte >= 0x20);
+    return resultado & 1 ? ~(resultado >> 1) : resultado >> 1;
+  };
+  while (indice < codificada.length) {
+    lat += proximo();
+    lng += proximo();
+    pontos.push({ lat: lat / 1e5, lng: lng / 1e5 });
+  }
+  return pontos;
+}
