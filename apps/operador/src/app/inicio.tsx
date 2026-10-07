@@ -1,10 +1,20 @@
 import { Redirect, useRouter, type Href } from 'expo-router';
+import { useState } from 'react';
 import { Pressable, Text } from 'react-native';
 
-import { ACarregar, Botao, Cartao, Ecra, Paragrafo } from '@/components/ui';
+import { ACarregar, Botao, Campo, Cartao, Ecra, Paragrafo } from '@/components/ui';
 import { useSessao } from '@/lib/sessao';
 import { cores } from '@/lib/tema';
 import type { Funcionario, Permissao } from '@/lib/tipos';
+
+/** Minúsculas e sem acentos, para a pesquisa encontrar com ou sem acentos */
+const normalizar = (s: string): string => {
+  try {
+    return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  } catch {
+    return s.toLowerCase();
+  }
+};
 
 const ecras: {
   rota: Href;
@@ -51,21 +61,37 @@ const ecras: {
 export default function Inicio() {
   const router = useRouter();
   const { carregado, sessao, funcionario, pode, sair } = useSessao();
+  const [procura, setProcura] = useState('');
   if (!carregado) return <ACarregar />;
   if (!sessao) return <Redirect href="/entrar" />;
   if (!funcionario) return <Redirect href="/sem-acesso" />;
 
   const visiveis = ecras.filter((e) => e.permissoes.some(pode) || e.permitir?.(funcionario));
+  // Só vale a pena pesquisar quando há muitos atalhos (ex.: administrador)
+  const mostrarPesquisa = visiveis.length > 6;
+  const termo = normalizar(procura.trim());
+  const filtrados = termo
+    ? visiveis.filter((e) => normalizar(`${e.titulo} ${e.descricao}`).includes(termo))
+    : visiveis;
   return (
     <Ecra>
       <Paragrafo suave>
         {funcionario.nome}
         {funcionario.cargo ? ` · ${funcionario.cargo}` : ''}
       </Paragrafo>
+      {mostrarPesquisa && (
+        <Campo
+          rotulo="Procurar funcionalidade"
+          value={procura}
+          onChangeText={setProcura}
+          placeholder="Ex.: caixa, feira, estafetas"
+        />
+      )}
       {visiveis.length === 0 && (
         <Paragrafo>Ainda não tens permissões nesta app. Fala com o administrador.</Paragrafo>
       )}
-      {visiveis.map((e) => (
+      {visiveis.length > 0 && filtrados.length === 0 && <Paragrafo suave>Nada encontrado para “{procura.trim()}”.</Paragrafo>}
+      {filtrados.map((e) => (
         <Pressable key={e.titulo} onPress={() => router.push(e.rota)}>
           <Cartao>
             <Text style={{ fontSize: 17, fontWeight: '700', color: cores.texto }}>{e.titulo}</Text>
