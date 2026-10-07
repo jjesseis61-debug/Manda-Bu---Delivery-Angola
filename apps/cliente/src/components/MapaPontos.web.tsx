@@ -6,7 +6,7 @@ import type { Ponto } from '@/lib/tipos';
 export type Marcador = Ponto & { titulo: string; cor: string };
 
 /** Na web não há mapa nativo: mostram-se os pontos em texto (a app do telemóvel mostra o mapa) */
-export function MapaPontos({ marcadores }: { marcadores: Marcador[]; altura?: number }) {
+export function MapaPontos({ marcadores }: { marcadores: Marcador[]; altura?: number; interactivo?: boolean }) {
   return (
     <View style={{ borderRadius: raio, backgroundColor: cores.fundoSuave, padding: 16, gap: 4 }}>
       {marcadores.map((m) => (

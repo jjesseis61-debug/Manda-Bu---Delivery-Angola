@@ -16,20 +16,29 @@ export type Marcador = Ponto & { titulo: string; cor: string };
  * Por defeito usa o OpenStreetMap (grátis). Com o interruptor `mapa_google` e a chave no build,
  * usa o Google/Apple Maps.
  */
-export function MapaPontos({ marcadores, altura = 220 }: { marcadores: Marcador[]; altura?: number }) {
+export function MapaPontos({
+  marcadores,
+  altura = 220,
+  interactivo = false,
+}: {
+  marcadores: Marcador[];
+  altura?: number;
+  /** Ecrã inteiro: permite arrastar e aproximar o mapa (o preview é estático) */
+  interactivo?: boolean;
+}) {
   const { ligada } = useSessao();
   if (marcadores.length === 0) return null;
   const usarGoogle = GOOGLE_DISPONIVEL && ligada('mapa_google');
   return (
     <View style={[estilos.caixa, { height: altura }]}>
-      {usarGoogle ? <Google marcadores={marcadores} /> : <Osm marcadores={marcadores} />}
+      {usarGoogle ? <Google marcadores={marcadores} interactivo={interactivo} /> : <Osm marcadores={marcadores} interactivo={interactivo} />}
     </View>
   );
 }
 
-function Google({ marcadores }: { marcadores: Marcador[] }) {
+function Google({ marcadores, interactivo }: { marcadores: Marcador[]; interactivo: boolean }) {
   return (
-    <MapView style={StyleSheet.absoluteFill} region={regiaoPara(marcadores)} scrollEnabled={false} zoomEnabled={false}>
+    <MapView style={StyleSheet.absoluteFill} region={regiaoPara(marcadores)} scrollEnabled={interactivo} zoomEnabled={interactivo}>
       {marcadores.map((m) => (
         <Marker key={m.titulo} coordinate={{ latitude: m.lat, longitude: m.lng }} title={m.titulo} pinColor={m.cor} />
       ))}
@@ -37,7 +46,7 @@ function Google({ marcadores }: { marcadores: Marcador[] }) {
   );
 }
 
-function Osm({ marcadores }: { marcadores: Marcador[] }) {
+function Osm({ marcadores, interactivo }: { marcadores: Marcador[]; interactivo: boolean }) {
   const [oeste, sul, este, norte] = limitesPara(marcadores);
   // Pontos quase no mesmo sítio (ex.: estafeta junto ao destino): centra, não faz zoom excessivo
   const juntos = marcadores.length === 1 || (este - oeste < 0.004 && norte - sul < 0.004);
@@ -47,9 +56,9 @@ function Osm({ marcadores }: { marcadores: Marcador[] }) {
       mapStyle={estiloMapa}
       logo={false}
       compass={false}
-      dragPan={false}
-      touchZoom={false}
-      doubleTapZoom={false}
+      dragPan={interactivo}
+      touchZoom={interactivo}
+      doubleTapZoom={interactivo}
       touchRotate={false}
       touchPitch={false}>
       {juntos ? (
