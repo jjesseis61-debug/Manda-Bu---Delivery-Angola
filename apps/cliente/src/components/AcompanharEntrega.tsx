@@ -1,6 +1,6 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Dimensions, Modal, Pressable, Text, View } from 'react-native';
+import { Dimensions, Modal, Text, View } from 'react-native';
 
 import { Cartao, Paragrafo } from '@/components/ui';
 import { posicaoEntrega } from '@/lib/api';
@@ -54,11 +54,13 @@ export function AcompanharEntrega({ pedidoId, aoTerminar }: { pedidoId: string; 
           <Text style={{ fontSize: 16, fontWeight: '700' }}>{tempo}</Text>
           {marcadores.length > 0 && (
             <>
-              <Pressable accessibilityRole="button" accessibilityLabel="Abrir o mapa de rota em ecrã inteiro" onPress={() => setEmEcraInteiro(true)}>
-                <MapaPontos marcadores={marcadores} />
-              </Pressable>
-              <Text style={{ color: cores.marca, fontWeight: '600' }} onPress={() => setEmEcraInteiro(true)}>
-                Toca no mapa para abrir o acompanhamento de rota em ecrã inteiro.
+              <MapaPontos marcadores={marcadores} interactivo />
+              <Text
+                accessibilityRole="button"
+                accessibilityLabel="Abrir o mapa de rota em ecrã inteiro"
+                style={{ color: cores.marca, fontWeight: '600' }}
+                onPress={() => setEmEcraInteiro(true)}>
+                Arrasta o mapa para explorar · toca aqui para o ver em ecrã inteiro.
               </Text>
             </>
           )}
