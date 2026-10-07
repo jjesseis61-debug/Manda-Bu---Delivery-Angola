@@ -98,7 +98,8 @@ export async function lerCardapio(cozinhaId?: string | null): Promise<ItemCardap
   let q = supabase
     .from('cardapio')
     .select('id, nome, descricao, categoria, preco, foto_url, do_dia, cozinha_id, prato_base_id')
-    .eq('disponivel', true);
+    .eq('disponivel', true)
+    .eq('visivel_online', true);
   if (cozinhaId) q = q.eq('cozinha_id', cozinhaId);
   const r = await q
     .order('do_dia', { ascending: false })

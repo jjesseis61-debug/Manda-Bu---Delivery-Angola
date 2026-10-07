@@ -41,6 +41,41 @@ export type RelatorioEmpresa = {
   pedidos: { data: string; cliente: string; valor: number; itens: string | null }[];
 };
 
+/** Feira (consignação): o feirante leva pratos de preço fixo e acerta no regresso */
+export type Feira = {
+  id: string;
+  nome: string;
+  estado: 'aberta' | 'fechada';
+  data_saida: string;
+  vendedor: string | null;
+  esperado: number;
+};
+export type FeiraItem = {
+  item_id: string;
+  nome: string;
+  preco_unit: number;
+  levada: number;
+  vendida: number;
+  devolvida: number;
+  perda: number;
+  restante: number;
+};
+export type FeiraResumo = {
+  id: string;
+  nome: string;
+  estado: 'aberta' | 'fechada';
+  cozinha_id: string;
+  vendedor_id: string;
+  data_saida: string;
+  fechada_em: string | null;
+  itens: FeiraItem[];
+  esperado: number;
+  recebido_dinheiro: number;
+  recebido_transferencia: number;
+  recebido: number;
+  diferenca: number;
+};
+
 /** Sugestão de despacho: um pedido pronto a sair e o estafeta online mais perto */
 export type SugestaoDespacho = {
   pedido_id: string;
@@ -78,7 +113,8 @@ export type Permissao =
   | 'equipa.gerir'
   | 'analista.usar'
   | 'stock.gerir'
-  | 'atendimento.responder';
+  | 'atendimento.responder'
+  | 'feira.gerir';
 
 export type Painel = {
   custo: number;
@@ -409,6 +445,8 @@ export type PratoCardapio = {
   foto_url?: string | null;
   /** Doses lançadas para hoje (null = sem limite) */
   doses_dia?: number | null;
+  /** false = prato só de feira (consignação), não aparece aos clientes online */
+  visivel_online?: boolean;
 };
 
 /** Doses que restam hoje de um prato com limite */

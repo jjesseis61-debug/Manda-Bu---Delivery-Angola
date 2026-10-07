@@ -47,6 +47,8 @@ import type {
   PessoalItem,
   Empresa,
   EmpresaMembro,
+  Feira,
+  FeiraResumo,
   PosicaoEstafeta,
   RelatorioEmpresa,
   SugestaoDespacho,
@@ -156,7 +158,7 @@ export async function lerCardapio(cozinhaId: string): Promise<PratoCardapio[]> {
   return verificar(
     await supabase
       .from('cardapio')
-      .select('id, cozinha_id, nome, descricao, categoria, preco, disponivel, do_dia, ordem, foto_url, doses_dia')
+      .select('id, cozinha_id, nome, descricao, categoria, preco, disponivel, do_dia, ordem, foto_url, doses_dia, visivel_online')
       .eq('cozinha_id', cozinhaId)
       .order('ordem')
       .order('nome'),
@@ -793,4 +795,36 @@ export async function empresaRemoverMembro(empresaId: string, clienteId: string)
 
 export async function relatorioEmpresa(empresaId: string, ano: number, mes: number): Promise<RelatorioEmpresa> {
   return verificar(await supabase.rpc('relatorio_empresa', { p_empresa: empresaId, p_ano: ano, p_mes: mes })) as RelatorioEmpresa;
+}
+
+// ---------------------------------------------------------------- Feira (consignação)
+export async function listarFeiras(cozinhaId: string): Promise<Feira[]> {
+  return (verificar(await supabase.rpc('listar_feiras', { p_cozinha: cozinhaId })) as Feira[]) ?? [];
+}
+
+export async function criarFeira(cozinhaId: string, vendedorId: string, nome: string): Promise<string> {
+  return verificar(await supabase.rpc('criar_feira', { p_cozinha: cozinhaId, p_vendedor: vendedorId, p_nome: nome })) as string;
+}
+
+export async function feiraAdicionarItem(feiraId: string, cardapioId: string, qtd: number): Promise<string> {
+  return verificar(await supabase.rpc('feira_adicionar_item', { p_feira: feiraId, p_cardapio: cardapioId, p_qtd: qtd })) as string;
+}
+
+export async function feiraVender(
+  itemId: string,
+  qtd: number,
+  metodo: 'dinheiro' | 'transferencia',
+  referencia?: string | null,
+): Promise<number> {
+  return verificar(
+    await supabase.rpc('feira_vender', { p_item: itemId, p_qtd: qtd, p_metodo: metodo, p_referencia: referencia ?? null }),
+  ) as number;
+}
+
+export async function feiraFechar(feiraId: string, acertos: { item_id: string; devolvida: number; perda: number }[]) {
+  verificar(await supabase.rpc('feira_fechar', { p_feira: feiraId, p_acertos: acertos }));
+}
+
+export async function feiraResumo(feiraId: string): Promise<FeiraResumo> {
+  return verificar(await supabase.rpc('feira_resumo', { p_feira: feiraId })) as FeiraResumo;
 }

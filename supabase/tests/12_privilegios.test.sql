@@ -99,6 +99,8 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 -- conta de empresa (B2B)
                 'criar_empresa', 'editar_empresa', 'listar_empresas', 'empresa_adicionar_membro',
                 'empresa_remover_membro', 'empresa_membros_lista', 'relatorio_empresa', 'minha_empresa',
+                -- feira (consignação)
+                'criar_feira', 'feira_adicionar_item', 'feira_vender', 'feira_fechar', 'feira_resumo', 'listar_feiras',
                 -- auxiliares usadas em políticas RLS, valores por defeito ou triggers SECURITY INVOKER
                 'cliente_actual', 'cozinha_padrao', 'e_funcionario', 'funcionalidade_activa',
                 'funcionario_actual', 'membro_da_cozinha', 'tem_permissao', 'e_administrador', 'pode_na_cozinha')),

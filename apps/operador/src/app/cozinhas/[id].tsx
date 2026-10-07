@@ -265,6 +265,11 @@ export default function EditarCozinha() {
                   <Paragrafo suave>Cada pedido gasta doses e um cancelado devolve-as. A 0 o prato fica esgotado na app; amanhã o limite deixa de valer.</Paragrafo>
                   <Interruptor rotulo="Disponível" valor={prato.disponivel} aoMudar={(v) => setPrato({ ...prato, disponivel: v })} />
                   <Interruptor rotulo="Prato do dia" valor={prato.do_dia} aoMudar={(v) => setPrato({ ...prato, do_dia: v })} />
+                  <Interruptor
+                    rotulo="Visível online (desligar = só feira)"
+                    valor={prato.visivel_online ?? true}
+                    aoMudar={(v) => setPrato({ ...prato, visivel_online: v })}
+                  />
                   {prato.id ? (
                     <FotoEditavel
                       tipo="pratos"
@@ -301,6 +306,7 @@ export default function EditarCozinha() {
                     preco: '',
                     disponivel: true,
                     do_dia: false,
+                    visivel_online: true,
                     ordem: '0',
                     doses: '',
                   })
