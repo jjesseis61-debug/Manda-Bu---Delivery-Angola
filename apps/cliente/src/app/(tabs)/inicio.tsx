@@ -14,15 +14,18 @@ import {
   lerComponentes,
   lerDoses,
   lerOpcoes,
+  lerPedidos,
   mediasAvaliacoes,
   type Cozinha,
 } from '@/lib/api';
 import { useCarrinho } from '@/lib/carrinho';
-import { formatarKz, formatarMedia, mensagemErro } from '@/lib/formatar';
+import { corEstadoPedido, formatarKz, formatarMedia, mensagemErro, nomeEstadoPedido } from '@/lib/formatar';
 import { gruposEsgotados, precoMinimo } from '@/lib/opcoes';
 import { useSessao } from '@/lib/sessao';
 import { cores, espaco, raio } from '@/lib/tema';
-import type { CozinhaParaPedir, Endereco, ItemCardapio, MediasAvaliacoes } from '@/lib/tipos';
+import type { CozinhaParaPedir, Endereco, ItemCardapio, MediasAvaliacoes, Pedido } from '@/lib/tipos';
+
+const EM_ANDAMENTO = ['pendente', 'confirmado', 'em_preparacao', 'em_entrega'];
 
 export default function Inicio() {
   const router = useRouter();
@@ -34,6 +37,8 @@ export default function Inicio() {
   const [cozinha, setCozinha] = useState<Cozinha | null>(null);
   const [medias, setMedias] = useState<MediasAvaliacoes | null>(null);
   const [cozinhas, setCozinhas] = useState<CozinhaParaPedir[]>([]);
+  // Banner no topo: pedido ainda em andamento ("a tua entrega está a caminho, toca para acompanhar")
+  const [pedidoActivo, setPedidoActivo] = useState<Pedido | null>(null);
   // I9: pratos com opções (abrem o ecrã de montar em vez de irem direito ao carrinho)
   const [montaveis, setMontaveis] = useState<Set<string>>(new Set());
   const [esgotados, setEsgotados] = useState<Set<string>>(new Set());
@@ -93,6 +98,9 @@ export default function Inicio() {
       setCozinha(ligada('perfil_cozinha') ? await lerCozinhaPublica(ligada('multi_cozinha') ? escolhida : null) : null);
       // C10: média de cada prato (só com o mínimo de avaliações)
       setMedias(ligada('avaliacoes') && itens[0] ? await mediasAvaliacoes(itens[0].cozinha_id).catch(() => null) : null);
+      // Banner de acompanhamento: o pedido mais recente que ainda está em andamento (lista vem por data desc)
+      const pedidos = await lerPedidos().catch(() => [] as Pedido[]);
+      setPedidoActivo(pedidos.find((p) => EM_ANDAMENTO.includes(p.estado)) ?? null);
     } catch (e) {
       setErro(mensagemErro(e));
     }
@@ -128,6 +136,27 @@ export default function Inicio() {
             }}
           />
         }>
+        {/* Banner: pedido em andamento — toca para acompanhar a entrega */}
+        {pedidoActivo && (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push({ pathname: '/pedido/[id]', params: { id: pedidoActivo.id } })}>
+            <View
+              style={{
+                backgroundColor: cores.fundoSuave,
+                borderRadius: raio,
+                borderLeftWidth: 4,
+                borderLeftColor: corEstadoPedido[pedidoActivo.estado],
+                padding: espaco.m,
+                gap: 2,
+              }}>
+              <Text style={{ fontSize: 16, fontWeight: '700', color: corEstadoPedido[pedidoActivo.estado] }}>
+                {pedidoActivo.estado === 'em_entrega' ? '🛵 A tua entrega está a caminho' : `Pedido ${nomeEstadoPedido[pedidoActivo.estado].toLowerCase()}`}
+              </Text>
+              <Text style={{ color: cores.textoSuave }}>Toca para acompanhar o teu pedido.</Text>
+            </View>
+          </Pressable>
+        )}
         {/* I8: selector de cozinha (só com multi_cozinha e mais de uma cozinha a aceitar pedidos) */}
         {ligada('multi_cozinha') && !carrinho.grupo && cozinhas.length > 1 && (
           <View style={{ gap: espaco.s }}>
