@@ -49,7 +49,7 @@ export function AcompanharEntrega({ pedidoId, aoTerminar }: { pedidoId: string; 
       {posicao.estafeta ? (
         <>
           <Text style={{ fontSize: 16, fontWeight: '700' }}>
-            {posicao.minutos != null ? `Chega em cerca de ${posicao.minutos} min` : 'O estafeta está a caminho'}
+            {posicao.minutos != null ? `Chega daqui a ~${posicao.minutos} min` : 'O estafeta está a caminho'}
           </Text>
           {marcadores.length > 0 && <MapaPontos marcadores={marcadores} />}
           <Paragrafo suave>

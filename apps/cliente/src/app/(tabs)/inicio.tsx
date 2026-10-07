@@ -16,6 +16,7 @@ import {
   lerOpcoes,
   lerPedidos,
   mediasAvaliacoes,
+  posicaoEntrega,
   type Cozinha,
 } from '@/lib/api';
 import { useCarrinho } from '@/lib/carrinho';
@@ -39,6 +40,8 @@ export default function Inicio() {
   const [cozinhas, setCozinhas] = useState<CozinhaParaPedir[]>([]);
   // Banner no topo: pedido ainda em andamento ("a tua entrega está a caminho, toca para acompanhar")
   const [pedidoActivo, setPedidoActivo] = useState<Pedido | null>(null);
+  // Tempo do estafeta vindo do mapa (posição real), quando está a partilhar GPS; senão calcula-se da hora prometida
+  const [minutosEstafeta, setMinutosEstafeta] = useState<number | null>(null);
   // I9: pratos com opções (abrem o ecrã de montar em vez de irem direito ao carrinho)
   const [montaveis, setMontaveis] = useState<Set<string>>(new Set());
   const [esgotados, setEsgotados] = useState<Set<string>>(new Set());
@@ -100,7 +103,14 @@ export default function Inicio() {
       setMedias(ligada('avaliacoes') && itens[0] ? await mediasAvaliacoes(itens[0].cozinha_id).catch(() => null) : null);
       // Banner de acompanhamento: o pedido mais recente que ainda está em andamento (lista vem por data desc)
       const pedidos = await lerPedidos().catch(() => [] as Pedido[]);
-      setPedidoActivo(pedidos.find((p) => EM_ANDAMENTO.includes(p.estado)) ?? null);
+      const activo = pedidos.find((p) => EM_ANDAMENTO.includes(p.estado)) ?? null;
+      setPedidoActivo(activo);
+      // Tempo real do estafeta (posição no mapa) enquanto está a caminho; cai para null se não houver GPS
+      const posicao =
+        activo?.estado === 'em_entrega' && ligada('acompanhamento_entrega')
+          ? await posicaoEntrega(activo.id).catch(() => null)
+          : null;
+      setMinutosEstafeta(posicao?.activo ? (posicao.minutos ?? null) : null);
     } catch (e) {
       setErro(mensagemErro(e));
     }
@@ -111,6 +121,15 @@ export default function Inicio() {
       void carregar();
     }, [carregar]),
   );
+
+  // Tempo a mostrar no banner: o do mapa (estafeta) se existir, senão o que falta até à hora prometida.
+  // Acima de 2 h (ex.: pedido agendado) não faz sentido em "minutos" — aí mostra-se a hora.
+  const minutosBanner = useMemo(() => {
+    if (minutosEstafeta != null) return minutosEstafeta;
+    if (!pedidoActivo?.hora_prometida) return null;
+    const m = Math.round((new Date(pedidoActivo.hora_prometida).getTime() - Date.now()) / 60000);
+    return m > 0 && m <= 120 ? m : null;
+  }, [minutosEstafeta, pedidoActivo]);
 
   const doDia = useMemo(() => (cardapio ?? []).filter((i) => i.do_dia), [cardapio]);
   const categorias = useMemo(() => {
@@ -153,11 +172,13 @@ export default function Inicio() {
               <Text style={{ fontSize: 16, fontWeight: '700', color: corEstadoPedido[pedidoActivo.estado] }}>
                 {pedidoActivo.estado === 'em_entrega' ? '🛵 A tua entrega está a caminho' : `Pedido ${nomeEstadoPedido[pedidoActivo.estado].toLowerCase()}`}
               </Text>
-              {pedidoActivo.hora_prometida && (
+              {minutosBanner != null ? (
+                <Text style={{ color: cores.texto, fontWeight: '600' }}>Chega daqui a ~{minutosBanner} min</Text>
+              ) : pedidoActivo.hora_prometida ? (
                 <Text style={{ color: cores.texto, fontWeight: '600' }}>
                   Entrega prevista: {new Date(pedidoActivo.hora_prometida).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}
                 </Text>
-              )}
+              ) : null}
               <Text style={{ color: cores.textoSuave }}>Toca para acompanhar o teu pedido.</Text>
             </View>
           </Pressable>
