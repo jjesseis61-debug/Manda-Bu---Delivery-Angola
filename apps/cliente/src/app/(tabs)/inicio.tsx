@@ -2,6 +2,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { Image, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 
+import { CartaoConvida } from '@/components/CartaoConvida';
 import { ComoChegar } from '@/components/ComoChegar';
 import { Aviso, Botao, Cartao, Escolha, Paragrafo, Subtitulo, estilos } from '@/components/ui';
 import {
@@ -183,6 +184,8 @@ export default function Inicio() {
             </View>
           </Pressable>
         )}
+        {/* Convida e Ganha: desconto do 1.º pedido / ganhos / convite (adapta-se ao estado) */}
+        <CartaoConvida />
         {/* I8: selector de cozinha (só com multi_cozinha e mais de uma cozinha a aceitar pedidos) */}
         {ligada('multi_cozinha') && !carrinho.grupo && cozinhas.length > 1 && (
           <View style={{ gap: espaco.s }}>

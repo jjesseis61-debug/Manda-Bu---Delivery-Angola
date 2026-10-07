@@ -17,6 +17,8 @@ export type Parametros = {
   limite_verificacao_semanal: number;
   levantamento_minimo: number;
   limite_parcelamento: number;
+  /** Subtotal mínimo para aplicar o desconto de indicação (anti-fraude) */
+  desconto_subtotal_minimo?: number;
   contador_minimo: number;
   tamanho_top: number;
   /** Minutos até à hora de entrega prometida (o servidor marca-a em cada pedido) */
