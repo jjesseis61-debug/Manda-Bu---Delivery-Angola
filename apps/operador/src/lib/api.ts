@@ -2,6 +2,8 @@
 // permissão do organograma; a app só esconde o que o funcionário não pode usar.
 import { supabase } from './supabase';
 import type {
+  Aviso,
+  PublicoAviso,
   AdesaoOperador,
   AlertaPedido,
   CasoConvida,
@@ -827,4 +829,34 @@ export async function feiraFechar(feiraId: string, acertos: { item_id: string; d
 
 export async function feiraResumo(feiraId: string): Promise<FeiraResumo> {
   return verificar(await supabase.rpc('feira_resumo', { p_feira: feiraId })) as FeiraResumo;
+}
+
+// ---------------------------------------------------------------- Central de Avisos
+export async function preVisualizarAviso(
+  publico: PublicoAviso,
+  alvo: Record<string, unknown> = {},
+): Promise<number> {
+  return (verificar(await supabase.rpc('pre_visualizar_aviso', { p_publico: publico, p_alvo: alvo })) as number) ?? 0;
+}
+
+export async function enviarAviso(
+  publico: PublicoAviso,
+  titulo: string,
+  corpo: string,
+  alvo: Record<string, unknown> = {},
+  link?: string,
+): Promise<{ id: string; total: number }> {
+  return verificar(
+    await supabase.rpc('enviar_aviso', {
+      p_publico: publico,
+      p_titulo: titulo,
+      p_corpo: corpo,
+      p_alvo: alvo,
+      p_link: link ?? null,
+    }),
+  ) as { id: string; total: number };
+}
+
+export async function listarAvisos(limite = 50): Promise<Aviso[]> {
+  return (verificar(await supabase.rpc('listar_avisos', { p_limite: limite })) as Aviso[]) ?? [];
 }

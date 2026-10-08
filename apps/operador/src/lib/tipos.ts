@@ -114,7 +114,29 @@ export type Permissao =
   | 'analista.usar'
   | 'stock.gerir'
   | 'atendimento.responder'
-  | 'feira.gerir';
+  | 'feira.gerir'
+  | 'avisos.enviar';
+
+export type PublicoAviso =
+  | 'clientes_todos'
+  | 'clientes_zona'
+  | 'clientes_cozinha'
+  | 'cliente'
+  | 'func_permissao'
+  | 'func_cozinha'
+  | 'func_todos';
+
+export type Aviso = {
+  id: string;
+  titulo: string | null;
+  corpo: string;
+  link: string | null;
+  publico: PublicoAviso;
+  alvo: Record<string, unknown>;
+  total: number;
+  criado_por_nome: string | null;
+  enviado_em: string;
+};
 
 export type Painel = {
   custo: number;

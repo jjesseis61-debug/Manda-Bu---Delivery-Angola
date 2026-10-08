@@ -101,6 +101,8 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 'empresa_remover_membro', 'empresa_membros_lista', 'relatorio_empresa', 'minha_empresa',
                 -- feira (consignação)
                 'criar_feira', 'feira_adicionar_item', 'feira_vender', 'feira_fechar', 'feira_resumo', 'listar_feiras',
+                -- central de avisos (avisos_destinatarios é revogada de authenticated)
+                'enviar_aviso', 'pre_visualizar_aviso', 'listar_avisos',
                 -- auxiliares usadas em políticas RLS, valores por defeito ou triggers SECURITY INVOKER
                 'cliente_actual', 'cozinha_padrao', 'e_funcionario', 'funcionalidade_activa',
                 'funcionario_actual', 'membro_da_cozinha', 'tem_permissao', 'e_administrador', 'pode_na_cozinha')),
