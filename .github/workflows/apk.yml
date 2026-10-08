@@ -61,10 +61,19 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - run: npm ci
       - name: Configuração Firebase (notificações push), se existir o segredo
+        # Só a app do cliente tem Firebase/push. O operador (outro package) não está registado
+        # no Firebase, por isso não deve aplicar o google-services.json (daria erro de build).
+        if: matrix.app == 'cliente'
         env:
           GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
         run: |
-          if [ -n "$GOOGLE_SERVICES_JSON" ]; then printf '%s' "$GOOGLE_SERVICES_JSON" > google-services.json; fi
+          if [ -n "$GOOGLE_SERVICES_JSON" ]; then
+            printf '%s' "$GOOGLE_SERVICES_JSON" > google-services.json
+            if ! grep -q '"project_info"' google-services.json; then
+              echo "::error::O segredo GOOGLE_SERVICES_JSON não é um google-services.json válido (falta 'project_info'). Confirma que colaste o ficheiro google-services.json do Firebase — NÃO a chave de conta de serviço (firebase-adminsdk-...json)."
+              exit 1
+            fi
+          fi
       - name: Gerar o projecto Android
         run: npx expo prebuild --platform android --no-install
       - name: Compilar o APK
