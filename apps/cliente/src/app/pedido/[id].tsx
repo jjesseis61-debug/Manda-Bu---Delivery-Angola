@@ -1,5 +1,5 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 
 import { AcompanharEntrega } from '@/components/AcompanharEntrega';
@@ -21,6 +21,7 @@ import {
 } from '@/lib/api';
 import { corEstadoPedido, formatarKz, mensagemErro, nomeEstadoPedido } from '@/lib/formatar';
 import { useSessao } from '@/lib/sessao';
+import { supabase } from '@/lib/supabase';
 import { cores } from '@/lib/tema';
 import type { AtrasoPedido, MinhaReclamacao, Pedido } from '@/lib/tipos';
 
@@ -61,6 +62,18 @@ export default function PedidoDetalhe() {
       .catch((e) => setErro(mensagemErro(e)));
   }, [id, ligada]);
   useFocusEffect(carregar);
+
+  // Ao vivo (Supabase Realtime): quando o estado do pedido muda no servidor, recarrega sem esperar.
+  // Complementa o push; a RLS garante que só recebemos mudanças do nosso próprio pedido.
+  useEffect(() => {
+    const canal = supabase
+      .channel(`pedido-${id}`)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'pedidos', filter: `id=eq.${id}` }, () => carregar())
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(canal);
+    };
+  }, [id, carregar]);
 
   if (erro) return <Ecra><Aviso tipo="erro">{erro}</Aviso></Ecra>;
   if (!pedido) return <ACarregar />;

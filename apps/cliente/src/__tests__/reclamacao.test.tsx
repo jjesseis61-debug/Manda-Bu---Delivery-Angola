@@ -14,6 +14,9 @@ jest.mock('@/lib/api', () => ({
   fazerReclamacao: jest.fn(),
   justificacaoCancelamento: jest.fn(),
 }));
+jest.mock('@/lib/supabase', () => ({
+  supabase: { channel: () => ({ on: () => ({ subscribe: () => ({}) }) }), removeChannel: jest.fn() },
+}));
 jest.mock('@/components/AcompanharEntrega', () => ({ AcompanharEntrega: () => null }));
 jest.mock('@/components/PessoasComoTu', () => ({ PessoasComoTu: () => null }));
 jest.mock('@/components/PartilharCodigo', () => ({ PartilharCodigo: () => null }));
