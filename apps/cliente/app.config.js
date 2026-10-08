@@ -10,7 +10,12 @@ const chaveMapa = process.env.GOOGLE_MAPS_ANDROID_API_KEY ?? '';
 // Notificações push: EXPO_PROJECT_ID (projecto da app em expo.dev) e google-services.json (Firebase,
 // escrito pelo workflow a partir do segredo GOOGLE_SERVICES_JSON). Sem eles a app funciona sem push.
 const projectId = process.env.EXPO_PROJECT_ID || undefined;
-const firebase = fs.existsSync(path.join(__dirname, 'google-services.json')) ? './google-services.json' : undefined;
+// O google-services.json pode vir de: uma variável de ambiente do tipo "file" no EAS
+// (GOOGLE_SERVICES_FILE, que o build escreve em disco e expõe como caminho), ou de um ficheiro
+// local escrito pelo workflow do GitHub a partir do segredo GOOGLE_SERVICES_JSON. Sem ele, a app
+// funciona na mesma, só sem push.
+const firebaseLocal = fs.existsSync(path.join(__dirname, 'google-services.json')) ? './google-services.json' : undefined;
+const firebase = process.env.GOOGLE_SERVICES_FILE || firebaseLocal;
 
 module.exports = ({ config }) => ({
   ...config,

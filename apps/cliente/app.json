@@ -1,7 +1,8 @@
 {
   "expo": {
     "name": "Manda Bué",
-    "slug": "manda-bue-cliente",
+    "slug": "manda-bue-delivery-angola",
+    "owner": "domundo",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -54,6 +55,11 @@
     "scheme": "mandabue",
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "f237075d-ebf8-43e4-b0f4-24d302f975a8"
+      }
     }
   }
 }
