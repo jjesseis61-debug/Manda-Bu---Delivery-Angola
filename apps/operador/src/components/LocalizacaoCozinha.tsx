@@ -1,11 +1,11 @@
-import * as Location from 'expo-location';
 import { useEffect, useState } from 'react';
-import { Linking, Switch, Text, View } from 'react-native';
+import { Switch, Text, View } from 'react-native';
 
+import { CapturarPonto } from '@/components/CapturarPonto';
 import { Aviso, Botao, Campo, Cartao, Paragrafo, Subtitulo } from '@/components/ui';
 import { guardarLocalizacao, lerLocalizacao } from '@/lib/api';
 import { mensagemErro } from '@/lib/formatar';
-import { cores, espaco } from '@/lib/tema';
+import { cores } from '@/lib/tema';
 
 type Edicao = { id?: string; morada: string; horario: string; lat: string; lng: string; publica: boolean };
 
@@ -37,17 +37,6 @@ export function LocalizacaoCozinha({ cozinhaId }: { cozinhaId: string }) {
 
   const lat = coordenada(l.lat, 90);
   const lng = coordenada(l.lng, 180);
-
-  async function aquiMesmo() {
-    setErro(null);
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== 'granted') {
-      setErro('Sem autorização para usar a localização. Escreve as coordenadas.');
-      return;
-    }
-    const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-    setL((x) => x && { ...x, lat: pos.coords.latitude.toFixed(6), lng: pos.coords.longitude.toFixed(6) });
-  }
 
   async function guardar() {
     if (!l || lat === null || lng === null) return;
@@ -82,22 +71,7 @@ export function LocalizacaoCozinha({ cozinhaId }: { cozinhaId: string }) {
       {sucesso && <Aviso tipo="sucesso">{sucesso}</Aviso>}
       <Campo rotulo="Morada" value={l.morada} onChangeText={(t) => setL({ ...l, morada: t })} />
       <Campo rotulo="Horário (ex.: Seg–Sex 10h–15h)" value={l.horario} onChangeText={(t) => setL({ ...l, horario: t })} />
-      <View style={{ flexDirection: 'row', gap: espaco.s }}>
-        <View style={{ flex: 1 }}>
-          <Campo rotulo="Latitude" value={l.lat} keyboardType="numbers-and-punctuation" onChangeText={(t) => setL({ ...l, lat: t })} />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Campo rotulo="Longitude" value={l.lng} keyboardType="numbers-and-punctuation" onChangeText={(t) => setL({ ...l, lng: t })} />
-        </View>
-      </View>
-      <Botao titulo="Usar a localização deste telemóvel (estou na cozinha)" variante="secundario" aoCarregar={aquiMesmo} />
-      {lat !== null && lng !== null && (
-        <Botao
-          titulo="Ver no Google Maps"
-          variante="texto"
-          aoCarregar={() => Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`)}
-        />
-      )}
+      <CapturarPonto lat={l.lat} lng={l.lng} aoMudar={(la, lo) => setL({ ...l, lat: la, lng: lo })} />
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Text style={{ flex: 1 }}>A responsável autorizou mostrar a localização aos clientes</Text>
         <Switch thumbColor="#FFFFFF" value={l.publica} onValueChange={(v) => setL({ ...l, publica: v })} trackColor={{ true: cores.marca, false: cores.contorno }} />

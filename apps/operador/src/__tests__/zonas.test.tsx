@@ -19,5 +19,12 @@ test('sem zonas avisa e cria a primeira com o bairro e a taxa', async () => {
   await act(async () => {
     fireEvent.press(ecra.getByText('Guardar zona'));
   });
-  expect(guardarZonaEntrega).toHaveBeenCalledWith({ id: undefined, nome: 'Talatona', taxa: 500, tipo: 'Própria' });
+  expect(guardarZonaEntrega).toHaveBeenCalledWith({
+    id: undefined,
+    nome: 'Talatona',
+    taxa: 500,
+    tipo: 'Própria',
+    centro_lat: null,
+    centro_lng: null,
+  });
 });

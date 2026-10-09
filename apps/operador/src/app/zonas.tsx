@@ -2,6 +2,7 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Text, View } from 'react-native';
 
+import { CapturarPonto } from '@/components/CapturarPonto';
 import { Guarda } from '@/components/Guarda';
 import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Escolha, Paragrafo, Subtitulo } from '@/components/ui';
 import { apagarZonaEntrega, guardarZonaEntrega, lerZonasEntrega } from '@/lib/api';
@@ -9,7 +10,12 @@ import { formatarKz, mensagemErro } from '@/lib/formatar';
 import { cores, espaco } from '@/lib/tema';
 import type { ZonaEntrega } from '@/lib/tipos';
 
-type ZonaEditada = { id?: string; nome: string; taxa: string; tipo: 'Própria' | 'Terceirizada' };
+type ZonaEditada = { id?: string; nome: string; taxa: string; tipo: 'Própria' | 'Terceirizada'; lat: string; lng: string };
+
+const coordenada = (t: string, limite: number): number | null => {
+  const n = Number(t.replace(',', '.'));
+  return t.trim() !== '' && Number.isFinite(n) && Math.abs(n) <= limite ? n : null;
+};
 
 /** Zonas de entrega (bairros): sem pelo menos uma, os clientes não conseguem guardar endereços */
 export default function Zonas() {
@@ -67,7 +73,16 @@ export default function Zonas() {
             <Botao
               titulo="Editar"
               variante="texto"
-              aoCarregar={() => setEdicao({ id: z.id, nome: z.nome, taxa: String(z.taxa), tipo: z.tipo ?? 'Própria' })}
+              aoCarregar={() =>
+                setEdicao({
+                  id: z.id,
+                  nome: z.nome,
+                  taxa: String(z.taxa),
+                  tipo: z.tipo ?? 'Própria',
+                  lat: z.centro_lat != null ? String(z.centro_lat) : '',
+                  lng: z.centro_lng != null ? String(z.centro_lng) : '',
+                })
+              }
             />
           </Cartao>
         ))}
@@ -90,16 +105,34 @@ export default function Zonas() {
               valor={edicao.tipo}
               aoMudar={(v) => setEdicao({ ...edicao, tipo: v })}
             />
+            <Subtitulo>Centro da zona (opcional)</Subtitulo>
+            <Paragrafo suave>
+              Marca um ponto de referência do bairro. Centra o mapa do cliente aqui e ajuda o GPS; não define a fronteira do
+              bairro.
+            </Paragrafo>
+            <CapturarPonto lat={edicao.lat} lng={edicao.lng} aoMudar={(la, lo) => setEdicao({ ...edicao, lat: la, lng: lo })} />
             <Botao
               titulo="Guardar zona"
               desactivado={!valido}
               aCarregar={ocupado}
-              aoCarregar={() =>
-                correr(
-                  () => guardarZonaEntrega({ id: edicao.id, nome: edicao.nome.trim(), taxa: Number(edicao.taxa), tipo: edicao.tipo }),
+              aoCarregar={() => {
+                const cLat = coordenada(edicao.lat, 90);
+                const cLng = coordenada(edicao.lng, 180);
+                // O centro é tudo-ou-nada: só guarda com os dois válidos (a BD exige o par completo)
+                const completo = cLat !== null && cLng !== null;
+                return correr(
+                  () =>
+                    guardarZonaEntrega({
+                      id: edicao.id,
+                      nome: edicao.nome.trim(),
+                      taxa: Number(edicao.taxa),
+                      tipo: edicao.tipo,
+                      centro_lat: completo ? cLat : null,
+                      centro_lng: completo ? cLng : null,
+                    }),
                   'Zona guardada.',
-                )
-              }
+                );
+              }}
             />
             {edicao.id && (
               <Botao
@@ -112,7 +145,7 @@ export default function Zonas() {
             <Botao titulo="Cancelar" variante="texto" aoCarregar={() => setEdicao(null)} />
           </Cartao>
         ) : (
-          <Botao titulo="Nova zona de entrega" aoCarregar={() => setEdicao({ nome: '', taxa: '', tipo: 'Própria' })} />
+          <Botao titulo="Nova zona de entrega" aoCarregar={() => setEdicao({ nome: '', taxa: '', tipo: 'Própria', lat: '', lng: '' })} />
         )}
       </Ecra>
     </Guarda>

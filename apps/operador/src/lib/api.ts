@@ -557,8 +557,13 @@ export async function definirFotoCozinha(id: string, fotoUrl: string | null) {
 
 // ---------------------------------------------------------------- Zonas de entrega
 export async function lerZonasEntrega(): Promise<ZonaEntrega[]> {
-  const r = await supabase.from('zonas').select('id, nome, taxa, tipo').is('deletado_em', null).order('nome');
-  return (verificar(r) as ZonaEntrega[]).map((z) => ({ ...z, taxa: Number(z.taxa ?? 0) }));
+  const r = await supabase.from('zonas').select('id, nome, taxa, tipo, centro_lat, centro_lng').is('deletado_em', null).order('nome');
+  return (verificar(r) as ZonaEntrega[]).map((z) => ({
+    ...z,
+    taxa: Number(z.taxa ?? 0),
+    centro_lat: z.centro_lat != null ? Number(z.centro_lat) : null,
+    centro_lng: z.centro_lng != null ? Number(z.centro_lng) : null,
+  }));
 }
 
 export async function guardarZonaEntrega(z: Omit<ZonaEntrega, 'id'> & { id?: string }) {

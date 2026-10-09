@@ -640,7 +640,15 @@ export type AdesaoOperador = {
 };
 
 /** Zona de entrega (bairro): a taxa aplica-se aos pedidos com pontos nesta zona */
-export type ZonaEntrega = { id: string; nome: string; taxa: number; tipo: 'Própria' | 'Terceirizada' | null };
+export type ZonaEntrega = {
+  id: string;
+  nome: string;
+  taxa: number;
+  tipo: 'Própria' | 'Terceirizada' | null;
+  /** Centro de referência (opcional): centra o mapa do cliente neste bairro; não é a fronteira */
+  centro_lat: number | null;
+  centro_lng: number | null;
+};
 
 export type FactosReclamacao = {
   pedido: {
