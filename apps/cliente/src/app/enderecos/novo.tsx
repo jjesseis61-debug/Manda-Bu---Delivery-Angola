@@ -31,6 +31,7 @@ export default function NovoEndereco() {
   const [primeiro, setPrimeiro] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [aGuardar, setAGuardar] = useState(false);
+  const [aLocalizar, setALocalizar] = useState(false);
 
   useEffect(() => {
     lerZonas()
@@ -56,19 +57,39 @@ export default function NovoEndereco() {
   }, [ponto, tipo, marcado]);
 
   async function aMinhaLocalizacao() {
+    if (aLocalizar) return;
     setErro(null);
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== 'granted') {
-      setErro(
-        HA_MAPA
-          ? 'Sem autorização para usar a localização. Marca o ponto no mapa.'
-          : 'Sem autorização para usar a localização. Autoriza a localização nas definições do telemóvel para marcar o ponto.',
-      );
-      return;
+    setALocalizar(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setErro(
+          HA_MAPA
+            ? 'Sem autorização para usar a localização. Marca o ponto no mapa.'
+            : 'Sem autorização para usar a localização. Autoriza a localização nas definições do telemóvel para marcar o ponto.',
+        );
+        return;
+      }
+      // GPS desligado é a causa mais comum de "não responde": avisa em vez de ficar à espera
+      const servicos = await Location.hasServicesEnabledAsync();
+      if (!servicos) {
+        setErro('A localização do telemóvel está desligada. Liga-a nas definições e tenta de novo, ou marca o ponto no mapa.');
+        return;
+      }
+      // Posição já conhecida entra logo; uma leitura nova pode demorar vários segundos
+      const conhecida = await Location.getLastKnownPositionAsync();
+      if (conhecida) {
+        setPonto({ latitude: conhecida.coords.latitude, longitude: conhecida.coords.longitude });
+        setMarcado(true);
+      }
+      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      setPonto({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+      setMarcado(true);
+    } catch (e) {
+      setErro(mensagemErro(e));
+    } finally {
+      setALocalizar(false);
     }
-    const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-    setPonto({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
-    setMarcado(true);
   }
 
   async function guardar() {
@@ -105,7 +126,12 @@ export default function NovoEndereco() {
           setMarcado(true);
         }}
       />
-      <Botao titulo="Usar a minha localização" variante="secundario" aoCarregar={aMinhaLocalizacao} />
+      <Botao
+        titulo={aLocalizar ? 'A localizar…' : 'Usar a minha localização'}
+        variante="secundario"
+        aoCarregar={aMinhaLocalizacao}
+        aCarregar={aLocalizar}
+      />
       {!marcado && HA_MAPA && <Paragrafo suave>Toca no mapa para marcar o sítio exacto da entrega.</Paragrafo>}
 
       {!empresa && (
