@@ -21,6 +21,7 @@ export default function NovoEndereco() {
   const empresa = perfil?.tipo === 'Empresa';
   const [ponto, setPonto] = useState<Coordenadas>(LUANDA);
   const [marcado, setMarcado] = useState(false);
+  const [centrarEm, setCentrarEm] = useState<Coordenadas | undefined>(undefined);
   const [tipo, setTipo] = useState<'residencial' | 'empresa'>(empresa ? 'empresa' : 'residencial');
   const [zonas, setZonas] = useState<Zona[]>([]);
   const [zonaId, setZonaId] = useState<string>('');
@@ -79,16 +80,31 @@ export default function NovoEndereco() {
       // Posição já conhecida entra logo; uma leitura nova pode demorar vários segundos
       const conhecida = await Location.getLastKnownPositionAsync();
       if (conhecida) {
-        setPonto({ latitude: conhecida.coords.latitude, longitude: conhecida.coords.longitude });
+        const p = { latitude: conhecida.coords.latitude, longitude: conhecida.coords.longitude };
+        setPonto(p);
+        setCentrarEm(p);
         setMarcado(true);
       }
       const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      setPonto({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+      const p = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+      setPonto(p);
+      setCentrarEm(p);
       setMarcado(true);
     } catch (e) {
       setErro(mensagemErro(e));
     } finally {
       setALocalizar(false);
+    }
+  }
+
+  function escolherZona(id: string) {
+    setZonaId(id);
+    const z = zonas.find((x) => x.id === id);
+    // Centra o mapa no bairro escolhido (se tiver centro) enquanto o cliente ainda não marcou o ponto
+    if (z?.centro_lat != null && z.centro_lng != null && !marcado) {
+      const p = { latitude: z.centro_lat, longitude: z.centro_lng };
+      setPonto(p);
+      setCentrarEm(p);
     }
   }
 
@@ -121,6 +137,7 @@ export default function NovoEndereco() {
     <Ecra>
       <MapaPin
         ponto={ponto}
+        centrarEm={centrarEm}
         aoMudar={(p) => {
           setPonto(p);
           setMarcado(true);
@@ -168,7 +185,7 @@ export default function NovoEndereco() {
           {zonasLidas && zonas.length === 0 ? (
             <Aviso>Ainda não entregamos em nenhum bairro. Volta a tentar mais tarde ou fala connosco.</Aviso>
           ) : (
-            <Escolha opcoes={zonas.map((z) => ({ valor: z.id, rotulo: z.nome }))} valor={zonaId} aoMudar={setZonaId} />
+            <Escolha opcoes={zonas.map((z) => ({ valor: z.id, rotulo: z.nome }))} valor={zonaId} aoMudar={escolherZona} />
           )}
           <Campo
             rotulo="Referência (ex.: prédio azul, 2.º andar, porta 12)"

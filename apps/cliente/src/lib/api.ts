@@ -250,7 +250,12 @@ export async function lerEnderecos(): Promise<Endereco[]> {
 }
 
 export async function lerZonas(): Promise<Zona[]> {
-  return verificar(await supabase.from('zonas').select('id, nome, taxa').order('nome')) as Zona[];
+  const r = await supabase.from('zonas').select('id, nome, taxa, centro_lat, centro_lng').order('nome');
+  return (verificar(r) as Zona[]).map((z) => ({
+    ...z,
+    centro_lat: z.centro_lat != null ? Number(z.centro_lat) : null,
+    centro_lng: z.centro_lng != null ? Number(z.centro_lng) : null,
+  }));
 }
 
 export type PontoProximo = { ponto_entrega_id: string; tipo: string; referencia: string | null; distancia_m: number };

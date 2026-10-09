@@ -157,7 +157,7 @@ export type Pedido = {
 /** Conta de empresa do cliente (se for membro activo) */
 export type MinhaEmpresa = { empresa_id: string; nome: string; limite_refeicao: number };
 
-export type Zona = { id: string; nome: string; taxa: number | null };
+export type Zona = { id: string; nome: string; taxa: number | null; centro_lat: number | null; centro_lng: number | null };
 
 export type Endereco = {
   id: string;

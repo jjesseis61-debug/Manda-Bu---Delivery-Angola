@@ -1,4 +1,5 @@
-import { Camera, Map, Marker as MarcadorOsm, type PressEvent } from '@maplibre/maplibre-react-native';
+import { Camera, Map, Marker as MarcadorOsm, type CameraRef, type PressEvent } from '@maplibre/maplibre-react-native';
+import { useEffect, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import type { NativeSyntheticEvent } from 'react-native';
 import MapView, { Marker, type MapPressEvent } from 'react-native-maps';
@@ -10,31 +11,49 @@ import { cores, raio } from '@/lib/tema';
 
 export type Coordenadas = { latitude: number; longitude: number };
 
+type MapaProps = {
+  ponto: Coordenadas;
+  aoMudar: (p: Coordenadas) => void;
+  /** Quando muda, o mapa desliza para aqui (ex.: centro do bairro escolhido). Não mexe no pino. */
+  centrarEm?: Coordenadas;
+};
+
 /**
  * Pin no mapa: toca no mapa para marcar o ponto de entrega.
  * Por defeito usa o OpenStreetMap (grátis). Com o interruptor `mapa_google` e a chave no build,
  * usa o Google/Apple Maps (onde o pin também se pode arrastar).
  */
-export function MapaPin({ ponto, aoMudar }: { ponto: Coordenadas; aoMudar: (p: Coordenadas) => void }) {
+export function MapaPin({ ponto, aoMudar, centrarEm }: MapaProps) {
   const { ligada } = useSessao();
   const usarGoogle = GOOGLE_DISPONIVEL && ligada('mapa_google');
   return (
-    <View style={estilos.caixa}>{usarGoogle ? <Google ponto={ponto} aoMudar={aoMudar} /> : <Osm ponto={ponto} aoMudar={aoMudar} />}</View>
+    <View style={estilos.caixa}>
+      {usarGoogle ? <Google ponto={ponto} aoMudar={aoMudar} centrarEm={centrarEm} /> : <Osm ponto={ponto} aoMudar={aoMudar} centrarEm={centrarEm} />}
+    </View>
   );
 }
 
-function Google({ ponto, aoMudar }: { ponto: Coordenadas; aoMudar: (p: Coordenadas) => void }) {
+function Google({ ponto, aoMudar, centrarEm }: MapaProps) {
+  const mapa = useRef<MapView>(null);
+  useEffect(() => {
+    if (centrarEm) mapa.current?.animateToRegion({ ...centrarEm, latitudeDelta: 0.01, longitudeDelta: 0.01 }, 500);
+  }, [centrarEm]);
   return (
     <MapView
+      ref={mapa}
       style={StyleSheet.absoluteFill}
-      region={{ ...ponto, latitudeDelta: 0.01, longitudeDelta: 0.01 }}
+      initialRegion={{ ...ponto, latitudeDelta: 0.01, longitudeDelta: 0.01 }}
       onPress={(e: MapPressEvent) => aoMudar(e.nativeEvent.coordinate)}>
       <Marker coordinate={ponto} draggable onDragEnd={(e) => aoMudar(e.nativeEvent.coordinate)} />
     </MapView>
   );
 }
 
-function Osm({ ponto, aoMudar }: { ponto: Coordenadas; aoMudar: (p: Coordenadas) => void }) {
+function Osm({ ponto, aoMudar, centrarEm }: MapaProps) {
+  const camara = useRef<CameraRef>(null);
+  useEffect(() => {
+    if (centrarEm) camara.current?.flyTo({ center: [centrarEm.longitude, centrarEm.latitude], duration: 500 });
+  }, [centrarEm]);
   return (
     <Map
       style={StyleSheet.absoluteFill}
@@ -47,7 +66,7 @@ function Osm({ ponto, aoMudar }: { ponto: Coordenadas; aoMudar: (p: Coordenadas)
         const [lng, lat] = e.nativeEvent.lngLat;
         aoMudar({ latitude: lat, longitude: lng });
       }}>
-      <Camera initialViewState={{ center: [ponto.longitude, ponto.latitude], zoom: 15 }} />
+      <Camera ref={camara} initialViewState={{ center: [ponto.longitude, ponto.latitude], zoom: 15 }} />
       <MarcadorOsm id="pin" lngLat={[ponto.longitude, ponto.latitude]}>
         <View style={estilos.pin} />
       </MarcadorOsm>
