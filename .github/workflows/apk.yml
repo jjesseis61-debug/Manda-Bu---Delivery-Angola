@@ -86,6 +86,17 @@ jobs:
           fi
       - name: Gerar o projecto Android
         run: npx expo prebuild --platform android --no-install
+      - name: Mais memória para o Gradle (o default rebenta no lint/dex do release)
+        working-directory: apps/${{ matrix.app }}/android
+        # O prebuild gera um gradle.properties com heap pequeno (~2 GB) e o lintVitalAnalyzeRelease
+        # fica sem memória (Java heap space). O runner tem 16 GB; damos 6 GB ao Gradle. Em
+        # gradle.properties a última ocorrência de uma chave ganha, por isso basta acrescentar.
+        run: |
+          {
+            echo ""
+            echo "org.gradle.jvmargs=-Xmx6144m -XX:MaxMetaspaceSize=1024m -Dfile.encoding=UTF-8"
+            echo "org.gradle.workers.max=2"
+          } >> gradle.properties
       - name: Compilar o APK
         working-directory: apps/${{ matrix.app }}/android
         # Só as CPUs de telemóveis reais (arm64 e arm 32-bit); deixa de fora x86/x86_64 (só
