@@ -70,6 +70,11 @@ jobs:
         run: |
           if [ -n "$GOOGLE_SERVICES_JSON" ]; then
             printf '%s' "$GOOGLE_SERVICES_JSON" > google-services.json
+            # JSON completo? (um segredo colado cortado passa nos grep mas rebenta no gradle)
+            if ! node -e 'JSON.parse(require("fs").readFileSync("google-services.json","utf8"))' 2>/dev/null; then
+              echo "::error::O segredo ${{ matrix.app == 'cliente' && 'GOOGLE_SERVICES_JSON' || 'GOOGLE_SERVICES_JSON_OPERADOR' }} não é um JSON completo — provavelmente foi colado cortado. Re-cola o ficheiro google-services.json INTEIRO (do início '{' ao fim '}')."
+              exit 1
+            fi
             if ! grep -q '"project_info"' google-services.json; then
               echo "::error::O segredo não é um google-services.json válido (falta 'project_info'). Confirma que colaste o ficheiro google-services.json do Firebase — NÃO a chave de conta de serviço (firebase-adminsdk-...json)."
               exit 1
