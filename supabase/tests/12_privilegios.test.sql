@@ -92,6 +92,8 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 'justificacao_cancelamento',
                 -- cadastro de pessoal (só administrador principal) e mapa de estafetas (despacho)
                 'listar_pessoal', 'criar_funcionario', 'editar_funcionario', 'posicoes_estafetas',
+                -- gestão de permissões e cozinhas do pessoal (só administrador principal)
+                'permissoes_catalogo', 'definir_permissoes_funcionario', 'definir_cozinhas_funcionario',
                 -- pedidos agendados (fila do que vem)
                 'pedidos_agendados',
                 -- sugestão de despacho por proximidade

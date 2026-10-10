@@ -17,7 +17,14 @@ export type PessoalItem = {
   administrador_principal: boolean;
   estafeta: boolean;
   activo: boolean;
+  /** Permissões atribuídas (objeto {chave: true}); vazio para quem não tem nenhuma */
+  permissoes: Record<string, boolean>;
+  /** Cozinhas a que pertence (equipa fixa) */
+  cozinhas: string[];
 };
+
+/** Uma permissão do catálogo, para montar os grupos no ecrã de pessoal */
+export type PermissaoCatalogo = { chave: string; grupo: string; descricao: string };
 
 /** Pedido agendado para mais tarde (fila do que vem, para a cozinha preparar na altura) */
 export type PedidoAgendado = {

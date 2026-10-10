@@ -46,6 +46,7 @@ import type {
   PedidoAgendado,
   PedidoOperador,
   Periodo,
+  PermissaoCatalogo,
   PessoalItem,
   Empresa,
   EmpresaMembro,
@@ -743,15 +744,16 @@ export async function editarFuncionario(dados: {
   id: string;
   nome: string;
   cargo: string | null;
-  estafeta: boolean;
   activo: boolean;
+  /** Opcional: as permissões são geridas à parte (definirPermissoes); null não toca em entregas.registar */
+  estafeta?: boolean;
 }) {
   verificar(
     await supabase.rpc('editar_funcionario', {
       p_id: dados.id,
       p_nome: dados.nome,
       p_cargo: dados.cargo,
-      p_estafeta: dados.estafeta,
+      p_estafeta: dados.estafeta ?? null,
       p_activo: dados.activo,
     }),
   );
@@ -759,6 +761,21 @@ export async function editarFuncionario(dados: {
 
 export async function definirTelefoneFuncionario(id: string, telefone: string | null) {
   verificar(await supabase.rpc('definir_telefone_funcionario', { p_funcionario: id, p_telefone: telefone }));
+}
+
+/** Catálogo de permissões (para montar os checkboxes por grupo) */
+export async function permissoesCatalogo(): Promise<PermissaoCatalogo[]> {
+  return (verificar(await supabase.rpc('permissoes_catalogo')) as PermissaoCatalogo[]) ?? [];
+}
+
+/** Define todas as permissões de um funcionário (objeto {chave: true}) */
+export async function definirPermissoes(funcionarioId: string, permissoes: Record<string, boolean>) {
+  verificar(await supabase.rpc('definir_permissoes_funcionario', { p_func: funcionarioId, p_permissoes: permissoes }));
+}
+
+/** Define as cozinhas (equipa fixa) de um funcionário */
+export async function definirCozinhas(funcionarioId: string, cozinhas: string[]) {
+  verificar(await supabase.rpc('definir_cozinhas_funcionario', { p_func: funcionarioId, p_cozinhas: cozinhas }));
 }
 
 // ---------------------------------------------------------------- Pedidos agendados
