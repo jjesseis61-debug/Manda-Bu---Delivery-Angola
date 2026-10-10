@@ -61,16 +61,21 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - run: npm ci
       - name: Configuração Firebase (notificações push), se existir o segredo
-        # Só a app do cliente tem Firebase/push. O operador (outro package) não está registado
-        # no Firebase, por isso não deve aplicar o google-services.json (daria erro de build).
-        if: matrix.app == 'cliente'
+        # Cada app tem o seu próprio google-services.json (packages diferentes), escrito a partir do
+        # seu segredo: cliente -> GOOGLE_SERVICES_JSON, operador -> GOOGLE_SERVICES_JSON_OPERADOR.
+        # Sem o segredo da app, o passo não faz nada e a app compila sem push (não dá erro).
         env:
-          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+          GOOGLE_SERVICES_JSON: ${{ matrix.app == 'cliente' && secrets.GOOGLE_SERVICES_JSON || secrets.GOOGLE_SERVICES_JSON_OPERADOR }}
+          PACOTE_ESPERADO: ${{ matrix.app == 'cliente' && 'ao.mandabue.cliente' || 'ao.mandabue.operador' }}
         run: |
           if [ -n "$GOOGLE_SERVICES_JSON" ]; then
             printf '%s' "$GOOGLE_SERVICES_JSON" > google-services.json
             if ! grep -q '"project_info"' google-services.json; then
-              echo "::error::O segredo GOOGLE_SERVICES_JSON não é um google-services.json válido (falta 'project_info'). Confirma que colaste o ficheiro google-services.json do Firebase — NÃO a chave de conta de serviço (firebase-adminsdk-...json)."
+              echo "::error::O segredo não é um google-services.json válido (falta 'project_info'). Confirma que colaste o ficheiro google-services.json do Firebase — NÃO a chave de conta de serviço (firebase-adminsdk-...json)."
+              exit 1
+            fi
+            if ! grep -q "\"$PACOTE_ESPERADO\"" google-services.json; then
+              echo "::error::O google-services.json não tem o package '$PACOTE_ESPERADO'. Descarrega o ficheiro da app Android certa no Firebase (a app '${{ matrix.app }}')."
               exit 1
             fi
           fi
