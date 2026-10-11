@@ -1,7 +1,7 @@
 -- Caixa na app do operador: abrir, sangrias, resumo (só a parcela Dinheiro) e fecho com contagem
 begin;
 \ir _helpers.psql
-select plan(17);
+select plan(20);
 
 select testes.def('cz', cozinha_padrao());
 with c as (insert into cozinhas (nome, responsavel) values ('Cozinha do Kilamba', 'Rosa') returning id) select testes.def('outra', id) from c;
@@ -19,6 +19,7 @@ select testes.def('cx', abrir_caixa(testes.u('cz'), ' Balcão ', 5000));
 select testes.def('dupla', testes.erro(format($$select abrir_caixa(%L, 'balcão', 0)$$, testes.v('cz'))));
 select testes.def('posto_vazio', testes.erro(format($$select abrir_caixa(%L, '  ', 0)$$, testes.v('cz'))));
 select testes.def('vejo', (select count(*) from caixa where id = testes.u('cx')));
+select testes.def('geridas_f', (select count(*) from caixas_geridas()));
 reset role;
 select is((select posto from caixa where id = testes.u('cx')), 'Balcão', 'abre a caixa com o posto sem espaços');
 select is((select funcionario_nome from caixa where id = testes.u('cx')), 'Caixa', 'e quem a abriu');
@@ -30,9 +31,14 @@ select testes.entrar_funcionario(testes.u('fora'));
 set local role authenticated;
 select testes.def('e_fora', testes.erro(format($$select abrir_caixa(%L, 'Outro', 0)$$, testes.v('cz'))));
 select testes.def('e_fora_s', testes.erro(format($$select registar_sangria(%L, 100, 'x')$$, testes.v('cx'))));
+select testes.def('ve_outra', (select count(*) from caixa where id = testes.u('cx')));
+select testes.def('geridas_fora', (select count(*) from caixas_geridas()));
 reset role;
 select ok(testes.v('e_fora') like '42501:%', 'não abre caixa numa cozinha onde não trabalha');
 select ok(testes.v('e_fora_s') like '42501:%', 'nem mexe na caixa de outra cozinha');
+select is(testes.v('ve_outra')::int, 0, 'nem vê a caixa de outra cozinha na listagem');
+select is(testes.v('geridas_f')::int, 1, 'o ecrã de gestão mostra a caixa da sua cozinha');
+select is(testes.v('geridas_fora')::int, 0, 'o ecrã de gestão não mostra caixas de outra cozinha');
 
 select testes.entrar_funcionario(testes.u('estafeta'));
 set local role authenticated;

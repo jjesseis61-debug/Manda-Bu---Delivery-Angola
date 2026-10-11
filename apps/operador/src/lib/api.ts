@@ -279,15 +279,9 @@ export async function caixasAbertas(): Promise<Caixa[]> {
 }
 
 // ---------------------------------------------------------------- Caixa
-/** Caixas abertas e as últimas fechadas (as mais recentes primeiro) */
+/** Caixas que o funcionário pode gerir (só a sua cozinha): abertas e as últimas fechadas */
 export async function caixasRecentes(): Promise<CaixaGestao[]> {
-  return verificar(
-    await supabase
-      .from('caixa')
-      .select('id, posto, data, cozinha_id, troco_inicial, funcionario_nome, fechamento')
-      .order('criado_em', { ascending: false })
-      .limit(20),
-  ) as CaixaGestao[];
+  return (verificar(await supabase.rpc('caixas_geridas', { p_limite: 20 })) as CaixaGestao[]) ?? [];
 }
 
 export async function resumoCaixa(caixaId: string): Promise<ResumoCaixa> {
