@@ -4,6 +4,9 @@ import { supabase } from './supabase';
 import type {
   Aviso,
   PublicoAviso,
+  ClienteInativo,
+  ResumoInativos,
+  CampanhaReconquista,
   AdesaoOperador,
   AlertaPedido,
   CasoConvida,
@@ -881,4 +884,49 @@ export async function enviarAviso(
 
 export async function listarAvisos(limite = 50): Promise<Aviso[]> {
   return (verificar(await supabase.rpc('listar_avisos', { p_limite: limite })) as Aviso[]) ?? [];
+}
+
+// ---------------------------------------------------------------- Reconquista de clientes inativos
+export async function clientesInativosResumo(): Promise<ResumoInativos> {
+  return verificar(await supabase.rpc('clientes_inativos_resumo')) as ResumoInativos;
+}
+
+export async function clientesInativos(
+  diasMin: number,
+  diasMax: number | null = null,
+  zonaId: string | null = null,
+): Promise<ClienteInativo[]> {
+  return (
+    (verificar(
+      await supabase.rpc('clientes_inativos', { p_dias_min: diasMin, p_dias_max: diasMax, p_zona: zonaId }),
+    ) as ClienteInativo[]) ?? []
+  );
+}
+
+export async function enviarCampanhaReconquista(dados: {
+  diasMin: number;
+  diasMax: number | null;
+  zonaId: string | null;
+  titulo: string;
+  corpo: string;
+  link?: string | null;
+  controloPct?: number | null;
+}): Promise<{ campanha_id: string; elegiveis: number; enviados: number; controlo: number; enviados_push: number }> {
+  return verificar(
+    await supabase.rpc('enviar_campanha_reconquista', {
+      p_dias_min: dados.diasMin,
+      p_dias_max: dados.diasMax,
+      p_zona: dados.zonaId,
+      p_titulo: dados.titulo,
+      p_corpo: dados.corpo,
+      p_link: dados.link ?? null,
+      p_controlo_pct: dados.controloPct ?? null,
+    }),
+  ) as { campanha_id: string; elegiveis: number; enviados: number; controlo: number; enviados_push: number };
+}
+
+export async function listarCampanhasReconquista(limite = 50): Promise<CampanhaReconquista[]> {
+  return (
+    (verificar(await supabase.rpc('listar_campanhas_reconquista', { p_limite: limite })) as CampanhaReconquista[]) ?? []
+  );
 }

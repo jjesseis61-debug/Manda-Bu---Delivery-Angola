@@ -34,6 +34,7 @@ const ecras: {
   { rota: '/empresas', titulo: 'Empresas (B2B)', descricao: 'Contas de empresa: almoços dos funcionários e fatura mensal', permissoes: ['clientes.gerir'] },
   { rota: '/feiras', titulo: 'Feiras', descricao: 'Vendas por consignação em feiras (preço fixo, fora da app)', permissoes: ['feira.gerir'] },
   { rota: '/avisos', titulo: 'Avisos', descricao: 'Enviar notificações a clientes e à equipa (por zona, cozinha, função)', permissoes: ['avisos.enviar'] },
+  { rota: '/reconquista', titulo: 'Reconquista', descricao: 'Clientes que pararam de comprar: lista, telefones e campanha de regresso', permissoes: ['clientes.reconquista'] },
   { rota: '/estimulos', titulo: 'Estímulos do mês', descricao: 'Desempenho, metas e bónus da equipa e dos melhores clientes', permissoes: ['equipa.gerir'] },
   { rota: '/conferencia', titulo: 'Conferência', descricao: 'Fecho do dia e do mês, extratos e comprovativos', permissoes: ['financas.conferir'] },
   { rota: '/grupos', titulo: 'Grupos do dia', descricao: 'Pedidos de grupo juntos para preparar e expedir (O10)', permissoes: ['pedidos.gerir', 'entregas.registar'] },

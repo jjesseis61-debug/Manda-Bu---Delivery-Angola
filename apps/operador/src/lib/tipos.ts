@@ -122,7 +122,8 @@ export type Permissao =
   | 'stock.gerir'
   | 'atendimento.responder'
   | 'feira.gerir'
-  | 'avisos.enviar';
+  | 'avisos.enviar'
+  | 'clientes.reconquista';
 
 export type PublicoAviso =
   | 'clientes_todos'
@@ -143,6 +144,44 @@ export type Aviso = {
   total: number;
   criado_por_nome: string | null;
   enviado_em: string;
+};
+
+// Reconquista de clientes inativos
+export type ClienteInativo = {
+  cliente_id: string;
+  nome: string;
+  telefone: string | null;
+  ultimo_pedido: string;
+  dias_inativo: number;
+  total_pedidos: number;
+  tem_push: boolean;
+};
+
+export type ResumoInativos = {
+  a_arrefecer: { total: number; com_push: number };
+  frio: { total: number; com_push: number };
+  adormecido: { total: number; com_push: number };
+  activos_ate_30: number;
+};
+
+export type ResultadoCampanha = {
+  janela_dias: number;
+  enviados: number;
+  enviados_voltaram: number;
+  controlo: number;
+  controlo_voltaram: number;
+};
+
+export type CampanhaReconquista = {
+  id: string;
+  criado_em: string;
+  criado_por_nome: string | null;
+  dias_min: number;
+  dias_max: number | null;
+  total_elegiveis: number;
+  total_enviados: number;
+  total_controlo: number;
+  resultado: ResultadoCampanha;
 };
 
 export type Painel = {
