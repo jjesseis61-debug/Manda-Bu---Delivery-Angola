@@ -1,7 +1,7 @@
 -- N16 (estado do pedido ao cliente), N17 (pedido novo à cozinha) e segredo do envio
 begin;
 \ir _helpers.psql
-select plan(13);
+select plan(15);
 
 select testes.funcionalidade('multi_cozinha', false);
 select testes.def('cz', cozinha_padrao());
@@ -12,6 +12,10 @@ select testes.def('outro', testes.funcionario('Gerente doutra cozinha', array['p
 with c as (insert into cozinhas (nome, responsavel) values ('Cozinha do Kilamba', 'Rosa') returning id) select testes.def('outra', id) from c;
 insert into turnos (data, funcionario_id, cozinha_id) values (current_date, testes.u('gerente'), testes.u('cz')),
                                                            (current_date, testes.u('outro'), testes.u('outra'));
+-- Gerente da cozinha pela equipa fixa (sem turno) e gestor geral (cozinhas.gerir)
+select testes.def('gerente_eq', testes.funcionario('Gerente equipa fixa', array['pedidos.gerir']));
+insert into equipa_cozinha (funcionario_id, cozinha_id) values (testes.u('gerente_eq'), testes.u('cz'));
+select testes.def('geral', testes.funcionario('Gestor geral', array['pedidos.gerir', 'cozinhas.gerir']));
 select testes.def('ana', testes.cliente('Ana Sousa'));
 select testes.def('ponto', testes.ponto('residencial', null, null, testes.u('zona')));
 insert into enderecos_cliente (cliente_id, ponto_entrega_id) values (testes.u('ana'), testes.u('ponto'));
@@ -28,6 +32,10 @@ select is((select count(*)::int from notificacoes_fila where codigo = 'N17' and 
           'N17: o gerente da cozinha é avisado do pedido novo');
 select is((select count(*)::int from notificacoes_fila where codigo = 'N17' and funcionario_id = testes.u('outro')), 0,
           'N17: o gerente de outra cozinha não');
+select is((select count(*)::int from notificacoes_fila where codigo = 'N17' and funcionario_id = testes.u('gerente_eq')), 1,
+          'N17: o gerente da cozinha pela equipa fixa (sem turno) também é avisado');
+select is((select count(*)::int from notificacoes_fila where codigo = 'N17' and funcionario_id = testes.u('geral')), 1,
+          'N17: o gestor geral (cozinhas.gerir) é avisado dos pedidos de qualquer cozinha');
 select is((select (texto_notificacao(codigo, dados)).corpo from notificacoes_fila where codigo = 'N17' and funcionario_id = testes.u('gerente')),
           format('Novo pedido: 2× Chocos · Viana · %s.', formatar_kz(13000)), 'N17: pratos, bairro e total');
 
