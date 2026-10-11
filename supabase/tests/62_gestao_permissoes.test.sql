@@ -2,7 +2,7 @@
 -- definir permissões (objeto do catálogo), ligar a cozinhas (equipa fixa) e as barreiras.
 begin;
 \ir _helpers.psql
-select plan(10);
+select plan(11);
 
 select testes.def('admin', testes.funcionario('Dona Admin', array[]::text[]));
 update funcionarios set administrador_principal = true where id = testes.u('admin');
@@ -35,6 +35,14 @@ select testes.def('pode_antes', pode_na_cozinha('pedidos.gerir', testes.u('coz')
 reset role;
 select testes.sair();
 select is(testes.v('pode_antes'), 'true', 'com permissão + cozinha, pode gerir os pedidos dessa cozinha');
+
+-- A cozinha da equipa fixa aparece no objeto do funcionário (a app precisa para oferecer a cozinha)
+select testes.entrar_funcionario(testes.u('gestor'));
+set local role authenticated;
+select testes.def('equipa', (meu_funcionario() -> 'cozinhas_equipa')::text);
+reset role;
+select testes.sair();
+select ok(testes.v('equipa')::jsonb ? testes.v('coz'), 'a cozinha da equipa fixa aparece em cozinhas_equipa');
 
 -- Tirar a cozinha remove a pertença
 select testes.entrar_funcionario(testes.u('admin'));
