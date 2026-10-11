@@ -23,7 +23,10 @@ create function pg_temp.pedido(p_min int, p_cozinha text default 'cz') returns u
   insert into pedidos (cliente_id, ponto_entrega_id, cozinha_id, subtotal, itens, criado_em)
   values (testes.u('ana'), testes.u('ponto'), testes.u(p_cozinha), 3500,
           jsonb_build_array(jsonb_build_object('nome', 'Calulu de peixe', 'qtd', 1, 'preco_unitario', 3500, 'cardapio_id', testes.v('calulu'))),
-          now() - make_interval(mins => p_min))
+          -- Não recua antes da meia-noite de Luanda: o turno vê os pedidos pelo dia de Luanda,
+          -- por isso perto da meia-noite UTC um "há 70 min" cairia no dia anterior e sumia.
+          greatest(now() - make_interval(mins => p_min),
+                   date_trunc('day', now() at time zone 'Africa/Luanda') at time zone 'Africa/Luanda'))
   returning id;
 $$;
 select testes.def('A', pg_temp.pedido(12));           -- por confirmar há 12 min
@@ -31,7 +34,9 @@ select testes.def('B', pg_temp.pedido(70));           -- atrasado (hora prometid
 select testes.def('K', pg_temp.pedido(5, 'outra'));   -- de outra cozinha (ainda no prazo)
 select testes.def('K2', pg_temp.pedido(30, 'outra')); -- outra cozinha: perto da hora prometida
 update pedidos set estado = 'confirmado' where id = testes.u('B');
-update pedidos set estado = 'em_preparacao' where id = testes.u('B');
+-- B está atrasado: a hora prometida já passou há 25 min (fixa, para não depender de quão "velho" é o
+-- pedido — perto da meia-noite de Luanda o criado_em é ancorado ao próprio dia, ver acima).
+update pedidos set estado = 'em_preparacao', hora_prometida = now() - interval '25 min' where id = testes.u('B');
 
 -- Situação e escolha da cozinha
 select testes.def('reserva', reservar_turno());

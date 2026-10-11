@@ -11,8 +11,8 @@ select testes.def('estafeta', testes.funcionario('Estafeta Rui', array['entregas
 select testes.def('estafeta2', testes.funcionario('Estafeta Zé', array['entregas.registar']));
 select testes.def('financas', testes.funcionario('Contabilista', array['financas.conferir']));
 select testes.def('outro', testes.funcionario('Sem finanças', array['indicacoes.ver']));
-insert into turnos (data, funcionario_id, cozinha_id) values (current_date, testes.u('gerente'), testes.u('cz')),
-                                                           (current_date, testes.u('estafeta'), testes.u('cz'));
+insert into turnos (data, funcionario_id, cozinha_id) values (testes.hoje(), testes.u('gerente'), testes.u('cz')),
+                                                           (testes.hoje(), testes.u('estafeta'), testes.u('cz'));
 select testes.def('cx', testes.caixa(testes.u('cz'), 'Balcão de teste'));
 select testes.def('ana', testes.cliente('Ana Sousa'));
 
@@ -38,9 +38,9 @@ select testes.def('k' || n, k.id) from ped join comprovativos_pagamento k on k.p
 -- ---------------------------------------------------------------- leitura automática dos comprovativos
 select is((select jsonb_array_length(reservar_documentos(10) -> 'comprovativos')), 3, 'os 3 comprovativos são reservados para a leitura automática');
 select is((select jsonb_array_length(reservar_documentos(10) -> 'comprovativos')), 0, 'uma segunda execução não os lê outra vez');
-select is(registar_leitura_comprovativo(testes.u('k1'), 'lido', 3000, 'mcx 1001', current_date, null), 'confere',
+select is(registar_leitura_comprovativo(testes.u('k1'), 'lido', 3000, 'mcx 1001', testes.hoje(), null), 'confere',
           'leitura com o mesmo valor e a mesma referência (escrita de outra maneira) -> confere');
-select is(registar_leitura_comprovativo(testes.u('k2'), 'lido', 2500, 'MCX-1002', current_date, 'valor no talão: 2 500'), 'diverge',
+select is(registar_leitura_comprovativo(testes.u('k2'), 'lido', 2500, 'MCX-1002', testes.hoje(), 'valor no talão: 2 500'), 'diverge',
           'valor lido diferente do registado -> diverge');
 select is(array[registar_leitura_comprovativo(testes.u('k3'), 'erro', null, null, null, 'limite de pedidos'),
                 registar_leitura_comprovativo(testes.u('k3'), 'erro', null, null, null, 'limite de pedidos'),
@@ -62,12 +62,12 @@ select ok((select bool_or(e ->> 'ia_estado' = 'diverge') from jsonb_array_elemen
 -- ---------------------------------------------------------------- extrato
 select testes.entrar_funcionario(testes.u('outro'));
 set local role authenticated;
-select testes.def('e_sem_perm', testes.erro($$select criar_extrato('BAI', current_date, current_date)$$));
+select testes.def('e_sem_perm', testes.erro($$select criar_extrato('BAI', testes.hoje(), testes.hoje())$$));
 reset role;
 select testes.entrar_funcionario(testes.u('financas'));
 set local role authenticated;
-select testes.def('ext', criar_extrato('Multicaixa Express (BAI)', current_date - 1, current_date + 1));
-select testes.def('e_periodo', testes.erro($$select criar_extrato('BAI', current_date, current_date - 5)$$));
+select testes.def('ext', criar_extrato('Multicaixa Express (BAI)', testes.hoje() - 1, testes.hoje() + 1));
+select testes.def('e_periodo', testes.erro($$select criar_extrato('BAI', testes.hoje(), testes.hoje() - 5)$$));
 select testes.def('up_ok', testes.erro(format($$insert into storage.objects (bucket_id, name) values ('extratos', '%s/extrato.pdf')$$, testes.v('ext'))));
 select confirmar_extrato(testes.u('ext'), testes.v('ext') || '/extrato.pdf');
 select testes.def('up_depois', testes.erro(format($$insert into storage.objects (bucket_id, name) values ('extratos', '%s/outro.pdf')$$, testes.v('ext'))));
@@ -84,9 +84,9 @@ select is((select jsonb_array_length(reservar_documentos(5) -> 'extratos')), 1, 
 
 -- leitura automática do extrato: 3 entradas
 select is(registar_leitura_extrato(testes.u('ext'), 'lido', jsonb_build_array(
-            jsonb_build_object('data', current_date, 'valor', 3000, 'referencia', 'MCX 1001', 'descricao', 'Pagamento MCX'),
-            jsonb_build_object('data', current_date, 'valor', 3000, 'referencia', null, 'descricao', 'Transferência recebida'),
-            jsonb_build_object('data', current_date, 'valor', 7777, 'referencia', 'XYZ-9', 'descricao', 'Depósito'))), 3,
+            jsonb_build_object('data', testes.hoje(), 'valor', 3000, 'referencia', 'MCX 1001', 'descricao', 'Pagamento MCX'),
+            jsonb_build_object('data', testes.hoje(), 'valor', 3000, 'referencia', null, 'descricao', 'Transferência recebida'),
+            jsonb_build_object('data', testes.hoje(), 'valor', 7777, 'referencia', 'XYZ-9', 'descricao', 'Depósito'))), 3,
           'a leitura do extrato regista as entradas');
 select is((select comprovativo_id from extrato_movimentos where extrato_id = testes.u('ext') and valor = 3000 and referencia = 'MCX 1001'),
           testes.u('k1'), 'entrada ligada ao comprovativo pela referência');
@@ -95,7 +95,7 @@ select is((select comprovativo_id from extrato_movimentos where extrato_id = tes
 
 select testes.entrar_funcionario(testes.u('financas'));
 set local role authenticated;
-select testes.def('conc', relatorio_conciliacao(current_date - 1, current_date + 1));
+select testes.def('conc', relatorio_conciliacao(testes.hoje() - 1, testes.hoje() + 1));
 reset role;
 select ok(jsonb_array_length(testes.v('conc')::jsonb -> 'encontrados') = 2
           and jsonb_array_length(testes.v('conc')::jsonb -> 'comprovativos_sem_extrato') = 1
@@ -108,12 +108,12 @@ select ok(jsonb_array_length(testes.v('conc')::jsonb -> 'encontrados') = 2
 -- conferência à mão (quando a leitura automática não está disponível)
 select testes.entrar_funcionario(testes.u('financas'));
 set local role authenticated;
-select testes.def('mov_manual', registar_movimento_extrato(testes.u('ext'), current_date, 3000, 'UM 2001', 'Unitel Money'));
+select testes.def('mov_manual', registar_movimento_extrato(testes.u('ext'), testes.hoje(), 3000, 'UM 2001', 'Unitel Money'));
 select testes.def('e_ligado', testes.erro(format($$select ligar_movimento(%L, %L)$$,
   (select id from extrato_movimentos where valor = 7777), testes.v('k1'))));
 select testes.def('e_motivo', testes.erro(format($$select apagar_movimento_extrato(%L, ' ')$$, (select id from extrato_movimentos where valor = 7777))));
 select apagar_movimento_extrato((select id from extrato_movimentos where valor = 7777), 'Depósito do dono, não é venda');
-select testes.def('conc2', relatorio_conciliacao(current_date - 1, current_date + 1));
+select testes.def('conc2', relatorio_conciliacao(testes.hoje() - 1, testes.hoje() + 1));
 reset role;
 select is((select comprovativo_id from extrato_movimentos where id = testes.u('mov_manual')), testes.u('k3'),
           'entrada escrita à mão também é ligada ao comprovativo');
@@ -130,14 +130,14 @@ select ok(exists (select 1 from auditoria where acao = 'extrato_movimento_manual
 -- ---------------------------------------------------------------- fechos
 select testes.entrar_funcionario(testes.u('gerente'));
 set local role authenticated;
-select testes.def('dia_gerente', testes.erro(format($$select fecho_diario(current_date, %L)$$, testes.v('cz'))));
-select testes.def('dia_todas', testes.erro($$select fecho_diario(current_date)$$));
+select testes.def('dia_gerente', testes.erro(format($$select fecho_diario(testes.hoje(), %L)$$, testes.v('cz'))));
+select testes.def('dia_todas', testes.erro($$select fecho_diario(testes.hoje())$$));
 select testes.def('mes_gerente', testes.erro($$select fecho_mensal(2026, 10)$$));
 reset role;
 select testes.entrar_funcionario(testes.u('financas'));
 set local role authenticated;
-select testes.def('dia', fecho_diario(current_date));
-select testes.def('mes', fecho_mensal(extract(year from current_date)::int, extract(month from current_date)::int));
+select testes.def('dia', fecho_diario(testes.hoje()));
+select testes.def('mes', fecho_mensal(extract(year from testes.hoje())::int, extract(month from testes.hoje())::int));
 reset role;
 select ok(testes.v('dia_gerente') = 'sem_erro' and testes.v('dia_todas') like '42501:%' and testes.v('mes_gerente') like '42501:%',
           'o gerente vê o fecho do dia da sua cozinha; o geral e o mensal são para financas.conferir');

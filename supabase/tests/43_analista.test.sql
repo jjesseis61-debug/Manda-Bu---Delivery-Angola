@@ -67,34 +67,34 @@ select is(testes.v('e_limite'), 'P0001:limite_diario', 'limite de perguntas por 
 
 -- Ferramentas (só o serviço)
 select ok((select (l ->> 'pedidos')::int = 3 and (l ->> 'valor_kz')::numeric = 9500
-             from jsonb_array_elements(analista_vendas(current_date, current_date, 'total') -> 'pedidos_entregues') l)
-          and (analista_vendas(current_date, current_date, 'total') ->> 'pedidos_cancelados')::int = 1,
+             from jsonb_array_elements(analista_vendas(testes.hoje(), testes.hoje(), 'total') -> 'pedidos_entregues') l)
+          and (analista_vendas(testes.hoje(), testes.hoje(), 'total') ->> 'pedidos_cancelados')::int = 1,
           'vendas: 3 entregues (9.500 Kz) e 1 cancelado');
-select is((select l ->> 'grupo' from jsonb_array_elements(analista_vendas(current_date, current_date, 'zona') -> 'pedidos_entregues') l),
+select is((select l ->> 'grupo' from jsonb_array_elements(analista_vendas(testes.hoje(), testes.hoje(), 'zona') -> 'pedidos_entregues') l),
           'Talatona', 'vendas por zona');
-select ok((select (l ->> 'quantidade')::numeric = 2 from jsonb_array_elements(analista_pratos(current_date, current_date) -> 'mais_vendidos') l
+select ok((select (l ->> 'quantidade')::numeric = 2 from jsonb_array_elements(analista_pratos(testes.hoje(), testes.hoje()) -> 'mais_vendidos') l
             where l ->> 'prato' = 'Muamba'), 'pratos mais vendidos');
-select ok((analista_clientes(current_date, current_date) ->> 'clientes_que_compraram')::int = 2
-          and (analista_clientes(current_date, current_date) ->> 'clientes_com_2_ou_mais_pedidos')::int = 1
-          and analista_clientes(current_date, current_date) -> 'por_tipo_de_local' ->> 'empresa' = '3',
+select ok((analista_clientes(testes.hoje(), testes.hoje()) ->> 'clientes_que_compraram')::int = 2
+          and (analista_clientes(testes.hoje(), testes.hoje()) ->> 'clientes_com_2_ou_mais_pedidos')::int = 1
+          and analista_clientes(testes.hoje(), testes.hoje()) -> 'por_tipo_de_local' ->> 'empresa' = '3',
           'clientes: quem comprou, quem repetiu, tipo de local');
-select ok((select (l ->> 'cancelados')::int = 1 from jsonb_array_elements(analista_operacao(current_date, current_date) -> 'por_cozinha') l)
-          and analista_operacao(current_date, current_date) -> 'motivos_de_cancelamento' -> 0 ->> 'motivo' = 'Sem gás',
+select ok((select (l ->> 'cancelados')::int = 1 from jsonb_array_elements(analista_operacao(testes.hoje(), testes.hoje()) -> 'por_cozinha') l)
+          and analista_operacao(testes.hoje(), testes.hoje()) -> 'motivos_de_cancelamento' -> 0 ->> 'motivo' = 'Sem gás',
           'operação: cancelados e motivos');
-select ok((analista_satisfacao(current_date, current_date) ->> 'avaliacoes')::int = 1
-          and (analista_satisfacao(current_date, current_date) ->> 'reclamacoes')::int = 1
-          and analista_satisfacao(current_date, current_date) -> 'comentarios_negativos_recentes' -> 0 ->> 'comentario' = 'Veio frio',
+select ok((analista_satisfacao(testes.hoje(), testes.hoje()) ->> 'avaliacoes')::int = 1
+          and (analista_satisfacao(testes.hoje(), testes.hoje()) ->> 'reclamacoes')::int = 1
+          and analista_satisfacao(testes.hoje(), testes.hoje()) -> 'comentarios_negativos_recentes' -> 0 ->> 'comentario' = 'Veio frio',
           'satisfação: avaliações, reclamações e comentários negativos');
-select ok((analista_financas(current_date, current_date) ->> 'receita_entregue_kz')::numeric = 9500
-          and (analista_financas(current_date, current_date) -> 'recebido_por_metodo_kz' ->> 'Dinheiro')::numeric = 9500,
+select ok((analista_financas(testes.hoje(), testes.hoje()) ->> 'receita_entregue_kz')::numeric = 9500
+          and (analista_financas(testes.hoje(), testes.hoje()) -> 'recebido_por_metodo_kz' ->> 'Dinheiro')::numeric = 9500,
           'finanças: receita e recebido por método');
-select ok(analista_clientes(current_date, current_date)::text not like '%Ana%'
-          and analista_satisfacao(current_date, current_date)::text not like '%Ana%'
-          and analista_vendas(current_date, current_date, 'dia')::text not like '%Bia%',
+select ok(analista_clientes(testes.hoje(), testes.hoje())::text not like '%Ana%'
+          and analista_satisfacao(testes.hoje(), testes.hoje())::text not like '%Ana%'
+          and analista_vendas(testes.hoje(), testes.hoje(), 'dia')::text not like '%Bia%',
           'as ferramentas não levam nomes de clientes');
-select is(metricas_funcionario(testes.u('rui'), date_trunc('month', current_date)::date),
-          metricas_funcionario_periodo(testes.u('rui'), date_trunc('month', current_date)::date,
-                                       (date_trunc('month', current_date) + interval '1 month - 1 day')::date),
+select is(metricas_funcionario(testes.u('rui'), date_trunc('month', testes.hoje())::date),
+          metricas_funcionario_periodo(testes.u('rui'), date_trunc('month', testes.hoje())::date,
+                                       (date_trunc('month', testes.hoje()) + interval '1 month - 1 day')::date),
           'os estímulos mensais usam a mesma conta da equipa');
 select ok(not has_function_privilege('authenticated', 'analista_vendas(date, date, text)', 'execute')
           and not has_function_privilege('authenticated', 'reservar_pergunta(uuid)', 'execute')

@@ -29,14 +29,14 @@ select testes.def('C2', pg_temp.comp('rui', 'MCX-9002', 4000, 'conferido', 'dive
 select testes.def('C3', pg_temp.comp('rui', 'MCX-9003', 3500));
 select testes.def('C4', pg_temp.comp('rui', 'MCX-9004', 2000));
 select testes.def('L1', pg_temp.comp('leo', 'MCX-9005', 2500));
-with e as (insert into extratos (conta, periodo_inicio, periodo_fim, estado) values ('BAI', current_date - 5, current_date, 'lido') returning id)
+with e as (insert into extratos (conta, periodo_inicio, periodo_fim, estado) values ('BAI', testes.hoje() - 5, testes.hoje(), 'lido') returning id)
 select testes.def('ext', id) from e;
 insert into extrato_movimentos (extrato_id, data, valor, referencia, referencia_chave, origem, comprovativo_id) values
-  (testes.u('ext'), current_date, 2000, 'MCX-9004', chave_referencia('MCX-9004'), 'ia', testes.u('C4')),
-  (testes.u('ext'), current_date, 2500, 'MCX-9005', chave_referencia('MCX-9005'), 'ia', testes.u('L1')),
-  (testes.u('ext'), current_date - 1, 3500, 'MCX-9030', chave_referencia('MCX-9030'), 'ia', null);
+  (testes.u('ext'), testes.hoje(), 2000, 'MCX-9004', chave_referencia('MCX-9004'), 'ia', testes.u('C4')),
+  (testes.u('ext'), testes.hoje(), 2500, 'MCX-9005', chave_referencia('MCX-9005'), 'ia', testes.u('L1')),
+  (testes.u('ext'), testes.hoje() - 1, 3500, 'MCX-9030', chave_referencia('MCX-9030'), 'ia', null);
 with c as (insert into caixa (posto, cozinha_id, data, troco_inicial, fechamento)
-           values ('Balcão de teste', testes.u('cz'), current_date, 0,
+           values ('Balcão de teste', testes.u('cz'), testes.hoje(), 0,
                    jsonb_build_object('esperado', 10000, 'contado', 9500, 'diferenca', -500, 'funcionario_id', testes.v('marta'),
                                       'funcionario_nome', 'Marta Finanças', 'observacao', 'Faltou troco'))
            returning id)
@@ -44,19 +44,19 @@ select testes.def('cx_marta', id) from c;
 
 select results_eq(format($$select (s ->> 'rejeitados')::int, (s ->> 'nao_conferem')::int, (s ->> 'sem_extrato')::int,
                                   (s ->> 'valor_sem_extrato')::numeric, (s ->> 'pontuacao')::int
-                             from sinais_financeiros(%L, current_date - 5, current_date) s$$, testes.v('rui')),
+                             from sinais_financeiros(%L, testes.hoje() - 5, testes.hoje()) s$$, testes.v('rui')),
                   $$values (1, 2, 2, 7500::numeric, 13)$$,
                   'sinais do Rui: 1 rejeitado, 2 não conferem com a foto, 2 sem extrato (o rejeitado não conta duas vezes)');
 
 -- Abrir os casos: só quem confere as finanças; Rui (13 pontos) abre; Marta (2) e Leo (0) não; não repete
 select testes.entrar_funcionario(testes.u('rui'));
 set local role authenticated;
-select testes.def('e_rui', testes.erro('select abrir_investigacoes(current_date - 5, current_date)'));
+select testes.def('e_rui', testes.erro('select abrir_investigacoes(testes.hoje() - 5, testes.hoje())'));
 reset role;
 select testes.entrar_funcionario(testes.u('joana'));
 set local role authenticated;
-select testes.def('abertos', abrir_investigacoes(current_date - 5, current_date));
-select testes.def('de_novo', abrir_investigacoes(current_date - 5, current_date));
+select testes.def('abertos', abrir_investigacoes(testes.hoje() - 5, testes.hoje()));
+select testes.def('de_novo', abrir_investigacoes(testes.hoje() - 5, testes.hoje()));
 reset role;
 select testes.sair();
 select testes.def('caso', (select id from casos_investigacao where funcionario_id = testes.u('rui')));
@@ -70,20 +70,20 @@ select testes.def('reserva', reservar_caso());
 select ok(testes.v('reserva')::jsonb ->> 'funcionario' = 'Rui Mateus'
           and (testes.v('reserva')::jsonb -> 'sinais' ->> 'pontuacao')::int = 13, 'reserva o caso com quem e os sinais');
 select ok(reservar_caso() is null, 'um caso a ser investigado não é reservado duas vezes');
-select is((select count(*)::int from jsonb_array_elements(agente_comprovativos(testes.u('rui'), current_date - 5, current_date))), 4,
+select is((select count(*)::int from jsonb_array_elements(agente_comprovativos(testes.u('rui'), testes.hoje() - 5, testes.hoje()))), 4,
           'comprovativos do Rui no período');
 select ok((select bool_and(not (e ->> 'encontrado_no_extrato')::boolean) and bool_and((e ->> 'periodo_com_extrato')::boolean)
-             from jsonb_array_elements(agente_comprovativos(testes.u('rui'), current_date - 5, current_date)) e
+             from jsonb_array_elements(agente_comprovativos(testes.u('rui'), testes.hoje() - 5, testes.hoje())) e
             where e ->> 'referencia' = 'MCX-9003'), 'mostra que o MCX-9003 está num período com extrato e não foi encontrado');
-select is((select e ->> 'referencia' from jsonb_array_elements(agente_entradas_parecidas(3500, current_date, 3)) e),
+select is((select e ->> 'referencia' from jsonb_array_elements(agente_entradas_parecidas(3500, testes.hoje(), 3)) e),
           'MCX-9030', 'há uma entrada de 3.500 Kz sem comprovativo no dia anterior (talvez referência mal escrita)');
 select is((select count(*)::int from jsonb_array_elements(agente_referencia('mcx 9003') -> 'comprovativos')), 1,
           'procura a referência noutros comprovativos (normalizada)');
 select ok(agente_historico_pedido((select pedido_id from comprovativos_pagamento where id = testes.u('C1')))::text not like '%Ana%',
           'o histórico do pedido vai sem o nome do cliente');
-select ok((select (e -> 'diferenca')::numeric = -500 from jsonb_array_elements(agente_caixas(testes.u('marta'), current_date - 5, current_date)) e),
+select ok((select (e -> 'diferenca')::numeric = -500 from jsonb_array_elements(agente_caixas(testes.u('marta'), testes.hoje() - 5, testes.hoje())) e),
           'caixas fechadas pela pessoa, com a diferença');
-select ok((select count(*) >= 3 from jsonb_array_elements(agente_equipa(current_date - 5, current_date))),
+select ok((select count(*) >= 3 from jsonb_array_elements(agente_equipa(testes.hoje() - 5, testes.hoje()))),
           'compara com a equipa no mesmo período');
 select ok(not has_function_privilege('authenticated', 'agente_comprovativos(uuid, date, date)', 'execute')
           and not has_function_privilege('authenticated', 'reservar_caso()', 'execute')

@@ -36,7 +36,7 @@ alter table pedidos enable trigger user;
 select testes.def('dono', testes.funcionario('Dono', array['relatorios.exportar']));
 select testes.entrar_funcionario(testes.u('dono'));
 set local role authenticated;
-select testes.def('rel', relatorio_cozinha(cozinha_padrao(), current_date - 120, current_date));
+select testes.def('rel', relatorio_cozinha(cozinha_padrao(), testes.hoje() - 120, testes.hoje()));
 reset role;
 select testes.sair();
 select is(testes.v('rel')::jsonb -> 'retencao', '{"30": 50.0, "60": 50.0, "90": 0.0}'::jsonb,
@@ -60,11 +60,11 @@ select testes.def('poucos', testes.funcionario('Estafeta com poucos', array['ent
 select pg_temp.comprovativos('muitos', 100, 2);
 select pg_temp.comprovativos('acima', 100, 5);
 select pg_temp.comprovativos('poucos', 10, 1);
-select is((sinais_financeiros(testes.u('muitos'), current_date - 1, current_date) ->> 'pontuacao')::int, 0,
+select is((sinais_financeiros(testes.u('muitos'), testes.hoje() - 1, testes.hoje()) ->> 'pontuacao')::int, 0,
           '2 rejeitados em 100 comprovativos (2 %) não pontuam');
-select is((sinais_financeiros(testes.u('acima'), current_date - 1, current_date) ->> 'pontuacao')::int, 9,
+select is((sinais_financeiros(testes.u('acima'), testes.hoje() - 1, testes.hoje()) ->> 'pontuacao')::int, 9,
           '5 em 100: pontuam os 3 acima dos 2 tolerados (3 × 3)');
-select is((sinais_financeiros(testes.u('poucos'), current_date - 1, current_date) ->> 'pontuacao')::int, 3,
+select is((sinais_financeiros(testes.u('poucos'), testes.hoje() - 1, testes.hoje()) ->> 'pontuacao')::int, 3,
           'com poucos comprovativos nada é tolerado: 1 rejeitado em 10 pontua');
 
 -- (d) Limpeza diária
@@ -103,7 +103,7 @@ insert into enderecos_cliente (cliente_id, ponto_entrega_id) values (testes.u('d
 with p2 as (insert into pedidos (cliente_id, ponto_entrega_id, itens) values (testes.u('dono_s'), testes.u('ponto_s'),
      jsonb_build_array(jsonb_build_object('cardapio_id', testes.u('mseg'), 'qtd', 1))) returning id) select testes.def('ped_s', id) from p2;
 select testes.def('ger_s', testes.funcionario('Gerente Seg', array['pedidos.gerir']));
-insert into turnos (data, funcionario_id, cozinha_id) values (current_date, testes.u('ger_s'), cozinha_padrao());
+insert into turnos (data, funcionario_id, cozinha_id) values (testes.hoje(), testes.u('ger_s'), cozinha_padrao());
 select testes.entrar_funcionario(testes.u('ger_s')); set local role authenticated;
 select mudar_estado_pedido(testes.u('ped_s'), 'cancelado', 'Acabou o gás', null, null);
 reset role; select testes.sair();
