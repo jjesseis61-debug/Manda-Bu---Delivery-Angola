@@ -74,6 +74,8 @@ describe('textoRegras (4.13)', () => {
     expect(regras[1]).toBe('O teu amigo ganha 500 Kz de desconto no primeiro pedido.');
     expect(regras[2]).toContain('a partir de 2.000 Kz');
     expect(regras[2]).toContain('Acima de 10.000 Kz por semana');
+    // A regra das contas falsas fica no fim, dita como garantia de justiça e não como ameaça
+    expect(regras.at(-1)).toBe('Para ser justo para todos, os ganhos de contas falsas ou de pedidos não pagos não contam.');
   });
 });
 
@@ -108,6 +110,7 @@ describe('mensagens de erro', () => {
   it('traduz os códigos do servidor', () => {
     expect(mensagemCodigo('proprio_codigo')).toBe('Não podes usar o teu próprio código.');
     expect(mensagemCodigo('limite_local')).toBe('Este convite já foi usado o número máximo de vezes nesta morada.');
+    expect(mensagemCodigo('sem_compra_propria')).toBe('Para levantar o saldo, faz primeiro um pedido teu (entregue e pago).');
     expect(mensagemErro({ message: 'item_indisponivel' })).toBe('Um dos pratos já não está disponível. Actualiza o carrinho.');
   });
   it('tem uma mensagem genérica para erros desconhecidos', () => {

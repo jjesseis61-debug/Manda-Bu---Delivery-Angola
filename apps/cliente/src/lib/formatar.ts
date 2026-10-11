@@ -80,8 +80,8 @@ export function textoRegras(p: Parametros): string[] {
     `Ganhas ${formatarKz(p.ganho_por_pedido)} por cada pedido dos amigos que convidares, durante ${p.duracao_dias} dias a contar do primeiro pedido deles. Não há limite de ganhos.`,
     `O teu amigo ganha ${formatarKz(p.desconto_indicado)} de desconto no primeiro pedido.`,
     `Levantas o saldo a partir de ${formatarKz(p.levantamento_minimo)} ou usas em refeições. Acima de ${formatarKz(p.limite_verificacao_semanal)} por semana, confirmamos os pedidos antes de pagar.`,
-    'Ganhos de contas falsas ou pedidos não pagos são anulados.',
     'Os teus ganhos podem aparecer na lista de destaques com um nome fictício. Podes sair da lista quando quiseres.',
+    'Para ser justo para todos, os ganhos de contas falsas ou de pedidos não pagos não contam.',
   ];
 }
 
@@ -108,6 +108,17 @@ export const nomeEstadoPedido: Record<EstadoPedido, string> = {
   estornado: 'Estornado',
 };
 
+/** Cor de cada estado, para um sinal visual na lista e no detalhe (sempre a par do texto, nunca só a cor) */
+export const corEstadoPedido: Record<EstadoPedido, string> = {
+  pendente: '#1565C0', // Recebido — azul
+  confirmado: '#00695C', // Confirmado — verde-azulado
+  em_preparacao: '#8A5A00', // Em preparação — âmbar
+  em_entrega: '#6A1B9A', // A caminho — roxo
+  entregue_pago: '#1E7D32', // Entregue — verde
+  cancelado: '#5F6368', // Cancelado — cinzento
+  estornado: '#5F6368', // Estornado — cinzento
+};
+
 export const nomeMetodo: Record<string, string> = {
   multicaixa_express: 'Multicaixa Express',
   unitel_money: 'Unitel Money',
@@ -130,6 +141,7 @@ const mensagens: Record<string, string> = {
   limite_local: 'Este convite já foi usado o número máximo de vezes nesta morada.',
   desconto_em_curso: 'O desconto já está num pedido em curso.',
   desconto_usado: 'O desconto de convite já foi usado.',
+  pedido_minimo: 'O desconto de convite é para pedidos a partir do valor mínimo.',
   // registo
   nome_invalido: 'Escreve o teu nome.',
   nif_obrigatorio: 'Para empresas, o NIF é obrigatório.',
@@ -139,7 +151,11 @@ const mensagens: Record<string, string> = {
   pedido_vazio: 'O carrinho está vazio.',
   item_indisponivel: 'Um dos pratos já não está disponível. Actualiza o carrinho.',
   opcao_invalida: 'Uma das opções escolhidas já não está disponível. Volta a montar o prato.',
-  opcoes_em_falta: 'Falta escolher uma opção obrigatória do prato.',
+  doses_esgotadas: 'Já não há doses suficientes de um dos pratos. Reduz a quantidade ou escolhe outro prato.',
+  item_sem_preco: 'Um dos pratos tem de ser montado (escolhe as opções) antes de o pedires.',
+  componentes_todos_excluidos: 'Não podes tirar todos os ingredientes de um prato.',
+  componentes_invalidos: 'Um dos ingredientes que tiraste já não faz parte do prato. Volta a montá-lo.',
+  opcoes_em_falta: 'Falta escolher uma opção obrigatória de um prato montado, ou já não há nenhuma disponível. Volta a montar o prato.',
   opcoes_a_mais: 'Escolheste opções a mais para um dos pratos.',
   posicao_invalida: 'Localização inválida.',
   pacotes_inactivos: 'Os pacotes não estão disponíveis neste momento.',
@@ -159,6 +175,10 @@ const mensagens: Record<string, string> = {
   // levantamentos (6.7)
   abaixo_minimo: 'O valor está abaixo do mínimo para levantar.',
   saldo_insuficiente: 'Não tens saldo suficiente.',
+  sem_compra_propria: 'Para levantar o saldo, faz primeiro um pedido teu (entregue e pago).',
+  prazo_terminado: 'Já passaram mais de 7 dias desde o pedido.',
+  texto_curto: 'Conta-nos um pouco mais sobre o que aconteceu.',
+  reclamacao_existente: 'Já enviaste uma reclamação sobre este pedido.',
   metodo_invalido: 'Escolhe Multicaixa Express ou Unitel Money.',
   numero_invalido: 'Número de telefone inválido.',
   token_invalido: 'Não foi possível activar as notificações.',
@@ -172,7 +192,11 @@ const mensagens: Record<string, string> = {
   grupo_fechado: 'Este grupo já fechou. Já não é possível juntar pedidos.',
   grupo_em_preparacao: 'O grupo já está a ser preparado e não pode ser cancelado.',
   funcionalidade_inactiva: 'Esta funcionalidade não está disponível.',
-  sem_permissao: 'Não tens permissão para isto.',
+  // atendimento
+  texto_invalido: 'Escreve a mensagem (até 1000 caracteres).',
+  limite_diario: 'Chegaste ao limite de mensagens de hoje. Tenta amanhã.',
+  sem_conversa: 'Escreve primeiro a tua pergunta.',
+  sem_permissao: 'Esta opção não está disponível na tua conta.',
 };
 
 /** Extrai o código de um erro do Supabase (mensagem = código) e devolve o texto para o cliente */

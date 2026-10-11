@@ -1,7 +1,9 @@
 -- Secção 13 · Ganho (testes 9 a 21)
 begin;
 \ir _helpers.psql
-select plan(30);
+select plan(31);
+-- os limites por local seguem os valores por defeito (a produção pode ter outros)
+update parametros set max_indicados_por_local = 3, max_descontos_por_local = 3, raio_mesmo_local_m = 25 where unico;
 
 select testes.funcionalidade('indicacao', true);
 select testes.def('ana', testes.cliente('Ana Indicadora'));
@@ -54,15 +56,16 @@ select results_eq(format($$select estado, motivo from ganhos_indicacao where ped
                   $$values ('anulado'::text, 'mesmo_dispositivo'::text)$$,
                   '13. mesmo dispositivo -> anulado / mesmo_dispositivo');
 
--- 14 e 15. Colegas de casa: 1.º a 3.º confirmados, 4.º em verificação
+-- 14 e 15. Amigos da mesma pessoa na mesma casa: 1.º a 3.º confirmados, 4.º em verificação
+-- (o 5.º morador, convidado por outra pessoa, não conta para o limite da Ana)
 select testes.def('casa', testes.ponto('residencial', -8.9000, 13.1500));
 select testes.def('casa_mesmo_predio', testes.ponto('residencial', -8.90012, 13.1500));
 select testes.def('outro', testes.cliente('Outro Indicador'));
 create temp table casa as
-select n, testes.indicado(case when n % 2 = 0 then testes.u('ana')::uuid else testes.u('outro')::uuid end,
+select n, testes.indicado(case when n <= 4 then testes.u('ana')::uuid else testes.u('outro')::uuid end,
                           'Morador ' || n) as cliente,
           null::uuid as pedido
-  from generate_series(1, 4) n;
+  from generate_series(1, 5) n;
 update casa set pedido = testes.pedido(cliente, case when n = 4 then testes.u('casa_mesmo_predio')::uuid
                                                      else testes.u('casa')::uuid end,
                                         'DISP-CASA-' || n);
@@ -73,6 +76,8 @@ select is((select count(*)::int from casa c join ganhos_indicacao g on g.pedido_
 select results_eq($$select g.estado, g.motivo from casa c join ganhos_indicacao g on g.pedido_id = c.pedido where c.n = 4$$,
                   $$values ('em_verificacao'::text, 'limite_local'::text)$$,
                   '15. 4.º indicado no mesmo local residencial -> em_verificacao / limite_local');
+select is((select g.estado from casa c join ganhos_indicacao g on g.pedido_id = c.pedido where c.n = 5), 'confirmado',
+          '15. vizinho do mesmo prédio convidado por outra pessoa -> confirmado (o limite é por quem convida)');
 
 -- 16. Mesmo número de levantamento -> em_verificacao / numero_pagamento_partilhado
 select testes.def('ind16', testes.cliente('Indicador Número'));

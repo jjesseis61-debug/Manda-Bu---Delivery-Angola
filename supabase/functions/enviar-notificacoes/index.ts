@@ -1,17 +1,22 @@
-// Envia a fila de notificações (clientes: N2–N11; equipa: N12) pelo serviço de push da Expo.
+// Envia a fila de notificações (clientes: N2–N11, N13, N14, N16; equipa: N12, N15, N17) pelo serviço de push da Expo.
 // A app do cliente e a do operador são projectos Expo diferentes: a Expo recusa um pedido
 // com tokens de projectos diferentes, por isso cada destino segue num pedido à parte.
 //
-// Chamada de minuto a minuto por pg_cron (agendar_envio_notificacoes). Só despacha
+// Chamada de minuto a minuto por pg_cron (agendar_envio). Só despacha
 // o que já está na fila: os textos e os destinatários vêm do servidor
 // (notificacoes_por_enviar) e os interruptores são respeitados lá.
 // Autenticação própria (a função é publicada sem verificação de JWT, porque o pg_cron
 // não tem sessão): o pedido tem de trazer o cabeçalho x-envio-segredo igual ao
-// segredo ENVIO_SEGREDO da função. Sem segredo configurado, recusa tudo.
+// segredo ENVIO_SEGREDO da função (se existir) ou ao segredo guardado na base de dados
+// (segredos_servidor, confirmado por segredo_envio_valido; é o que o cron de agendar_envio manda).
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
+const EXPO_RECIBOS_URL = 'https://exp.host/--/api/v2/push/getReceipts';
 const LOTE_EXPO = 100;
+const LOTE_RECIBOS = 1000;
+// Erros do Expo que significam "este token já não serve" (app desinstalada, projecto errado)
+const TOKEN_MORTO = new Set(['DeviceNotRegistered', 'MismatchSenderId', 'InvalidCredentials']);
 
 type Pendente = {
   id: string;
@@ -24,20 +29,60 @@ type Pendente = {
 };
 
 type Mensagem = { to: string; title: string; body: string; sound: 'default'; data: Record<string, unknown> };
-type Bilhete = { status: 'ok' | 'error'; details?: { error?: string } };
+type Bilhete = { status: 'ok' | 'error'; id?: string; details?: { error?: string } };
+type Recibo = { status: 'ok' | 'error'; details?: { error?: string } };
+
+/** 2.ª fase: consulta os receipts dos envios já feitos e desactiva os tokens que falharam a
+ *  entrega. Devolve quantos tokens foram desactivados. Nunca lança: uma falha aqui não deve
+ *  travar o envio do minuto seguinte. */
+async function verificarRecibos(supabase: ReturnType<typeof createClient>): Promise<number> {
+  const { data, error } = await supabase.rpc('recibos_por_verificar', { p_limite: 300 });
+  if (error) return 0;
+  const recibos = (data ?? []) as { id: string; ticket_id: string; token: string }[];
+  if (recibos.length === 0) return 0;
+
+  const porTicket = new Map<string, { id: string; token: string }>();
+  for (const r of recibos) porTicket.set(r.ticket_id, { id: r.id, token: r.token });
+
+  const ids = [...porTicket.keys()];
+  const idsProcessados: string[] = [];
+  const invalidos: string[] = [];
+  for (let i = 0; i < ids.length; i += LOTE_RECIBOS) {
+    const chunk = ids.slice(i, i + LOTE_RECIBOS);
+    const resposta = await fetch(EXPO_RECIBOS_URL, {
+      method: 'POST',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: chunk }),
+    });
+    if (!resposta.ok) break; // tenta no próximo minuto; o que ficou por verificar continua na tabela
+    const corpo = (await resposta.json()) as { data?: Record<string, Recibo> };
+    for (const [ticketId, recibo] of Object.entries(corpo.data ?? {})) {
+      const r = porTicket.get(ticketId);
+      if (!r) continue;
+      idsProcessados.push(r.id);
+      if (recibo.status === 'error' && recibo.details?.error && TOKEN_MORTO.has(recibo.details.error)) {
+        invalidos.push(r.token);
+      }
+    }
+  }
+  const r = await supabase.rpc('concluir_recibos', { p_ids: idsProcessados, p_tokens_invalidos: [...new Set(invalidos)] });
+  return (r.data as number | null) ?? 0;
+}
 
 Deno.serve(async (req) => {
-  const segredo = Deno.env.get('ENVIO_SEGREDO');
-  if (!segredo) {
-    return Response.json({ erro: 'segredo_nao_configurado' }, { status: 503 });
-  }
-  if (req.headers.get('x-envio-segredo') !== segredo) {
-    return Response.json({ erro: 'nao_autorizado' }, { status: 401 });
-  }
-
   const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
     auth: { persistSession: false },
   });
+
+  const recebido = req.headers.get('x-envio-segredo') ?? '';
+  const segredo = Deno.env.get('ENVIO_SEGREDO');
+  const autorizado =
+    recebido !== '' &&
+    ((!!segredo && recebido === segredo) ||
+      (await supabase.rpc('segredo_envio_valido', { p_segredo: recebido })).data === true);
+  if (!autorizado) {
+    return Response.json({ erro: 'nao_autorizado' }, { status: 401 });
+  }
 
   const { data, error } = await supabase.rpc('notificacoes_por_enviar', { p_limite: 200 });
   if (error) {
@@ -45,7 +90,14 @@ Deno.serve(async (req) => {
   }
   const pendentes = (data ?? []) as Pendente[];
   if (pendentes.length === 0) {
-    return Response.json({ enviadas: 0, mensagens: 0, tokens_desactivados: 0 });
+    // Mesmo sem envios novos, há receipts de envios anteriores para confirmar
+    let d = 0;
+    try {
+      d = await verificarRecibos(supabase);
+    } catch {
+      // tenta no próximo minuto
+    }
+    return Response.json({ enviadas: 0, mensagens: 0, tokens_desactivados: d });
   }
 
   const mensagensDe = (n: Pendente): Mensagem[] =>
@@ -115,16 +167,30 @@ Deno.serve(async (req) => {
       mensagens += lote.mensagens.length;
 
       const corpo = (await resposta.json()) as { data?: Bilhete[] };
-      const invalidos = (corpo.data ?? [])
-        .map((bilhete, j) =>
-          bilhete.status === 'error' && bilhete.details?.error === 'DeviceNotRegistered' ? lote.mensagens[j].to : null,
-        )
-        .filter((t): t is string => t !== null);
+      const invalidos: string[] = [];
+      const recibosNovos: { ticket_id: string; token: string }[] = [];
+      (corpo.data ?? []).forEach((bilhete, j) => {
+        const token = lote.mensagens[j]?.to;
+        if (!token) return;
+        if (bilhete.status === 'error' && bilhete.details?.error === 'DeviceNotRegistered') {
+          invalidos.push(token); // a Expo já sabe na hora que não serve
+        } else if (bilhete.status === 'ok' && bilhete.id) {
+          recibosNovos.push({ ticket_id: bilhete.id, token }); // confirma-se no receipt (uns min depois)
+        }
+      });
       if (invalidos.length > 0) {
         const r = await supabase.rpc('desactivar_tokens_push', { p_tokens: invalidos });
         desactivados += (r.data as number | null) ?? 0;
       }
+      if (recibosNovos.length > 0) {
+        await supabase.rpc('registar_recibos_push', { p_recibos: recibosNovos });
+      }
     }
+
+    // 2.ª fase: confirma os receipts dos envios já feitos e desactiva os tokens que falharam a
+    // entrega (DeviceNotRegistered, etc.). O Expo só tem o receipt uns minutos depois, por isso
+    // só se verificam os tickets com idade suficiente (recibos_por_verificar).
+    desactivados += await verificarRecibos(supabase);
   } catch (e) {
     return Response.json({ erro: (e as Error).message, enviadas, mensagens }, { status: 500 });
   }

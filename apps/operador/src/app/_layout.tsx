@@ -37,7 +37,18 @@ export default function LayoutRaiz() {
         <Stack.Screen name="painel" options={{ title: 'Painel do programa' }} />
         <Stack.Screen name="verificacao" options={{ title: 'Verificação' }} />
         <Stack.Screen name="levantamentos" options={{ title: 'Levantamentos' }} />
+        <Stack.Screen name="caixa" options={{ title: 'Caixa' }} />
+        <Stack.Screen name="conferencia" options={{ title: 'Conferência' }} />
+        <Stack.Screen name="reclamacoes" options={{ title: 'Reclamações' }} />
+        <Stack.Screen name="analista" options={{ title: 'Analista' }} />
+        <Stack.Screen name="vigilancia" options={{ title: 'Vigilância do Convida' }} />
+        <Stack.Screen name="turno" options={{ title: 'Gerente de turno' }} />
+        <Stack.Screen name="compras" options={{ title: 'Stock e compras' }} />
+        <Stack.Screen name="atendimento" options={{ title: 'Atendimento' }} />
+        <Stack.Screen name="estimulos" options={{ title: 'Estímulos do mês' }} />
+        <Stack.Screen name="pedido/[id]" options={{ title: 'Histórico do pedido' }} />
         <Stack.Screen name="pacotes" options={{ title: 'Pacotes do mês' }} />
+        <Stack.Screen name="zonas" options={{ title: 'Zonas de entrega' }} />
         <Stack.Screen name="embaixadores" options={{ title: 'Embaixadores' }} />
         <Stack.Screen name="parametros" options={{ title: 'Parâmetros e interruptores' }} />
         <Stack.Screen name="cozinhas/index" options={{ title: 'Cozinhas' }} />

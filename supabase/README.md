@@ -30,6 +30,42 @@ Aplicadas por esta ordem. **Uma migração já aplicada nunca se edita:** qualqu
 | `20261002074833_crescimento_i12_pacotes.sql` | I12: pacotes mensais pré-pagos. `pacotes` (catálogo, escrita com `pacotes.gerir`) e `adesoes_pacote` (só servidor, condições copiadas na adesão); `pedidos.pago_pacote`/`refeicoes_pacote`; `aderir_pacote`, `cancelar_adesao_pacote`, `usar_pacote`, `pausar_pacote`, `meu_pacote`, `pacotes_a_minha_volta` (prova social a partir de `contador_minimo`); `confirmar_pagamento_pacote`, `reembolsar_pacote`, `adesoes_operador`. Parcela "Pacote" nas vendas; as refeições voltam ao pacote se o pedido for cancelado; o saldo do Convida e Ganha não passa o que falta pagar depois do pacote. Interruptor `pacotes`. | aplicada |
 | `20261002081819_crescimento_i12_avisos_pacotes.sql` | I12: avisos dos pacotes. N13 (pagamento confirmado), N14 (restam 3 refeições ou menos; e 3 dias antes do fim, pelo job diário `job_n14_pacotes`, agendado em `agendar_jobs` às 8h UTC) e N15 (nova adesão, à equipa com `pacotes.gerir`, via `funcionarios_com_permissao`). Só com o interruptor `pacotes`. | aplicada |
 | `20261002083722_crescimento_i9_opcoes_stock.sql` | I9: `opcoes.componentes` (ingredientes de cada opção, por unidade do prato); `consumir_stock_venda` junta-os à receita do prato na venda gerada do pedido (o mesmo produto soma-se; mesmas regras de conversão e de avisos; um ingrediente mal escrito não trava a entrega). | aplicada |
+| `20261002165956_fotos_pratos.sql` | Fotos dos pratos e das cozinhas: bucket público `fotos-pratos` (até 5 MB, JPEG/PNG/WebP); só `cozinhas.gerir` envia, troca ou apaga, e só em `pratos/<id do prato>/…` ou `cozinhas/<id da cozinha>/…`. O endereço público fica em `cardapio.foto_url` / `cozinhas.foto_url`. | aplicada |
+| `20261003060218_zonas_gestao.sql` | Zonas de entrega geridas pela app do operador: `plataforma.parametros` cria, edita e apaga zonas (com auditoria); um ponto de entrega criado pelo cliente tem de ter zona. Sem zonas, nenhum cliente conseguia guardar endereços. | aplicada |
+| `20261003104438_caixa_gestao.sql` | Caixa na app do operador: `abrir_caixa`, `registar_sangria`, `resumo_caixa` e `fechar_caixa` (com `vendas.registar` na cozinha). Uma caixa aberta por posto; o esperado soma a parcela Dinheiro das vendas e os pacotes pagos na loja, menos as sangrias; o fecho guarda o contado e a diferença e a caixa fechada não muda. | aplicada |
+| `20261003110912_avisos_pedidos_envio.sql` | N16 (estado do pedido ao cliente: confirmado, saiu, entregue, cancelado pela cozinha) e N17 (pedido novo à equipa da cozinha). Liga `pg_cron` e `pg_net`, guarda o segredo do envio em `segredos_servidor` (só o servidor) e `agendar_envio(url)` agenda a função `enviar-notificacoes` de minuto a minuto. Fecha `rls_auto_enable` à API. | aplicada; `agendar_jobs()` e `agendar_envio(...)` corridos |
+| `20261003122759_relatorios_semana.sql` | Encontrado na simulação de uma semana: o "prato mais pedido" agrupava tudo quando os pratos não têm ficha técnica (agora agrupa pelo prato do cardápio); as métricas por turno só contavam entregas com hora prometida (agora contam todas; "a horas" continua só sobre as que a têm). | aplicada |
+| `20261003123551_hora_entrega_estimada.sql` | Cada pedido fica com `hora_prometida` definida pelo servidor: pedido normal = hora do pedido + `parametros.tempo_entrega_min` (45 min, ajustável de 10 a 240); pedido de grupo = hora de entrega do grupo. O cliente vê "Entrega prevista" e as entregas a horas passam a ser medidas. | aplicada |
+| `20261003143204_indicacao_mesmo_local_rapido.sql` | Encontrado no teste de 6 meses: o limite "indicados no mesmo local" percorria todos os ganhos de indicação e calculava a distância a cada um, por isso cada entrega de um amigo indicado ficava mais lenta à medida que o programa crescia (o mesmo no limite de descontos por local). Agora usa `pontos_entrega_proximos(ponto)`: caixa de coordenadas com índice e depois a distância exacta — o mesmo resultado que `mesmo_ponto_entrega`. O semestre simulado passou de mais de 60 s para 29 s no Supabase. | aplicada |
+| `20261003152851_seguranca_pagamentos.sql` | Análise de fraude: (1) o limite "mesmo local" conta só os amigos **da mesma pessoa** (vizinhos de prédio convidados por pessoas diferentes já não se bloqueiam); (2) levantar o dinheiro das indicações exige um pedido próprio entregue e pago (`sem_compra_propria`); (3) desconto de convite só a partir de `parametros.desconto_subtotal_minimo` (2 000 Kz; 0 desliga; o orçamento devolve `pedido_minimo`); (4) pagamentos electrónicos na entrega (Multicaixa Express, TPA, Unitel Money, Transferência) exigem referência e foto do comprovativo (bucket privado `comprovativos`, tabela `comprovativos_pagamento`, referência única por método), e o gerente confere ou rejeita cada um (`conferir_comprovativo`) antes de `fechar_caixa`; formas de pagamento fora da lista são recusadas. | aplicada |
+| `20261003170433_conferencia_ia.sql` | Conferência financeira: leitura automática (Claude) da foto de cada comprovativo (`ia_estado`: confere / diverge / ilegível / indisponível — só um aviso; o gerente confere sempre); extratos do banco, Multicaixa ou Unitel Money (bucket privado `extratos`, tabelas `extratos` e `extrato_movimentos`) lidos automaticamente ou escritos à mão; conciliação (referência, ou valor e data ±2 dias) com comprovativos sem extrato e entradas sem comprovativo; `fecho_diario`, `fecho_mensal` (com sinais por funcionário) e `historico_pedido` (quem fez cada passo). Permissão nova `financas.conferir`. | aplicada |
+| `20261003172236_alertas_pedidos.sql` | Alertas dos pedidos (job `mb_alertas_pedidos`, de minuto a minuto): por confirmar há mais de `alerta_confirmacao_min` (7) → N18 aos gerentes da cozinha e ao administrador principal; passou a hora prometida há mais de `alerta_atraso_min` (5) → N19 aos gerentes e ao estafeta e N20 ao cliente. `informar_atraso` (gerente da cozinha ou estafeta que leva o pedido) diz ao cliente o motivo e a nova estimativa; `alertas_abertos` para o ecrã das entregas. Tabela `alertas_pedido` (um por pedido e tipo), tudo na auditoria. | aplicada |
+| `20261003201550_reclamacoes.sql` | Reclamações: avaliação com até `reclamacao_estrelas_max` (2) estrelas ou o botão "Tenho uma reclamação" no pedido (`fazer_reclamacao`, até 7 dias, uma por pedido). N21 aos gerentes; `factos_reclamacao` junta horas, atraso real, alertas, itens e histórico do cliente (sem nomes) para a análise automática; `reclamacoes_lista`, `decidir_reclamacao` (resposta N22 e compensação) e `relatorio_reclamacoes` (por motivo, cozinha, estafeta e acerto da análise). O cliente só vê texto, estado e resposta (`minhas_reclamacoes`). | aplicada |
+| `20261003201735_estimulos_mensais.sql` | Estímulos mensais (Albert Bandura): `metricas_funcionario` (entregas, % a horas, estrelas, vendas ao balcão, confirmações, reclamações com razão, comprovativos rejeitados) e `metricas_cliente`; `gerar_estimulos` compara cada pessoa consigo própria, dá uma meta próxima, o melhor registo da equipa como modelo e o bónus sugerido só se a meta anterior foi atingida (`estimulo_bonus_meta`, `estimulo_premio_cliente`, `estimulo_top_clientes`). `decidir_estimulo` (o administrador aprova, edita bónus e mensagem) → N23. `reservar_analises` / `registar_analise_reclamacao` / `registar_mensagem_estimulo` para a Edge Function `analisar-ia`; `agendar_analises(url)`. | aplicada; `agendar_analises(...)` corrido |
+| `20261003201823_avisos_reclamacoes_estimulos.sql` | Textos e validade de N21 a N23; job `mb_estimulos_mensais` (dia 1, 07:00 de Luanda) gera as propostas do mês que acabou. | aplicada |
+| `20261003204853_investigacoes.sql` | Agente investigador financeiro: `sinais_financeiros` (rejeitados, fotos que não conferem, pagamentos sem extrato, caixas com diferença → pontos), `abrir_investigacoes` (quem tem `financas.conferir`; job no dia 3 para o mês anterior), `casos_investigacao_lista`, `decidir_caso` e `investigar_de_novo` (nunca sobre o próprio caso). Ferramentas do agente só de leitura e só do serviço (`agente_comprovativos`, `agente_caixas`, `agente_historico_pedido` sem nome do cliente, `agente_entradas_parecidas`, `agente_referencia`, `agente_equipa`); `registar_investigacao` guarda o dossiê e os passos, com auditoria como "Agente Claude". `historico_pedido` passa a usar `historico_pedido_dados`. Interruptor `agente_investigador` (desligado). | aplicada; `agendar_investigacoes(...)` corrido |
+| `20261003204944_avisos_investigacoes.sql` | N24 (risco alto) a quem confere as finanças, nunca ao investigado; job `mb_investigacoes` (dia 3, 07:00 de Luanda). | aplicada |
+| `20261003210258_analista.sql` | Analista do administrador: permissão `analista.usar`; `perguntar_analista` (limite `analista_perguntas_dia`, 30), `pedir_relatorio_analista` (um por mês; job no dia 2), `perguntas_analista_lista` (cada um vê as suas e os relatórios). Ferramentas agregadas, só de leitura, só do serviço e sem nomes de clientes: `analista_vendas` (agrupadas por dia, semana, mês, cozinha, zona, hora ou dia da semana), `analista_pratos`, `analista_clientes`, `analista_operacao`, `analista_satisfacao`, `analista_equipa`, `analista_financas`. `metricas_funcionario` passa a usar `metricas_funcionario_periodo`. Interruptor `agente_analista` (desligado). | aplicada; `agendar_analista(...)` corrido |
+| `20261003210348_avisos_analista.sql` | N25 (relatório do mês pronto) a quem usa o analista; job `mb_relatorio_analista` (dia 2, 07:00 de Luanda). | aplicada |
+| `20261003212809_vigilancia_convida.sql` | Vigilante do Convida e Ganha: `aparelhos_contas` (histórico, só com o hash do token, de que contas usaram cada telemóvel; trigger em `dispositivos_push`); `sinais_convida` (mesmo telemóvel em várias contas, levantamento para o número de um indicado, só o pedido do desconto, muitos no mesmo dia, mesmo local, ganhos anulados → pontos; `vigilancia_pontuacao_min` 4); `abrir_vigilancia` (quem tem `indicacoes.verificar`; job à segunda-feira para as últimas 4 semanas), `casos_convida_lista`, `decidir_caso_convida`, `vigiar_de_novo`. Ferramentas só de leitura e do serviço, sem nomes nem telefones (`vig_indicados`, `vig_pedidos_indicado`, `vig_levantamentos`, `vig_rede`, `vig_comparar`). Interruptor `agente_vigilante` (desligado). | aplicada; `agendar_vigilancia(...)` corrido |
+| `20261003213144_avisos_vigilancia.sql` | N26 (risco alto) a quem verifica os ganhos, com o código do indicador; job `mb_vigilancia` (segunda-feira, 06:30 de Luanda). | aplicada |
+| `20261003215915_gerente_turno.sql` | Gerente de turno: `propostas_turno` (avisar o cliente de um atraso, confirmar, pausar um prato, reforço de estafetas, nota; caducam em 30 minutos; não se repetem enquanto pendentes) e `turno_analises`; `situacao_turno` (fila, atrasos, estafetas de turno, pratos e vendas do dia, sem nomes de clientes) e `turno_precisa_atencao` (só então se chama o Claude); `reservar_turno` (nas horas `turno_hora_inicio`–`turno_hora_fim`, cada cozinha no máximo de 5 em 5 minutos), `registar_propostas_turno` (valida cada proposta), `propostas_turno_lista` e `decidir_proposta_turno` (ao aceitar, a acção corre com as permissões do gerente: `informar_atraso`, `mudar_estado_pedido` ou pausa do prato com auditoria). Interruptor `agente_turno` (desligado). | aplicada; `agendar_turno(...)` corrido |
+| `20261003223842_avisos_turno.sql` | N27 (sugestões do gerente de turno) aos gerentes da cozinha; caduca em 30 minutos. | aplicada |
+| `20261004041451_stock_compras.sql` | Agente de stock e compras: `planos_compras` (um plano automático por cozinha e por dia, ou pedido na app com `stock.gerir`, até `compras_pedidos_dia` por dia); ferramentas só de leitura e do serviço, sem dados de clientes (`stk_saldos` com consumo, cobertura em dias e validades ainda em stock por FIFO aproximado; `stk_consumo_diario`; `stk_precos` por fornecedor; `stk_compras_diarias`; `stk_reconciliacao` enviado − devolvido − quebra − consumido; `stk_procura`); `registar_plano_compras` valida cada compra e alerta e avisa com o N28; `marcar_compra` (comprado/ignorado/pendente, com auditoria). Nada é escrito no stock. Interruptor `agente_compras` (desligado). | aplicada; `agendar_compras(...)` corrido |
+| `20261004041603_avisos_compras.sql` | N28 (compras para hoje ou alertas graves) a quem trata do stock da cozinha, vale 24 horas; job `mb_planos_compras` (todos os dias, 06:15 de Luanda). | aplicada |
+| `20261004043207_atendimento.sql` | Atendimento ao cliente: `conversas_atendimento` e `mensagens_atendimento` (o cliente lê só as suas; quem tem a permissão nova `atendimento.responder` lê todas); `enviar_mensagem_atendimento` (sessão de cliente, até `atendimento_mensagens_dia` por dia), `minha_conversa_atendimento`, `pedir_pessoa_atendimento`; ferramentas só de leitura e do serviço, sempre da conversa reservada (`atd_pedidos`, `atd_conta` sem apelido nem telefone, `atd_informacoes`); `reservar_atendimento` (não reserva duas vezes enquanto o agente responde) e `registar_atendimento` (três erros ou sem chave = passa para uma pessoa); `conversas_atendimento_lista`, `conversa_atendimento` (telefone só com `clientes.gerir`), `responder_atendimento` (N30) e `mudar_conversa_atendimento` (devolver ao agente ou fechar, com auditoria). Interruptor `agente_atendimento` (desligado). | aplicada; `agendar_atendimento(...)` corrido |
+| `20261004043300_avisos_atendimento.sql` | N29 (a conversa precisa de uma pessoa, com o primeiro nome e o motivo; vale 24 horas, não se repete em 10 minutos) a quem tem `atendimento.responder`; N30 (resposta de uma pessoa) ao cliente. | aplicada |
+| `20261004052612_contactos.sql` | Contactos públicos: gerais em `parametros` (`contacto_telefone`, `contacto_whatsapp`, `contacto_email`, `contacto_horario`, `contacto_morada`, editados em Parâmetros com `alterar_parametros`) e de cada cozinha (`telefone_publico`, `whatsapp_publico`, `horario_publico`, com `cozinhas.gerir`), validados no servidor; `contactos()` (só com sessão) devolve só estes campos, sem cozinhas inactivas ou sem contactos; `atd_informacoes` passa a incluí-los. | aplicada |
+| `20261004055108_componentes_cliente.sql` | Pratos montáveis (regras 1 e 2): o cliente tira ingredientes da receita e não paga o que tirou; `valor_componente` (custo × margem × IVA, proporcional à quantidade; 0 sem custo), `componentes_dos_pratos` (o que a app mostra, sem custos nem margens), `excluir_componentes` (da receita, sem repetir, sem tirar todos); `orcamento_pedido` desconta-os, põe "sem ..." no nome e deixa de aceitar ajustes de quantidade da app. O preço do cardápio pode ser 0 quando vem das opções; um item a 0 Kz sem opções é recusado (`item_sem_preco`). | aplicada |
+| `20261004064855_doses_categorias.sql` | Doses do dia: `cardapio.doses_dia` (null = sem limite) e `doses_definidas_em`; `doses_restantes` (lançadas − pedidos desde então, sem cancelados; só no dia), `doses_cardapio` para as apps; o pedido da app trava o prato e recusa se não houver doses (`doses_esgotadas`), e o orçamento já avisa. Categorias: o trigger `trg_0_normalizar` tira espaços, põe a primeira letra maiúscula e usa a grafia que a cozinha já tem; as existentes foram corrigidas. | aplicada |
+| `20261004081002_textos_bandura.sql` | Textos das notificações revistos à luz de Albert Bandura: N4 (o sucesso primeiro, a verificação como procedimento), N5 (objectivo pequeno: "basta um colega pedir"), N16 cancelado (desculpa, não se cobra nada, passo seguinte), N24 e N26 sem rótulos de "risco alto" (factos a confirmar, a decisão é humana). | aplicada |
+| `20261004082348_cancelamento_justificado.sql` | Cancelamento pela cozinha com uma justificação séria: `pedidos.cancelado_por` (cliente ou cozinha, preenchido por trigger); `frase_motivo_cancelamento` (cada motivo da lista da app do operador tem a sua frase; outro texto é arrumado); `justificacao_cancelamento(pedido, curta)` diz o prato, o motivo, que não há nada a pagar e se o pacote ou o saldo foram devolvidos; a N16 leva a versão curta e o ecrã do pedido a completa (o cliente só lê a dos seus pedidos). | aplicada |
+| `20261004105828_rls_rapida.sql` | Regras de acesso rápidas com muitos dados (teste de 12 meses): nas 93 regras, as funções da sessão (`cliente_actual`, `e_funcionario`, `funcionario_actual`, `e_administrador`, `auth.uid`, `tem_permissao`/`funcionalidade_activa` com texto fixo) passam a ir dentro de `(select …)`, calculadas uma vez por consulta e não por linha. Um cliente com 71 mil pedidos na base: 8,6 s → 0,05 s. | aplicada |
+| `20261004105853_relatorio_cozinha_rapido.sql` | `relatorio_cozinha`: a retenção usa o último pedido de cada cliente em vez de comparar com todos os pedidos (mesmo resultado; um ano: 12,8 s → 0,19 s). | aplicada |
+| `20261004105901_investigador_taxa_rejeicao.sql` | `sinais_financeiros`: os comprovativos rejeitados contam acima de 2 % dos comprovativos do período (`rejeitados_tolerados`); com poucos comprovativos nada é tolerado. Agosto simulado: 14 → 2 casos. | aplicada |
+| `29991231000004_limpeza_dados.sql` | `limpar_dados()` diária (03:45): remove as notificações enviadas/descartadas há mais de 90 dias e a auditoria com mais de 2 anos (a única excepção à auditoria imutável); agenda o job `mb_limpeza_dados`. | **por aplicar** (a ferramenta recusa aplicar migrações que agendam pg_cron; aplicar pelo SQL Editor) |
+| `20261004123008_justificacao_so_dono.sql` | Teste de segurança: `justificacao_cancelamento` só para o dono. Antes, uma sessão autenticada sem cliente (ou de outro cliente) podia lê-la sabendo o id; agora bloqueia-se qualquer sessão `authenticated` que não seja o dono, deixando passar só o envio (serviço) que mantém o texto da N16. | aplicada |
+| `20261004124405_anon_sem_menu.sql` | Teste de segurança (arrumação): revoga ao papel anónimo as concessões que restavam nas 5 tabelas do menu (cardapio, opcoes, opcoes_grupos, pacotes, cozinhas_localizacao), alinhando com o resto do esquema. Não muda o comportamento (o anónimo já não lia nada). | aplicada |
 
 Os números de versão dos ficheiros são os que o Supabase registou ao aplicar, para `supabase migration list` e
 `supabase db push` não voltarem a aplicá-las.
@@ -54,6 +90,14 @@ Os jobs respeitam os interruptores: com tudo desligado não enfileiram nada.
 | Função | O que faz | Configuração |
 |---|---|---|
 | `functions/enviar-notificacoes` | Envia a fila (clientes N2–N11; equipa N12) pelo push da Expo, um pedido por app (a Expo recusa tokens de projectos diferentes no mesmo pedido); desactiva tokens rejeitados; marca como enviadas | Publicada sem verificação de JWT, com autenticação própria: segredo `ENVIO_SEGREDO` (obrigatório) no cabeçalho `x-envio-segredo`. Agendar com `select agendar_envio_notificacoes('<url da função>', '<segredo>');` depois de activar `pg_cron` e `pg_net`. |
+| `functions/vigiar` | Vigilante do Convida e Ganha: o Claude investiga um indicador com sinais (indicados, pedidos, levantamentos, rede, comparação) e entrega um dossiê | Publicada sem verificação de JWT, com o mesmo segredo do envio. Usa o `ANTHROPIC_API_KEY`. Agendada com `select agendar_vigilancia('<url da função>');` (de 5 em 5 minutos). Só trabalha com o interruptor `agente_vigilante` ligado |
+| `functions/turno` | Gerente de turno: de 5 em 5 minutos, quando uma cozinha tem algo a pedir atenção, o Claude (modelo mais leve) lê a situação, pode abrir o histórico de um pedido e propõe acções ao gerente | Publicada sem verificação de JWT, com o mesmo segredo do envio. Usa o `ANTHROPIC_API_KEY`. Agendada com `select agendar_turno('<url da função>');` (de 5 em 5 minutos). Só trabalha com o interruptor `agente_turno` ligado e nas horas de serviço |
+| `functions/compras` | Agente de stock e compras: o Claude lê os saldos, o consumo, os preços, as compras do dia, a reconciliação e a procura e entrega o plano de compras com alertas | Publicada sem verificação de JWT: pelo pg_cron (segredo) prepara o plano mais antigo; pela app só o plano indicado (`plano_id`). Usa o `ANTHROPIC_API_KEY`. Agendada com `select agendar_compras('<url da função>');` (de 5 em 5 minutos). Só trabalha com o interruptor `agente_compras` ligado |
+| `functions/atendimento` | Atendimento ao cliente: o Claude (modelo mais leve) responde na conversa com os pedidos e a conta desse cliente e a informação pública, e passa a uma pessoa quando é preciso | Publicada sem verificação de JWT: pelo pg_cron (segredo) responde à conversa mais antiga; pela app só à conversa indicada (`conversa_id`) e só se tiver uma mensagem à espera. Usa o `ANTHROPIC_API_KEY`; sem ele, a conversa passa para uma pessoa. Agendada com `select agendar_atendimento('<url da função>');` (de minuto a minuto). Só trabalha com o interruptor `agente_atendimento` ligado |
+| `functions/analista` | Analista do administrador: responde às perguntas da app e faz o relatório mensal, escolhendo as ferramentas de números agregados | Publicada sem verificação de JWT: pelo pg_cron (segredo) responde à mais antiga; pela app só à pergunta indicada (`pergunta_id`). Usa o `ANTHROPIC_API_KEY`. Agendada com `select agendar_analista('<url da função>');` (de minuto a minuto). Só trabalha com o interruptor `agente_analista` ligado |
+| `functions/investigar` | Agente investigador financeiro: o Claude usa ferramentas só de leitura em vários passos e entrega um dossiê (risco, factos, explicações possíveis, perguntas) | Publicada sem verificação de JWT, com o mesmo segredo do envio. Usa o `ANTHROPIC_API_KEY`. Agendada com `select agendar_investigacoes('<url da função>');` (de 5 em 5 minutos, um caso por execução). Só trabalha com o interruptor `agente_investigador` ligado |
+| `functions/analisar-ia` | Analisa com o Claude as reclamações (categoria, gravidade, se os factos dão razão, resposta sugerida) e escreve a mensagem pessoal dos estímulos (Bandura) | Publicada sem verificação de JWT, com o mesmo segredo do envio. Usa o mesmo `ANTHROPIC_API_KEY`; sem ele o gerente decide sem análise e usa-se o texto base. Agendada com `select agendar_analises('<url da função>');` (de 2 em 2 minutos) |
+| `functions/ler-documentos` | Lê com o Claude as fotos dos comprovativos (valor, referência, data) e os extratos (entradas do período); o servidor compara e concilia | Publicada sem verificação de JWT, com o mesmo segredo do envio (`x-envio-segredo`). Segredo `ANTHROPIC_API_KEY` nas Edge Functions; sem ele fica tudo para a conferência à mão. Agendada com `select agendar_leitura('<url da função>');` |
 
 ## Testes
 
@@ -92,6 +136,28 @@ base de dados.
 | `28_pacotes.test.sql` | I12: interruptor, adesão pendente e única, cliente sem escrita, permissão, referência, validade, valor pago (até ao valor da refeição + entrega), idempotência, a pagar na entrega, parcela Pacote, soma das parcelas, devolução no cancelamento, poupança, pausa, prova social, reembolso, pagamento na loja com caixa |
 | `29_avisos_pacotes.test.sql` | I12: N15 só a quem tem `pacotes.gerir`, N13 no pagamento, N14 ao ficar com 3 refeições (uma vez) e a 3 dias do fim (uma vez), textos, envio só com o interruptor ligado, funções internas fechadas |
 | `30_opcoes_stock.test.sql` | I9: receita + opções (o mesmo produto soma-se), stock diário sem movimento, só receita sem opções, prato sem receita só com opções, unidade desconhecida pendente, ingrediente mal escrito não trava a entrega, formato da lista |
+| `31_fotos_pratos.test.sql` | Bucket público de 5 MB; `cozinhas.gerir` envia fotos de pratos e cozinhas e apaga; prato inexistente, pasta ou extensão errada recusados; sem permissão não envia nem apaga; o cliente vê mas não envia |
+| `32_zonas_gestao.test.sql` | `plataforma.parametros` cria e altera zonas (auditadas); sem a permissão, nem o caixa nem o cliente criam; ponto do cliente sem zona recusado, com zona aceite; zona apagada deixa de aparecer |
+| `34_avisos_pedidos.test.sql` | N17 só à equipa da cozinha do pedido, com pratos, bairro e total; N16 em confirmado, saiu e entregue (não em preparação); a cliente que cancela não é avisada, a cozinha que cancela avisa com o motivo; seguem sem interruptor e caducam em 2 h; pedidos de grupo não geram N17; o segredo do envio só o service_role confirma |
+| `35_relatorios_semana.test.sql` | Prato mais pedido sem ficha técnica = o prato do cardápio com mais unidades; métricas de turno contam todas as entregas e a percentagem a horas só sobre as que tinham hora prometida |
+| `36_hora_entrega_estimada.test.sql` | 45 min por defeito; pedido normal + 45 min (a hora mandada pelo telemóvel é ignorada); pedido de grupo = hora do grupo; a direcção ajusta; fora de 10–240 recusado |
+| `37_indicacao_mesmo_local.test.sql` | pontos próximos = exactamente os de `mesmo_ponto_entrega` (400 pontos ao acaso); 24 m conta e 26 m não; outro tipo de local não conta; o raio segue o parâmetro; a função não está na API |
+| `38_seguranca_pagamentos.test.sql` | quem envia a foto do comprovativo; sem referência, sem foto ou com a foto de outro pedido → recusado; método inventado recusado; referência repetida recusada; resumo da caixa com os comprovativos; fecho bloqueado até conferir; rejeitar exige nota; levantamento sem compra própria recusado; desconto abaixo do mínimo; limite por morada contado por quem convida |
+| `39_conferencia_ia.test.sql` | reserva da leitura (sem ler duas vezes); confere / diverge / 3 falhas → indisponível; só o serviço regista leituras; extrato: permissões, ficheiro uma vez, leitura e conciliação por referência e por valor; entradas à mão, ligação única, apagar com motivo; fecho do dia (avisos com quem registou) e do mês (por funcionário); histórico do pedido e quem o pode ver |
+| `40_alertas_pedidos.test.sql` | job dá cada alerta uma vez; N18 só aos gerentes da cozinha do pedido, com quem, o quê e há quanto tempo; N19 ao gerente e ao estafeta, N20 à cliente; pedido entregue ou no prazo sem alerta; motivo pelo gerente ou pelo estafeta do pedido (não por outra cozinha); quem vê os alertas; auditoria |
+| `41_reclamacoes_estimulos.test.sql` | avaliação de 1★ vira reclamação e a de 4★ não; botão do pedido (uma vez, só do próprio cliente); N21 só à cozinha do pedido; factos com o atraso real e sem nomes; reserva e falhas da análise; decisão do gerente (só na sua cozinha, uma vez) com N22; relatório do mês; estímulos: mestria, meta atingida e bónus, modelo, meta próxima, clientes que mais compraram; aprovação só pelo administrador, N23, descartado sem aviso, gerar de novo não mexe no aprovado |
+| `42_investigacoes.test.sql` | sinais e pontos (o rejeitado não conta duas vezes); só quem confere abre casos, um por período; reserva única; ferramentas (comprovativos, entradas parecidas, referência, histórico sem nome do cliente, caixas, equipa) só do serviço; dossiê, passos, N24 e auditoria "Agente Claude"; o investigado não vê nem decide o seu caso; interruptor desligado = agente parado |
+| `43_analista.test.sql` | só quem tem `analista.usar` pergunta; limite diário; um relatório por mês; ferramentas (vendas por zona, pratos, clientes, operação, satisfação, finanças) certas e sem nomes de clientes, só do serviço; estímulos com a mesma conta da equipa; reserva única; resposta e N25; cada um vê as suas perguntas e todos os relatórios; interruptor desligado = parado |
+| `44_vigilancia_convida.test.sql` | histórico do mesmo telemóvel em duas contas; sinais e pontos de uma rede (mesmo local, telemóvel, levantamento para um indicado, só o pedido do desconto, muitos no mesmo dia) e de um indicador normal (0); só quem verifica abre casos; ferramentas certas, sem nomes nem telefones e só do serviço; dossiê, N26 com o código; decisão uma vez; interruptor desligado = parado |
+| `45_gerente_turno.test.sql` | escolha da cozinha a analisar (uma vez de 5 em 5 minutos); situação com os pedidos em curso e o atraso, estafetas e pratos, sem nomes de clientes; propostas validadas e sem repetir; N27 só aos gerentes da cozinha; cada gerente decide só as da sua cozinha; aceitar avisa o cliente com o motivo editado, confirma o pedido ou pausa o prato (auditoria); decide-se uma vez; caducam em 30 minutos; interruptor desligado = parado |
+| `46_stock_compras.test.sql` | saldos, consumo e cobertura da cozinha (sem os de outra cozinha); validades só das entradas ainda em stock; produto sem consumo; preços por fornecedor; consumo dia a dia; reconciliação com 500 g sem explicação; compras do dia, encomendas e receitas; job diário; só quem trata do stock pede (sem duplicar o plano por preparar); reserva uma vez; plano validado; N28 só a quem trata do stock da cozinha; cada um vê e marca só as suas cozinhas (auditoria); três erros = indisponível; limite diário; interruptor desligado = parado |
+| `47_atendimento.test.sql` | cada cliente com sessão abre a sua conversa; reserva sem respostas em dobro (uma mensagem nova enquanto o agente responde volta a pôr a conversa por responder); ferramentas só com os pedidos e a conta do próprio cliente, sem apelido nem telefone; resposta do agente; passagem para uma pessoa com N29 só a quem atende e sem repetir; resposta de uma pessoa com N30; cada cliente vê só a sua conversa; devolver ao agente e fechar (auditoria); três erros = pessoa; o cliente pede uma pessoa; limite diário; interruptor desligado = parado |
+| `48_contactos.test.sql` | só quem gere os parâmetros muda os contactos gerais e só quem gere as cozinhas os da cozinha; telefones e email inválidos recusados; o cliente vê os gerais e os da cozinha (mesmo sem perfil público), sem cozinhas inactivas ou sem contactos e sem o nome da responsável; sem sessão não se lê; o assistente conhece-os; apagar um contacto |
+| `49_componentes_cliente.test.sql` | valor de cada ingrediente (custo × margem × IVA × quantidade; sem custo = 0) sem mostrar custos; tirar ingredientes desconta e põe "sem ..." no nome; só da receita, sem repetir nem tirar todos; ajustes da app ignorados; prato a 0 Kz com preço das opções e recusado sem elas; interruptor desligado; o pedido fica com o preço do servidor; o stock não desconta o que foi tirado |
+| `50_doses_categorias.test.sql` | categorias limpas (espaços, maiúscula, grafia existente, vazia sem categoria); sem doses não há limite; lançar doses; cada pedido gasta; não se pede mais do que restam (no pedido e no orçamento); o cancelado devolve; a 0 fica esgotado; relançar conta a partir daí e as de ontem já não limitam |
+| `51_cancelamento_justificado.test.sql` | regista quem cancelou; versão completa e curta (N16) com o prato e o motivo da lista; mais pratos, pacote e saldo devolvidos; frases de cada motivo e texto livre arrumado; cancelado pelo próprio cliente; outro cliente não lê; privilégios |
+| `52_correcoes_12_meses.test.sql` | nenhuma regra de acesso chama as funções da sessão linha a linha (e cada cliente continua a ver só os seus pedidos); retenção do relatório da cozinha aos 30/60/90 dias; rejeições toleradas até 2 % (0, 9 e 3 pontos); limpeza das notificações (> 90 dias) e da auditoria (> 2 anos), auditoria imutável fora disso, limpeza só do servidor | ; justificação de cancelamento só para o dono (outro cliente e sessão sem cliente bloqueados; o envio mantém o texto) |
+| `33_caixa_gestao.test.sql` | Abre a caixa (uma por posto), quem tem `vendas.registar` vê-a; fora da cozinha ou sem a permissão recusa; o esperado só soma a parcela Dinheiro e os pacotes na loja menos as sangrias; o fecho guarda a diferença; caixa fechada não aceita sangrias, novo fecho nem escrita directa; tudo na auditoria |
 | `15_app_operador.test.sql` | I3: telefone e ligação dos funcionários, painel (O1), verificação e "Confirmar todos" com N3 (O2), levantamentos (O3), embaixadores (O4), fila de entregas e caixas (E1), auditoria de cozinhas e cardápio (O6) |
 
 ### Como correr
@@ -139,7 +205,28 @@ base de dados.
 | 28 pacotes (I12) | 25/25 | 25/25 |
 | 29 avisos dos pacotes (I12) | 14/14 | 14/14 |
 | 30 opções descontam stock (I9) | 9/9 | 9/9 |
-| **Total** | **591/591** | |
+| 31 fotos dos pratos | 9/9 | 8/8 (apagar só pela API de Storage) |
+| 32 zonas de entrega | 8/8 | fluxo completo simulado (operador cria a zona, cliente guarda o endereço, orçamento com a taxa) |
+| 33 caixa | 17/17 | 17/17 |
+| 34 avisos dos pedidos | 13/13 | 13/13 |
+| 35 relatórios da semana | 5/5 | 5/5 |
+| 36 hora de entrega estimada | 5/5 | 5/5 |
+| 37 indicados no mesmo local (rápido) | 6/6 | 6/6 |
+| 38 segurança dos pagamentos e do Convida e Ganha | 27/27 | 27/27 |
+| 39 conferência (leitura automática, extratos, fechos, histórico) | 27/27 | 27/27 |
+| 40 alertas dos pedidos | 18/18 | 17/18 (o n.º 3 difere por desenho: na produção o administrador principal também recebe o N18) |
+| 41 reclamações e estímulos | 34/34 | 34/34 |
+| 42 agente investigador | 21/21 | 20/21 (o n.º 16 difere por desenho: na produção o administrador principal também recebe o N24) |
+| 43 analista do administrador | 20/20 | 19/20 (o n.º 17 difere por desenho: na produção o administrador principal também recebe o N25) |
+| 44 vigilante do Convida e Ganha | 17/17 | 17/17 (o n.º 12 corrigido: procurava "923", que também aparece em identificadores) |
+| 45 gerente de turno | 15/15 | 15/15 (o n.º 4 corrigido: assumia que o prato do teste era o primeiro do cardápio) |
+| 46 stock e compras | 17/17 | 17/17 |
+| 47 atendimento ao cliente | 17/17 | 17/17 (o n.º 6 corrigido: assumia que o prato do teste era o primeiro da lista) |
+| 48 contactos | 9/9 | 9/9 |
+| 49 ingredientes que o cliente tira | 12/12 | 12/12 (e o 25 voltou a correr: 14/14) |
+| 50 doses do dia e categorias | 9/9 | 9/9 |
+| (42 com mais um teste: o N24 não rotula a pessoa) | 22/22 | |
+| **Total** | **919/919** | |
 
 Na I2 voltaram a correr no Supabase os testes afectados por cada migração (app do cliente: 06, 08, 09, 12 e 13;
 desconto limitado: 02, 09 e 14); os restantes não dependem delas (e todos passam localmente).
@@ -174,6 +261,82 @@ Nas correcções de 2 de Outubro correram no Supabase o 23 (7/7) e o 24 (11/11, 
 facto). A Edge Function `enviar-notificacoes` passou à versão 4 (marca as notificações como enviadas lote a lote) e
 tem testes próprios em Node, sem Deno: `node --experimental-strip-types supabase/functions/enviar-notificacoes/envio.test.mjs`.
 
+### `ler-documentos` (leitura automática dos comprovativos e extratos)
+
+Corre de minuto a minuto (`agendar_leitura(url)`, mesmo segredo do envio de avisos). Lê com o Claude
+(`claude-opus-5-5`, saída estruturada) as fotos dos comprovativos e os extratos (PDF ou foto) e regista o
+resultado no servidor, que compara e concilia. **Precisa do segredo `ANTHROPIC_API_KEY`** nas Edge
+Functions (Supabase → Edge Functions → Secrets). Sem ele, os documentos ficam "leitura automática
+indisponível" e a conferência faz-se à mão na app (Caixa e Conferência). Depois de configurar a chave,
+"Ler de novo" pede outra leitura. Testes: `node --experimental-strip-types supabase/functions/ler-documentos/leitura.test.mjs`.
+
+### `analisar-ia` (reclamações e estímulos)
+
+Corre de 2 em 2 minutos (`agendar_analises(url)`). Para cada reclamação aberta envia ao Claude o texto do
+cliente (como dado, nunca como instruções) e os factos registados pelo servidor, e guarda a sugestão; o
+gerente decide sempre na app (Reclamações). Para cada estímulo proposto pede a mensagem pessoal seguindo
+Bandura (mestria, meta próxima, modelo, elogio concreto, tom calmo), a partir do texto base; o administrador
+aprova e pode editar na app (Estímulos do mês). Mesmo segredo `ANTHROPIC_API_KEY`.
+Testes: `node --experimental-strip-types supabase/functions/analisar-ia/analisar.test.mjs`.
+
+### `vigiar` (vigilante do Convida e Ganha)
+
+Como o investigador, mas para o programa de indicações: cada caso é um indicador com sinais de rede de
+contas (o mesmo telemóvel em várias contas, dinheiro levantado para o número de um indicado, indicados que só
+fazem o pedido do desconto, muitos no mesmo dia ou no mesmo local). O Claude não vê nomes nem telefones e
+está instruído a separar redes falsas de vizinhos, colegas e famílias. Quem verifica os ganhos lê o dossiê no
+ecrã Vigilância do Convida e decide; anular ganhos continua a ser na Verificação. Ligar em Parâmetros →
+`agente_vigilante`. Testes: `node --experimental-strip-types supabase/functions/vigiar/vigiar.test.mjs`.
+
+### `turno` (gerente de turno)
+
+Corre de 5 em 5 minutos nas horas de serviço, mas só chama o Claude quando uma cozinha tem algo a pedir
+atenção (pedido por confirmar perto do limite, atraso sem motivo dado, pedido a chegar à hora prometida sem ter
+saído, cancelamentos seguidos, fila grande para os estafetas). Propõe no máximo 4 acções; o gerente aceita ou
+recusa no ecrã Gerente de turno (aviso N27) e, ao aceitar, a acção é feita em nome dele. Usa um modelo mais
+leve por correr muitas vezes. Ligar em Parâmetros → `agente_turno`. Testes:
+`node --experimental-strip-types supabase/functions/turno/turno.test.mjs`.
+
+### `compras` (stock e compras)
+
+Todos os dias às 06:15 de Luanda (e quando quem trata do stock pede no ecrã Stock e compras) prepara o plano de
+compras de cada cozinha com movimentos de stock: o que comprar, quanto na unidade de compra (cerca de 7 dias de
+consumo mais 2 de margem, contando com as encomendas), com que urgência, o custo estimado e o fornecedor mais em
+conta; e alertas de validades, saídas sem explicação nas distribuições, preços a subir e dados estranhos. Só lê:
+quem trata do stock marca cada compra como feita ou ignorada e as entradas continuam a ser registadas como hoje.
+Avisa (N28) quando há compras para hoje ou alertas graves. Ligar em Parâmetros → `agente_compras`. Testes:
+`node --experimental-strip-types supabase/functions/compras/compras.test.mjs`.
+
+### `atendimento` (atendimento ao cliente)
+
+O cliente escreve no ecrã Ajuda (só aparece com `agente_atendimento` ligado) e a app chama logo a função; o
+pg_cron apanha, de minuto a minuto, o que ficar por responder. O Claude vê o primeiro nome e as últimas mensagens,
+consulta os pedidos e a conta desse cliente (nunca o telefone, a morada nem outros clientes) e a informação
+pública, e responde em poucas frases. Não promete reembolsos, compensações nem descontos e não mexe em pedidos:
+reclamações, alergias, pagamentos e pedidos de uma pessoa passam para quem tem `atendimento.responder` (N29),
+que responde no ecrã Atendimento da app do operador (N30 ao cliente), devolve ao assistente ou termina. Se o
+Claude falhar três vezes, ou sem a chave, a conversa passa logo para uma pessoa. Testes:
+`node --experimental-strip-types supabase/functions/atendimento/atendimento.test.mjs`.
+
+### `analista` (analista do administrador)
+
+Quem tem `analista.usar` pergunta na app (ecrã Analista) em linguagem normal; a app chama logo a função e
+o pg_cron apanha o que ficar por responder. O Claude escolhe as ferramentas (vendas, pratos, clientes,
+operação, satisfação, equipa, finanças), compara períodos e responde com os números-chave, as limitações
+e até 3 sugestões. No dia 2 de cada mês faz o relatório do mês anterior e avisa (N25). As ferramentas só
+dão números agregados, sem nomes nem contactos de clientes. Ligar em Parâmetros → `agente_analista`.
+Testes: `node --experimental-strip-types supabase/functions/analista/analista.test.mjs`.
+
+### `investigar` (agente investigador financeiro)
+
+Um agente, não uma chamada única: em cada execução pega num caso e o Claude decide que ferramentas usar
+(comprovativos da pessoa, caixas, histórico de pedidos, entradas do extrato com o mesmo valor, referências
+repetidas, comparação com a equipa), até 10 voltas; perto do limite de tempo da Edge Function pede-lhe a
+conclusão. Todas as ferramentas são funções do servidor só de leitura e só do serviço; o agente não decide,
+não bloqueia e não mexe em dinheiro. O dossiê aparece na app em Conferência → Investigações, com o que o
+agente consultou; quem confere decide (nunca sobre o próprio caso). Ligar em Parâmetros → `agente_investigador`.
+Testes: `node --experimental-strip-types supabase/functions/investigar/investigar.test.mjs`.
+
 A CI (`.github/workflows/testes.yml`) corre em cada PR a base de dados, a Edge Function e as duas apps.
 
 Nas fases I9–I11 correram no Supabase o 25 (14/14), o 26 (9/9) e o 27 (14/14). Os testes que contam interruptores
@@ -197,3 +360,50 @@ As funções dependem destas colunas do esquema base: `clientes(id, tipo, nome, 
 `direcoes(id, permissoes jsonb)`, `turnos(id, funcionario_id, data, hora_inicio, hora_fim, periodo)`,
 `zonas(id, nome, tipo)`, `pratos_base(id)`, `vendas`, `caixa(data, funcionario_id, fechamento jsonb)`,
 `distribuicoes(quantidade_quebra)` e `auditoria`.
+
+## Notificações push: o que falta para chegarem aos telemóveis
+
+O servidor já põe os avisos na fila e o `pg_cron` chama a função `enviar-notificacoes` todos os
+minutos (ver `select * from cron.job_run_details order by start_time desc`). Falta a parte da Expo e
+do Firebase, que só o dono das contas pode criar:
+
+1. **Expo** (expo.dev, conta gratuita): criar dois projectos, `manda-bue-cliente` e
+   `manda-bue-operador`, e copiar o *Project ID* de cada um para os segredos do repositório
+   `EXPO_PROJECT_ID_CLIENTE` e `EXPO_PROJECT_ID_OPERADOR`.
+2. **Firebase** (console.firebase.google.com): um projecto com duas apps Android,
+   `ao.mandabue.cliente` e `ao.mandabue.operador`. Descarregar o `google-services.json` (serve às
+   duas) e colar o conteúdo no segredo `GOOGLE_SERVICES_JSON`.
+3. **Firebase → Expo**: em Firebase, *Definições do projecto → Contas de serviço → Gerar nova chave
+   privada*; em expo.dev, em cada projecto, *Credentials → Android → FCM V1 service account key*,
+   carregar esse ficheiro.
+4. Gerar APKs novos (o workflow usa os segredos). Ao entrar, a app pede autorização e regista o
+   telemóvel; a partir daí os avisos chegam.
+
+Sem estes passos as apps funcionam normalmente, só não recebem push (os avisos saem da fila sem
+telemóvel a quem entregar).
+
+## Simulações de operação (`supabase/simulacoes/`)
+
+`semana.sql` simula uma semana de segunda a sábado no Supabase, com as funcionalidades todas ligadas:
+2 cozinhas com gerente e estafeta, 24 clientes registados pelo telemóvel (16 entram com código de
+amigo), caixas abertas e fechadas todos os dias, cerca de 95 pedidos com cancelamentos, entregas em
+dinheiro e Multicaixa, avaliações, um pacote do mês, levantamento do Convida e Ganha, relatórios,
+métricas por turno, destaques, contadores e reconhecimento da equipa. Corre numa só transacção e
+termina com uma excepção que devolve o relatório e **desfaz tudo** (nenhum dado fica). Usa o posto
+"Posto Semana" para não colidir com caixas reais abertas.
+
+`mes.sql` faz o mesmo durante um mês (30 clientes, cerca de 450 pedidos, posto "Posto Mes").
+
+`semestre.sql` simula 6 meses (156 dias de trabalho, 50 clientes, cerca de 1 800 pedidos, posto
+"Posto Semestre") com o que só acontece num semestre: aumento do preço dos Chocos no dia 60 (os
+pedidos seguintes usam o preço novo), troca do estafeta, novo bairro Talatona no dia 90 com a sua
+taxa, a Cozinha do Kilamba pausada uma semana (os pedidos são recusados e os clientes pedem à
+Alexandra), uma "embaixadora" com 30 amigos, o pacote do mês renovado 7 vezes, levantamentos
+mensais, retenção a 30/60/90 dias e o tempo dos relatórios com milhares de pedidos. Corre em cerca
+de 30 s, abaixo do limite de 60 s do SQL do Supabase.
+
+As três simulações registam os pagamentos electrónicos com referência e foto do comprovativo e conferem-nos antes de fechar cada caixa.
+
+Limites conhecidos das simulações: o servidor não deixa recuar `criado_em`, por isso o que conta pela
+data de criação (limite semanal do Convida e Ganha, validade dos pacotes, expiração das ligações aos
+60 dias) vê o período inteiro como "agora".

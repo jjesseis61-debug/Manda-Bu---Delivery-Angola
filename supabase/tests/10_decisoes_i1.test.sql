@@ -73,9 +73,12 @@ select throws_ok(format($$select mudar_estado_pedido(%L, 'entregue_pago', null, 
 select throws_ok(format($$select mudar_estado_pedido(%L, 'entregue_pago', null, %L, %L)$$,
                         testes.u('p'), testes.u('caixa'), '[{"metodo": "Dinheiro", "valor": 1000}]'),
                  'P0001', 'parcelas_nao_somam_valor_final', 'regra 7: parcelas que não somam o valor final -> recusado');
+insert into storage.objects (bucket_id, name) values ('comprovativos', testes.v('p') || '/mcx.jpg');
 select lives_ok(format($$select mudar_estado_pedido(%L, 'entregue_pago', null, %L, %L)$$,
                        testes.u('p'), testes.u('caixa'),
-                       '[{"metodo": "Dinheiro", "valor": 2000}, {"metodo": "Multicaixa Express", "valor": 2400}]'),
+                       jsonb_build_array(jsonb_build_object('metodo', 'Dinheiro', 'valor', 2000),
+                                         jsonb_build_object('metodo', 'Multicaixa Express', 'valor', 2400, 'referencia', 'MCX-0001',
+                                                            'comprovativo', testes.v('p') || '/mcx.jpg'))),
                 'entregue_pago com caixa e parcelas (2000 + 2400 + 300 de crédito = 4700)');
 select testes.sair();
 
@@ -148,7 +151,7 @@ select is((select (select count(*) from estoque_diario) + (select count(*) from 
 select results_eq($$select chave from permissoes where chave in ('pedidos.gerir','entregas.registar') order by chave$$,
                   $$values ('entregas.registar'::text), ('pedidos.gerir'::text)$$,
                   'pedidos.gerir e entregas.registar estão no catálogo de permissões');
-select is((select count(*)::int from permissoes), 17, 'catálogo com as 10 permissões da secção 4.12, as 6 das tabelas base e pacotes.gerir');
+select is((select count(*)::int from permissoes), 22, 'catálogo com as 10 permissões da secção 4.12, as 6 das tabelas base, pacotes.gerir, financas.conferir, analista.usar, atendimento.responder, feira.gerir e avisos.enviar');
 select is((select count(*)::int from information_schema.columns
             where table_schema = 'public' and table_name = 'permissoes'
               and column_name in ('id','dispositivo_id','criado_em','atualizado_em','sincronizado_em','deletado_em')), 6,

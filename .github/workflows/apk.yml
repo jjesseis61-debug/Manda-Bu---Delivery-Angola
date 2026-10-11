@@ -1,0 +1,120 @@
+# APKs Android das duas apps para testar no telemóvel, sem conta Expo (EAS).
+# O projecto nativo é gerado com `expo prebuild` e compilado com o Gradle do runner. O APK de
+# release fica assinado com a chave de debug: instala-se directamente, mas não serve para a Play Store.
+# Os APKs ficam nos "Artifacts" de cada execução (separador Actions), durante 14 dias, e na
+# Release "apk-teste" com um link fixo que não expira e aponta sempre para o último build:
+#   https://github.com/<dono>/<repo>/releases/download/apk-teste/manda-bue-cliente.apk
+name: APK Android
+
+# Só quando se pede (Actions → APK Android → Run workflow), para poupar os minutos do GitHub:
+# cada compilação das duas apps gasta cerca de 80 minutos.
+on:
+  workflow_dispatch:
+    inputs:
+      app:
+        description: 'Que app compilar'
+        type: choice
+        options: [ambas, cliente, operador]
+        default: ambas
+
+concurrency:
+  group: apk-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    name: APK ${{ matrix.app }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        app: ${{ fromJSON(inputs.app == 'cliente' && '["cliente"]' || inputs.app == 'operador' && '["operador"]' || '["cliente","operador"]') }}
+    defaults:
+      run:
+        working-directory: apps/${{ matrix.app }}
+    env:
+      # Valores públicos da app (URL e chave publicável do Supabase); a segurança está nas políticas RLS.
+      EXPO_PUBLIC_SUPABASE_URL: https://laruvuambdovnkojwrzp.supabase.co
+      EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_VoD7AGU0YCNyTJjiNmwJ-Q_FaRL1-aM' }}
+      EXPO_PUBLIC_CONTACTO_PRIVACIDADE: ${{ vars.CONTACTO_PRIVACIDADE }}
+      EXPO_PUBLIC_INSTRUCOES_PAGAMENTO: ${{ vars.INSTRUCOES_PAGAMENTO }}
+      # Secret do repositório; sem ele o mapa do "Novo endereço" fica em branco.
+      GOOGLE_MAPS_ANDROID_API_KEY: ${{ secrets.GOOGLE_MAPS_ANDROID_API_KEY }}
+      # Notificações push: projecto de cada app em expo.dev (sem ele a app funciona sem push)
+      EXPO_PROJECT_ID: ${{ matrix.app == 'cliente' && secrets.EXPO_PROJECT_ID_CLIENTE || secrets.EXPO_PROJECT_ID_OPERADOR }}
+      NODE_ENV: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/${{ matrix.app }}/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+      - run: npm ci
+      - name: Configuração Firebase (notificações push), se existir o segredo
+        # Cada app tem o seu próprio google-services.json (packages diferentes), escrito a partir do
+        # seu segredo: cliente -> GOOGLE_SERVICES_JSON, operador -> GOOGLE_SERVICES_JSON_OPERADOR.
+        # Sem o segredo da app, o passo não faz nada e a app compila sem push (não dá erro).
+        env:
+          GOOGLE_SERVICES_JSON: ${{ matrix.app == 'cliente' && secrets.GOOGLE_SERVICES_JSON || secrets.GOOGLE_SERVICES_JSON_OPERADOR }}
+          PACOTE_ESPERADO: ${{ matrix.app == 'cliente' && 'ao.mandabue.cliente' || 'ao.mandabue.operador' }}
+        run: |
+          if [ -n "$GOOGLE_SERVICES_JSON" ]; then
+            printf '%s' "$GOOGLE_SERVICES_JSON" > google-services.json
+            # JSON completo? (um segredo colado cortado passa nos grep mas rebenta no gradle)
+            if ! node -e 'JSON.parse(require("fs").readFileSync("google-services.json","utf8"))' 2>/dev/null; then
+              echo "::error::O segredo ${{ matrix.app == 'cliente' && 'GOOGLE_SERVICES_JSON' || 'GOOGLE_SERVICES_JSON_OPERADOR' }} não é um JSON completo — provavelmente foi colado cortado. Re-cola o ficheiro google-services.json INTEIRO (do início '{' ao fim '}')."
+              exit 1
+            fi
+            if ! grep -q '"project_info"' google-services.json; then
+              echo "::error::O segredo não é um google-services.json válido (falta 'project_info'). Confirma que colaste o ficheiro google-services.json do Firebase — NÃO a chave de conta de serviço (firebase-adminsdk-...json)."
+              exit 1
+            fi
+            if ! grep -q "\"$PACOTE_ESPERADO\"" google-services.json; then
+              echo "::error::O google-services.json não tem o package '$PACOTE_ESPERADO'. Descarrega o ficheiro da app Android certa no Firebase (a app '${{ matrix.app }}')."
+              exit 1
+            fi
+          fi
+      - name: Gerar o projecto Android
+        run: npx expo prebuild --platform android --no-install
+      - name: Mais memória para o Gradle (o default rebenta no lint/dex do release)
+        working-directory: apps/${{ matrix.app }}/android
+        # O prebuild gera um gradle.properties com heap pequeno (~2 GB) e o lintVitalAnalyzeRelease
+        # fica sem memória (Java heap space). O runner tem 16 GB; damos 6 GB ao Gradle. Em
+        # gradle.properties a última ocorrência de uma chave ganha, por isso basta acrescentar.
+        run: |
+          {
+            echo ""
+            echo "org.gradle.jvmargs=-Xmx6144m -XX:MaxMetaspaceSize=1024m -Dfile.encoding=UTF-8"
+            echo "org.gradle.workers.max=2"
+          } >> gradle.properties
+      - name: Compilar o APK
+        working-directory: apps/${{ matrix.app }}/android
+        # Só as CPUs de telemóveis reais (arm64 e arm 32-bit); deixa de fora x86/x86_64 (só
+        # emuladores), o que reduz bastante o tamanho do APK por causa das bibliotecas nativas.
+        run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a,armeabi-v7a
+      - uses: actions/upload-artifact@v4
+        with:
+          name: manda-bue-${{ matrix.app }}-apk
+          path: apps/${{ matrix.app }}/android/app/build/outputs/apk/release/*.apk
+          retention-days: 14
+      - name: Publicar na Release apk-teste (link fixo)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp android/app/build/outputs/apk/release/app-release.apk manda-bue-${{ matrix.app }}.apk
+          # As duas apps correm em paralelo: se a outra já criou a Release, este create falha e segue
+          gh release view apk-teste >/dev/null 2>&1 || \
+            gh release create apk-teste --prerelease --target "$GITHUB_SHA" --title "APKs de teste" \
+              --notes "APKs de teste das apps Manda Bué (assinados com a chave de debug)." || true
+          gh release upload apk-teste manda-bue-${{ matrix.app }}.apk --clobber
+          gh release edit apk-teste --notes "APKs de teste das apps Manda Bué (assinados com a chave de debug). Último build: ${GITHUB_REF_NAME} @ ${GITHUB_SHA::7}."

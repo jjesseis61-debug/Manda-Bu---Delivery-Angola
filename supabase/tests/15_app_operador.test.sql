@@ -99,6 +99,7 @@ update parametros set limite_verificacao_semanal = 10000;
 
 -- O3. Levantamentos
 update parametros set levantamento_minimo = 100;
+select testes.pagar(testes.pedido(testes.u('ana'), testes.ponto('residencial')));
 select testes.def('tesoureira', testes.funcionario('Tesoureira', array['indicacoes.aprovar_pagamentos']));
 select testes.entrar(testes.u('ana'));
 select testes.def('lev', pedir_levantamento(200, 'unitel_money', '923200001'));

@@ -3,6 +3,11 @@
 import { dispositivoId } from './dispositivo';
 import { supabase } from './supabase';
 import type {
+  ComponentePrato,
+  Contactos,
+  ConversaAtendimento,
+  AtrasoPedido,
+  MinhaReclamacao,
   Amigo,
   AvaliacaoPublica,
   CozinhaParaPedir,
@@ -16,6 +21,7 @@ import type {
   LocalizacaoCozinha,
   MetodoPacote,
   MeuPacote,
+  MinhaEmpresa,
   MediasAvaliacoes,
   MeuGrupo,
   MinhaPosicao,
@@ -83,11 +89,17 @@ export async function descontoGarantido(clienteId: string): Promise<number | nul
 }
 
 // ---------------------------------------------------------------- cardápio e cozinha
+/** Sem multi_cozinha, todos os pedidos vão para esta cozinha (a mais antiga activa) */
+export async function cozinhaPadrao(): Promise<string | null> {
+  return verificar(await supabase.rpc('cozinha_padrao')) as string | null;
+}
+
 export async function lerCardapio(cozinhaId?: string | null): Promise<ItemCardapio[]> {
   let q = supabase
     .from('cardapio')
     .select('id, nome, descricao, categoria, preco, foto_url, do_dia, cozinha_id, prato_base_id')
-    .eq('disponivel', true);
+    .eq('disponivel', true)
+    .eq('visivel_online', true);
   if (cozinhaId) q = q.eq('cozinha_id', cozinhaId);
   const r = await q
     .order('do_dia', { ascending: false })
@@ -148,6 +160,19 @@ export async function localizacaoCozinha(cozinhaId: string): Promise<Localizacao
 /** I11: onde está o estafeta do meu pedido (só enquanto está a caminho) */
 export async function posicaoEntrega(pedidoId: string): Promise<PosicaoEntrega> {
   return verificar(await supabase.rpc('posicao_entrega', { p_pedido: pedidoId })) as PosicaoEntrega;
+}
+
+/**
+ * Gate B: pede ao serviço para actualizar a rota por estrada (Google) deste pedido. Só tem efeito
+ * com o interruptor `rota_google` e a chave no servidor; caso contrário não faz nada. O resultado
+ * fica em cache e é lido no próximo posicaoEntrega. Nunca estoura (fire-and-forget).
+ */
+export async function refrescarRota(pedidoId: string): Promise<void> {
+  try {
+    await supabase.functions.invoke('rota-estafeta', { body: { pedido: pedidoId } });
+  } catch {
+    // Sem rota do Google, fica a estimativa por distância — não é erro para o cliente
+  }
 }
 
 /** Cozinhas que aceitam pedidos (I8); com multi_cozinha desligado, só a cozinha por defeito */
@@ -225,7 +250,12 @@ export async function lerEnderecos(): Promise<Endereco[]> {
 }
 
 export async function lerZonas(): Promise<Zona[]> {
-  return verificar(await supabase.from('zonas').select('id, nome, taxa').order('nome')) as Zona[];
+  const r = await supabase.from('zonas').select('id, nome, taxa, centro_lat, centro_lng').order('nome');
+  return (verificar(r) as Zona[]).map((z) => ({
+    ...z,
+    centro_lat: z.centro_lat != null ? Number(z.centro_lat) : null,
+    centro_lng: z.centro_lng != null ? Number(z.centro_lng) : null,
+  }));
 }
 
 export type PontoProximo = { ponto_entrega_id: string; tipo: string; referencia: string | null; distancia_m: number };
@@ -268,7 +298,7 @@ export async function criarEndereco(dados: {
 }
 
 // ---------------------------------------------------------------- pedidos
-export type ItemCarrinho = { cardapio_id: string; qtd: number; opcoes?: string[] };
+export type ItemCarrinho = { cardapio_id: string; qtd: number; opcoes?: string[]; componentes_excluidos?: string[] };
 
 export async function orcamento(
   itens: ItemCarrinho[],
@@ -300,6 +330,8 @@ export async function criarPedido(dados: {
   cozinhaId?: string | null;
   itens: ItemCarrinho[];
   observacoes: string;
+  agendadoPara?: string | null;
+  empresaId?: string | null;
 }): Promise<string> {
   const r = await supabase.from('pedidos').insert({
     id: dados.id,
@@ -309,6 +341,8 @@ export async function criarPedido(dados: {
     cozinha_id: dados.cozinhaId ?? null,
     itens: dados.itens,
     observacoes: dados.observacoes.trim() || null,
+    agendado_para: dados.agendadoPara ?? null,
+    empresa_id: dados.empresaId ?? null,
     dispositivo_id: await dispositivoId(),
   });
   if (r.error && (r.error as { code?: string }).code === '23505') {
@@ -317,6 +351,10 @@ export async function criarPedido(dados: {
   }
   verificar(r);
   return dados.id;
+}
+
+export async function minhaEmpresa(): Promise<MinhaEmpresa | null> {
+  return (verificar(await supabase.rpc('minha_empresa')) as MinhaEmpresa | null) ?? null;
 }
 
 export async function usarCredito(pedidoId: string, valor: number): Promise<number> {
@@ -328,11 +366,24 @@ export async function cancelarPedido(pedidoId: string): Promise<void> {
 }
 
 const camposPedido =
-  'id, criado_em, estado, itens, subtotal, taxa_entrega, desconto_indicacao, credito_indicacao_usado, pago_pacote, refeicoes_pacote, observacoes, motivo_cancelamento, hora_prometida, entregue_em';
+  'id, criado_em, estado, itens, subtotal, taxa_entrega, desconto_indicacao, credito_indicacao_usado, pago_pacote, refeicoes_pacote, observacoes, motivo_cancelamento, hora_prometida, entregue_em, agendado_para, empresa_id, valor_empresa';
 
 export async function lerPedidos(): Promise<Pedido[]> {
   const r = await supabase.from('pedidos').select(camposPedido).order('criado_em', { ascending: false }).limit(50);
   return verificar(r) as Pedido[];
+}
+
+/** Atraso avisado num pedido (motivo e nova estimativa), ou null */
+export async function atrasoDoPedido(pedidoId: string): Promise<AtrasoPedido | null> {
+  return verificar(
+    await supabase.from('alertas_pedido').select('minutos, motivo, mais_minutos, motivo_em, criado_em')
+      .eq('pedido_id', pedidoId).eq('tipo', 'atraso').maybeSingle(),
+  ) as AtrasoPedido | null;
+}
+
+/** Justificação do cancelamento de um pedido meu (null se não estiver cancelado) */
+export async function justificacaoCancelamento(pedidoId: string): Promise<string | null> {
+  return verificar(await supabase.rpc('justificacao_cancelamento', { p_pedido: pedidoId })) as string | null;
 }
 
 export async function lerPedido(id: string): Promise<Pedido | null> {
@@ -517,4 +568,44 @@ export async function fecharGrupo(grupoId: string): Promise<void> {
 
 export async function cancelarGrupo(grupoId: string, motivo: string | null): Promise<void> {
   verificar(await supabase.rpc('cancelar_grupo', { p_grupo: grupoId, p_motivo: motivo }));
+}
+
+/** Reclamações do cliente sobre um pedido (o texto, o estado e a resposta da cozinha) */
+export async function minhasReclamacoes(pedidoId: string): Promise<MinhaReclamacao[]> {
+  return verificar(await supabase.rpc('minhas_reclamacoes', { p_pedido: pedidoId })) as MinhaReclamacao[];
+}
+
+export async function fazerReclamacao(pedidoId: string, texto: string): Promise<string> {
+  return verificar(await supabase.rpc('fazer_reclamacao', { p_pedido: pedidoId, p_texto: texto })) as string;
+}
+
+// ---------------------------------------------------------------- atendimento ao cliente
+export async function minhaConversaAtendimento(): Promise<ConversaAtendimento | null> {
+  return (verificar(await supabase.rpc('minha_conversa_atendimento')) as ConversaAtendimento | null) ?? null;
+}
+
+/** Envia a mensagem e chama logo o assistente (o pg_cron apanha-a se esta chamada falhar) */
+export async function enviarMensagemAtendimento(texto: string): Promise<void> {
+  const r = verificar(await supabase.rpc('enviar_mensagem_atendimento', { p_texto: texto })) as { conversa_id: string; estado: string };
+  if (r.estado === 'agente') supabase.functions.invoke('atendimento', { body: { conversa_id: r.conversa_id } }).catch(() => undefined);
+}
+
+export async function pedirPessoaAtendimento(): Promise<void> {
+  verificar(await supabase.rpc('pedir_pessoa_atendimento'));
+}
+
+// ---------------------------------------------------------------- contactos
+export async function lerContactos(): Promise<Contactos> {
+  return verificar(await supabase.rpc('contactos')) as Contactos;
+}
+
+// ---------------------------------------------------------------- ingredientes que se podem tirar (pratos montáveis)
+export async function lerComponentes(cardapioIds: string[]): Promise<ComponentePrato[]> {
+  if (cardapioIds.length === 0) return [];
+  return verificar(await supabase.rpc('componentes_dos_pratos', { p_cardapio: cardapioIds })) as ComponentePrato[];
+}
+
+/** Doses que restam hoje dos pratos com limite (a cozinha lançou quantas tem) */
+export async function lerDoses(cozinhaId: string): Promise<{ cardapio_id: string; restantes: number }[]> {
+  return verificar(await supabase.rpc('doses_cardapio', { p_cozinha: cozinhaId })) as { cardapio_id: string; restantes: number }[];
 }

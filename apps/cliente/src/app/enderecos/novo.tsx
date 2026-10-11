@@ -7,6 +7,7 @@ import { MapaPin, type Coordenadas } from '@/components/MapaPin';
 import { Aviso, Botao, Campo, Cartao, Ecra, Escolha, Paragrafo, Subtitulo } from '@/components/ui';
 import { criarEndereco, lerEnderecos, lerZonas, pontosProximos, type PontoProximo } from '@/lib/api';
 import { mensagemErro } from '@/lib/formatar';
+import { HA_MAPA } from '@/lib/mapaNativo';
 import { useSessao } from '@/lib/sessao';
 import type { Zona } from '@/lib/tipos';
 
@@ -20,18 +21,28 @@ export default function NovoEndereco() {
   const empresa = perfil?.tipo === 'Empresa';
   const [ponto, setPonto] = useState<Coordenadas>(LUANDA);
   const [marcado, setMarcado] = useState(false);
+  const [centrarEm, setCentrarEm] = useState<Coordenadas | undefined>(undefined);
   const [tipo, setTipo] = useState<'residencial' | 'empresa'>(empresa ? 'empresa' : 'residencial');
   const [zonas, setZonas] = useState<Zona[]>([]);
   const [zonaId, setZonaId] = useState<string>('');
+  const [zonasLidas, setZonasLidas] = useState(false);
   const [referencia, setReferencia] = useState('');
   const [proximo, setProximo] = useState<PontoProximo | null>(null);
   const [usarProximo, setUsarProximo] = useState(false);
   const [primeiro, setPrimeiro] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [aGuardar, setAGuardar] = useState(false);
+  const [aLocalizar, setALocalizar] = useState(false);
 
   useEffect(() => {
-    lerZonas().then(setZonas).catch((e) => setErro(mensagemErro(e)));
+    lerZonas()
+      .then((z) => {
+        setZonas(z);
+        setZonasLidas(true);
+        // Com um só bairro, fica escolhido
+        if (z.length === 1) setZonaId(z[0].id);
+      })
+      .catch((e) => setErro(mensagemErro(e)));
     lerEnderecos()
       .then((e) => setPrimeiro(e.length === 0))
       .catch(() => undefined);
@@ -47,15 +58,54 @@ export default function NovoEndereco() {
   }, [ponto, tipo, marcado]);
 
   async function aMinhaLocalizacao() {
+    if (aLocalizar) return;
     setErro(null);
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== 'granted') {
-      setErro('Sem autorização para usar a localização. Marca o ponto no mapa.');
-      return;
+    setALocalizar(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setErro(
+          HA_MAPA
+            ? 'Sem autorização para usar a localização. Marca o ponto no mapa.'
+            : 'Sem autorização para usar a localização. Autoriza a localização nas definições do telemóvel para marcar o ponto.',
+        );
+        return;
+      }
+      // GPS desligado é a causa mais comum de "não responde": avisa em vez de ficar à espera
+      const servicos = await Location.hasServicesEnabledAsync();
+      if (!servicos) {
+        setErro('A localização do telemóvel está desligada. Liga-a nas definições e tenta de novo, ou marca o ponto no mapa.');
+        return;
+      }
+      // Posição já conhecida entra logo; uma leitura nova pode demorar vários segundos
+      const conhecida = await Location.getLastKnownPositionAsync();
+      if (conhecida) {
+        const p = { latitude: conhecida.coords.latitude, longitude: conhecida.coords.longitude };
+        setPonto(p);
+        setCentrarEm(p);
+        setMarcado(true);
+      }
+      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      const p = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+      setPonto(p);
+      setCentrarEm(p);
+      setMarcado(true);
+    } catch (e) {
+      setErro(mensagemErro(e));
+    } finally {
+      setALocalizar(false);
     }
-    const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-    setPonto({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
-    setMarcado(true);
+  }
+
+  function escolherZona(id: string) {
+    setZonaId(id);
+    const z = zonas.find((x) => x.id === id);
+    // Centra o mapa no bairro escolhido (se tiver centro) enquanto o cliente ainda não marcou o ponto
+    if (z?.centro_lat != null && z.centro_lng != null && !marcado) {
+      const p = { latitude: z.centro_lat, longitude: z.centro_lng };
+      setPonto(p);
+      setCentrarEm(p);
+    }
   }
 
   async function guardar() {
@@ -87,13 +137,19 @@ export default function NovoEndereco() {
     <Ecra>
       <MapaPin
         ponto={ponto}
+        centrarEm={centrarEm}
         aoMudar={(p) => {
           setPonto(p);
           setMarcado(true);
         }}
       />
-      <Botao titulo="Usar a minha localização" variante="secundario" aoCarregar={aMinhaLocalizacao} />
-      {!marcado && <Paragrafo suave>Toca no mapa ou arrasta o pin para o sítio exacto da entrega.</Paragrafo>}
+      <Botao
+        titulo={aLocalizar ? 'A localizar…' : 'Usar a minha localização'}
+        variante="secundario"
+        aoCarregar={aMinhaLocalizacao}
+        aCarregar={aLocalizar}
+      />
+      {!marcado && HA_MAPA && <Paragrafo suave>Toca no mapa para marcar o sítio exacto da entrega.</Paragrafo>}
 
       {!empresa && (
         <Escolha
@@ -126,7 +182,11 @@ export default function NovoEndereco() {
       {precisaZona && (
         <>
           <Subtitulo>Bairro (zona de entrega)</Subtitulo>
-          <Escolha opcoes={zonas.map((z) => ({ valor: z.id, rotulo: z.nome }))} valor={zonaId} aoMudar={setZonaId} />
+          {zonasLidas && zonas.length === 0 ? (
+            <Aviso>Ainda não entregamos em nenhum bairro. Volta a tentar mais tarde ou fala connosco.</Aviso>
+          ) : (
+            <Escolha opcoes={zonas.map((z) => ({ valor: z.id, rotulo: z.nome }))} valor={zonaId} aoMudar={escolherZona} />
+          )}
           <Campo
             rotulo="Referência (ex.: prédio azul, 2.º andar, porta 12)"
             value={referencia}

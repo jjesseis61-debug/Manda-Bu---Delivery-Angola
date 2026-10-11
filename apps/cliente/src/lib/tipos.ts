@@ -17,8 +17,12 @@ export type Parametros = {
   limite_verificacao_semanal: number;
   levantamento_minimo: number;
   limite_parcelamento: number;
+  /** Subtotal mínimo para aplicar o desconto de indicação (anti-fraude) */
+  desconto_subtotal_minimo?: number;
   contador_minimo: number;
   tamanho_top: number;
+  /** Minutos até à hora de entrega prometida (o servidor marca-a em cada pedido) */
+  tempo_entrega_min?: number;
 };
 
 export type ChaveFuncionalidade =
@@ -35,7 +39,10 @@ export type ChaveFuncionalidade =
   | 'pratos_montaveis'
   | 'como_chegar'
   | 'acompanhamento_entrega'
-  | 'pacotes';
+  | 'pacotes'
+  | 'agente_atendimento'
+  | 'mapa_google'
+  | 'rota_google';
 
 export type Funcionalidades = Partial<Record<ChaveFuncionalidade, boolean>>;
 
@@ -81,6 +88,8 @@ export type Orcamento = {
   taxa_entrega: number;
   desconto: number;
   motivo_desconto: string | null;
+  /** Subtotal mínimo para o desconto de convite (0 = sem mínimo) */
+  desconto_subtotal_minimo?: number;
   total: number;
   /** Pedido de grupo: taxa por pessoa se o grupo fechasse agora (a taxa real é repartida no fecho) */
   taxa_grupo_estimada?: number | null;
@@ -140,9 +149,15 @@ export type Pedido = {
   motivo_cancelamento: string | null;
   hora_prometida: string | null;
   entregue_em: string | null;
+  agendado_para: string | null;
+  empresa_id: string | null;
+  valor_empresa: number;
 };
 
-export type Zona = { id: string; nome: string; taxa: number | null };
+/** Conta de empresa do cliente (se for membro activo) */
+export type MinhaEmpresa = { empresa_id: string; nome: string; limite_refeicao: number };
+
+export type Zona = { id: string; nome: string; taxa: number | null; centro_lat: number | null; centro_lng: number | null };
 
 export type Endereco = {
   id: string;
@@ -243,6 +258,8 @@ export type GrupoOpcoes = {
   opcoes: Opcao[];
 };
 export type OpcaoEscolhida = { id: string; nome: string; preco_extra: number };
+/** Ingrediente da receita que o cliente pode tirar; valor = o que deixa de pagar (calculado no servidor) */
+export type ComponentePrato = { cardapio_id: string; produto_id: string; nome: string; quantidade: number; unidade: string | null; valor: number };
 
 // I10 · Como chegar
 export type LocalizacaoCozinha = {
@@ -262,6 +279,10 @@ export type PosicaoEntrega = {
   destino?: Ponto | null;
   distancia_km?: number | null;
   minutos?: number | null;
+  /** 'google' = rota por estrada com trânsito; 'estimativa' = distância em linha recta */
+  fonte?: 'google' | 'estimativa' | null;
+  /** Linha da rota (polyline codificada do Google), quando há rota por estrada */
+  polyline?: string | null;
 };
 
 // I12 · Pacotes pré-pagos
@@ -300,4 +321,52 @@ export type PacotesAMinhaVolta = {
   no_meu_local: number | null;
   na_minha_zona: number | null;
   poupanca_media_mes: number | null;
+};
+
+/** Atraso avisado num pedido: pela cozinha (com motivo) ou automaticamente */
+export type AtrasoPedido = {
+  minutos: number;
+  motivo: string | null;
+  mais_minutos: number | null;
+  motivo_em: string | null;
+  criado_em: string;
+};
+
+export type MinhaReclamacao = {
+  id: string;
+  pedido_id: string;
+  origem: 'avaliacao' | 'cliente';
+  texto: string | null;
+  estado: 'aberta' | 'resolvida';
+  resposta: string | null;
+  criado_em: string;
+  decidido_em: string | null;
+};
+
+export type MensagemAtendimento = {
+  id: string;
+  autor: 'cliente' | 'agente' | 'funcionario' | 'sistema';
+  texto: string;
+  criado_em: string;
+  quem: string | null;
+};
+
+export type ConversaAtendimento = {
+  conversa_id: string;
+  estado: 'agente' | 'humano' | 'fechada';
+  a_escrever: boolean;
+  mensagens: MensagemAtendimento[];
+};
+
+export type Contacto = {
+  telefone: string | null;
+  whatsapp: string | null;
+  email?: string | null;
+  horario: string | null;
+  morada?: string | null;
+};
+
+export type Contactos = {
+  geral: Contacto;
+  cozinhas: (Contacto & { id: string; nome: string; estado: 'activa' | 'pausada' })[];
 };

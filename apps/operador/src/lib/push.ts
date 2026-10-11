@@ -53,9 +53,17 @@ export async function desactivarPush(): Promise<void> {
 }
 
 /** Ecrã a abrir quando o funcionário toca numa notificação */
-export function rotaDaNotificacao(dados: unknown): '/equipa' | '/pacotes' | null {
+export function rotaDaNotificacao(dados: unknown): '/equipa' | '/pacotes' | '/entregas' | '/reclamacoes' | '/conferencia' | '/analista' | '/vigilancia' | '/turno' | '/compras' | '/atendimento' | null {
   const codigo = (dados as { codigo?: unknown } | null | undefined)?.codigo;
   if (codigo === 'N12') return '/equipa';
   if (codigo === 'N15') return '/pacotes';
+  if (codigo === 'N17' || codigo === 'N18' || codigo === 'N19') return '/entregas';
+  if (codigo === 'N21') return '/reclamacoes';
+  if (codigo === 'N24') return '/conferencia';
+  if (codigo === 'N25') return '/analista';
+  if (codigo === 'N26') return '/vigilancia';
+  if (codigo === 'N27') return '/turno';
+  if (codigo === 'N28') return '/compras';
+  if (codigo === 'N29') return '/atendimento';
   return null;
 }
