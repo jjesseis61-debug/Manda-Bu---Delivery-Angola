@@ -12,6 +12,7 @@ import { cores, espaco } from '@/lib/tema';
 import type { Cozinha, PosicaoEstafeta, SugestaoDespacho } from '@/lib/tipos';
 
 const INTERVALO_MS = 10_000;
+const POSICAO_ANTIGA_MS = 120_000; // posição com mais de 2 min = estafeta não está a enviar ao vivo
 
 /** Mapa de acompanhamento dos estafetas de serviço (despacho). Actualiza a cada 10 s. */
 export default function Estafetas() {
@@ -41,7 +42,10 @@ export default function Estafetas() {
       const ler = () => {
         posicoesEstafetas(cozinhaId)
           .then((e) => {
-            if (activo) setEstafetas(e);
+            if (activo) {
+              setEstafetas(e);
+              setErro(null); // um refresh bom limpa o alarme de uma falha anterior
+            }
           })
           .catch((e) => {
             if (activo) setErro(mensagemErro(e));
@@ -87,15 +91,27 @@ export default function Estafetas() {
           <>
             <MapaEstafetas estafetas={estafetas} />
             <Subtitulo>A caminho ({estafetas.length})</Subtitulo>
-            {estafetas.map((e) => (
-              <Cartao key={e.funcionario_id}>
-                <Text style={{ fontWeight: '700', color: cores.texto }}>{e.nome}</Text>
-                <Linha
-                  esquerda={`${e.pedidos_a_levar} ${e.pedidos_a_levar === 1 ? 'pedido' : 'pedidos'} a levar`}
-                  direita={haQuantoTempo(e.atualizado_em)}
-                />
-              </Cartao>
-            ))}
+            {estafetas.map((e) => {
+              const antigo = Date.now() - new Date(e.atualizado_em).getTime() > POSICAO_ANTIGA_MS;
+              return (
+                <Cartao key={e.funcionario_id}>
+                  <Text style={{ fontWeight: '700', color: cores.texto }}>{e.nome}</Text>
+                  <Linha
+                    esquerda={`${e.pedidos_a_levar} ${e.pedidos_a_levar === 1 ? 'pedido' : 'pedidos'} a levar`}
+                    direita={
+                      <Text style={{ color: antigo ? cores.aviso : cores.textoSuave }}>
+                        {haQuantoTempo(e.atualizado_em)}
+                        {antigo ? ' · desatualizada' : ''}
+                      </Text>
+                    }
+                  />
+                </Cartao>
+              );
+            })}
+            <Paragrafo suave>
+              O ponto só se move enquanto o estafeta tem o ecrã de Entregas aberto e está em entrega. “Desatualizada” =
+              não envia a posição há mais de 2 minutos (app fechada ou fora do ecrã).
+            </Paragrafo>
           </>
         )}
         {porZona.length > 0 && (

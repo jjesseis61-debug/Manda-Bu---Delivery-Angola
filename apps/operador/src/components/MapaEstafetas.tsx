@@ -5,6 +5,8 @@ import { estiloMapa } from '@/lib/mapaEstilo';
 import { cores, raio } from '@/lib/tema';
 import type { PosicaoEstafeta } from '@/lib/tipos';
 
+const POSICAO_ANTIGA_MS = 120_000; // posição com mais de 2 min = não está a enviar ao vivo
+
 /** Mapa (OpenStreetMap) com os estafetas de serviço, só leitura. Assume pelo menos um estafeta. */
 export function MapaEstafetas({ estafetas, altura = 300 }: { estafetas: PosicaoEstafeta[]; altura?: number }) {
   const lats = estafetas.map((e) => e.lat);
@@ -29,16 +31,19 @@ export function MapaEstafetas({ estafetas, altura = 300 }: { estafetas: PosicaoE
         ) : (
           <Camera bounds={[oeste, sul, este, norte]} padding={{ top: 48, right: 48, bottom: 48, left: 48 }} />
         )}
-        {estafetas.map((e) => (
-          <Marker key={e.funcionario_id} id={e.funcionario_id} lngLat={[e.lng, e.lat]}>
-            <View style={estilos.marcador}>
-              <Text style={estilos.nome} numberOfLines={1}>
-                {e.nome}
-              </Text>
-              <View style={estilos.pin} />
-            </View>
-          </Marker>
-        ))}
+        {estafetas.map((e) => {
+          const antigo = Date.now() - new Date(e.atualizado_em).getTime() > POSICAO_ANTIGA_MS;
+          return (
+            <Marker key={e.funcionario_id} id={e.funcionario_id} lngLat={[e.lng, e.lat]}>
+              <View style={[estilos.marcador, antigo && { opacity: 0.5 }]}>
+                <Text style={estilos.nome} numberOfLines={1}>
+                  {e.nome}
+                </Text>
+                <View style={[estilos.pin, antigo && { backgroundColor: cores.textoSuave }]} />
+              </View>
+            </Marker>
+          );
+        })}
       </Map>
     </View>
   );

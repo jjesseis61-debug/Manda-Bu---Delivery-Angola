@@ -1,10 +1,11 @@
-import { Redirect, useRouter, type Href } from 'expo-router';
-import { useState } from 'react';
-import { Pressable, Text } from 'react-native';
+import { Redirect, useFocusEffect, useRouter, type Href } from 'expo-router';
+import { useCallback, useState } from 'react';
+import { Pressable, Text, View } from 'react-native';
 
 import { ACarregar, Botao, Campo, Cartao, Ecra, Paragrafo } from '@/components/ui';
+import { contarNotificacoesNovas } from '@/lib/api';
 import { useSessao } from '@/lib/sessao';
-import { cores } from '@/lib/tema';
+import { cores, espaco } from '@/lib/tema';
 import type { Funcionario, Permissao } from '@/lib/tipos';
 
 /** Minúsculas e sem acentos, para a pesquisa encontrar com ou sem acentos */
@@ -64,6 +65,12 @@ export default function Inicio() {
   const router = useRouter();
   const { carregado, sessao, funcionario, pode, sair } = useSessao();
   const [procura, setProcura] = useState('');
+  const [novas, setNovas] = useState(0);
+  useFocusEffect(
+    useCallback(() => {
+      contarNotificacoesNovas().then(setNovas).catch(() => undefined);
+    }, []),
+  );
   if (!carregado) return <ACarregar />;
   if (!sessao) return <Redirect href="/entrar" />;
   if (!funcionario) return <Redirect href="/sem-acesso" />;
@@ -77,10 +84,39 @@ export default function Inicio() {
     : visiveis;
   return (
     <Ecra>
-      <Paragrafo suave>
-        {funcionario.nome}
-        {funcionario.cargo ? ` · ${funcionario.cargo}` : ''}
-      </Paragrafo>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: espaco.s }}>
+        <Paragrafo suave>
+          {funcionario.nome}
+          {funcionario.cargo ? ` · ${funcionario.cargo}` : ''}
+        </Paragrafo>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Notificações${novas > 0 ? `, ${novas} novas` : ''}`}
+          onPress={() => {
+            setNovas(0);
+            router.push('/notificacoes');
+          }}
+          style={{ padding: 6 }}>
+          <Text style={{ fontSize: 22 }}>🔔</Text>
+          {novas > 0 && (
+            <View
+              style={{
+                position: 'absolute',
+                top: 0,
+                right: 0,
+                minWidth: 18,
+                height: 18,
+                paddingHorizontal: 4,
+                borderRadius: 9,
+                backgroundColor: cores.marca,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+              <Text style={{ color: '#fff', fontSize: 11, fontWeight: '800' }}>{novas > 99 ? '99+' : novas}</Text>
+            </View>
+          )}
+        </Pressable>
+      </View>
       {mostrarPesquisa && (
         <Campo
           rotulo="Procurar funcionalidade"

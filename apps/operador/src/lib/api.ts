@@ -7,6 +7,7 @@ import type {
   ClienteInativo,
   ResumoInativos,
   CampanhaReconquista,
+  Notificacao,
   AdesaoOperador,
   AlertaPedido,
   CasoConvida,
@@ -246,6 +247,19 @@ export async function guardarLocalizacao(l: LocalizacaoCozinha) {
   const { id, ...dados } = l;
   if (id) verificar(await supabase.from('cozinhas_localizacao').update({ ...dados, atualizado_em: new Date().toISOString() }).eq('id', id));
   else verificar(await supabase.from('cozinhas_localizacao').insert(dados));
+}
+
+// ---------------------------------------------------------------- Sino de notificações
+export async function minhasNotificacoes(limite = 30): Promise<Notificacao[]> {
+  return (verificar(await supabase.rpc('minhas_notificacoes', { p_limite: limite })) as Notificacao[]) ?? [];
+}
+
+export async function contarNotificacoesNovas(): Promise<number> {
+  return (verificar(await supabase.rpc('contar_notificacoes_novas')) as number) ?? 0;
+}
+
+export async function marcarNotificacoesVistas(ids?: string[]): Promise<number> {
+  return (verificar(await supabase.rpc('marcar_notificacoes_vistas', { p_ids: ids ?? null })) as number) ?? 0;
 }
 
 // ---------------------------------------------------------------- I11: posição do estafeta

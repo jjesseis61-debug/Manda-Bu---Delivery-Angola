@@ -184,6 +184,16 @@ export type CampanhaReconquista = {
   resultado: ResultadoCampanha;
 };
 
+export type Notificacao = {
+  id: string;
+  codigo: string;
+  titulo: string | null;
+  corpo: string | null;
+  dados: Record<string, unknown>;
+  criado_em: string;
+  vista_em: string | null;
+};
+
 export type Painel = {
   custo: number;
   ganhos: number;
