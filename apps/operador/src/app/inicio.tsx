@@ -117,6 +117,14 @@ export default function Inicio() {
           )}
         </Pressable>
       </View>
+      {pode('entregas.registar') && (
+        <Pressable onPress={() => router.push('/entregas?meu=1')}>
+          <Cartao estilo={{ backgroundColor: cores.marca }}>
+            <Text style={{ fontSize: 18, fontWeight: '800', color: '#fff' }}>As minhas entregas de hoje</Text>
+            <Text style={{ color: '#fff' }}>Ver só o que tens para entregar e marcar como entregue</Text>
+          </Cartao>
+        </Pressable>
+      )}
       {mostrarPesquisa && (
         <Campo
           rotulo="Procurar funcionalidade"

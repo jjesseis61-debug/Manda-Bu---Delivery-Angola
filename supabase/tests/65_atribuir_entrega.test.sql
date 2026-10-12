@@ -2,7 +2,7 @@
 -- reservado aceita (em entrega); recusar liberta; a reserva expira; barreiras de permissão.
 begin;
 \ir _helpers.psql
-select plan(8);
+select plan(10);
 
 select testes.def('cz', cozinha_padrao());
 with z as (insert into zonas (nome, tipo, taxa) values ('Viana', 'Própria', 1000) returning id) select testes.def('zona', id) from z;
@@ -35,15 +35,19 @@ select is(testes.v('n_estafetas')::int, 2, 'o seletor lista os 2 estafetas');
 select testes.entrar_funcionario(testes.u('est1'));
 set local role authenticated;
 select testes.def('mim1', (select atribuido_a_mim::text from pedidos_operador() where pedido_id = testes.u('p')));
+select testes.def('minha1', (select minha::text from pedidos_operador() where pedido_id = testes.u('p')));
 reset role; select testes.sair();
 select testes.entrar_funcionario(testes.u('est2'));
 set local role authenticated;
 select testes.def('mim2', (select atribuido_a_mim::text from pedidos_operador() where pedido_id = testes.u('p')));
+select testes.def('minha2', (select minha::text from pedidos_operador() where pedido_id = testes.u('p')));
 select testes.def('nome2', (select atribuido_a_nome from pedidos_operador() where pedido_id = testes.u('p')));
 select testes.def('e_outro', testes.erro(format($$select mudar_estado_pedido(%L, 'em_entrega')$$, testes.u('p'))));
 reset role; select testes.sair();
 select ok(testes.v('mim1') = 'true' and testes.v('mim2') = 'false' and testes.v('nome2') = 'Estafeta 1',
           'o reservado vê "a mim"; o outro vê reservado ao Estafeta 1');
+select ok(testes.v('minha1') = 'true' and testes.v('minha2') = 'false',
+          'reservado a mim conta como "minha"; para o outro não é');
 select matches(testes.v('e_outro'), '^42501', 'outro estafeta não pode pegar num pedido reservado');
 
 -- O estafeta 1 aceita (marca em entrega): fica entregador e a reserva liberta-se
@@ -54,6 +58,18 @@ reset role; select testes.sair();
 select ok((select estado = 'em_entrega' and entregador_id = testes.u('est1') and atribuido_a is null
              from pedidos where id = testes.u('p')),
           'o reservado aceita: fica entregador e a reserva liberta-se');
+
+-- Já em entrega por mim: continua "minha" para o est1 (via entregador), não para o est2
+select testes.entrar_funcionario(testes.u('est1'));
+set local role authenticated;
+select testes.def('minha_ent1', (select minha::text from pedidos_operador() where pedido_id = testes.u('p')));
+reset role; select testes.sair();
+select testes.entrar_funcionario(testes.u('est2'));
+set local role authenticated;
+select testes.def('minha_ent2', (select minha::text from pedidos_operador() where pedido_id = testes.u('p')));
+reset role; select testes.sair();
+select ok(testes.v('minha_ent1') = 'true' and testes.v('minha_ent2') = 'false',
+          'em entrega conta como "minha" para o entregador, não para outro estafeta');
 
 -- Barreira: um estafeta não pode atribuir
 select testes.def('p_barr', pg_temp.pedido_confirmado());

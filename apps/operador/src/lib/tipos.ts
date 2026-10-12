@@ -285,6 +285,8 @@ export type PedidoOperador = {
   atribuido_a: string | null;
   atribuido_a_nome: string | null;
   atribuido_a_mim: boolean;
+  /** Reservado a mim (reserva activa) ou já a entregar por mim — para o modo estafeta */
+  minha: boolean;
 };
 
 export type EstafetaAtribuir = { funcionario_id: string; nome: string; a_levar: number; online: boolean };

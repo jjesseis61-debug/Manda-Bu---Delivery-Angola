@@ -1,5 +1,5 @@
-import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Image, Linking, Switch, Text, View } from 'react-native';
 
 import { Guarda } from '@/components/Guarda';
@@ -8,6 +8,7 @@ import { alertasAbertos, atribuirEntrega, caixasAbertas, estafetasParaAtribuir, 
 import { formatarData, formatarDia, formatarKz, mensagemErro, nomeEstadoPedido } from '@/lib/formatar';
 import { enviarComprovativo, escolherFoto } from '@/lib/fotos';
 import { usePartilharLocalizacao } from '@/lib/partilharLocalizacao';
+import { guardarModoEstafeta, lerModoEstafeta, modoEstafetaInicial } from '@/lib/preferencias';
 import { useSessao } from '@/lib/sessao';
 import { cores, espaco } from '@/lib/tema';
 import type { AlertaPedido, Caixa, Cozinha, EstafetaAtribuir, PedidoAgendado, PedidoOperador } from '@/lib/tipos';
@@ -53,8 +54,10 @@ const SEGUINTE: Record<string, { estado: string; rotulo: string; gerir: boolean 
 export default function Entregas() {
   const { pode } = useSessao();
   const router = useRouter();
+  const { meu } = useLocalSearchParams<{ meu?: string }>();
   const gerir = pode('pedidos.gerir');
   const entregar = pode('entregas.registar');
+  const [modoEstafeta, setModoEstafeta] = useState(false);
   const [pedidos, setPedidos] = useState<PedidoOperador[] | null>(null);
   const [caixas, setCaixas] = useState<Caixa[]>([]);
   const [erro, setErro] = useState<string | null>(null);
@@ -93,17 +96,41 @@ export default function Entregas() {
   }, []);
   useFocusEffect(carregar);
 
+  // Modo estafeta: vista enxuta com só as minhas entregas. Default inteligente na 1.ª vez,
+  // o atalho "As minhas entregas" (meu=1) força ligado, e a escolha do utilizador fica guardada.
+  useEffect(() => {
+    let vivo = true;
+    lerModoEstafeta().then((guardado) => {
+      if (vivo) setModoEstafeta(modoEstafetaInicial({ entregar, gerir, guardado, forcado: meu === '1' }));
+    });
+    return () => {
+      vivo = false;
+    };
+  }, [entregar, gerir, meu]);
+
+  function alternarModo(v: boolean) {
+    setModoEstafeta(v);
+    void guardarModoEstafeta(v);
+  }
+
   // I11: com pedidos a caminho, envia a posição para o cliente acompanhar a entrega
   const partilha = usePartilharLocalizacao(entregar && (pedidos ?? []).some((p) => p.estado === 'em_entrega'), versao);
 
   const grupos = useMemo(() => {
     const m = new Map<string, PedidoOperador[]>();
-    for (const p of (pedidos ?? []).filter((x) => filtroCozinha === 'todas' || x.cozinha_id === filtroCozinha)) {
+    for (const p of (pedidos ?? []).filter(
+      (x) => (filtroCozinha === 'todas' || x.cozinha_id === filtroCozinha) && (!modoEstafeta || x.minha),
+    )) {
       const chave = p.ponto_entrega_id ?? `sem-ponto-${p.pedido_id}`;
       m.set(chave, [...(m.get(chave) ?? []), p]);
     }
     return [...m.values()];
-  }, [pedidos, filtroCozinha]);
+  }, [pedidos, filtroCozinha, modoEstafeta]);
+
+  // Resumo das minhas entregas, para dar noção de carga e progresso (reforço)
+  const minhas = (pedidos ?? []).filter((p) => p.minha);
+  const aCaminho = minhas.filter((p) => p.estado === 'em_entrega').length;
+  const reservadas = minhas.length - aCaminho;
 
   function abrirEntrega(p: PedidoOperador) {
     const daCozinha = caixas.filter((c) => c.cozinha_id === p.cozinha_id);
@@ -383,7 +410,7 @@ export default function Entregas() {
         )}
         {!aberto && (
           <View style={{ gap: espaco.s }}>
-            {seguinte && (gerir || (!seguinte.gerir && entregar)) &&
+            {seguinte && ((!seguinte.gerir && entregar) || (gerir && !modoEstafeta)) &&
               !(seguinte.estado === 'em_entrega' && !!p.atribuido_a && !p.atribuido_a_mim && !gerir) && (
                 <Botao
                   titulo={seguinte.rotulo}
@@ -391,7 +418,7 @@ export default function Entregas() {
                   aoCarregar={() => correr(p.pedido_id, () => mudarEstado(p.pedido_id, seguinte.estado))}
                 />
               )}
-            {gerir && (p.estado === 'confirmado' || p.estado === 'em_preparacao') && (
+            {gerir && !modoEstafeta && (p.estado === 'confirmado' || p.estado === 'em_preparacao') && (
               <Botao
                 titulo={p.atribuido_a ? 'Reatribuir a outro estafeta…' : 'Atribuir a um estafeta…'}
                 variante="leve"
@@ -417,8 +444,8 @@ export default function Entregas() {
                 }}
               />
             )}
-            {gerir && <Botao titulo="Cancelar…" variante="texto" aoCarregar={() => setAccao({ pedido: p.pedido_id, tipo: 'cancelar' })} />}
-            {gerir && (
+            {gerir && !modoEstafeta && <Botao titulo="Cancelar…" variante="texto" aoCarregar={() => setAccao({ pedido: p.pedido_id, tipo: 'cancelar' })} />}
+            {gerir && !modoEstafeta && (
               <Botao
                 titulo="Histórico"
                 variante="texto"
@@ -442,15 +469,38 @@ export default function Entregas() {
             este ecrã aberto durante a entrega.
           </Aviso>
         )}
+        {/* Modo estafeta: vista enxuta com só as minhas entregas (só para quem entrega) */}
+        {entregar && (
+          <Cartao estilo={{ gap: espaco.xs }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Text style={{ fontWeight: '700', color: cores.texto }}>Modo estafeta</Text>
+              <Switch
+                thumbColor="#FFFFFF"
+                value={modoEstafeta}
+                trackColor={{ true: cores.marca, false: cores.contorno }}
+                onValueChange={alternarModo}
+              />
+            </View>
+            {modoEstafeta ? (
+              <Paragrafo suave>
+                {minhas.length === 0
+                  ? 'Sem entregas tuas agora. Desliga para ver a fila toda.'
+                  : `As tuas entregas: ${reservadas} reservada${reservadas === 1 ? '' : 's'} · ${aCaminho} a caminho.`}
+              </Paragrafo>
+            ) : (
+              <Paragrafo suave>Liga para veres só as tuas entregas, sem o resto da fila.</Paragrafo>
+            )}
+          </Cartao>
+        )}
         {/* I8: com várias cozinhas, filtrar a fila por cozinha */}
-        {cozinhas.length > 1 && (
+        {!modoEstafeta && cozinhas.length > 1 && (
           <Escolha
             opcoes={[{ valor: 'todas', rotulo: 'Todas' }, ...cozinhas.map((c) => ({ valor: c.id, rotulo: c.nome }))]}
             valor={filtroCozinha}
             aoMudar={setFiltroCozinha}
           />
         )}
-        {(() => {
+        {!modoEstafeta && (() => {
           const vis = agendados.filter((a) => filtroCozinha === 'todas' || a.cozinha_id === filtroCozinha);
           if (vis.length === 0) return null;
           return (
