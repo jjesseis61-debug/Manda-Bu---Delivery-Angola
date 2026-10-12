@@ -282,7 +282,12 @@ export type PedidoOperador = {
   ponto_lng: number | null;
   ponto_referencia: string | null;
   zona_nome: string | null;
+  atribuido_a: string | null;
+  atribuido_a_nome: string | null;
+  atribuido_a_mim: boolean;
 };
+
+export type EstafetaAtribuir = { funcionario_id: string; nome: string; a_levar: number; online: boolean };
 
 export type Caixa = { id: string; posto: string; data: string; cozinha_id: string };
 

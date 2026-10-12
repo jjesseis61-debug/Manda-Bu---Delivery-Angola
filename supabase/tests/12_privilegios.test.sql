@@ -106,6 +106,8 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 -- central de avisos (avisos_destinatarios é revogada de authenticated)
                 'enviar_aviso', 'pre_visualizar_aviso', 'listar_avisos',
                 'caixas_geridas',
+                -- atribuição explícita de entregas
+                'atribuir_entrega', 'recusar_entrega', 'estafetas_para_atribuir',
                 -- sino de notificações do funcionário
                 'minhas_notificacoes', 'contar_notificacoes_novas', 'marcar_notificacoes_vistas',
                 -- reconquista de clientes inativos

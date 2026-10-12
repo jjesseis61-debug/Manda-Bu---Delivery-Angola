@@ -4,13 +4,13 @@ import { Image, Linking, Switch, Text, View } from 'react-native';
 
 import { Guarda } from '@/components/Guarda';
 import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Escolha, Paragrafo, Subtitulo } from '@/components/ui';
-import { alertasAbertos, caixasAbertas, informarAtraso, lerCozinhas, marcarPagadorDistinto, mudarEstado, pedidosAgendados, pedidosOperador } from '@/lib/api';
+import { alertasAbertos, atribuirEntrega, caixasAbertas, estafetasParaAtribuir, informarAtraso, lerCozinhas, marcarPagadorDistinto, mudarEstado, pedidosAgendados, pedidosOperador, recusarEntrega } from '@/lib/api';
 import { formatarData, formatarDia, formatarKz, mensagemErro, nomeEstadoPedido } from '@/lib/formatar';
 import { enviarComprovativo, escolherFoto } from '@/lib/fotos';
 import { usePartilharLocalizacao } from '@/lib/partilharLocalizacao';
 import { useSessao } from '@/lib/sessao';
 import { cores, espaco } from '@/lib/tema';
-import type { AlertaPedido, Caixa, Cozinha, PedidoAgendado, PedidoOperador } from '@/lib/tipos';
+import type { AlertaPedido, Caixa, Cozinha, EstafetaAtribuir, PedidoAgendado, PedidoOperador } from '@/lib/tipos';
 
 const METODOS = ['Dinheiro', 'Multicaixa Express', 'TPA', 'Unitel Money', 'Transferência'];
 
@@ -23,7 +23,7 @@ const electronico = (metodo: string) => metodo !== 'Dinheiro';
 function parcelaCompleta(x: Parcela): boolean {
   return Number(x.valor) > 0 && (!electronico(x.metodo) || (x.referencia.trim().length >= 4 && !!x.foto));
 }
-type Accao = { pedido: string; tipo: 'cancelar' | 'entregar' | 'atraso' };
+type Accao = { pedido: string; tipo: 'cancelar' | 'entregar' | 'atraso' | 'atribuir' };
 
 /** Motivos de atraso mais comuns (o texto vai tal e qual para o cliente) */
 const MOTIVOS_ATRASO = [
@@ -59,6 +59,7 @@ export default function Entregas() {
   const [caixas, setCaixas] = useState<Caixa[]>([]);
   const [erro, setErro] = useState<string | null>(null);
   const [accao, setAccao] = useState<Accao | null>(null);
+  const [estafetas, setEstafetas] = useState<EstafetaAtribuir[]>([]);
   const [cancelar, setCancelar] = useState({ motivo: '', outro: '' });
   const [caixa, setCaixa] = useState<string | null>(null);
   const [parcelas, setParcelas] = useState<Parcela[]>([]);
@@ -109,6 +110,37 @@ export default function Entregas() {
     setCaixa(daCozinha.length === 1 ? daCozinha[0].id : null);
     setParcelas(p.a_pagar > 0 ? [novaParcela('Dinheiro', p.a_pagar)] : []);
     setAccao({ pedido: p.pedido_id, tipo: 'entregar' });
+  }
+
+  async function abrirAtribuir(p: PedidoOperador) {
+    setErro(null);
+    setEstafetas([]);
+    setAccao({ pedido: p.pedido_id, tipo: 'atribuir' });
+    try {
+      setEstafetas(await estafetasParaAtribuir(p.cozinha_id));
+    } catch (e) {
+      setErro(mensagemErro(e));
+    }
+  }
+
+  function painelAtribuir(p: PedidoOperador) {
+    return (
+      <View style={{ gap: espaco.s }}>
+        <Text style={{ fontWeight: '700' }}>Entregar a quem?</Text>
+        {estafetas.length === 0 && <Paragrafo suave>Sem estafetas disponíveis.</Paragrafo>}
+        {estafetas.map((e) => (
+          <Botao
+            key={e.funcionario_id}
+            titulo={`${e.nome} · ${e.a_levar} a levar${e.online ? ' · online' : ''}`}
+            variante="leve"
+            aCarregar={ocupado === p.pedido_id}
+            aoCarregar={() => correr(p.pedido_id, () => atribuirEntrega(p.pedido_id, e.funcionario_id))}
+          />
+        ))}
+        <Paragrafo suave>O estafeta recebe um aviso e aceita marcando “Saiu para entrega”. A reserva liberta-se sozinha ao fim de alguns minutos.</Paragrafo>
+        <Botao titulo="Voltar" variante="texto" aoCarregar={() => setAccao(null)} />
+      </View>
+    );
   }
 
   const motivoCancelamento = cancelar.motivo === 'outro' ? cancelar.outro.trim() : cancelar.motivo;
@@ -318,8 +350,14 @@ export default function Entregas() {
           </View>
         )}
 
+        {p.atribuido_a_nome && (
+          <Text style={{ color: p.atribuido_a_mim ? cores.sucesso : cores.aviso, fontWeight: '700' }}>
+            {p.atribuido_a_mim ? '➤ Reservado a ti' : `➤ Reservado a ${p.atribuido_a_nome}`}
+          </Text>
+        )}
         {avisos(p)}
         {aberto && accao?.tipo === 'entregar' && painelEntrega(p)}
+        {aberto && accao?.tipo === 'atribuir' && painelAtribuir(p)}
         {aberto && accao?.tipo === 'atraso' && painelAtraso(p)}
         {aberto && accao?.tipo === 'cancelar' && (
           <View style={{ gap: espaco.s }}>
@@ -345,11 +383,27 @@ export default function Entregas() {
         )}
         {!aberto && (
           <View style={{ gap: espaco.s }}>
-            {seguinte && (gerir || (!seguinte.gerir && entregar)) && (
+            {seguinte && (gerir || (!seguinte.gerir && entregar)) &&
+              !(seguinte.estado === 'em_entrega' && !!p.atribuido_a && !p.atribuido_a_mim && !gerir) && (
+                <Botao
+                  titulo={seguinte.rotulo}
+                  aCarregar={ocupado === p.pedido_id}
+                  aoCarregar={() => correr(p.pedido_id, () => mudarEstado(p.pedido_id, seguinte.estado))}
+                />
+              )}
+            {gerir && (p.estado === 'confirmado' || p.estado === 'em_preparacao') && (
               <Botao
-                titulo={seguinte.rotulo}
+                titulo={p.atribuido_a ? 'Reatribuir a outro estafeta…' : 'Atribuir a um estafeta…'}
+                variante="leve"
+                aoCarregar={() => abrirAtribuir(p)}
+              />
+            )}
+            {p.atribuido_a_mim && (
+              <Botao
+                titulo="Recusar esta entrega"
+                variante="texto"
                 aCarregar={ocupado === p.pedido_id}
-                aoCarregar={() => correr(p.pedido_id, () => mudarEstado(p.pedido_id, seguinte.estado))}
+                aoCarregar={() => correr(p.pedido_id, () => recusarEntrega(p.pedido_id))}
               />
             )}
             {p.estado === 'em_entrega' && (gerir || entregar) && <Botao titulo="Entregue e pago…" aoCarregar={() => abrirEntrega(p)} />}

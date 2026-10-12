@@ -49,6 +49,7 @@ import type {
   PalavraFiltrada,
   PedidoAgendado,
   PedidoOperador,
+  EstafetaAtribuir,
   Periodo,
   PermissaoCatalogo,
   PessoalItem,
@@ -284,6 +285,20 @@ export async function relatorioComparativo(inicio: string, fim: string): Promise
 // ---------------------------------------------------------------- E1
 export async function pedidosOperador(): Promise<PedidoOperador[]> {
   return verificar(await supabase.rpc('pedidos_operador')) as PedidoOperador[];
+}
+
+export async function estafetasParaAtribuir(cozinhaId: string): Promise<EstafetaAtribuir[]> {
+  return (
+    (verificar(await supabase.rpc('estafetas_para_atribuir', { p_cozinha: cozinhaId })) as EstafetaAtribuir[]) ?? []
+  );
+}
+
+export async function atribuirEntrega(pedidoId: string, estafetaId: string): Promise<void> {
+  verificar(await supabase.rpc('atribuir_entrega', { p_pedido: pedidoId, p_estafeta: estafetaId }));
+}
+
+export async function recusarEntrega(pedidoId: string): Promise<void> {
+  verificar(await supabase.rpc('recusar_entrega', { p_pedido: pedidoId }));
 }
 
 export async function caixasAbertas(): Promise<Caixa[]> {
