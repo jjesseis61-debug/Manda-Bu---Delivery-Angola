@@ -1,6 +1,6 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { Image, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { Alert, Image, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 
 import { CartaoConvida } from '@/components/CartaoConvida';
 import { ComoChegar } from '@/components/ComoChegar';
@@ -31,7 +31,7 @@ const EM_ANDAMENTO = ['pendente', 'confirmado', 'em_preparacao', 'em_entrega'];
 
 export default function Inicio() {
   const router = useRouter();
-  const { ligada } = useSessao();
+  const { ligada, perfil } = useSessao();
   const carrinho = useCarrinho();
   const [cardapio, setCardapio] = useState<ItemCardapio[] | null>(null);
   const [enderecos, setEnderecos] = useState<Endereco[]>([]);
@@ -132,6 +132,22 @@ export default function Inicio() {
     return m > 0 && m <= 120 ? m : null;
   }, [minutosEstafeta, pedidoActivo]);
 
+  // Trocar de cozinha esvazia o carrinho (os pratos são de outra cozinha): com carrinho cheio,
+  // confirma antes de apagar, para uma escolha distraída não deitar fora o trabalho do cliente.
+  function trocarCozinha(id: string) {
+    const c = cozinhas.find((x) => x.cozinha_id === id);
+    if (!c || c.cozinha_id === cozinhaId) return;
+    const mudar = () => carrinho.definirCozinha({ id: c.cozinha_id, nome: c.nome });
+    if (carrinho.quantidade > 0) {
+      Alert.alert('Mudar de cozinha?', 'Os pratos no carrinho são desta cozinha e serão removidos.', [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Mudar e esvaziar', style: 'destructive', onPress: mudar },
+      ]);
+    } else {
+      mudar();
+    }
+  }
+
   const doDia = useMemo(() => (cardapio ?? []).filter((i) => i.do_dia), [cardapio]);
   const categorias = useMemo(() => {
     const grupos = new Map<string, ItemCardapio[]>();
@@ -156,6 +172,11 @@ export default function Inicio() {
             }}
           />
         }>
+        {/* Momento de marca: uma saudação curta antes do cardápio */}
+        <Text style={{ fontSize: 20, fontWeight: '800', color: cores.texto }}>
+          {perfil?.primeiro_nome ? `Olá, ${perfil.primeiro_nome} 👋` : 'Olá 👋'}
+        </Text>
+        <Text style={{ color: cores.textoSuave, marginTop: -espaco.xs }}>O que vais almoçar hoje?</Text>
         {/* Banner: pedido em andamento — toca para acompanhar a entrega */}
         {pedidoActivo && (
           <Pressable
@@ -192,14 +213,8 @@ export default function Inicio() {
             <Escolha
               opcoes={cozinhas.map((c) => ({ valor: c.cozinha_id, rotulo: c.nome }))}
               valor={cozinhaId ?? ''}
-              aoMudar={(id) => {
-                const c = cozinhas.find((x) => x.cozinha_id === id);
-                if (c) carrinho.definirCozinha({ id: c.cozinha_id, nome: c.nome });
-              }}
+              aoMudar={trocarCozinha}
             />
-            {carrinho.quantidade > 0 && (
-              <Text style={{ color: cores.textoSuave, fontSize: 13 }}>Mudar de cozinha esvazia o carrinho.</Text>
-            )}
           </View>
         )}
         {contador !== null && (
