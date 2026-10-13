@@ -94,7 +94,14 @@ export default function Entregas() {
       })
       .catch((e) => setErro(mensagemErro(e)));
   }, []);
-  useFocusEffect(carregar);
+  // Com o ecrã aberto, actualiza a fila a cada 15 s para os pedidos novos aparecerem quase logo.
+  useFocusEffect(
+    useCallback(() => {
+      void carregar();
+      const t = setInterval(carregar, 15000);
+      return () => clearInterval(t);
+    }, [carregar]),
+  );
 
   // Modo estafeta: vista enxuta com só as minhas entregas. Default inteligente na 1.ª vez,
   // o atalho "As minhas entregas" (meu=1) força ligado, e a escolha do utilizador fica guardada.

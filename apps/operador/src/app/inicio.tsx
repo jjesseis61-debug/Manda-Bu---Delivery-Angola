@@ -66,9 +66,18 @@ export default function Inicio() {
   const { carregado, sessao, funcionario, pode, sair } = useSessao();
   const [procura, setProcura] = useState('');
   const [novas, setNovas] = useState(0);
+  // Enquanto o ecrã está aberto, reconta as notificações a cada 15 s (quase instantâneo,
+  // sem gastar bateria a mais) — senão o badge só mudava ao sair e voltar.
   useFocusEffect(
     useCallback(() => {
-      contarNotificacoesNovas().then(setNovas).catch(() => undefined);
+      let activo = true;
+      const ler = () => contarNotificacoesNovas().then((n) => activo && setNovas(n)).catch(() => undefined);
+      void ler();
+      const t = setInterval(ler, 15000);
+      return () => {
+        activo = false;
+        clearInterval(t);
+      };
     }, []),
   );
   if (!carregado) return <ACarregar />;
