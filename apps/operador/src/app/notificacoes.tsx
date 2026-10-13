@@ -7,6 +7,7 @@ import { Guarda } from '@/components/Guarda';
 import { ACarregar, Ecra, Paragrafo } from '@/components/ui';
 import { marcarNotificacoesVistas, minhasNotificacoes } from '@/lib/api';
 import { mensagemErro } from '@/lib/formatar';
+import { useSessao } from '@/lib/sessao';
 import { cores, espaco, raio } from '@/lib/tema';
 import type { Notificacao } from '@/lib/tipos';
 
@@ -22,6 +23,8 @@ function haQuantoTempo(iso: string): string {
 /** Sino: as notificações do funcionário dentro da app (histórico + estado). Ao abrir, marca como vistas. */
 export default function Notificacoes() {
   const router = useRouter();
+  const { pode } = useSessao();
+  const gerir = pode('pedidos.gerir');
   const [lista, setLista] = useState<Notificacao[] | null>(null);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -39,7 +42,11 @@ export default function Notificacoes() {
 
   const abrir = (n: Notificacao) => {
     const pedidoId = typeof n.dados?.pedido_id === 'string' ? n.dados.pedido_id : null;
-    if (pedidoId) router.push(`/pedido/${pedidoId}`);
+    if (!pedidoId) return;
+    // O gerente vê o histórico; o estafeta vai às suas entregas, onde aceita o pedido reservado
+    // (o histórico exige pedidos.gerir e, para o estafeta, só abre depois de ele ser o entregador).
+    if (gerir) router.push(`/pedido/${pedidoId}`);
+    else router.push('/entregas?meu=1');
   };
 
   return (
@@ -70,7 +77,7 @@ export default function Notificacoes() {
                 {n.corpo ? <Text style={{ color: cores.texto }}>{n.corpo}</Text> : null}
                 <Text style={{ color: cores.textoSuave, fontSize: 12, marginTop: 2 }}>
                   {haQuantoTempo(n.criado_em)}
-                  {temPedido ? ' · toca para ver o pedido' : ''}
+                  {temPedido ? (gerir ? ' · toca para ver o pedido' : ' · toca para aceitar') : ''}
                 </Text>
               </View>
             </Pressable>
