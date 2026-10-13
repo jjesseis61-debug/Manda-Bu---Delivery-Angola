@@ -1,18 +1,18 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { Guarda } from '@/components/Guarda';
 import { MapaEstafetas } from '@/components/MapaEstafetas';
-import { ACarregar, Aviso, Cartao, Ecra, Escolha, Linha, Paragrafo, Subtitulo } from '@/components/ui';
+import { ACarregar, Aviso, Cartao, Ecra, Linha, Paragrafo, Subtitulo } from '@/components/ui';
 import { lerCozinhas, posicoesEstafetas, sugestaoDespacho } from '@/lib/api';
 import { mensagemErro } from '@/lib/formatar';
 import { useSessao } from '@/lib/sessao';
-import { cores, espaco } from '@/lib/tema';
+import { cores, espaco, raio } from '@/lib/tema';
 import type { Cozinha, PosicaoEstafeta, SugestaoDespacho } from '@/lib/tipos';
 
 const INTERVALO_MS = 10_000;
-const POSICAO_ANTIGA_MS = 120_000; // posição com mais de 2 min = estafeta não está a enviar ao vivo
+const POSICAO_ANTIGA_MS = 600_000; // só acima de 10 min sinalizamos: até lá é normal (o ecrã do estafeta fecha)
 
 /** Mapa de acompanhamento dos estafetas de serviço (despacho). Actualiza a cada 10 s. */
 export default function Estafetas() {
@@ -21,6 +21,7 @@ export default function Estafetas() {
   const [cozinhaId, setCozinhaId] = useState<string | null>(null);
   const [estafetas, setEstafetas] = useState<PosicaoEstafeta[] | null>(null);
   const [despacho, setDespacho] = useState<SugestaoDespacho[]>([]);
+  const [filtroAberto, setFiltroAberto] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
   useFocusEffect(
@@ -80,7 +81,46 @@ export default function Estafetas() {
       <Ecra>
         {erro && <Aviso tipo="erro">{erro}</Aviso>}
         {cozinhas.length > 1 && cozinhaId && (
-          <Escolha opcoes={cozinhas.map((c) => ({ valor: c.id, rotulo: c.nome }))} valor={cozinhaId} aoMudar={setCozinhaId} />
+          <View style={{ gap: espaco.xs }}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Escolher cozinha"
+              onPress={() => setFiltroAberto((v) => !v)}
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                borderWidth: 1,
+                borderColor: cores.contorno,
+                borderRadius: raio,
+                paddingHorizontal: espaco.m,
+                paddingVertical: 10,
+              }}>
+              <Text style={{ color: cores.texto, fontWeight: '600' }}>
+                {cozinhas.find((c) => c.id === cozinhaId)?.nome ?? 'Escolher cozinha'}
+              </Text>
+              <Text style={{ color: cores.textoSuave, fontSize: 16 }}>{filtroAberto ? '▲' : '▼'}</Text>
+            </Pressable>
+            {filtroAberto && (
+              <Cartao>
+                {cozinhas.map((c, i) => (
+                  <Pressable
+                    key={c.id}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: c.id === cozinhaId }}
+                    onPress={() => {
+                      setCozinhaId(c.id);
+                      setFiltroAberto(false);
+                    }}
+                    style={{ paddingVertical: 12, borderTopWidth: i === 0 ? 0 : 1, borderTopColor: cores.linha }}>
+                    <Text style={{ color: c.id === cozinhaId ? cores.marca : cores.texto, fontWeight: c.id === cozinhaId ? '700' : '400' }}>
+                      {c.nome}
+                    </Text>
+                  </Pressable>
+                ))}
+              </Cartao>
+            )}
+          </View>
         )}
 
         {!estafetas && !erro && <ACarregar />}
@@ -109,8 +149,8 @@ export default function Estafetas() {
               );
             })}
             <Paragrafo suave>
-              O ponto só se move enquanto o estafeta tem o ecrã de Entregas aberto e está em entrega. “Desatualizada” =
-              não envia a posição há mais de 2 minutos (app fechada ou fora do ecrã).
+              A posição só se actualiza enquanto o estafeta tem o ecrã de Entregas aberto e está em entrega — por isso
+              parar é normal. Só marcamos “desatualizada” acima de 10 minutos (provável app fechada ou sem rede).
             </Paragrafo>
           </>
         )}

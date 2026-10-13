@@ -5,7 +5,7 @@ import { estiloMapa } from '@/lib/mapaEstilo';
 import { cores, raio } from '@/lib/tema';
 import type { PosicaoEstafeta } from '@/lib/tipos';
 
-const POSICAO_ANTIGA_MS = 120_000; // posição com mais de 2 min = não está a enviar ao vivo
+const POSICAO_ANTIGA_MS = 600_000; // coerente com a lista: só acima de 10 min o pino é esbatido
 
 /** Mapa (OpenStreetMap) com os estafetas de serviço, só leitura. Assume pelo menos um estafeta. */
 export function MapaEstafetas({ estafetas, altura = 300 }: { estafetas: PosicaoEstafeta[]; altura?: number }) {
