@@ -484,7 +484,7 @@ export default function Entregas() {
             {modoEstafeta ? (
               <Paragrafo suave>
                 {minhas.length === 0
-                  ? 'Sem entregas tuas agora. Desliga para ver a fila toda.'
+                  ? 'Desliga para ver a fila toda.'
                   : `As tuas entregas: ${reservadas} reservada${reservadas === 1 ? '' : 's'} · ${aCaminho} a caminho.`}
               </Paragrafo>
             ) : (
@@ -522,8 +522,20 @@ export default function Entregas() {
           );
         })()}
         {!pedidos && !erro && <ACarregar />}
-        {pedidos && pedidos.length === 0 && <Paragrafo suave>Sem pedidos em curso.</Paragrafo>}
         <Botao titulo="Actualizar" variante="texto" aoCarregar={carregar} />
+        {pedidos && !erro && grupos.length === 0 && (
+          <View style={{ alignItems: 'center', gap: espaco.s, paddingVertical: espaco.xl * 2 }}>
+            <Text style={{ fontSize: 46 }}>🛵</Text>
+            <Text style={{ fontWeight: '700', fontSize: 16, color: cores.texto, textAlign: 'center' }}>
+              {modoEstafeta ? 'Sem entregas tuas agora' : 'Sem pedidos em curso'}
+            </Text>
+            <Text style={{ color: cores.textoSuave, textAlign: 'center', maxWidth: 280, lineHeight: 20 }}>
+              {modoEstafeta
+                ? 'Quando te atribuírem uma entrega, aparece aqui — e recebes um aviso 🔔.'
+                : 'Os novos pedidos aparecem aqui assim que entram.'}
+            </Text>
+          </View>
+        )}
         {grupos.map((lista) => {
           const p = lista[0];
           return (
