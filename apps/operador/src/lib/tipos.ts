@@ -123,7 +123,8 @@ export type Permissao =
   | 'atendimento.responder'
   | 'feira.gerir'
   | 'avisos.enviar'
-  | 'clientes.reconquista';
+  | 'clientes.reconquista'
+  | 'cardapio.gerir';
 
 export type PublicoAviso =
   | 'clientes_todos'
