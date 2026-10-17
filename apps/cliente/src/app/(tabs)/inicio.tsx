@@ -207,11 +207,14 @@ export default function Inicio() {
         )}
         {/* Convida e Ganha: desconto do 1.º pedido / ganhos / convite (adapta-se ao estado) */}
         <CartaoConvida />
-        {/* I8: selector de cozinha (só com multi_cozinha e mais de uma cozinha a aceitar pedidos) */}
+        {/* I8: selector de cozinha por zona (só com multi_cozinha e mais de uma cozinha a aceitar pedidos).
+            A marca é a mesma; cada opção é um balcão/zona. O título dá a afordância de lugar e o ✓
+            reforça qual está escolhido. */}
         {ligada('multi_cozinha') && !carrinho.grupo && cozinhas.length > 1 && (
           <View style={{ gap: espaco.s }}>
+            <Text style={{ fontSize: 15, fontWeight: '700', color: cores.texto }}>📍 De onde queres pedir?</Text>
             <Escolha
-              opcoes={cozinhas.map((c) => ({ valor: c.cozinha_id, rotulo: c.nome }))}
+              opcoes={cozinhas.map((c) => ({ valor: c.cozinha_id, rotulo: (c.cozinha_id === cozinhaId ? '✓ ' : '') + c.nome }))}
               valor={cozinhaId ?? ''}
               aoMudar={trocarCozinha}
             />
