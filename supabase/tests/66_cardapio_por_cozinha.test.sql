@@ -2,7 +2,7 @@
 -- membro; não mexe nas outras; o admin (cozinhas.gerir) continua a poder tudo e só ele cria cozinhas.
 begin;
 \ir _helpers.psql
-select plan(9);
+select plan(13);
 
 select testes.def('cz_a', cozinha_padrao());
 insert into cozinhas (nome, responsavel) values ('Cozinha B', 'Bruno');
@@ -44,6 +44,19 @@ set local role authenticated;
 update cardapio set preco = 9999 where id = testes.u('prato_b');
 reset role; select testes.sair();
 select is((select preco from cardapio where id = testes.u('prato_b'))::int, 9999, 'o admin (cozinhas.gerir) edita o cardápio de qualquer cozinha');
+
+-- 2.ª fase: fotos no bucket por-cozinha (caminho pratos/<prato>/… e cozinhas/<cozinha>/…)
+select testes.entrar_funcionario(testes.u('gerente'));
+set local role authenticated;
+select testes.def('f_prato_a', testes.erro(format($$insert into storage.objects (bucket_id, name) values ('fotos-pratos', 'pratos/%s/a.jpg')$$, testes.v('prato_a'))));
+select testes.def('f_prato_b', testes.erro(format($$insert into storage.objects (bucket_id, name) values ('fotos-pratos', 'pratos/%s/b.jpg')$$, testes.v('prato_b'))));
+select testes.def('f_perfil_a', testes.erro(format($$insert into storage.objects (bucket_id, name) values ('fotos-pratos', 'cozinhas/%s/p.jpg')$$, testes.u('cz_a'))));
+select testes.def('f_perfil_b', testes.erro(format($$insert into storage.objects (bucket_id, name) values ('fotos-pratos', 'cozinhas/%s/p.jpg')$$, testes.u('cz_b'))));
+reset role; select testes.sair();
+select is(testes.v('f_prato_a'), 'sem_erro', 'gerente envia foto de um prato da SUA cozinha');
+select matches(testes.v('f_prato_b'), '^42501', 'gerente NÃO envia foto de um prato de outra cozinha');
+select is(testes.v('f_perfil_a'), 'sem_erro', 'gerente envia foto do perfil da SUA cozinha');
+select matches(testes.v('f_perfil_b'), '^42501', 'gerente NÃO envia foto do perfil de outra cozinha');
 
 select * from finish();
 rollback;
