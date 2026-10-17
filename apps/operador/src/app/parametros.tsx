@@ -5,7 +5,7 @@ import { Switch, Text, View } from 'react-native';
 import { Guarda } from '@/components/Guarda';
 import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Paragrafo, Subtitulo } from '@/components/ui';
 import { alterarFuncionalidade, alterarParametros, lerFuncionalidades, lerParametros } from '@/lib/api';
-import { mensagemErro } from '@/lib/formatar';
+import { emailValido, mensagemErro, telefoneValido } from '@/lib/formatar';
 import { cores, espaco } from '@/lib/tema';
 
 /** Parâmetros editáveis na app (secção 9). Valores em Kz, dias, metros ou contagens. */
@@ -28,6 +28,7 @@ const CAMPOS: { grupo: string; chaves: [string, string][] }[] = [
       ['raio_mesmo_local_m', 'Raio do mesmo local (m)'],
       ['max_indicados_por_local', 'Máx. indicados por local'],
       ['max_descontos_por_local', 'Máx. descontos por local'],
+      ['desconto_subtotal_minimo', 'Pedido mínimo para o desconto (Kz, 0 = sem mínimo)'],
     ],
   },
   {
@@ -46,9 +47,19 @@ const CAMPOS: { grupo: string; chaves: [string, string][] }[] = [
     chaves: [
       ['prazo_avaliacao_dias', 'Prazo para avaliar (dias)'],
       ['avaliacoes_minimo', 'Avaliações mínimas para mostrar média'],
+      ['tempo_entrega_min', 'Tempo de entrega prometido ao cliente (min)'],
       ['tolerancia_entrega_min', 'Tolerância de entrega (min)'],
     ],
   },
+];
+
+/** Contactos gerais mostrados aos clientes (Contactos e Política de privacidade); texto, em branco = não mostrar */
+const CONTACTOS: [string, string, 'telefone' | 'email' | 'texto', number][] = [
+  ['contacto_telefone', 'Telefone', 'telefone', 20],
+  ['contacto_whatsapp', 'WhatsApp', 'telefone', 20],
+  ['contacto_email', 'Email', 'email', 120],
+  ['contacto_horario', 'Horário de atendimento', 'texto', 120],
+  ['contacto_morada', 'Morada da loja', 'texto', 200],
 ];
 
 /** O5. Parâmetros e funcionalidades (interruptores), com confirmação */
@@ -65,18 +76,27 @@ export default function Parametros() {
     Promise.all([lerParametros(), lerFuncionalidades()])
       .then(([p, f]) => {
         setOriginais(p);
-        setValores(Object.fromEntries(Object.entries(p).map(([k, v]) => [k, String(v ?? '')])));
+        setValores(Object.fromEntries(Object.entries(p).map(([k, v]) => [k, v === null || v === undefined ? '' : String(v)])));
         setFuncs(f);
       })
       .catch((e) => setErro(mensagemErro(e)));
   }, []);
   useFocusEffect(carregar);
 
-  const alterados: Record<string, number> = {};
+  const alterados: Record<string, number | string | null> = {};
   for (const g of CAMPOS)
     for (const [k] of g.chaves)
       if (originais && valores[k] !== String(originais[k])) alterados[k] = Number(valores[k]);
-  const invalidos = Object.values(alterados).some((v) => !Number.isInteger(v) || v < 0);
+  const numerosInvalidos = Object.values(alterados).some((v) => !Number.isInteger(v) || (v as number) < 0);
+  const contactosInvalidos = CONTACTOS.filter(([k, , tipo]) => {
+    const t = (valores[k] ?? '').trim();
+    return t !== '' && ((tipo === 'telefone' && !telefoneValido(t)) || (tipo === 'email' && !emailValido(t)));
+  }).map(([, rotulo]) => rotulo);
+  for (const [k] of CONTACTOS) {
+    const t = (valores[k] ?? '').trim();
+    if (originais && t !== String(originais[k] ?? '')) alterados[k] = t || null;
+  }
+  const invalidos = numerosInvalidos || contactosInvalidos.length > 0;
 
   async function aplicar() {
     if (!confirmar) return;
@@ -122,10 +142,10 @@ export default function Parametros() {
               {funcs.map((f) => (
                 <View key={f.chave} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                   <Text>{f.chave}</Text>
-                  <Switch
+                  <Switch thumbColor="#FFFFFF"
                     value={f.activa}
                     onValueChange={(v) => setConfirmar({ tipo: 'func', chave: f.chave, activa: v })}
-                    trackColor={{ true: cores.marca, false: cores.linha }}
+                    trackColor={{ true: cores.marca, false: cores.contorno }}
                   />
                 </View>
               ))}
@@ -146,6 +166,24 @@ export default function Parametros() {
                 ))}
               </View>
             ))}
+            <View style={{ gap: espaco.s }}>
+              <Subtitulo>Contactos para os clientes</Subtitulo>
+              <Paragrafo suave>Aparecem em Contactos e na Política de privacidade. Deixa em branco o que não quiseres mostrar.</Paragrafo>
+              {CONTACTOS.map(([k, rotulo, tipo, max]) => (
+                <Campo
+                  key={k}
+                  rotulo={rotulo}
+                  value={valores[k] ?? ''}
+                  maxLength={max}
+                  keyboardType={tipo === 'telefone' ? 'phone-pad' : tipo === 'email' ? 'email-address' : 'default'}
+                  autoCapitalize={tipo === 'email' ? 'none' : 'sentences'}
+                  onChangeText={(t) => setValores((v) => ({ ...v, [k]: t }))}
+                />
+              ))}
+              {contactosInvalidos.length > 0 && (
+                <Aviso>{`Verifica: ${contactosInvalidos.join(', ')}. Telefones só com algarismos (9 a 20, + opcional); email com @.`}</Aviso>
+              )}
+            </View>
             {confirmar?.tipo === 'parametros' ? (
               caixaConfirmar
             ) : (

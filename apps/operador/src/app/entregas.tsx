@@ -1,20 +1,47 @@
-import { useFocusEffect } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
-import { Linking, Switch, Text, View } from 'react-native';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Image, Linking, Switch, Text, View } from 'react-native';
 
 import { Guarda } from '@/components/Guarda';
 import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Escolha, Paragrafo, Subtitulo } from '@/components/ui';
-import { caixasAbertas, lerCozinhas, marcarPagadorDistinto, mudarEstado, pedidosOperador } from '@/lib/api';
+import { alertasAbertos, atribuirEntrega, caixasAbertas, estafetasParaAtribuir, informarAtraso, lerCozinhas, marcarPagadorDistinto, mudarEstado, pedidosAgendados, pedidosOperador, recusarEntrega } from '@/lib/api';
 import { formatarData, formatarDia, formatarKz, mensagemErro, nomeEstadoPedido } from '@/lib/formatar';
+import { enviarComprovativo, escolherFoto } from '@/lib/fotos';
 import { usePartilharLocalizacao } from '@/lib/partilharLocalizacao';
+import { guardarModoEstafeta, lerModoEstafeta, modoEstafetaInicial } from '@/lib/preferencias';
 import { useSessao } from '@/lib/sessao';
 import { cores, espaco } from '@/lib/tema';
-import type { Caixa, Cozinha, PedidoOperador } from '@/lib/tipos';
+import type { AlertaPedido, Caixa, Cozinha, EstafetaAtribuir, PedidoAgendado, PedidoOperador } from '@/lib/tipos';
 
 const METODOS = ['Dinheiro', 'Multicaixa Express', 'TPA', 'Unitel Money', 'Transferência'];
 
-type Parcela = { metodo: string; valor: string };
-type Accao = { pedido: string; tipo: 'cancelar' | 'entregar' };
+/** Pagamento na entrega; os electrónicos levam a referência e a foto do comprovativo */
+type Parcela = { metodo: string; valor: string; referencia: string; foto: string | null };
+
+const novaParcela = (metodo: string, valor: number): Parcela => ({ metodo, valor: String(valor), referencia: '', foto: null });
+const electronico = (metodo: string) => metodo !== 'Dinheiro';
+/** Parcela pronta: valor positivo e, se for electrónica, referência (4+ caracteres) e foto */
+function parcelaCompleta(x: Parcela): boolean {
+  return Number(x.valor) > 0 && (!electronico(x.metodo) || (x.referencia.trim().length >= 4 && !!x.foto));
+}
+type Accao = { pedido: string; tipo: 'cancelar' | 'entregar' | 'atraso' | 'atribuir' };
+
+/** Motivos de atraso mais comuns (o texto vai tal e qual para o cliente) */
+const MOTIVOS_ATRASO = [
+  'Muitos pedidos neste momento',
+  'Trânsito',
+  'Chuva',
+  'Falta de um ingrediente, já estamos a resolver',
+  'O estafeta está a terminar outra entrega',
+];
+
+/** Motivos de cancelamento: o cliente lê uma frase revista para cada um (servidor: frase_motivo_cancelamento) */
+const MOTIVOS_CANCELAMENTO = [
+  'Acabou um ingrediente',
+  'Avaria na cozinha (gás, luz ou equipamento)',
+  'A cozinha não conseguiria entregar a horas',
+  'Endereço fora da zona de entrega',
+];
 
 /** Próximo passo de cada estado e quem o pode dar */
 const SEGUINTE: Record<string, { estado: string; rotulo: string; gerir: boolean } | undefined> = {
@@ -26,50 +53,131 @@ const SEGUINTE: Record<string, { estado: string; rotulo: string; gerir: boolean 
 /** E1. Entregas: pedidos por ponto de entrega, estados, caixa e formas de pagamento */
 export default function Entregas() {
   const { pode } = useSessao();
+  const router = useRouter();
+  const { meu } = useLocalSearchParams<{ meu?: string }>();
   const gerir = pode('pedidos.gerir');
   const entregar = pode('entregas.registar');
+  const [modoEstafeta, setModoEstafeta] = useState(false);
   const [pedidos, setPedidos] = useState<PedidoOperador[] | null>(null);
   const [caixas, setCaixas] = useState<Caixa[]>([]);
   const [erro, setErro] = useState<string | null>(null);
   const [accao, setAccao] = useState<Accao | null>(null);
-  const [motivo, setMotivo] = useState('');
+  const [estafetas, setEstafetas] = useState<EstafetaAtribuir[]>([]);
+  const [cancelar, setCancelar] = useState({ motivo: '', outro: '' });
   const [caixa, setCaixa] = useState<string | null>(null);
   const [parcelas, setParcelas] = useState<Parcela[]>([]);
   const [ocupado, setOcupado] = useState<string | null>(null);
   const [cozinhas, setCozinhas] = useState<Cozinha[]>([]);
   const [filtroCozinha, setFiltroCozinha] = useState('todas');
   const [versao, setVersao] = useState(0);
+  const [alertas, setAlertas] = useState<Record<string, AlertaPedido[]>>({});
+  const [atraso, setAtraso] = useState({ motivo: MOTIVOS_ATRASO[0], outro: '', minutos: '' });
+  const [agendados, setAgendados] = useState<PedidoAgendado[]>([]);
 
   const carregar = useCallback(() => {
-    Promise.all([pedidosOperador(), caixasAbertas(), lerCozinhas().catch(() => [] as Cozinha[])])
-      .then(([p, c, cz]) => {
+    Promise.all([
+      pedidosOperador(),
+      caixasAbertas(),
+      lerCozinhas().catch(() => [] as Cozinha[]),
+      alertasAbertos().catch(() => [] as AlertaPedido[]),
+      pedidosAgendados().catch(() => [] as PedidoAgendado[]),
+    ])
+      .then(([p, c, cz, al, ag]) => {
+        const porPedido: Record<string, AlertaPedido[]> = {};
+        for (const a of al) porPedido[a.pedido_id] = [...(porPedido[a.pedido_id] ?? []), a];
+        setAlertas(porPedido);
         setPedidos(p);
         setCaixas(c);
         setCozinhas(cz);
+        setAgendados(ag);
         setVersao((v) => v + 1);
       })
       .catch((e) => setErro(mensagemErro(e)));
   }, []);
-  useFocusEffect(carregar);
+  // Com o ecrã aberto, actualiza a fila a cada 15 s para os pedidos novos aparecerem quase logo.
+  useFocusEffect(
+    useCallback(() => {
+      void carregar();
+      const t = setInterval(carregar, 15000);
+      return () => clearInterval(t);
+    }, [carregar]),
+  );
+
+  // Modo estafeta: vista enxuta com só as minhas entregas. Default inteligente na 1.ª vez,
+  // o atalho "As minhas entregas" (meu=1) força ligado, e a escolha do utilizador fica guardada.
+  useEffect(() => {
+    let vivo = true;
+    lerModoEstafeta().then((guardado) => {
+      if (vivo) setModoEstafeta(modoEstafetaInicial({ entregar, gerir, guardado, forcado: meu === '1' }));
+    });
+    return () => {
+      vivo = false;
+    };
+  }, [entregar, gerir, meu]);
+
+  function alternarModo(v: boolean) {
+    setModoEstafeta(v);
+    void guardarModoEstafeta(v);
+  }
 
   // I11: com pedidos a caminho, envia a posição para o cliente acompanhar a entrega
   const partilha = usePartilharLocalizacao(entregar && (pedidos ?? []).some((p) => p.estado === 'em_entrega'), versao);
 
   const grupos = useMemo(() => {
     const m = new Map<string, PedidoOperador[]>();
-    for (const p of (pedidos ?? []).filter((x) => filtroCozinha === 'todas' || x.cozinha_id === filtroCozinha)) {
+    for (const p of (pedidos ?? []).filter(
+      (x) => (filtroCozinha === 'todas' || x.cozinha_id === filtroCozinha) && (!modoEstafeta || x.minha),
+    )) {
       const chave = p.ponto_entrega_id ?? `sem-ponto-${p.pedido_id}`;
       m.set(chave, [...(m.get(chave) ?? []), p]);
     }
     return [...m.values()];
-  }, [pedidos, filtroCozinha]);
+  }, [pedidos, filtroCozinha, modoEstafeta]);
+
+  // Resumo das minhas entregas, para dar noção de carga e progresso (reforço)
+  const minhas = (pedidos ?? []).filter((p) => p.minha);
+  const aCaminho = minhas.filter((p) => p.estado === 'em_entrega').length;
+  const reservadas = minhas.length - aCaminho;
 
   function abrirEntrega(p: PedidoOperador) {
     const daCozinha = caixas.filter((c) => c.cozinha_id === p.cozinha_id);
     setCaixa(daCozinha.length === 1 ? daCozinha[0].id : null);
-    setParcelas(p.a_pagar > 0 ? [{ metodo: 'Dinheiro', valor: String(p.a_pagar) }] : []);
+    setParcelas(p.a_pagar > 0 ? [novaParcela('Dinheiro', p.a_pagar)] : []);
     setAccao({ pedido: p.pedido_id, tipo: 'entregar' });
   }
+
+  async function abrirAtribuir(p: PedidoOperador) {
+    setErro(null);
+    setEstafetas([]);
+    setAccao({ pedido: p.pedido_id, tipo: 'atribuir' });
+    try {
+      setEstafetas(await estafetasParaAtribuir(p.cozinha_id));
+    } catch (e) {
+      setErro(mensagemErro(e));
+    }
+  }
+
+  function painelAtribuir(p: PedidoOperador) {
+    return (
+      <View style={{ gap: espaco.s }}>
+        <Text style={{ fontWeight: '700' }}>Entregar a quem?</Text>
+        {estafetas.length === 0 && <Paragrafo suave>Sem estafetas disponíveis.</Paragrafo>}
+        {estafetas.map((e) => (
+          <Botao
+            key={e.funcionario_id}
+            titulo={`${e.nome} · ${e.a_levar} a levar${e.online ? ' · online' : ''}`}
+            variante="leve"
+            aCarregar={ocupado === p.pedido_id}
+            aoCarregar={() => correr(p.pedido_id, () => atribuirEntrega(p.pedido_id, e.funcionario_id))}
+          />
+        ))}
+        <Paragrafo suave>O estafeta recebe um aviso e aceita marcando “Saiu para entrega”. A reserva liberta-se sozinha ao fim de alguns minutos.</Paragrafo>
+        <Botao titulo="Voltar" variante="texto" aoCarregar={() => setAccao(null)} />
+      </View>
+    );
+  }
+
+  const motivoCancelamento = cancelar.motivo === 'outro' ? cancelar.outro.trim() : cancelar.motivo;
 
   async function correr(id: string, f: () => Promise<unknown>) {
     setErro(null);
@@ -77,7 +185,7 @@ export default function Entregas() {
     try {
       await f();
       setAccao(null);
-      setMotivo('');
+      setCancelar({ motivo: '', outro: '' });
       carregar();
     } catch (e) {
       setErro(mensagemErro(e));
@@ -90,6 +198,32 @@ export default function Entregas() {
     const daCozinha = caixas.filter((c) => c.cozinha_id === p.cozinha_id);
     const soma = parcelas.reduce((s, x) => s + (Number(x.valor) || 0), 0);
     const certo = soma === p.a_pagar && parcelas.every((x) => Number(x.valor) > 0);
+    const completas = parcelas.every(parcelaCompleta);
+    const mudar = (i: number, m: Partial<Parcela>) => setParcelas(parcelas.map((y, j) => (j === i ? { ...y, ...m } : y)));
+    async function fotografar(i: number, origem: 'camera' | 'galeria') {
+      try {
+        const uri = await escolherFoto(origem, false);
+        if (uri) mudar(i, { foto: uri });
+      } catch (e) {
+        setErro(mensagemErro(e));
+      }
+    }
+    // Envia as fotos dos comprovativos e só depois marca o pedido como entregue e pago
+    async function entregarPago() {
+      const enviadas = await Promise.all(
+        parcelas.map(async (x, i) =>
+          electronico(x.metodo)
+            ? {
+                metodo: x.metodo,
+                valor: Number(x.valor),
+                referencia: x.referencia.trim(),
+                comprovativo: await enviarComprovativo(p.pedido_id, x.foto!, i),
+              }
+            : { metodo: x.metodo, valor: Number(x.valor) },
+        ),
+      );
+      await mudarEstado(p.pedido_id, 'entregue_pago', { caixa: caixa ?? undefined, parcelas: enviadas });
+    }
     return (
       <View style={{ gap: espaco.s }}>
         <Text style={{ fontWeight: '700' }}>Caixa onde o dinheiro entra</Text>
@@ -107,14 +241,34 @@ export default function Entregas() {
                 <Escolha
                   opcoes={METODOS.map((m) => ({ valor: m, rotulo: m }))}
                   valor={x.metodo}
-                  aoMudar={(m) => setParcelas(parcelas.map((y, j) => (j === i ? { ...y, metodo: m } : y)))}
+                  aoMudar={(m) => mudar(i, { metodo: m })}
                 />
-                <Campo
-                  rotulo="Valor (Kz)"
-                  keyboardType="number-pad"
-                  value={x.valor}
-                  onChangeText={(t) => setParcelas(parcelas.map((y, j) => (j === i ? { ...y, valor: t.replace(/\D/g, '') } : y)))}
-                />
+                <Campo rotulo="Valor (Kz)" keyboardType="number-pad" value={x.valor} onChangeText={(t) => mudar(i, { valor: t.replace(/\D/g, '') })} />
+                {electronico(x.metodo) && (
+                  <>
+                    <Campo
+                      rotulo="Referência da transacção"
+                      value={x.referencia}
+                      autoCapitalize="characters"
+                      maxLength={60}
+                      onChangeText={(t) => mudar(i, { referencia: t })}
+                    />
+                    {x.foto ? (
+                      <Image
+                        source={{ uri: x.foto }}
+                        accessibilityLabel="Foto do comprovativo"
+                        style={{ width: '100%', height: 180, borderRadius: 8, backgroundColor: cores.contorno }}
+                        resizeMode="contain"
+                      />
+                    ) : (
+                      <Aviso>Fotografa o comprovativo (talão do TPA ou ecrã do Multicaixa / Unitel Money).</Aviso>
+                    )}
+                    <View style={{ flexDirection: 'row', gap: espaco.s }}>
+                      <Botao titulo={x.foto ? 'Tirar outra foto' : 'Fotografar comprovativo'} variante="leve" aoCarregar={() => fotografar(i, 'camera')} />
+                      <Botao titulo="Galeria" variante="texto" aoCarregar={() => fotografar(i, 'galeria')} />
+                    </View>
+                  </>
+                )}
                 {parcelas.length > 1 && (
                   <Botao titulo="Tirar este pagamento" variante="texto" aoCarregar={() => setParcelas(parcelas.filter((_, j) => j !== i))} />
                 )}
@@ -123,26 +277,70 @@ export default function Entregas() {
             <Botao
               titulo="Juntar outra forma de pagamento"
               variante="texto"
-              aoCarregar={() => setParcelas([...parcelas, { metodo: 'Multicaixa Express', valor: String(Math.max(p.a_pagar - soma, 0)) }])}
+              aoCarregar={() => setParcelas([...parcelas, novaParcela('Multicaixa Express', Math.max(p.a_pagar - soma, 0))])}
             />
             {!certo && <Aviso>Os pagamentos somam {formatarKz(soma)}; têm de somar {formatarKz(p.a_pagar)}.</Aviso>}
+            {certo && !completas && <Aviso>Falta a referência ou a foto de um pagamento electrónico.</Aviso>}
           </>
         )}
         <Botao
           titulo="Entregue e pago"
           aCarregar={ocupado === p.pedido_id}
-          desactivado={!caixa || !certo}
-          aoCarregar={() =>
-            correr(p.pedido_id, () =>
-              mudarEstado(p.pedido_id, 'entregue_pago', {
-                caixa: caixa ?? undefined,
-                parcelas: parcelas.map((x) => ({ metodo: x.metodo, valor: Number(x.valor) })),
-              }),
-            )
-          }
+          desactivado={!caixa || !certo || !completas}
+          aoCarregar={() => correr(p.pedido_id, entregarPago)}
         />
         <Botao titulo="Voltar" variante="texto" aoCarregar={() => setAccao(null)} />
       </View>
+    );
+  }
+
+  function painelAtraso(p: PedidoOperador) {
+    const motivo = atraso.motivo === 'outro' ? atraso.outro.trim() : atraso.motivo;
+    return (
+      <View style={{ gap: espaco.s }}>
+        <Text style={{ fontWeight: '700' }}>Porque é que vai atrasar?</Text>
+        <Escolha
+          opcoes={[...MOTIVOS_ATRASO.map((m) => ({ valor: m, rotulo: m })), { valor: 'outro', rotulo: 'Outro…' }]}
+          valor={atraso.motivo}
+          aoMudar={(m) => setAtraso({ ...atraso, motivo: m })}
+        />
+        {atraso.motivo === 'outro' && (
+          <Campo rotulo="Motivo (o cliente vai ler)" value={atraso.outro} maxLength={200} onChangeText={(t) => setAtraso({ ...atraso, outro: t })} />
+        )}
+        <Campo
+          rotulo="Mais quantos minutos? (opcional)"
+          keyboardType="number-pad"
+          value={atraso.minutos}
+          onChangeText={(t) => setAtraso({ ...atraso, minutos: t.replace(/\D/g, '') })}
+        />
+        <Botao
+          titulo="Avisar o cliente"
+          desactivado={!motivo}
+          aCarregar={ocupado === p.pedido_id}
+          aoCarregar={() => correr(p.pedido_id, () => informarAtraso(p.pedido_id, motivo, atraso.minutos ? Number(atraso.minutos) : null))}
+        />
+        <Botao titulo="Voltar" variante="texto" aoCarregar={() => setAccao(null)} />
+      </View>
+    );
+  }
+
+  function avisos(p: PedidoOperador) {
+    const lista = alertas[p.pedido_id] ?? [];
+    const semConfirmacao = lista.find((a) => a.tipo === 'sem_confirmacao');
+    const atrasado = lista.find((a) => a.tipo === 'atraso');
+    return (
+      <>
+        {semConfirmacao && p.estado === 'pendente' && (
+          <Aviso tipo="erro">Por confirmar há mais de {semConfirmacao.minutos} minutos.</Aviso>
+        )}
+        {atrasado && (
+          <Aviso tipo={atrasado.motivo ? 'aviso' : 'erro'}>
+            {atrasado.motivo
+              ? `Atrasado. Cliente avisado: ${atrasado.motivo}${atrasado.mais_minutos ? ` (mais ${atrasado.mais_minutos} min)` : ''}.`
+              : `Atrasado ${atrasado.minutos} min. Diz ao cliente o motivo.`}
+          </Aviso>
+        )}
+      </>
     );
   }
 
@@ -178,38 +376,89 @@ export default function Entregas() {
         {entregar && (p.estado === 'em_entrega' || p.estado === 'em_preparacao') && (
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <Text style={{ flex: 1 }}>Quem pagou não é o cliente do pedido</Text>
-            <Switch
+            <Switch thumbColor="#FFFFFF"
               value={!!p.pagador_distinto}
-              trackColor={{ true: cores.marca, false: cores.linha }}
+              trackColor={{ true: cores.marca, false: cores.contorno }}
               onValueChange={(v) => correr(p.pedido_id, () => marcarPagadorDistinto(p.pedido_id, v))}
             />
           </View>
         )}
 
+        {p.atribuido_a_nome && (
+          <Text style={{ color: p.atribuido_a_mim ? cores.sucesso : cores.aviso, fontWeight: '700' }}>
+            {p.atribuido_a_mim ? '➤ Reservado a ti' : `➤ Reservado a ${p.atribuido_a_nome}`}
+          </Text>
+        )}
+        {avisos(p)}
         {aberto && accao?.tipo === 'entregar' && painelEntrega(p)}
+        {aberto && accao?.tipo === 'atribuir' && painelAtribuir(p)}
+        {aberto && accao?.tipo === 'atraso' && painelAtraso(p)}
         {aberto && accao?.tipo === 'cancelar' && (
-          <>
-            <Campo rotulo="Motivo do cancelamento" value={motivo} onChangeText={setMotivo} />
+          <View style={{ gap: espaco.s }}>
+            <Text style={{ fontWeight: '700' }}>Porque é que a cozinha tem de cancelar?</Text>
+            <Escolha
+              opcoes={[...MOTIVOS_CANCELAMENTO.map((m) => ({ valor: m, rotulo: m })), { valor: 'outro', rotulo: 'Outro…' }]}
+              valor={cancelar.motivo}
+              aoMudar={(m) => setCancelar({ ...cancelar, motivo: m })}
+            />
+            {cancelar.motivo === 'outro' && (
+              <Campo rotulo="Motivo (o cliente vai ler)" value={cancelar.outro} maxLength={200}
+                onChangeText={(t) => setCancelar({ ...cancelar, outro: t })} />
+            )}
+            <Paragrafo suave>O cliente recebe um pedido de desculpa com o motivo e não paga nada.</Paragrafo>
             <Botao
               titulo="Cancelar pedido"
-              desactivado={!motivo.trim()}
+              desactivado={!motivoCancelamento}
               aCarregar={ocupado === p.pedido_id}
-              aoCarregar={() => correr(p.pedido_id, () => mudarEstado(p.pedido_id, 'cancelado', { motivo: motivo.trim() }))}
+              aoCarregar={() => correr(p.pedido_id, () => mudarEstado(p.pedido_id, 'cancelado', { motivo: motivoCancelamento }))}
             />
             <Botao titulo="Voltar" variante="texto" aoCarregar={() => setAccao(null)} />
-          </>
+          </View>
         )}
         {!aberto && (
           <View style={{ gap: espaco.s }}>
-            {seguinte && (gerir || (!seguinte.gerir && entregar)) && (
+            {seguinte && ((!seguinte.gerir && entregar) || (gerir && !modoEstafeta)) &&
+              !(seguinte.estado === 'em_entrega' && !!p.atribuido_a && !p.atribuido_a_mim && !gerir) && (
+                <Botao
+                  titulo={seguinte.rotulo}
+                  aCarregar={ocupado === p.pedido_id}
+                  aoCarregar={() => correr(p.pedido_id, () => mudarEstado(p.pedido_id, seguinte.estado))}
+                />
+              )}
+            {gerir && !modoEstafeta && (p.estado === 'confirmado' || p.estado === 'em_preparacao') && (
               <Botao
-                titulo={seguinte.rotulo}
+                titulo={p.atribuido_a ? 'Reatribuir a outro estafeta…' : 'Atribuir a um estafeta…'}
+                variante="leve"
+                aoCarregar={() => abrirAtribuir(p)}
+              />
+            )}
+            {p.atribuido_a_mim && (
+              <Botao
+                titulo="Recusar esta entrega"
+                variante="texto"
                 aCarregar={ocupado === p.pedido_id}
-                aoCarregar={() => correr(p.pedido_id, () => mudarEstado(p.pedido_id, seguinte.estado))}
+                aoCarregar={() => correr(p.pedido_id, () => recusarEntrega(p.pedido_id))}
               />
             )}
             {p.estado === 'em_entrega' && (gerir || entregar) && <Botao titulo="Entregue e pago…" aoCarregar={() => abrirEntrega(p)} />}
-            {gerir && <Botao titulo="Cancelar…" variante="texto" aoCarregar={() => setAccao({ pedido: p.pedido_id, tipo: 'cancelar' })} />}
+            {(gerir || (entregar && p.estado === 'em_entrega')) && (
+              <Botao
+                titulo="Avisar cliente do atraso…"
+                variante="texto"
+                aoCarregar={() => {
+                  setAtraso({ motivo: MOTIVOS_ATRASO[0], outro: '', minutos: '' });
+                  setAccao({ pedido: p.pedido_id, tipo: 'atraso' });
+                }}
+              />
+            )}
+            {gerir && !modoEstafeta && <Botao titulo="Cancelar…" variante="texto" aoCarregar={() => setAccao({ pedido: p.pedido_id, tipo: 'cancelar' })} />}
+            {gerir && !modoEstafeta && (
+              <Botao
+                titulo="Histórico"
+                variante="texto"
+                aoCarregar={() => router.push({ pathname: '/pedido/[id]', params: { id: p.pedido_id } })}
+              />
+            )}
           </View>
         )}
       </Cartao>
@@ -227,17 +476,73 @@ export default function Entregas() {
             este ecrã aberto durante a entrega.
           </Aviso>
         )}
+        {/* Modo estafeta: vista enxuta com só as minhas entregas (só para quem entrega) */}
+        {entregar && (
+          <Cartao estilo={{ gap: espaco.xs }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Text style={{ fontWeight: '700', color: cores.texto }}>Modo estafeta</Text>
+              <Switch
+                thumbColor="#FFFFFF"
+                value={modoEstafeta}
+                trackColor={{ true: cores.marca, false: cores.contorno }}
+                onValueChange={alternarModo}
+              />
+            </View>
+            {modoEstafeta ? (
+              <Paragrafo suave>
+                {minhas.length === 0
+                  ? 'Desliga para ver a fila toda.'
+                  : `As tuas entregas: ${reservadas} reservada${reservadas === 1 ? '' : 's'} · ${aCaminho} a caminho.`}
+              </Paragrafo>
+            ) : (
+              <Paragrafo suave>Liga para veres só as tuas entregas, sem o resto da fila.</Paragrafo>
+            )}
+          </Cartao>
+        )}
         {/* I8: com várias cozinhas, filtrar a fila por cozinha */}
-        {cozinhas.length > 1 && (
+        {!modoEstafeta && cozinhas.length > 1 && (
           <Escolha
             opcoes={[{ valor: 'todas', rotulo: 'Todas' }, ...cozinhas.map((c) => ({ valor: c.id, rotulo: c.nome }))]}
             valor={filtroCozinha}
             aoMudar={setFiltroCozinha}
           />
         )}
+        {!modoEstafeta && (() => {
+          const vis = agendados.filter((a) => filtroCozinha === 'todas' || a.cozinha_id === filtroCozinha);
+          if (vis.length === 0) return null;
+          return (
+            <Cartao estilo={{ gap: espaco.s }}>
+              <Subtitulo>Agendados ({vis.length})</Subtitulo>
+              {vis.map((a) => (
+                <View key={a.pedido_id} style={{ borderTopWidth: 1, borderTopColor: cores.linha, paddingTop: espaco.xs }}>
+                  <Text style={{ fontWeight: '600', color: cores.texto }}>
+                    {formatarData(a.agendado_para)} · {a.cliente_nome}
+                  </Text>
+                  <Text style={{ color: cores.textoSuave }}>
+                    {a.itens.map((i) => `${i.qtd}× ${i.nome}`).join(', ')}
+                    {a.zona_nome ? ` · ${a.zona_nome}` : ''}
+                  </Text>
+                </View>
+              ))}
+              <Paragrafo suave>Preparar na altura certa — entram na fila cerca de 90 min antes.</Paragrafo>
+            </Cartao>
+          );
+        })()}
         {!pedidos && !erro && <ACarregar />}
-        {pedidos && pedidos.length === 0 && <Paragrafo suave>Sem pedidos em curso.</Paragrafo>}
         <Botao titulo="Actualizar" variante="texto" aoCarregar={carregar} />
+        {pedidos && !erro && grupos.length === 0 && (
+          <View style={{ alignItems: 'center', gap: espaco.s, paddingVertical: espaco.xl * 2 }}>
+            <Text style={{ fontSize: 46 }}>🛵</Text>
+            <Text style={{ fontWeight: '700', fontSize: 16, color: cores.texto, textAlign: 'center' }}>
+              {modoEstafeta ? 'Sem entregas tuas agora' : 'Sem pedidos em curso'}
+            </Text>
+            <Text style={{ color: cores.textoSuave, textAlign: 'center', maxWidth: 280, lineHeight: 20 }}>
+              {modoEstafeta
+                ? 'Quando te atribuírem uma entrega, aparece aqui — e recebes um aviso 🔔.'
+                : 'Os novos pedidos aparecem aqui assim que entram.'}
+            </Text>
+          </View>
+        )}
         {grupos.map((lista) => {
           const p = lista[0];
           return (

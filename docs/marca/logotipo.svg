@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="480" viewBox="0 0 1600 480">
+  <defs><clipPath id="c"><rect x="40" y="40" width="400" height="400" rx="88"/></clipPath></defs>
+  <g clip-path="url(#c)"><g transform="translate(40 40) scale(0.390625)"><rect width="1024" height="1024" fill="#B5121B"/><g transform="translate(71.68 71.68) scale(0.86)">
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="540" cy="512" r="292" stroke="#FFFFFF" stroke-width="40"/>
+    <path d="M359 636 V392 L433 512 L507 392 V636" stroke="#FFFFFF" stroke-width="58"/>
+    <path d="M595 392 V636 M595 392 H647 a58 58 0 0 1 0 116 H595 M595 508 H659 a64 64 0 0 1 0 128 H595" stroke="#FFFFFF" stroke-width="58"/>
+    <path d="M108 432 H200 M72 512 H200 M108 592 H200" stroke="#F4B400" stroke-width="34"/>
+  </g></g></g></g>
+  <text x="500" y="262" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-weight="700" font-size="150" fill="#1F1A17" letter-spacing="-3">Manda <tspan fill="#B5121B">Bué</tspan></text>
+  <text x="506" y="352" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="58" fill="#5F6368" letter-spacing="10">DELIVERY ANGOLA</text>
+</svg>

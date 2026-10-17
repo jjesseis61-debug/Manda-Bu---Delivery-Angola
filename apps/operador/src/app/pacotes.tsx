@@ -231,11 +231,11 @@ export default function Pacotes() {
             ))}
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: espaco.s }}>
               <Text style={{ flex: 1 }}>Entrega grátis</Text>
-              <Switch value={edicao.entrega_gratis} onValueChange={(v) => setEdicao({ ...edicao, entrega_gratis: v })} />
+              <Switch thumbColor="#FFFFFF" trackColor={{ true: cores.marca, false: cores.contorno }} value={edicao.entrega_gratis} onValueChange={(v) => setEdicao({ ...edicao, entrega_gratis: v })} />
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: espaco.s }}>
               <Text style={{ flex: 1 }}>Visível para os clientes</Text>
-              <Switch value={edicao.activo} onValueChange={(v) => setEdicao({ ...edicao, activo: v })} />
+              <Switch thumbColor="#FFFFFF" trackColor={{ true: cores.marca, false: cores.contorno }} value={edicao.activo} onValueChange={(v) => setEdicao({ ...edicao, activo: v })} />
             </View>
             <Botao
               titulo="Guardar"

@@ -1,28 +1,38 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { Alert, Image, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 
+import { CartaoConvida } from '@/components/CartaoConvida';
 import { ComoChegar } from '@/components/ComoChegar';
 import { Aviso, Botao, Cartao, Escolha, Paragrafo, Subtitulo, estilos } from '@/components/ui';
 import {
   contadorZona,
+  cozinhaPadrao,
   cozinhasParaPedir,
+  cozinhasPertoParaPedir,
   lerCardapio,
   lerCozinhaPublica,
   lerEnderecos,
+  lerComponentes,
+  lerDoses,
   lerOpcoes,
+  lerPedidos,
   mediasAvaliacoes,
+  posicaoEntrega,
   type Cozinha,
 } from '@/lib/api';
 import { useCarrinho } from '@/lib/carrinho';
-import { formatarKz, formatarMedia, mensagemErro } from '@/lib/formatar';
+import { corEstadoPedido, formatarKz, formatarMedia, mensagemErro, nomeEstadoPedido } from '@/lib/formatar';
+import { gruposEsgotados, precoMinimo } from '@/lib/opcoes';
 import { useSessao } from '@/lib/sessao';
 import { cores, espaco, raio } from '@/lib/tema';
-import type { CozinhaParaPedir, Endereco, ItemCardapio, MediasAvaliacoes } from '@/lib/tipos';
+import type { CozinhaParaPedir, Endereco, ItemCardapio, MediasAvaliacoes, Pedido } from '@/lib/tipos';
+
+const EM_ANDAMENTO = ['pendente', 'confirmado', 'em_preparacao', 'em_entrega'];
 
 export default function Inicio() {
   const router = useRouter();
-  const { ligada } = useSessao();
+  const { ligada, perfil } = useSessao();
   const carrinho = useCarrinho();
   const [cardapio, setCardapio] = useState<ItemCardapio[] | null>(null);
   const [enderecos, setEnderecos] = useState<Endereco[]>([]);
@@ -30,8 +40,17 @@ export default function Inicio() {
   const [cozinha, setCozinha] = useState<Cozinha | null>(null);
   const [medias, setMedias] = useState<MediasAvaliacoes | null>(null);
   const [cozinhas, setCozinhas] = useState<CozinhaParaPedir[]>([]);
+  // Banner no topo: pedido ainda em andamento ("a tua entrega está a caminho, toca para acompanhar")
+  const [pedidoActivo, setPedidoActivo] = useState<Pedido | null>(null);
+  // Tempo do estafeta vindo do mapa (posição real), quando está a partilhar GPS; senão calcula-se da hora prometida
+  const [minutosEstafeta, setMinutosEstafeta] = useState<number | null>(null);
   // I9: pratos com opções (abrem o ecrã de montar em vez de irem direito ao carrinho)
   const [montaveis, setMontaveis] = useState<Set<string>>(new Set());
+  const [esgotados, setEsgotados] = useState<Set<string>>(new Set());
+  /** Pratos montáveis com grupos obrigatórios: preço mais baixo possível ("desde ...") */
+  const [desde, setDesde] = useState<Map<string, number>>(new Map());
+  /** Doses que restam hoje (só os pratos em que a cozinha lançou doses) */
+  const [doses, setDoses] = useState<Map<string, number>>(new Map());
   const cozinhaId = carrinho.cozinhaActual?.id ?? null;
   // Referência ao carrinho para o carregamento não depender de cada prato adicionado
   const carrinhoRef = useRef(carrinho);
@@ -43,10 +62,13 @@ export default function Inicio() {
   const carregar = useCallback(async () => {
     setErro(null);
     try {
-      // I8: com multi_cozinha, o cliente escolhe a cozinha; por defeito a primeira da lista
+      // Endereços primeiro: o ponto de entrega serve para ordenar os balcões por proximidade
+      const ends = await lerEnderecos();
+      const ponto = ends[0]?.ponto_entrega_id ?? null;
+      // I8: com multi_cozinha, o cliente escolhe a cozinha; por defeito a primeira da lista (a mais perto)
       let escolhida = cozinhaId;
       if (ligada('multi_cozinha')) {
-        const lista = await cozinhasParaPedir();
+        const lista = ponto ? await cozinhasPertoParaPedir(ponto) : await cozinhasParaPedir();
         setCozinhas(lista);
         if (!emGrupo && (!escolhida || !lista.some((c) => c.cozinha_id === escolhida)) && lista[0]) {
           escolhida = lista[0].cozinha_id;
@@ -54,15 +76,29 @@ export default function Inicio() {
         }
       } else {
         setCozinhas([]);
+        // Sem multi_cozinha o servidor manda todos os pedidos para a cozinha padrão: só os pratos dela
+        escolhida = await cozinhaPadrao();
       }
-      const [itens, ends] = await Promise.all([lerCardapio(ligada('multi_cozinha') ? escolhida : null), lerEnderecos()]);
+      const itens = await lerCardapio(escolhida);
       setCardapio(itens);
+      setDoses(new Map(itens[0] ? (await lerDoses(itens[0].cozinha_id).catch(() => [])).map((d) => [d.cardapio_id, d.restantes]) : []));
       setEnderecos(ends);
-      setMontaveis(
-        ligada('pratos_montaveis')
-          ? new Set((await lerOpcoes(itens.map((i) => i.id))).filter((g) => g.opcoes.length > 0).map((g) => g.cardapio_id))
-          : new Set(),
+      // I9: pratos com opções abrem o ecrã de montar; um grupo obrigatório sem opções disponíveis esgota o prato
+      const [grupos, componentes] = ligada('pratos_montaveis')
+        ? await Promise.all([lerOpcoes(itens.map((i) => i.id)), lerComponentes(itens.map((i) => i.id)).catch(() => [])])
+        : [[], []];
+      // Também se monta um prato cuja receita tem ingredientes que se podem tirar (mais do que um)
+      const comIngredientes = itens.filter((i) => componentes.filter((c) => c.cardapio_id === i.id).length > 1).map((i) => i.id);
+      setMontaveis(new Set([...grupos.filter((g) => g.opcoes.length > 0).map((g) => g.cardapio_id), ...comIngredientes]));
+      setDesde(
+        new Map(
+          itens
+            .map((i) => [i.id, i.preco, grupos.filter((g) => g.cardapio_id === i.id && g.minimo > 0)] as const)
+            .filter(([, , gs]) => gs.length > 0)
+            .map(([id, preco, gs]) => [id, precoMinimo(preco, gs)]),
+        ),
       );
+      setEsgotados(new Set(grupos.filter((g) => gruposEsgotados([g]).length > 0).map((g) => g.cardapio_id)));
       // C7: contador do bairro do endereço principal (o servidor devolve null abaixo do mínimo)
       const zona = ends[0]?.pontos_entrega?.zona_id;
       setContador(ligada('contadores_zona') && zona ? await contadorZona(zona) : null);
@@ -70,6 +106,16 @@ export default function Inicio() {
       setCozinha(ligada('perfil_cozinha') ? await lerCozinhaPublica(ligada('multi_cozinha') ? escolhida : null) : null);
       // C10: média de cada prato (só com o mínimo de avaliações)
       setMedias(ligada('avaliacoes') && itens[0] ? await mediasAvaliacoes(itens[0].cozinha_id).catch(() => null) : null);
+      // Banner de acompanhamento: o pedido mais recente que ainda está em andamento (lista vem por data desc)
+      const pedidos = await lerPedidos().catch(() => [] as Pedido[]);
+      const activo = pedidos.find((p) => EM_ANDAMENTO.includes(p.estado)) ?? null;
+      setPedidoActivo(activo);
+      // Tempo real do estafeta (posição no mapa) enquanto está a caminho; cai para null se não houver GPS
+      const posicao =
+        activo?.estado === 'em_entrega' && ligada('acompanhamento_entrega')
+          ? await posicaoEntrega(activo.id).catch(() => null)
+          : null;
+      setMinutosEstafeta(posicao?.activo ? (posicao.minutos ?? null) : null);
     } catch (e) {
       setErro(mensagemErro(e));
     }
@@ -80,6 +126,31 @@ export default function Inicio() {
       void carregar();
     }, [carregar]),
   );
+
+  // Tempo a mostrar no banner: o do mapa (estafeta) se existir, senão o que falta até à hora prometida.
+  // Acima de 2 h (ex.: pedido agendado) não faz sentido em "minutos" — aí mostra-se a hora.
+  const minutosBanner = useMemo(() => {
+    if (minutosEstafeta != null) return minutosEstafeta;
+    if (!pedidoActivo?.hora_prometida) return null;
+    const m = Math.round((new Date(pedidoActivo.hora_prometida).getTime() - Date.now()) / 60000);
+    return m > 0 && m <= 120 ? m : null;
+  }, [minutosEstafeta, pedidoActivo]);
+
+  // Trocar de cozinha esvazia o carrinho (os pratos são de outra cozinha): com carrinho cheio,
+  // confirma antes de apagar, para uma escolha distraída não deitar fora o trabalho do cliente.
+  function trocarCozinha(id: string) {
+    const c = cozinhas.find((x) => x.cozinha_id === id);
+    if (!c || c.cozinha_id === cozinhaId) return;
+    const mudar = () => carrinho.definirCozinha({ id: c.cozinha_id, nome: c.nome });
+    if (carrinho.quantidade > 0) {
+      Alert.alert('Mudar de cozinha?', 'Os pratos no carrinho são desta cozinha e serão removidos.', [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Mudar e esvaziar', style: 'destructive', onPress: mudar },
+      ]);
+    } else {
+      mudar();
+    }
+  }
 
   const doDia = useMemo(() => (cardapio ?? []).filter((i) => i.do_dia), [cardapio]);
   const categorias = useMemo(() => {
@@ -105,20 +176,55 @@ export default function Inicio() {
             }}
           />
         }>
-        {/* I8: selector de cozinha (só com multi_cozinha e mais de uma cozinha a aceitar pedidos) */}
+        {/* Momento de marca: uma saudação curta antes do cardápio */}
+        <Text style={{ fontSize: 20, fontWeight: '800', color: cores.texto }}>
+          {perfil?.primeiro_nome ? `Olá, ${perfil.primeiro_nome} 👋` : 'Olá 👋'}
+        </Text>
+        <Text style={{ color: cores.textoSuave, marginTop: -espaco.xs }}>O que vais almoçar hoje?</Text>
+        {/* Banner: pedido em andamento — toca para acompanhar a entrega */}
+        {pedidoActivo && (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push({ pathname: '/pedido/[id]', params: { id: pedidoActivo.id } })}>
+            <View
+              style={{
+                backgroundColor: cores.fundoSuave,
+                borderRadius: raio,
+                borderLeftWidth: 4,
+                borderLeftColor: corEstadoPedido[pedidoActivo.estado],
+                padding: espaco.m,
+                gap: 2,
+              }}>
+              <Text style={{ fontSize: 16, fontWeight: '700', color: corEstadoPedido[pedidoActivo.estado] }}>
+                {pedidoActivo.estado === 'em_entrega' ? '🛵 A tua entrega está a caminho' : `Pedido ${nomeEstadoPedido[pedidoActivo.estado].toLowerCase()}`}
+              </Text>
+              {minutosBanner != null ? (
+                <Text style={{ color: cores.texto, fontWeight: '600' }}>Chega daqui a ~{minutosBanner} min</Text>
+              ) : pedidoActivo.hora_prometida ? (
+                <Text style={{ color: cores.texto, fontWeight: '600' }}>
+                  Entrega prevista: {new Date(pedidoActivo.hora_prometida).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}
+                </Text>
+              ) : null}
+              <Text style={{ color: cores.textoSuave }}>Toca para acompanhar o teu pedido.</Text>
+            </View>
+          </Pressable>
+        )}
+        {/* Convida e Ganha: desconto do 1.º pedido / ganhos / convite (adapta-se ao estado) */}
+        <CartaoConvida />
+        {/* I8: selector de cozinha por zona (só com multi_cozinha e mais de uma cozinha a aceitar pedidos).
+            A marca é a mesma; cada opção é um balcão/zona. O título dá a afordância de lugar e o ✓
+            reforça qual está escolhido. */}
         {ligada('multi_cozinha') && !carrinho.grupo && cozinhas.length > 1 && (
           <View style={{ gap: espaco.s }}>
-            <Escolha
-              opcoes={cozinhas.map((c) => ({ valor: c.cozinha_id, rotulo: c.nome }))}
-              valor={cozinhaId ?? ''}
-              aoMudar={(id) => {
-                const c = cozinhas.find((x) => x.cozinha_id === id);
-                if (c) carrinho.definirCozinha({ id: c.cozinha_id, nome: c.nome });
-              }}
-            />
-            {carrinho.quantidade > 0 && (
-              <Text style={{ color: cores.textoSuave, fontSize: 13 }}>Mudar de cozinha esvazia o carrinho.</Text>
+            <Text style={{ fontSize: 15, fontWeight: '700', color: cores.texto }}>📍 De onde queres pedir?</Text>
+            {cozinhas.some((c) => c.distancia_km != null) && (
+              <Text style={{ fontSize: 12, color: cores.textoSuave, marginTop: -espaco.xs }}>Mais perto primeiro</Text>
             )}
+            <Escolha
+              opcoes={cozinhas.map((c) => ({ valor: c.cozinha_id, rotulo: (c.cozinha_id === cozinhaId ? '✓ ' : '') + c.nome }))}
+              valor={cozinhaId ?? ''}
+              aoMudar={trocarCozinha}
+            />
           </View>
         )}
         {contador !== null && (
@@ -165,14 +271,29 @@ export default function Inicio() {
         {cardapio !== null && cardapio.length === 0 && <Paragrafo suave>O cardápio de hoje ainda não está disponível.</Paragrafo>}
         {categorias.map(([categoria, itens]) => (
           <View key={categoria} style={{ gap: espaco.s }}>
-            <Subtitulo>{categoria}</Subtitulo>
+            {categoria === 'Prato do dia' ? (
+              <View style={{ alignSelf: 'flex-start', backgroundColor: cores.destaqueFundo, borderRadius: 14, paddingHorizontal: espaco.m, paddingVertical: 4, marginTop: espaco.s }}>
+                <Text style={{ color: cores.texto, fontWeight: '700', fontSize: 15 }}>★ Prato do dia</Text>
+              </View>
+            ) : (
+              <Subtitulo>{categoria}</Subtitulo>
+            )}
             {itens.map((item) => {
               const noCarrinho = carrinho.quantidadeDe(item.id);
               return (
                 <View key={item.id} style={{ backgroundColor: cores.fundoSuave, borderRadius: raio, padding: espaco.m, gap: 4 }}>
+                  {item.foto_url ? (
+                    <Image
+                      source={{ uri: item.foto_url }}
+                      style={{ width: '100%', aspectRatio: 4 / 3, borderRadius: raio, marginBottom: 4 }}
+                      accessibilityLabel={item.nome}
+                    />
+                  ) : null}
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: espaco.m }}>
                     <Text style={{ fontSize: 16, fontWeight: '600', flex: 1 }}>{item.nome}</Text>
-                    <Text style={{ fontSize: 16, fontWeight: '700' }}>{formatarKz(item.preco)}</Text>
+                    <Text style={{ fontSize: 16, fontWeight: '700' }}>
+                      {desde.has(item.id) ? `desde ${formatarKz(desde.get(item.id))}` : formatarKz(item.preco)}
+                    </Text>
                   </View>
                   {item.descricao ? <Text style={{ color: cores.textoSuave }}>{item.descricao}</Text> : null}
                   {(() => {
@@ -192,16 +313,23 @@ export default function Inicio() {
                   })()}
                   <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: espaco.m }}>
                     {noCarrinho > 0 && <Text style={{ color: cores.marca, fontWeight: '600' }}>{noCarrinho} no carrinho</Text>}
-                    <Pressable
-                      accessibilityRole="button"
-                      onPress={() =>
-                        montaveis.has(item.id)
-                          ? router.push({ pathname: '/montar/[id]', params: { id: item.id } })
-                          : carrinho.adicionar(item)
-                      }
-                      style={{ backgroundColor: cores.marca, borderRadius: 20, paddingHorizontal: espaco.l, paddingVertical: 6 }}>
-                      <Text style={{ color: '#fff', fontWeight: '700' }}>{montaveis.has(item.id) ? 'Montar' : 'Adicionar'}</Text>
-                    </Pressable>
+                    {!esgotados.has(item.id) && doses.has(item.id) && doses.get(item.id)! > 0 && doses.get(item.id)! <= 5 && (
+                      <Text style={{ color: cores.aviso, fontWeight: '600' }}>{`Restam ${doses.get(item.id)}`}</Text>
+                    )}
+                    {esgotados.has(item.id) || doses.get(item.id) === 0 ? (
+                      <Text style={{ color: cores.textoSuave, fontWeight: '700' }}>Esgotado</Text>
+                    ) : (
+                      <Pressable
+                        accessibilityRole="button"
+                        onPress={() =>
+                          montaveis.has(item.id)
+                            ? router.push({ pathname: '/montar/[id]', params: { id: item.id } })
+                            : carrinho.adicionar(item)
+                        }
+                        style={{ backgroundColor: cores.marcaClara, borderRadius: 20, paddingHorizontal: espaco.l, paddingVertical: 6 }}>
+                        <Text style={{ color: cores.marca, fontWeight: '700' }}>{montaveis.has(item.id) ? 'Montar' : 'Adicionar'}</Text>
+                      </Pressable>
+                    )}
                   </View>
                 </View>
               );

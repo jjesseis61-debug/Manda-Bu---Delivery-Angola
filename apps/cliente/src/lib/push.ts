@@ -61,6 +61,8 @@ export function rotaDaNotificacao(dados: unknown): string | null {
   if (codigo === 'N8') return '/levantar';
   if (codigo === 'N13' || codigo === 'N14') return '/pacotes';
   if (codigo === 'N9' && typeof d.pedido_id === 'string') return `/avaliar/${d.pedido_id}`;
+  if ((codigo === 'N16' || codigo === 'N20' || codigo === 'N22') && typeof d.pedido_id === 'string') return `/pedido/${d.pedido_id}`;
+  if (codigo === 'N30') return '/ajuda';
   if ((codigo === 'N10' || codigo === 'N11') && typeof d.codigo_grupo === 'string') return `/grupo/${d.codigo_grupo}`;
   return null;
 }

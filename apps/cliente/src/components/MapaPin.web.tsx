@@ -5,7 +5,7 @@ import { cores, raio } from '@/lib/tema';
 export type Coordenadas = { latitude: number; longitude: number };
 
 /** Na web não há mapa nativo: usa-se "A minha localização" e mostra-se a coordenada */
-export function MapaPin({ ponto }: { ponto: Coordenadas; aoMudar: (p: Coordenadas) => void }) {
+export function MapaPin({ ponto }: { ponto: Coordenadas; aoMudar: (p: Coordenadas) => void; centrarEm?: Coordenadas }) {
   return (
     <View style={{ height: 120, borderRadius: raio, backgroundColor: cores.fundoSuave, alignItems: 'center', justifyContent: 'center' }}>
       <Text style={{ color: cores.textoSuave }}>

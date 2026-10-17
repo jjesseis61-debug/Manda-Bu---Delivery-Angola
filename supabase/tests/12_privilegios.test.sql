@@ -48,7 +48,7 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 -- I7: fotos (foto_pode_* nas políticas do storage; fotos_da_avaliacao no trigger da app)
                 'lista_avaliacoes', 'fotos_pendentes', 'foto_pode_enviar', 'foto_pode_ver', 'fotos_da_avaliacao',
                 -- I8: rede de cozinhas (cozinha_aceita_pedidos no trigger da criação de grupos)
-                'cozinhas_para_pedir', 'relatorio_comparativo', 'cozinha_aceita_pedidos',
+                'cozinhas_para_pedir', 'cozinhas_perto', 'relatorio_comparativo', 'cozinha_aceita_pedidos',
                 -- apagar a conta pela app (exigido pelas lojas)
                 'apagar_conta',
                 -- I10 e I11: localização da cozinha e acompanhamento da entrega
@@ -56,6 +56,69 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 -- I12: pacotes pré-pagos
                 'aderir_pacote', 'cancelar_adesao_pacote', 'usar_pacote', 'pausar_pacote', 'meu_pacote',
                 'pacotes_a_minha_volta', 'confirmar_pagamento_pacote', 'reembolsar_pacote', 'adesoes_operador',
+                -- caixa na app do operador
+                'abrir_caixa', 'resumo_caixa', 'registar_sangria', 'fechar_caixa',
+                -- comprovativos dos pagamentos electrónicos (conferir; as outras duas são usadas nas políticas do Storage)
+                'conferir_comprovativo', 'comprovativo_caminho_valido', 'comprovativo_visivel',
+                -- conferência financeira (extratos, fechos, histórico do pedido)
+                'criar_extrato', 'confirmar_extrato', 'pedir_nova_leitura', 'registar_movimento_extrato',
+                'apagar_movimento_extrato', 'ligar_movimento', 'relatorio_conciliacao', 'fecho_diario',
+                'fecho_mensal', 'historico_pedido', 'extrato_caminho_valido',
+                -- alertas de pedidos parados ou atrasados
+                'informar_atraso', 'alertas_abertos',
+                -- reclamações (análise automática) e estímulos mensais
+                'fazer_reclamacao', 'minhas_reclamacoes', 'reclamacoes_lista', 'decidir_reclamacao',
+                'relatorio_reclamacoes', 'gerar_estimulos', 'estimulos_do_mes', 'decidir_estimulo', 'pedir_nova_analise',
+                -- agente investigador financeiro (as ferramentas do agente são só do serviço)
+                'abrir_investigacoes', 'casos_investigacao_lista', 'decidir_caso', 'investigar_de_novo',
+                -- analista do administrador
+                'perguntar_analista', 'pedir_relatorio_analista', 'perguntas_analista_lista',
+                -- vigilante do Convida e Ganha
+                'abrir_vigilancia', 'casos_convida_lista', 'decidir_caso_convida', 'vigiar_de_novo',
+                -- gerente de turno
+                'propostas_turno_lista', 'decidir_proposta_turno',
+                -- stock e compras
+                'planos_compras_lista', 'pedir_plano_compras', 'marcar_compra',
+                -- atendimento ao cliente
+                'enviar_mensagem_atendimento', 'minha_conversa_atendimento', 'pedir_pessoa_atendimento',
+                'conversas_atendimento_lista', 'conversa_atendimento', 'responder_atendimento', 'mudar_conversa_atendimento',
+                -- contactos públicos
+                'contactos',
+                -- ingredientes que o cliente pode tirar (pratos montáveis)
+                'componentes_dos_pratos',
+                -- doses do dia que restam de cada prato
+                'doses_cardapio',
+                -- quem pode gerir a foto de um prato/cozinha (usada nas políticas do bucket)
+                'foto_prato_pode_gerir',
+                -- rasto de alterações do cardápio por cozinha
+                'auditoria_cardapio',
+                -- impacto de preço de um prato (pedidos atendidos por preço e movimento)
+                'impacto_preco_prato', 'movimento_preco_prato',
+                -- justificação do cancelamento (o cliente só lê a dos seus pedidos)
+                'justificacao_cancelamento',
+                -- cadastro de pessoal (só administrador principal) e mapa de estafetas (despacho)
+                'listar_pessoal', 'criar_funcionario', 'editar_funcionario', 'posicoes_estafetas',
+                -- gestão de permissões e cozinhas do pessoal (só administrador principal)
+                'permissoes_catalogo', 'definir_permissoes_funcionario', 'definir_cozinhas_funcionario',
+                -- pedidos agendados (fila do que vem)
+                'pedidos_agendados',
+                -- sugestão de despacho por proximidade
+                'sugestao_despacho',
+                -- conta de empresa (B2B)
+                'criar_empresa', 'editar_empresa', 'listar_empresas', 'empresa_adicionar_membro',
+                'empresa_remover_membro', 'empresa_membros_lista', 'relatorio_empresa', 'minha_empresa',
+                -- feira (consignação)
+                'criar_feira', 'feira_adicionar_item', 'feira_vender', 'feira_fechar', 'feira_resumo', 'listar_feiras',
+                -- central de avisos (avisos_destinatarios é revogada de authenticated)
+                'enviar_aviso', 'pre_visualizar_aviso', 'listar_avisos',
+                'caixas_geridas',
+                -- atribuição explícita de entregas
+                'atribuir_entrega', 'recusar_entrega', 'estafetas_para_atribuir',
+                -- sino de notificações do funcionário
+                'minhas_notificacoes', 'contar_notificacoes_novas', 'marcar_notificacoes_vistas',
+                -- reconquista de clientes inativos
+                'clientes_inativos', 'clientes_inativos_resumo', 'enviar_campanha_reconquista',
+                'campanha_reconquista_resultado', 'listar_campanhas_reconquista',
                 -- auxiliares usadas em políticas RLS, valores por defeito ou triggers SECURITY INVOKER
                 'cliente_actual', 'cozinha_padrao', 'e_funcionario', 'funcionalidade_activa',
                 'funcionario_actual', 'membro_da_cozinha', 'tem_permissao', 'e_administrador', 'pode_na_cozinha')),

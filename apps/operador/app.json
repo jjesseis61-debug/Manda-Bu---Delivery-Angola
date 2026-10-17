@@ -12,13 +12,14 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#1F1A17",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "ao.mandabue.operador"
+      "package": "ao.mandabue.operador",
+      "softwareKeyboardLayoutMode": "pan"
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -29,9 +30,9 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#ffffff",
+          "backgroundColor": "#1F1A17",
           "image": "./assets/splash-icon.png",
-          "imageWidth": 76
+          "imageWidth": 200
         }
       ],
       "expo-sharing",
@@ -41,7 +42,15 @@
         {
           "locationWhenInUsePermission": "A Manda Bué usa a tua localização para mostrar ao cliente onde está a entrega, só enquanto tens pedidos a caminho, e para marcar a localização das cozinhas."
         }
-      ]
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "A Manda Bué usa as tuas fotos para mostrar os pratos e a cozinha aos clientes.",
+          "cameraPermission": "A Manda Bué usa a câmara para fotografares os pratos e a cozinha."
+        }
+      ],
+      "@maplibre/maplibre-react-native"
     ],
     "scheme": "mandabueoperador",
     "experiments": {

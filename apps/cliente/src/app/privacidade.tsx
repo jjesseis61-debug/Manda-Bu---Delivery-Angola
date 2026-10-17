@@ -72,7 +72,7 @@ function Interruptor({ rotulo, valor, aoMudar }: { rotulo: string; valor: boolea
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 6 }}>
       <Text style={{ fontSize: 15, flex: 1 }}>{rotulo}</Text>
-      <Switch value={valor} onValueChange={aoMudar} trackColor={{ true: cores.marca, false: cores.linha }} />
+      <Switch thumbColor="#FFFFFF" value={valor} onValueChange={aoMudar} trackColor={{ true: cores.marca, false: cores.contorno }} />
     </View>
   );
 }
