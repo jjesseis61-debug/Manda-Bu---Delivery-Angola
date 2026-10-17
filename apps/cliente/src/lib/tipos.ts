@@ -244,6 +244,8 @@ export type CozinhaParaPedir = {
   foto_url: string | null;
   historia: string | null;
   pratos: number;
+  /** Distância ao ponto de entrega do cliente (km), quando o balcão tem GPS. Só vem de cozinhas_perto. */
+  distancia_km?: number | null;
 };
 
 // I9 · Pratos montáveis

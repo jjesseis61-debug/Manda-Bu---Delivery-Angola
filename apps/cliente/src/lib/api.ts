@@ -180,6 +180,11 @@ export async function cozinhasParaPedir(): Promise<CozinhaParaPedir[]> {
   return verificar(await supabase.rpc('cozinhas_para_pedir')) as CozinhaParaPedir[];
 }
 
+/** Balcões ordenados pela distância ao ponto de entrega do cliente (mais perto primeiro). */
+export async function cozinhasPertoParaPedir(pontoId: string): Promise<CozinhaParaPedir[]> {
+  return (verificar(await supabase.rpc('cozinhas_perto', { p_ponto: pontoId })) as CozinhaParaPedir[]) ?? [];
+}
+
 // ---------------------------------------------------------------- avaliações (C9, C10)
 /** Médias da cozinha e dos pratos; o servidor só devolve com o mínimo de avaliações */
 export async function mediasAvaliacoes(cozinhaId: string): Promise<MediasAvaliacoes | null> {

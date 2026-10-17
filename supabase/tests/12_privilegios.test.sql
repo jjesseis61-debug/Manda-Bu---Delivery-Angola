@@ -48,7 +48,7 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 -- I7: fotos (foto_pode_* nas políticas do storage; fotos_da_avaliacao no trigger da app)
                 'lista_avaliacoes', 'fotos_pendentes', 'foto_pode_enviar', 'foto_pode_ver', 'fotos_da_avaliacao',
                 -- I8: rede de cozinhas (cozinha_aceita_pedidos no trigger da criação de grupos)
-                'cozinhas_para_pedir', 'relatorio_comparativo', 'cozinha_aceita_pedidos',
+                'cozinhas_para_pedir', 'cozinhas_perto', 'relatorio_comparativo', 'cozinha_aceita_pedidos',
                 -- apagar a conta pela app (exigido pelas lojas)
                 'apagar_conta',
                 -- I10 e I11: localização da cozinha e acompanhamento da entrega

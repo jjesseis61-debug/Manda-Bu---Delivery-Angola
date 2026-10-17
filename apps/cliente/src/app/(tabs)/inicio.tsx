@@ -9,6 +9,7 @@ import {
   contadorZona,
   cozinhaPadrao,
   cozinhasParaPedir,
+  cozinhasPertoParaPedir,
   lerCardapio,
   lerCozinhaPublica,
   lerEnderecos,
@@ -61,10 +62,13 @@ export default function Inicio() {
   const carregar = useCallback(async () => {
     setErro(null);
     try {
-      // I8: com multi_cozinha, o cliente escolhe a cozinha; por defeito a primeira da lista
+      // Endereços primeiro: o ponto de entrega serve para ordenar os balcões por proximidade
+      const ends = await lerEnderecos();
+      const ponto = ends[0]?.ponto_entrega_id ?? null;
+      // I8: com multi_cozinha, o cliente escolhe a cozinha; por defeito a primeira da lista (a mais perto)
       let escolhida = cozinhaId;
       if (ligada('multi_cozinha')) {
-        const lista = await cozinhasParaPedir();
+        const lista = ponto ? await cozinhasPertoParaPedir(ponto) : await cozinhasParaPedir();
         setCozinhas(lista);
         if (!emGrupo && (!escolhida || !lista.some((c) => c.cozinha_id === escolhida)) && lista[0]) {
           escolhida = lista[0].cozinha_id;
@@ -75,7 +79,7 @@ export default function Inicio() {
         // Sem multi_cozinha o servidor manda todos os pedidos para a cozinha padrão: só os pratos dela
         escolhida = await cozinhaPadrao();
       }
-      const [itens, ends] = await Promise.all([lerCardapio(escolhida), lerEnderecos()]);
+      const itens = await lerCardapio(escolhida);
       setCardapio(itens);
       setDoses(new Map(itens[0] ? (await lerDoses(itens[0].cozinha_id).catch(() => [])).map((d) => [d.cardapio_id, d.restantes]) : []));
       setEnderecos(ends);
@@ -213,6 +217,9 @@ export default function Inicio() {
         {ligada('multi_cozinha') && !carrinho.grupo && cozinhas.length > 1 && (
           <View style={{ gap: espaco.s }}>
             <Text style={{ fontSize: 15, fontWeight: '700', color: cores.texto }}>📍 De onde queres pedir?</Text>
+            {cozinhas.some((c) => c.distancia_km != null) && (
+              <Text style={{ fontSize: 12, color: cores.textoSuave, marginTop: -espaco.xs }}>Mais perto primeiro</Text>
+            )}
             <Escolha
               opcoes={cozinhas.map((c) => ({ valor: c.cozinha_id, rotulo: (c.cozinha_id === cozinhaId ? '✓ ' : '') + c.nome }))}
               valor={cozinhaId ?? ''}
