@@ -92,6 +92,8 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 'foto_prato_pode_gerir',
                 -- rasto de alterações do cardápio por cozinha
                 'auditoria_cardapio',
+                -- impacto de preço de um prato (pedidos atendidos por preço e movimento)
+                'impacto_preco_prato', 'movimento_preco_prato',
                 -- justificação do cancelamento (o cliente só lê a dos seus pedidos)
                 'justificacao_cancelamento',
                 -- cadastro de pessoal (só administrador principal) e mapa de estafetas (despacho)

@@ -554,6 +554,24 @@ export type AuditoriaCardapio = {
   mudou: Record<string, unknown> | null;
 };
 
+/** Resumo do impacto de cada preço cobrado de um prato (quantos pedidos atendidos, clientes, total). */
+export type ImpactoPreco = {
+  preco: number;
+  pedidos_entregues: number;
+  clientes: number;
+  total_kz: number;
+  pedidos_cancelados: number;
+};
+
+/** Uma linha do movimento de um prato: quem pediu, quando, quanto e em que estado. */
+export type MovimentoPreco = {
+  quando: string;
+  cliente: string;
+  qtd: number;
+  preco: number;
+  estado: string;
+};
+
 export type Relatorio = {
   pedidos_por_dia: { dia: string; pedidos: number }[];
   clientes_novos: number;

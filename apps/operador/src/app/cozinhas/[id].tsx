@@ -224,6 +224,13 @@ export default function EditarCozinha() {
                     variante="texto"
                     aoCarregar={() => router.push({ pathname: '/cozinhas/opcoes/[prato]', params: { prato: p.id, nome: p.nome } })}
                   />
+                  {pode('auditoria.ver') && (
+                    <Botao
+                      titulo="Impacto"
+                      variante="texto"
+                      aoCarregar={() => router.push({ pathname: '/cozinhas/impacto-preco', params: { cardapio: p.id, nome: p.nome } })}
+                    />
+                  )}
                 </View>
               </Cartao>
             ))}

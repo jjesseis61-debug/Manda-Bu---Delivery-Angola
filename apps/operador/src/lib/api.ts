@@ -4,6 +4,8 @@ import { supabase } from './supabase';
 import type {
   Aviso,
   AuditoriaCardapio,
+  ImpactoPreco,
+  MovimentoPreco,
   PublicoAviso,
   ClienteInativo,
   ResumoInativos,
@@ -188,6 +190,18 @@ export async function lerDosesCardapio(cozinhaId: string): Promise<DosesPrato[]>
 /** Rasto de alterações do cardápio de uma cozinha: pratos, perfil, morada e opções (de→para). */
 export async function auditoriaCardapio(cozinhaId: string): Promise<AuditoriaCardapio[]> {
   return (verificar(await supabase.rpc('auditoria_cardapio', { p_cozinha: cozinhaId })) as AuditoriaCardapio[]) ?? [];
+}
+
+/** Impacto de cada preço de um prato: quantos pedidos atendidos, clientes e total recebido. */
+export async function impactoPrecoPrato(cardapioId: string): Promise<ImpactoPreco[]> {
+  return (verificar(await supabase.rpc('impacto_preco_prato', { p_cardapio: cardapioId })) as ImpactoPreco[]) ?? [];
+}
+
+/** Movimento cliente a cliente de um prato (opcionalmente só de um preço). */
+export async function movimentoPrecoPrato(cardapioId: string, preco?: number): Promise<MovimentoPreco[]> {
+  return (
+    (verificar(await supabase.rpc('movimento_preco_prato', { p_cardapio: cardapioId, p_preco: preco ?? null })) as MovimentoPreco[]) ?? []
+  );
 }
 
 // ---------------------------------------------------------------- I9: opções dos pratos
