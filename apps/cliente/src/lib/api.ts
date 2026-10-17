@@ -302,6 +302,11 @@ export async function criarEndereco(dados: {
   verificar(r);
 }
 
+/** Apaga um endereço do cliente (apagar reversível: marca deletado_em; a lista esconde os apagados). */
+export async function apagarEndereco(id: string): Promise<void> {
+  verificar(await supabase.from('enderecos_cliente').update({ deletado_em: new Date().toISOString() }).eq('id', id));
+}
+
 // ---------------------------------------------------------------- pedidos
 export type ItemCarrinho = { cardapio_id: string; qtd: number; opcoes?: string[]; componentes_excluidos?: string[] };
 
