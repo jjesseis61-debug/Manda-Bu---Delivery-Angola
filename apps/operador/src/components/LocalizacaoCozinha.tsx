@@ -71,7 +71,12 @@ export function LocalizacaoCozinha({ cozinhaId }: { cozinhaId: string }) {
       {sucesso && <Aviso tipo="sucesso">{sucesso}</Aviso>}
       <Campo rotulo="Morada" value={l.morada} onChangeText={(t) => setL({ ...l, morada: t })} />
       <Campo rotulo="Horário (ex.: Seg–Sex 10h–15h)" value={l.horario} onChangeText={(t) => setL({ ...l, horario: t })} />
-      <CapturarPonto lat={l.lat} lng={l.lng} aoMudar={(la, lo) => setL({ ...l, lat: la, lng: lo })} />
+      <CapturarPonto
+        lat={l.lat}
+        lng={l.lng}
+        aoMudar={(la, lo) => setL({ ...l, lat: la, lng: lo })}
+        aoSugerirMorada={(morada) => setL({ ...l, morada })}
+      />
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Text style={{ flex: 1 }}>A responsável autorizou mostrar a localização aos clientes</Text>
         <Switch thumbColor="#FFFFFF" value={l.publica} onValueChange={(v) => setL({ ...l, publica: v })} trackColor={{ true: cores.marca, false: cores.contorno }} />

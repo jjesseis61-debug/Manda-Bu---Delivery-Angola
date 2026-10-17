@@ -1,7 +1,7 @@
 import { Camera, Map, Marker, type PressEvent } from '@maplibre/maplibre-react-native';
 import * as Location from 'expo-location';
 import { useState } from 'react';
-import { Linking, Platform, StyleSheet, View, type NativeSyntheticEvent } from 'react-native';
+import { Linking, Platform, Pressable, StyleSheet, Text, View, type NativeSyntheticEvent } from 'react-native';
 
 import { Aviso, Botao, Campo, Paragrafo } from '@/components/ui';
 import { extrairCoordenadas } from '@/lib/coordenadas';
@@ -28,11 +28,14 @@ export function CapturarPonto({
   lat,
   lng,
   aoMudar,
-  altura = 220,
+  aoSugerirMorada,
+  altura = 280,
 }: {
   lat: string;
   lng: string;
   aoMudar: (lat: string, lng: string) => void;
+  /** Quando dado, mostra um botão para preencher a morada a partir do ponto (reverse geocode) */
+  aoSugerirMorada?: (morada: string) => void;
   altura?: number;
 }) {
   const [erro, setErro] = useState<string | null>(null);
@@ -40,13 +43,20 @@ export function CapturarPonto({
   const [procura, setProcura] = useState('');
   const [aProcurar, setAProcurar] = useState(false);
   const [colado, setColado] = useState('');
+  const [aMorada, setAMorada] = useState(false);
 
   const vLat = numero(lat, 90);
   const vLng = numero(lng, 180);
   const temPonto = vLat !== null && vLng !== null;
   const centro: [number, number] = temPonto ? [vLng, vLat] : [LUANDA.lng, LUANDA.lat];
+  const [zoom, setZoom] = useState(temPonto ? 16 : 12);
+  const ajustarZoom = (d: number) => setZoom((z) => Math.min(20, Math.max(3, z + d)));
 
-  const definir = (la: number, lo: number) => aoMudar(la.toFixed(6), lo.toFixed(6));
+  // Ao escolher um ponto (toque, GPS, procura, colar) aproxima para ser fácil afinar
+  const definir = (la: number, lo: number) => {
+    aoMudar(la.toFixed(6), lo.toFixed(6));
+    setZoom((z) => Math.max(z, 16));
+  };
 
   async function usarActual() {
     if (aLocalizar) return;
@@ -91,6 +101,24 @@ export function CapturarPonto({
     }
   }
 
+  // Preencher a morada a partir do ponto marcado (reverse geocode do sistema)
+  async function preencherMorada() {
+    if (!aoSugerirMorada || vLat === null || vLng === null || aMorada) return;
+    setErro(null);
+    setAMorada(true);
+    try {
+      const r = await Location.reverseGeocodeAsync({ latitude: vLat, longitude: vLng });
+      const a = r[0];
+      const partes = a ? [a.street || a.name, a.district || a.subregion, a.city || a.region].filter((p): p is string => !!p) : [];
+      if (partes.length) aoSugerirMorada([...new Set(partes)].join(', '));
+      else setErro('Não consegui obter a morada deste ponto. Escreve-a à mão.');
+    } catch {
+      setErro('Este telemóvel não conseguiu obter a morada do ponto. Escreve-a à mão.');
+    } finally {
+      setAMorada(false);
+    }
+  }
+
   // Trazer um ponto do Google Maps: coordenadas coladas ("-8.94, 13.37") ou um link que as contenha
   function aplicarColado() {
     const c = extrairCoordenadas(colado);
@@ -119,16 +147,25 @@ export function CapturarPonto({
               const [lo, la] = e.nativeEvent.lngLat;
               definir(la, lo);
             }}>
-            <Camera center={centro} zoom={temPonto ? 15 : 12} />
+            <Camera center={centro} zoom={zoom} duration={300} />
             {temPonto && (
               <Marker id="ponto" lngLat={[vLng, vLat]}>
                 <View style={estilos.pin} />
               </Marker>
             )}
           </Map>
+          {/* Botões de zoom (o mapa pequeno é difícil de aproximar só com os dedos) */}
+          <View style={estilos.zoomBotoes}>
+            <Pressable onPress={() => ajustarZoom(1)} accessibilityLabel="Aproximar" style={estilos.zoomBotao}>
+              <Text style={estilos.zoomTexto}>＋</Text>
+            </Pressable>
+            <Pressable onPress={() => ajustarZoom(-1)} accessibilityLabel="Afastar" style={estilos.zoomBotao}>
+              <Text style={estilos.zoomTexto}>－</Text>
+            </Pressable>
+          </View>
         </View>
       )}
-      {HA_MAPA && <Paragrafo suave>Toca no mapa para marcar o ponto, ou usa a localização actual.</Paragrafo>}
+      {HA_MAPA && <Paragrafo suave>Toca no mapa para marcar o ponto (usa ＋ / － para aproximar), ou usa a localização actual.</Paragrafo>}
       <Botao
         titulo={aLocalizar ? 'A localizar…' : 'Usar a localização actual'}
         variante="secundario"
@@ -165,6 +202,9 @@ export function CapturarPonto({
           <Campo rotulo="Longitude" value={lng} keyboardType="numbers-and-punctuation" onChangeText={(t) => aoMudar(lat, t)} />
         </View>
       </View>
+      {temPonto && aoSugerirMorada && (
+        <Botao titulo={aMorada ? 'A obter morada…' : 'Preencher a morada deste ponto'} variante="texto" aoCarregar={preencherMorada} aCarregar={aMorada} />
+      )}
       {temPonto && (
         <Botao
           titulo="Ver no Google Maps"
@@ -179,4 +219,17 @@ export function CapturarPonto({
 const estilos = StyleSheet.create({
   caixa: { borderRadius: raio, overflow: 'hidden', marginBottom: espaco.s },
   pin: { width: 20, height: 20, borderRadius: 10, backgroundColor: cores.marca, borderWidth: 3, borderColor: '#fff' },
+  zoomBotoes: { position: 'absolute', top: espaco.s, right: espaco.s, gap: espaco.xs },
+  zoomBotao: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: cores.contorno,
+    elevation: 2,
+  },
+  zoomTexto: { fontSize: 22, fontWeight: '700', color: cores.texto, lineHeight: 26 },
 });
