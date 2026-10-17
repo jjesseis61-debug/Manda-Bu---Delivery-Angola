@@ -90,6 +90,8 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 'doses_cardapio',
                 -- quem pode gerir a foto de um prato/cozinha (usada nas políticas do bucket)
                 'foto_prato_pode_gerir',
+                -- rasto de alterações do cardápio por cozinha
+                'auditoria_cardapio',
                 -- justificação do cancelamento (o cliente só lê a dos seus pedidos)
                 'justificacao_cancelamento',
                 -- cadastro de pessoal (só administrador principal) e mapa de estafetas (despacho)

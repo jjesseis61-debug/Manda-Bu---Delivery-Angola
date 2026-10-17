@@ -538,6 +538,19 @@ export type PratoCardapio = {
 /** Doses que restam hoje de um prato com limite */
 export type DosesPrato = { cardapio_id: string; restantes: number; lancadas: number };
 
+/** Uma linha do rasto de alterações do cardápio de uma cozinha (pratos, perfil, morada, opções) */
+export type AuditoriaCardapio = {
+  quando: string;
+  quem: string | null;
+  /** cardapio | cozinhas | cozinhas_localizacao | opcoes_grupos | opcoes */
+  ref_tipo: string;
+  /** <tabela>_criada (registo novo) ou <tabela>_alterada (edição) */
+  acao: string;
+  item: string;
+  /** Numa edição é o diff por campo { campo: { de, para } }; num registo novo é a linha inteira. null sem detalhe. */
+  mudou: Record<string, unknown> | null;
+};
+
 export type Relatorio = {
   pedidos_por_dia: { dia: string; pedidos: number }[];
   clientes_novos: number;

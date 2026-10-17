@@ -182,6 +182,11 @@ export default function EditarCozinha() {
 
         {!nova && (
           <>
+            <Botao
+              titulo="Histórico de alterações"
+              variante="texto"
+              aoCarregar={() => router.push({ pathname: '/cozinhas/historico', params: { cozinha: id } })}
+            />
             <Subtitulo>Cardápio</Subtitulo>
             {pratos.length === 0 && <Paragrafo suave>Sem pratos.</Paragrafo>}
             {pratos.map((p) => (

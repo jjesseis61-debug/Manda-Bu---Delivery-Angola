@@ -2,7 +2,7 @@
 -- membro; não mexe nas outras; o admin (cozinhas.gerir) continua a poder tudo e só ele cria cozinhas.
 begin;
 \ir _helpers.psql
-select plan(13);
+select plan(15);
 
 select testes.def('cz_a', cozinha_padrao());
 insert into cozinhas (nome, responsavel) values ('Cozinha B', 'Bruno');
@@ -57,6 +57,16 @@ select is(testes.v('f_prato_a'), 'sem_erro', 'gerente envia foto de um prato da 
 select matches(testes.v('f_prato_b'), '^42501', 'gerente NÃO envia foto de um prato de outra cozinha');
 select is(testes.v('f_perfil_a'), 'sem_erro', 'gerente envia foto do perfil da SUA cozinha');
 select matches(testes.v('f_perfil_b'), '^42501', 'gerente NÃO envia foto do perfil de outra cozinha');
+
+-- Auditoria do cardápio por cozinha: o gerente vê o rasto da SUA cozinha (já editou o prato_a acima),
+-- e não consegue ver o de outra.
+select testes.entrar_funcionario(testes.u('gerente'));
+set local role authenticated;
+select testes.def('n_auditoria_a', (select count(*)::int from auditoria_cardapio(testes.u('cz_a'))));
+select testes.def('e_auditoria_b', testes.erro(format($$select * from auditoria_cardapio(%L)$$, testes.u('cz_b'))));
+reset role; select testes.sair();
+select cmp_ok(testes.v('n_auditoria_a')::int, '>=', 1, 'o gerente vê o rasto de alterações da sua cozinha');
+select matches(testes.v('e_auditoria_b'), '^42501', 'o gerente NÃO vê a auditoria de outra cozinha');
 
 select * from finish();
 rollback;

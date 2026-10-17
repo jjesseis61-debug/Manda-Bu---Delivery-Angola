@@ -3,6 +3,7 @@
 import { supabase } from './supabase';
 import type {
   Aviso,
+  AuditoriaCardapio,
   PublicoAviso,
   ClienteInativo,
   ResumoInativos,
@@ -182,6 +183,11 @@ export async function guardarPrato(p: Omit<PratoCardapio, 'id'> & { id?: string 
 /** Doses que restam hoje dos pratos com limite (as de dias anteriores já não contam) */
 export async function lerDosesCardapio(cozinhaId: string): Promise<DosesPrato[]> {
   return verificar(await supabase.rpc('doses_cardapio', { p_cozinha: cozinhaId })) as DosesPrato[];
+}
+
+/** Rasto de alterações do cardápio de uma cozinha: pratos, perfil, morada e opções (de→para). */
+export async function auditoriaCardapio(cozinhaId: string): Promise<AuditoriaCardapio[]> {
+  return (verificar(await supabase.rpc('auditoria_cardapio', { p_cozinha: cozinhaId })) as AuditoriaCardapio[]) ?? [];
 }
 
 // ---------------------------------------------------------------- I9: opções dos pratos

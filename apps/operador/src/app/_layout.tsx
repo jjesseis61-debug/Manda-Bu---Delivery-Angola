@@ -55,6 +55,7 @@ export default function LayoutRaiz() {
         <Stack.Screen name="cozinhas/index" options={{ title: 'Cozinhas' }} />
         <Stack.Screen name="cozinhas/[id]" options={{ title: 'Cozinha' }} />
         <Stack.Screen name="cozinhas/opcoes/[prato]" options={{ title: 'Opções do prato' }} />
+        <Stack.Screen name="cozinhas/historico" options={{ title: 'Histórico do cardápio' }} />
         <Stack.Screen name="relatorios" options={{ title: 'Relatórios de cozinha' }} />
         <Stack.Screen name="entregas" options={{ title: 'Pedidos e entregas' }} />
         <Stack.Screen name="estafetas" options={{ title: 'Estafetas' }} />
