@@ -72,7 +72,7 @@ export default function OpcoesPrato() {
   const grupoValido = grupo !== null && grupo.nome.trim() !== '' && maximo >= 1 && maximo <= 20 && minimo <= maximo;
 
   return (
-    <Guarda permissoes={['cozinhas.gerir']}>
+    <Guarda permissoes={['cozinhas.gerir', 'cardapio.gerir']}>
       <Ecra>
         {nome && <Subtitulo>{nome}</Subtitulo>}
         <Paragrafo suave>
