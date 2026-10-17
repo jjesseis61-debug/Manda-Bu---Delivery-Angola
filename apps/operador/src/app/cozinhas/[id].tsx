@@ -8,6 +8,7 @@ import { LocalizacaoCozinha } from '@/components/LocalizacaoCozinha';
 import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Escolha, Paragrafo, Subtitulo } from '@/components/ui';
 import { definirFotoCozinha, definirFotoPrato, guardarCozinha, guardarPrato, lerCardapio, lerCozinhas, lerDosesCardapio } from '@/lib/api';
 import { formatarKz, mensagemErro, telefoneValido } from '@/lib/formatar';
+import { useSessao } from '@/lib/sessao';
 import { cores, espaco } from '@/lib/tema';
 import type { Cozinha, DosesPrato, PratoCardapio } from '@/lib/tipos';
 
@@ -37,6 +38,7 @@ function Interruptor({ rotulo, valor, aoMudar }: { rotulo: string; valor: boolea
 /** O6. Perfil da cozinha (estado, história, consentimento) e cardápio. Tudo fica na auditoria. */
 export default function EditarCozinha() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { pode } = useSessao();
   const nova = id === 'nova';
   const [cozinha, setCozinha] = useState<Omit<Cozinha, 'id'> | null>(nova ? VAZIA : null);
   const [pratos, setPratos] = useState<PratoCardapio[]>([]);
@@ -182,11 +184,13 @@ export default function EditarCozinha() {
 
         {!nova && (
           <>
-            <Botao
-              titulo="Histórico de alterações"
-              variante="texto"
-              aoCarregar={() => router.push({ pathname: '/cozinhas/historico', params: { cozinha: id } })}
-            />
+            {pode('auditoria.ver') && (
+              <Botao
+                titulo="Histórico de alterações"
+                variante="texto"
+                aoCarregar={() => router.push({ pathname: '/cozinhas/historico', params: { cozinha: id } })}
+              />
+            )}
             <Subtitulo>Cardápio</Subtitulo>
             {pratos.length === 0 && <Paragrafo suave>Sem pratos.</Paragrafo>}
             {pratos.map((p) => (

@@ -124,7 +124,8 @@ export type Permissao =
   | 'feira.gerir'
   | 'avisos.enviar'
   | 'clientes.reconquista'
-  | 'cardapio.gerir';
+  | 'cardapio.gerir'
+  | 'auditoria.ver';
 
 export type PublicoAviso =
   | 'clientes_todos'
@@ -542,6 +543,8 @@ export type DosesPrato = { cardapio_id: string; restantes: number; lancadas: num
 export type AuditoriaCardapio = {
   quando: string;
   quem: string | null;
+  /** Função de quem alterou (gerente, atendente, estafeta, cozinheira…); vem do cadastro actual */
+  cargo: string | null;
   /** cardapio | cozinhas | cozinhas_localizacao | opcoes_grupos | opcoes */
   ref_tipo: string;
   /** <tabela>_criada (registo novo) ou <tabela>_alterada (edição) */

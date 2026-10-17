@@ -94,14 +94,14 @@ export default function HistoricoCardapio() {
   }, [cozinha]);
 
   return (
-    <Guarda permissoes={['cozinhas.gerir', 'cardapio.gerir']}>
+    <Guarda permissoes={['auditoria.ver']}>
       <Ecra>
         {erro && <Aviso tipo="erro">{erro}</Aviso>}
         {!linhas && !erro && <ACarregar />}
         {linhas && (
           <>
             <Subtitulo>Alterações ao cardápio</Subtitulo>
-            <Paragrafo suave>Cada alteração a pratos, perfil, morada ou opções fica registada: quem a fez, quando e o que mudou.</Paragrafo>
+            <Paragrafo suave>Cada alteração a pratos, perfil, morada ou opções fica registada: quem a fez (e a sua função), quando e o que mudou.</Paragrafo>
             {linhas.length === 0 && <Paragrafo suave>Ainda não há alterações registadas nesta cozinha.</Paragrafo>}
             {linhas.map((l, i) => (
               <Cartao key={i}>
@@ -112,7 +112,10 @@ export default function HistoricoCardapio() {
                     {l.item && l.item !== l.ref_tipo ? ` · ${l.item}` : ''}
                   </Text>
                   <Mudancas acao={l.acao} mudou={l.mudou} />
-                  <Text style={{ color: cores.textoSuave }}>{l.quem ?? 'sistema'}</Text>
+                  <Text style={{ color: cores.textoSuave }}>
+                    {l.quem ?? 'sistema'}
+                    {l.cargo ? ` · ${l.cargo}` : ''}
+                  </Text>
                 </View>
               </Cartao>
             ))}

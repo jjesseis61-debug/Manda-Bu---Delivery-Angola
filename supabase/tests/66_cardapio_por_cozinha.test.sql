@@ -58,15 +58,21 @@ select matches(testes.v('f_prato_b'), '^42501', 'gerente NÃO envia foto de um p
 select is(testes.v('f_perfil_a'), 'sem_erro', 'gerente envia foto do perfil da SUA cozinha');
 select matches(testes.v('f_perfil_b'), '^42501', 'gerente NÃO envia foto do perfil de outra cozinha');
 
--- Auditoria do cardápio por cozinha: o gerente vê o rasto da SUA cozinha (já editou o prato_a acima),
--- e não consegue ver o de outra.
-select testes.entrar_funcionario(testes.u('gerente'));
+-- Auditoria do cardápio: só quem tem "auditoria.ver" (ou o admin principal) a consulta. O gerente de
+-- cardápio edita, mas NÃO vê o rasto. O auditor vê qualquer cozinha (o prato_a já foi editado acima).
+select testes.def('auditor', testes.funcionario('Auditor', array['auditoria.ver']));
+select testes.entrar_funcionario(testes.u('auditor'));
 set local role authenticated;
 select testes.def('n_auditoria_a', (select count(*)::int from auditoria_cardapio(testes.u('cz_a'))));
-select testes.def('e_auditoria_b', testes.erro(format($$select * from auditoria_cardapio(%L)$$, testes.u('cz_b'))));
 reset role; select testes.sair();
-select cmp_ok(testes.v('n_auditoria_a')::int, '>=', 1, 'o gerente vê o rasto de alterações da sua cozinha');
-select matches(testes.v('e_auditoria_b'), '^42501', 'o gerente NÃO vê a auditoria de outra cozinha');
+
+select testes.entrar_funcionario(testes.u('gerente'));
+set local role authenticated;
+select testes.def('e_auditoria_g', testes.erro(format($$select * from auditoria_cardapio(%L)$$, testes.u('cz_a'))));
+reset role; select testes.sair();
+
+select cmp_ok(testes.v('n_auditoria_a')::int, '>=', 1, 'quem tem auditoria.ver vê o rasto de alterações da cozinha');
+select matches(testes.v('e_auditoria_g'), '^42501', 'o gerente de cardápio (sem auditoria.ver) NÃO vê o rasto');
 
 select * from finish();
 rollback;
