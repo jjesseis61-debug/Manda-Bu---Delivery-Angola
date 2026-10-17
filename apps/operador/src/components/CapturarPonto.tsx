@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Linking, Platform, StyleSheet, View, type NativeSyntheticEvent } from 'react-native';
 
 import { Aviso, Botao, Campo, Paragrafo } from '@/components/ui';
+import { extrairCoordenadas } from '@/lib/coordenadas';
 import { mensagemErro } from '@/lib/formatar';
 import { estiloMapa } from '@/lib/mapaEstilo';
 import { cores, espaco, raio } from '@/lib/tema';
@@ -36,6 +37,9 @@ export function CapturarPonto({
 }) {
   const [erro, setErro] = useState<string | null>(null);
   const [aLocalizar, setALocalizar] = useState(false);
+  const [procura, setProcura] = useState('');
+  const [aProcurar, setAProcurar] = useState(false);
+  const [colado, setColado] = useState('');
 
   const vLat = numero(lat, 90);
   const vLng = numero(lng, 180);
@@ -67,6 +71,35 @@ export function CapturarPonto({
       setErro(mensagemErro(e));
     } finally {
       setALocalizar(false);
+    }
+  }
+
+  // Procurar por morada/nome (geocoder do próprio telemóvel — sem chave Google)
+  async function procurarMorada() {
+    const q = procura.trim();
+    if (!q || aProcurar) return;
+    setErro(null);
+    setAProcurar(true);
+    try {
+      const r = await Location.geocodeAsync(q);
+      if (r[0]) definir(r[0].latitude, r[0].longitude);
+      else setErro('Não encontrei essa morada. Tenta algo mais específico, ou cola as coordenadas do Google Maps.');
+    } catch {
+      setErro('Este telemóvel não conseguiu procurar a morada. Cola as coordenadas do Google Maps.');
+    } finally {
+      setAProcurar(false);
+    }
+  }
+
+  // Trazer um ponto do Google Maps: coordenadas coladas ("-8.94, 13.37") ou um link que as contenha
+  function aplicarColado() {
+    const c = extrairCoordenadas(colado);
+    if (c) {
+      definir(c[0], c[1]);
+      setColado('');
+      setErro(null);
+    } else {
+      setErro('Não encontrei coordenadas. Cola "-8.944707, 13.376525" ou um link do Google Maps com os números.');
     }
   }
 
@@ -102,6 +135,28 @@ export function CapturarPonto({
         aoCarregar={usarActual}
         aCarregar={aLocalizar}
       />
+
+      {/* Procurar por morada/nome: o telemóvel encontra o ponto (sem Google Maps) */}
+      <Campo
+        rotulo="Procurar morada"
+        placeholder="Ex.: Vila Chinesa, Viana"
+        value={procura}
+        onChangeText={setProcura}
+        onSubmitEditing={procurarMorada}
+      />
+      <Botao titulo={aProcurar ? 'A procurar…' : 'Procurar'} variante="secundario" aoCarregar={procurarMorada} aCarregar={aProcurar} />
+
+      {/* Trazer um ponto do Google Maps para aqui */}
+      <Campo
+        rotulo="Colar do Google Maps"
+        placeholder="-8.944707, 13.376525 ou um link"
+        value={colado}
+        onChangeText={setColado}
+        onSubmitEditing={aplicarColado}
+      />
+      <Paragrafo suave>No Google Maps, carrega longo no sítio e copia os números que aparecem; cola-os aqui e toca em Aplicar.</Paragrafo>
+      <Botao titulo="Aplicar" variante="secundario" desactivado={colado.trim() === ''} aoCarregar={aplicarColado} />
+
       <View style={{ flexDirection: 'row', gap: espaco.s }}>
         <View style={{ flex: 1 }}>
           <Campo rotulo="Latitude" value={lat} keyboardType="numbers-and-punctuation" onChangeText={(t) => aoMudar(t, lng)} />
