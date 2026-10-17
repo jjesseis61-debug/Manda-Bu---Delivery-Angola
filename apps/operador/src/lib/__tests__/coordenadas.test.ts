@@ -1,4 +1,4 @@
-import { extrairCoordenadas } from '../coordenadas';
+import { extrairCoordenadas, geocodarOnline } from '../coordenadas';
 
 describe('extrairCoordenadas', () => {
   it('lê coordenadas soltas coladas do Google Maps', () => {
@@ -27,5 +27,25 @@ describe('extrairCoordenadas', () => {
 
   it('rejeita valores fora do intervalo', () => {
     expect(extrairCoordenadas('200, 500')).toBeNull();
+  });
+});
+
+describe('geocodarOnline', () => {
+  afterEach(() => {
+    (globalThis.fetch as jest.Mock | undefined)?.mockReset?.();
+  });
+
+  it('lê a primeira resposta do Nominatim', async () => {
+    globalThis.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => [{ lat: '-9.0768125', lon: '13.4459375' }],
+    }) as unknown as typeof fetch;
+    await expect(geocodarOnline('Zango 8 mil')).resolves.toEqual([-9.0768125, 13.4459375]);
+  });
+
+  it('devolve null quando não há resultados ou a procura é vazia', async () => {
+    globalThis.fetch = jest.fn().mockResolvedValue({ ok: true, json: async () => [] }) as unknown as typeof fetch;
+    await expect(geocodarOnline('xpto que não existe')).resolves.toBeNull();
+    await expect(geocodarOnline('   ')).resolves.toBeNull();
   });
 });

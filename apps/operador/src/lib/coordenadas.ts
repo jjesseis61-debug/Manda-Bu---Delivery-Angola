@@ -26,3 +26,19 @@ export function extrairCoordenadas(texto: string): [number, number] | null {
   }
   return null;
 }
+
+// Procura uma morada na internet (OpenStreetMap/Nominatim) quando o geocoder do telemóvel não existe.
+// Enviesado para Angola; uso leve (um balcão de cada vez), com User-Agent como a política pede.
+export async function geocodarOnline(q: string): Promise<[number, number] | null> {
+  const termo = (q ?? '').trim();
+  if (!termo) return null;
+  const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ao&q=${encodeURIComponent(termo)}`;
+  const r = await fetch(url, { headers: { 'User-Agent': 'MandaBue-Operador/1.0' } });
+  if (!r.ok) return null;
+  const dados = (await r.json()) as { lat?: string; lon?: string }[];
+  const p = Array.isArray(dados) ? dados[0] : undefined;
+  if (!p?.lat || !p?.lon) return null;
+  const lat = Number(p.lat);
+  const lng = Number(p.lon);
+  return Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180 ? [lat, lng] : null;
+}

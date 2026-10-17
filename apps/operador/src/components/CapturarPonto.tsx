@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Linking, Platform, Pressable, StyleSheet, Text, View, type NativeSyntheticEvent } from 'react-native';
 
 import { Aviso, Botao, Campo, Paragrafo } from '@/components/ui';
-import { extrairCoordenadas } from '@/lib/coordenadas';
+import { extrairCoordenadas, geocodarOnline } from '@/lib/coordenadas';
 import { mensagemErro } from '@/lib/formatar';
 import { estiloMapa } from '@/lib/mapaEstilo';
 import { cores, espaco, raio } from '@/lib/tema';
@@ -91,11 +91,19 @@ export function CapturarPonto({
     setErro(null);
     setAProcurar(true);
     try {
-      const r = await Location.geocodeAsync(q);
-      if (r[0]) definir(r[0].latitude, r[0].longitude);
+      let ponto: [number, number] | null = null;
+      // 1.º o geocoder do telemóvel; se não existir ou nada achar, procura online (OpenStreetMap)
+      try {
+        const r = await Location.geocodeAsync(q);
+        if (r[0]) ponto = [r[0].latitude, r[0].longitude];
+      } catch {
+        /* alguns telemóveis não têm geocoder — segue para o recurso online */
+      }
+      if (!ponto) ponto = await geocodarOnline(q);
+      if (ponto) definir(ponto[0], ponto[1]);
       else setErro('Não encontrei essa morada. Tenta algo mais específico, ou cola as coordenadas do Google Maps.');
     } catch {
-      setErro('Este telemóvel não conseguiu procurar a morada. Cola as coordenadas do Google Maps.');
+      setErro('Não deu para procurar a morada. Verifica a internet, ou cola as coordenadas do Google Maps.');
     } finally {
       setAProcurar(false);
     }
