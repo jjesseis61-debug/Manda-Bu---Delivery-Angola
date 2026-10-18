@@ -277,6 +277,8 @@ export type LocalizacaoCozinha = {
 export type Ponto = { lat: number; lng: number };
 export type PosicaoEntrega = {
   activo: boolean;
+  /** Primeiro nome do estafeta do pedido (vem mesmo antes de haver localização) */
+  estafeta_nome?: string | null;
   estafeta?: (Ponto & { actualizado_em: string }) | null;
   destino?: Ponto | null;
   distancia_km?: number | null;

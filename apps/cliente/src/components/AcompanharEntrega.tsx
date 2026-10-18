@@ -53,8 +53,9 @@ export function AcompanharEntrega({ pedidoId, aoTerminar }: { pedidoId: string; 
   const rota = useMemo(() => descodificarPolyline(posicao?.polyline), [posicao?.polyline]);
 
   if (!posicao?.activo) return null;
+  const nomeEstafeta = posicao.estafeta_nome?.trim() || null;
   const marcadores: Marcador[] = [];
-  if (posicao.estafeta) marcadores.push({ ...posicao.estafeta, titulo: 'Estafeta', cor: cores.marca });
+  if (posicao.estafeta) marcadores.push({ ...posicao.estafeta, titulo: nomeEstafeta ?? 'Estafeta', cor: cores.marca });
   if (posicao.destino?.lat != null && posicao.destino?.lng != null) {
     marcadores.push({ lat: posicao.destino.lat, lng: posicao.destino.lng, titulo: 'Entrega', cor: '#1E88E5' });
   }
@@ -65,6 +66,7 @@ export function AcompanharEntrega({ pedidoId, aoTerminar }: { pedidoId: string; 
     <Cartao>
       {posicao.estafeta ? (
         <>
+          {nomeEstafeta && <Text style={{ color: cores.textoSuave }}>O teu estafeta: {nomeEstafeta}</Text>}
           <Text style={{ fontSize: 16, fontWeight: '700' }}>{tempo}</Text>
           {marcadores.length > 0 && (
             <>
@@ -103,7 +105,10 @@ export function AcompanharEntrega({ pedidoId, aoTerminar }: { pedidoId: string; 
           </Modal>
         </>
       ) : (
-        <Paragrafo suave>O estafeta está a caminho. A localização aparece aqui quando ele a partilhar.</Paragrafo>
+        <Paragrafo suave>
+          {nomeEstafeta ? `${nomeEstafeta} vai a caminho` : 'O estafeta está a caminho'}. A localização aparece aqui
+          quando ele a partilhar.
+        </Paragrafo>
       )}
     </Cartao>
   );

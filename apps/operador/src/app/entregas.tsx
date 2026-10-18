@@ -347,6 +347,15 @@ export default function Entregas() {
   function cartao(p: PedidoOperador) {
     const seguinte = SEGUINTE[p.estado];
     const aberto = accao?.pedido === p.pedido_id;
+    // Passo "Saiu para entrega": se o pedido está reservado a um estafeta, só ele confirma a saída
+    // (o gerente reatribui, não marca por ele). Sem reserva (recolha directa) marca quem entrega/gere.
+    const passoSaida = seguinte?.estado === 'em_entrega';
+    const reservado = !!p.atribuido_a;
+    const mostrarSeguinte =
+      !!seguinte &&
+      (passoSaida ? (reservado ? !!p.atribuido_a_mim : entregar || (gerir && !modoEstafeta)) : gerir && !modoEstafeta);
+    const aceitarEntrega = passoSaida && reservado && !!p.atribuido_a_mim;
+    const rotuloSeguinte = aceitarEntrega ? 'Aceitar e sair para entrega' : seguinte?.rotulo;
     return (
       <Cartao key={p.pedido_id}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
@@ -417,14 +426,16 @@ export default function Entregas() {
         )}
         {!aberto && (
           <View style={{ gap: espaco.s }}>
-            {seguinte && ((!seguinte.gerir && entregar) || (gerir && !modoEstafeta)) &&
-              !(seguinte.estado === 'em_entrega' && !!p.atribuido_a && !p.atribuido_a_mim && !gerir) && (
-                <Botao
-                  titulo={seguinte.rotulo}
-                  aCarregar={ocupado === p.pedido_id}
-                  aoCarregar={() => correr(p.pedido_id, () => mudarEstado(p.pedido_id, seguinte.estado))}
-                />
-              )}
+            {mostrarSeguinte && seguinte && (
+              <Botao
+                titulo={rotuloSeguinte ?? seguinte.rotulo}
+                aCarregar={ocupado === p.pedido_id}
+                aoCarregar={() => correr(p.pedido_id, () => mudarEstado(p.pedido_id, seguinte.estado))}
+              />
+            )}
+            {aceitarEntrega && (
+              <Paragrafo suave>Mantém a app aberta — é assim que o cliente te acompanha no mapa.</Paragrafo>
+            )}
             {gerir && !modoEstafeta && (p.estado === 'confirmado' || p.estado === 'em_preparacao') && (
               <Botao
                 titulo={p.atribuido_a ? 'Reatribuir a outro estafeta…' : 'Atribuir a um estafeta…'}
