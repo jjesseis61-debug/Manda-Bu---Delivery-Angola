@@ -48,7 +48,7 @@ export default function PedidoDetalhe() {
       .then(async (p) => {
         setPedido(p);
         if (p && ['pendente', 'confirmado', 'em_preparacao', 'em_entrega'].includes(p.estado)) {
-          setAtraso(await atrasoDoPedido(p.id).catch(() => null));
+          setAtraso(await atrasoDoPedido(p.id, perfil?.cliente_id).catch(() => null));
         } else {
           setAtraso(null);
         }

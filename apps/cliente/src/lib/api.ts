@@ -400,11 +400,12 @@ export async function lerPedidos(clienteId: string | null | undefined): Promise<
   return verificar(r) as Pedido[];
 }
 
-/** Atraso avisado num pedido (motivo e nova estimativa), ou null */
-export async function atrasoDoPedido(pedidoId: string): Promise<AtrasoPedido | null> {
+/** Atraso avisado num pedido (motivo e nova estimativa), ou null. Escopado ao próprio cliente. */
+export async function atrasoDoPedido(pedidoId: string, clienteId: string | null | undefined): Promise<AtrasoPedido | null> {
+  if (!clienteId) return null;
   return verificar(
     await supabase.from('alertas_pedido').select('minutos, motivo, mais_minutos, motivo_em, criado_em')
-      .eq('pedido_id', pedidoId).eq('tipo', 'atraso').maybeSingle(),
+      .eq('pedido_id', pedidoId).eq('cliente_id', clienteId).eq('tipo', 'atraso').maybeSingle(),
   ) as AtrasoPedido | null;
 }
 
