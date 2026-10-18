@@ -110,7 +110,7 @@ export default function Inicio() {
       // C10: média de cada prato (só com o mínimo de avaliações)
       setMedias(ligada('avaliacoes') && itens[0] ? await mediasAvaliacoes(itens[0].cozinha_id).catch(() => null) : null);
       // Banner de acompanhamento: o pedido mais recente que ainda está em andamento (lista vem por data desc)
-      const pedidos = await lerPedidos().catch(() => [] as Pedido[]);
+      const pedidos = await lerPedidos(perfil?.cliente_id).catch(() => [] as Pedido[]);
       const activo = pedidos.find((p) => EM_ANDAMENTO.includes(p.estado)) ?? null;
       setPedidoActivo(activo);
       // Tempo real do estafeta (posição no mapa) enquanto está a caminho; cai para null se não houver GPS

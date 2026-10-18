@@ -8,6 +8,7 @@ import { rotuloAgendamento } from '@/lib/agendar';
 import { useCarrinho } from '@/lib/carrinho';
 import { corEstadoPedido, formatarKz, mensagemErro, nomeEstadoPedido } from '@/lib/formatar';
 import { montarRepeticao } from '@/lib/repetir';
+import { useSessao } from '@/lib/sessao';
 import { cores } from '@/lib/tema';
 import type { Pedido } from '@/lib/tipos';
 
@@ -16,16 +17,17 @@ const TERMINADO = ['entregue_pago', 'cancelado', 'estornado'];
 export default function Pedidos() {
   const router = useRouter();
   const carrinho = useCarrinho();
+  const { perfil } = useSessao();
   const [pedidos, setPedidos] = useState<Pedido[] | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [aRepetir, setARepetir] = useState<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
-      lerPedidos()
+      lerPedidos(perfil?.cliente_id)
         .then(setPedidos)
         .catch((e) => setErro(mensagemErro(e)));
-    }, []),
+    }, [perfil?.cliente_id]),
   );
 
   async function pedirDeNovo(p: Pedido) {

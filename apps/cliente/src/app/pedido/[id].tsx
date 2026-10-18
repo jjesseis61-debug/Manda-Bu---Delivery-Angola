@@ -29,7 +29,7 @@ import type { AtrasoPedido, MinhaReclamacao, Pedido } from '@/lib/tipos';
 export default function PedidoDetalhe() {
   const router = useRouter();
   const { id, fim, saldo, pacote } = useLocalSearchParams<{ id: string; fim?: string; saldo?: string; pacote?: string }>();
-  const { ligada } = useSessao();
+  const { ligada, perfil } = useSessao();
   const carrinho = useCarrinho();
   const [aRepetir, setARepetir] = useState(false);
   const [pedido, setPedido] = useState<Pedido | null>(null);
@@ -44,7 +44,7 @@ export default function PedidoDetalhe() {
   const [erroReclamacao, setErroReclamacao] = useState<string | null>(null);
 
   const carregar = useCallback(() => {
-    lerPedido(String(id))
+    lerPedido(String(id), perfil?.cliente_id)
       .then(async (p) => {
         setPedido(p);
         if (p && ['pendente', 'confirmado', 'em_preparacao', 'em_entrega'].includes(p.estado)) {
@@ -60,7 +60,7 @@ export default function PedidoDetalhe() {
         }
       })
       .catch((e) => setErro(mensagemErro(e)));
-  }, [id, ligada]);
+  }, [id, ligada, perfil?.cliente_id]);
   useFocusEffect(carregar);
 
   // Ao vivo (Supabase Realtime): quando o estado do pedido muda no servidor, recarrega sem esperar.

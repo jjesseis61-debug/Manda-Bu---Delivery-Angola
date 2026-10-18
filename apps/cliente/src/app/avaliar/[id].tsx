@@ -43,7 +43,7 @@ export default function Avaliar() {
 
   useEffect(() => {
     if (!ligada('avaliacoes')) return;
-    Promise.all([lerPedido(String(id)), minhaAvaliacao(String(id)), avaliacaoPermitida(String(id))])
+    Promise.all([lerPedido(String(id), perfil?.cliente_id), minhaAvaliacao(String(id)), avaliacaoPermitida(String(id))])
       .then(([p, minha, permitida]) => {
         setPedido(p);
         setEstado(minha ? 'feita' : permitida ? 'pode' : 'fora_do_prazo');

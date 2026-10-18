@@ -387,8 +387,16 @@ export async function cancelarPedido(pedidoId: string): Promise<void> {
 const camposPedido =
   'id, criado_em, estado, itens, subtotal, taxa_entrega, desconto_indicacao, credito_indicacao_usado, pago_pacote, refeicoes_pacote, observacoes, motivo_cancelamento, hora_prometida, entregue_em, agendado_para, empresa_id, valor_empresa';
 
-export async function lerPedidos(): Promise<Pedido[]> {
-  const r = await supabase.from('pedidos').select(camposPedido).order('criado_em', { ascending: false }).limit(50);
+// Só os pedidos do próprio cliente. O filtro é explícito porque um utilizador que também seja
+// funcionário passaria na regra "sou funcionário" e veria os pedidos de outros clientes.
+export async function lerPedidos(clienteId: string | null | undefined): Promise<Pedido[]> {
+  if (!clienteId) return [];
+  const r = await supabase
+    .from('pedidos')
+    .select(camposPedido)
+    .eq('cliente_id', clienteId)
+    .order('criado_em', { ascending: false })
+    .limit(50);
   return verificar(r) as Pedido[];
 }
 
@@ -405,8 +413,11 @@ export async function justificacaoCancelamento(pedidoId: string): Promise<string
   return verificar(await supabase.rpc('justificacao_cancelamento', { p_pedido: pedidoId })) as string | null;
 }
 
-export async function lerPedido(id: string): Promise<Pedido | null> {
-  return verificar(await supabase.from('pedidos').select(camposPedido).eq('id', id).maybeSingle()) as Pedido | null;
+export async function lerPedido(id: string, clienteId: string | null | undefined): Promise<Pedido | null> {
+  if (!clienteId) return null;
+  return verificar(
+    await supabase.from('pedidos').select(camposPedido).eq('id', id).eq('cliente_id', clienteId).maybeSingle(),
+  ) as Pedido | null;
 }
 
 // ---------------------------------------------------------------- I12: pacotes pré-pagos
