@@ -61,7 +61,7 @@ export default function Carrinho() {
 
   useFocusEffect(
     useCallback(() => {
-      lerEnderecos()
+      lerEnderecos(perfil?.cliente_id)
         .then((e) => {
           setEnderecos(e);
           setPontoId((actual) => actual ?? e[0]?.ponto_entrega_id ?? null);

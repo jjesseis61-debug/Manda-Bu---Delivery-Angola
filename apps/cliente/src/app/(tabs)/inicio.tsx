@@ -66,7 +66,7 @@ export default function Inicio() {
     setErro(null);
     try {
       // Endereços primeiro: o ponto de entrega serve para ordenar os balcões por proximidade
-      const ends = await lerEnderecos();
+      const ends = await lerEnderecos(perfil?.cliente_id);
       const ponto = ends[0]?.ponto_entrega_id ?? null;
       // I8: com multi_cozinha, o cliente escolhe a cozinha; por defeito a primeira da lista (a mais perto)
       let escolhida = cozinhaId;

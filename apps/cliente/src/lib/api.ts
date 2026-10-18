@@ -244,10 +244,14 @@ export async function criarFoto(avaliacaoId: string): Promise<string> {
 }
 
 // ---------------------------------------------------------------- endereços (C11)
-export async function lerEnderecos(): Promise<Endereco[]> {
+// Só os endereços do próprio cliente. O filtro por cliente_id é explícito porque um utilizador que
+// também seja funcionário passaria na regra de leitura "sou funcionário" e veria os de outros clientes.
+export async function lerEnderecos(clienteId: string | null | undefined): Promise<Endereco[]> {
+  if (!clienteId) return [];
   const r = await supabase
     .from('enderecos_cliente')
     .select('id, nome, principal, ponto_entrega_id, pontos_entrega(id, tipo, referencia, zona_id, zonas(nome))')
+    .eq('cliente_id', clienteId)
     .is('deletado_em', null)
     .order('principal', { ascending: false })
     .order('criado_em');
@@ -302,9 +306,14 @@ export async function criarEndereco(dados: {
   verificar(r);
 }
 
-/** Apaga um endereço do cliente (apagar reversível: marca deletado_em; a lista esconde os apagados). */
+/** Apaga um endereço do cliente (apagar reversível: marca deletado_em; a lista esconde os apagados).
+ *  Confirma que apagou mesmo: se a regra de segurança não deixar (não é do próprio), dá erro em vez
+ *  de um falso sucesso. */
 export async function apagarEndereco(id: string): Promise<void> {
-  verificar(await supabase.from('enderecos_cliente').update({ deletado_em: new Date().toISOString() }).eq('id', id));
+  const linhas = verificar(
+    await supabase.from('enderecos_cliente').update({ deletado_em: new Date().toISOString() }).eq('id', id).select('id'),
+  ) as { id: string }[] | null;
+  if (!linhas || linhas.length === 0) throw new Error('Não foi possível apagar este endereço.');
 }
 
 // ---------------------------------------------------------------- pedidos

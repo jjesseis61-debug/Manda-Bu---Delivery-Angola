@@ -43,7 +43,7 @@ export default function NovoEndereco() {
         if (z.length === 1) setZonaId(z[0].id);
       })
       .catch((e) => setErro(mensagemErro(e)));
-    lerEnderecos()
+    lerEnderecos(perfil?.cliente_id)
       .then((e) => setPrimeiro(e.length === 0))
       .catch(() => undefined);
   }, []);
