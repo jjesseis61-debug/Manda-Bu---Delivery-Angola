@@ -1,8 +1,9 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { Alert, Image, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { Image, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 
 import { CartaoConvida } from '@/components/CartaoConvida';
+import { Confirmar } from '@/components/Confirmar';
 import { ComoChegar } from '@/components/ComoChegar';
 import { Aviso, Botao, Cartao, Escolha, Paragrafo, Subtitulo, estilos } from '@/components/ui';
 import {
@@ -40,6 +41,8 @@ export default function Inicio() {
   const [cozinha, setCozinha] = useState<Cozinha | null>(null);
   const [medias, setMedias] = useState<MediasAvaliacoes | null>(null);
   const [cozinhas, setCozinhas] = useState<CozinhaParaPedir[]>([]);
+  // Troca de cozinha com carrinho cheio: confirma antes de esvaziar
+  const [trocaPendente, setTrocaPendente] = useState<CozinhaParaPedir | null>(null);
   // Banner no topo: pedido ainda em andamento ("a tua entrega está a caminho, toca para acompanhar")
   const [pedidoActivo, setPedidoActivo] = useState<Pedido | null>(null);
   // Tempo do estafeta vindo do mapa (posição real), quando está a partilhar GPS; senão calcula-se da hora prometida
@@ -141,15 +144,8 @@ export default function Inicio() {
   function trocarCozinha(id: string) {
     const c = cozinhas.find((x) => x.cozinha_id === id);
     if (!c || c.cozinha_id === cozinhaId) return;
-    const mudar = () => carrinho.definirCozinha({ id: c.cozinha_id, nome: c.nome });
-    if (carrinho.quantidade > 0) {
-      Alert.alert('Mudar de cozinha?', 'Os pratos no carrinho são desta cozinha e serão removidos.', [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Mudar e esvaziar', style: 'destructive', onPress: mudar },
-      ]);
-    } else {
-      mudar();
-    }
+    if (carrinho.quantidade > 0) setTrocaPendente(c);
+    else carrinho.definirCozinha({ id: c.cozinha_id, nome: c.nome });
   }
 
   const doDia = useMemo(() => (cardapio ?? []).filter((i) => i.do_dia), [cardapio]);
@@ -345,6 +341,17 @@ export default function Inicio() {
           />
         </View>
       )}
+      <Confirmar
+        visivel={trocaPendente !== null}
+        titulo="Mudar de cozinha?"
+        mensagem="Os pratos no carrinho são desta cozinha e serão removidos."
+        textoConfirmar="Mudar e esvaziar"
+        aoConfirmar={() => {
+          if (trocaPendente) carrinho.definirCozinha({ id: trocaPendente.cozinha_id, nome: trocaPendente.nome });
+          setTrocaPendente(null);
+        }}
+        aoCancelar={() => setTrocaPendente(null)}
+      />
     </View>
   );
 }
