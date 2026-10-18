@@ -1,6 +1,6 @@
 import { Camera, GeoJSONSource, Layer, Map, Marker as MarcadorOsm } from '@maplibre/maplibre-react-native';
 import type { Feature, LineString } from 'geojson';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 
 import { limitesPara, regiaoPara } from '@/lib/mapa';
@@ -88,7 +88,12 @@ function Osm({ marcadores, interactivo, rota }: { marcadores: Marcador[]; intera
       )}
       {marcadores.map((m) => (
         <MarcadorOsm key={m.titulo} id={m.titulo} lngLat={[m.lng, m.lat]}>
-          <View style={[estilos.pin, { backgroundColor: m.cor }]} />
+          <View style={estilos.marcador}>
+            <Text style={estilos.nome} numberOfLines={1}>
+              {m.titulo}
+            </Text>
+            <View style={[estilos.pin, { backgroundColor: m.cor }]} />
+          </View>
         </MarcadorOsm>
       ))}
     </Map>
@@ -97,5 +102,17 @@ function Osm({ marcadores, interactivo, rota }: { marcadores: Marcador[]; intera
 
 const estilos = StyleSheet.create({
   caixa: { borderRadius: raio, overflow: 'hidden' },
+  marcador: { alignItems: 'center', maxWidth: 160 },
+  nome: {
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    color: cores.texto,
+    fontSize: 11,
+    fontWeight: '700',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    overflow: 'hidden',
+    marginBottom: 2,
+  },
   pin: { width: 18, height: 18, borderRadius: 9, borderWidth: 2, borderColor: '#fff' },
 });

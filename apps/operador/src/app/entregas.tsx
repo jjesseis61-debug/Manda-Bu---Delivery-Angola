@@ -1,7 +1,8 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Image, Linking, Switch, Text, View } from 'react-native';
+import { Dimensions, Image, Linking, Modal, Switch, Text, View } from 'react-native';
 
+import { AcompanharPedido } from '@/components/AcompanharPedido';
 import { Guarda } from '@/components/Guarda';
 import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Escolha, Paragrafo, Subtitulo } from '@/components/ui';
 import { alertasAbertos, atribuirEntrega, caixasAbertas, estafetasParaAtribuir, informarAtraso, lerCozinhas, marcarPagadorDistinto, mudarEstado, pedidosAgendados, pedidosOperador, recusarEntrega } from '@/lib/api';
@@ -73,6 +74,7 @@ export default function Entregas() {
   const [alertas, setAlertas] = useState<Record<string, AlertaPedido[]>>({});
   const [atraso, setAtraso] = useState({ motivo: MOTIVOS_ATRASO[0], outro: '', minutos: '' });
   const [agendados, setAgendados] = useState<PedidoAgendado[]>([]);
+  const [acompanhar, setAcompanhar] = useState<string | null>(null);
 
   const carregar = useCallback(() => {
     Promise.all([
@@ -451,6 +453,9 @@ export default function Entregas() {
                 aoCarregar={() => correr(p.pedido_id, () => recusarEntrega(p.pedido_id))}
               />
             )}
+            {p.estado === 'em_entrega' && (gerir || entregar) && (
+              <Botao titulo="Acompanhar no mapa 🛵" variante="leve" aoCarregar={() => setAcompanhar(p.pedido_id)} />
+            )}
             {p.estado === 'em_entrega' && (gerir || entregar) && <Botao titulo="Entregue e pago…" aoCarregar={() => abrirEntrega(p)} />}
             {(gerir || (entregar && p.estado === 'em_entrega')) && (
               <Botao
@@ -565,16 +570,30 @@ export default function Entregas() {
                 {lista.length > 1 ? ` · ${lista.length} pedidos` : ''}
               </Subtitulo>
               {p.ponto_lat !== null && p.ponto_lng !== null && (
-                <Text
-                  style={{ color: cores.marca, fontWeight: '600' }}
-                  onPress={() => Linking.openURL(`https://maps.google.com/?q=${p.ponto_lat},${p.ponto_lng}`)}>
-                  Abrir no mapa
-                </Text>
+                <Botao
+                  titulo="Abrir no Google Maps 📍"
+                  variante="texto"
+                  aoCarregar={() => Linking.openURL(`https://maps.google.com/?q=${p.ponto_lat},${p.ponto_lng}`)}
+                />
               )}
               {lista.map(cartao)}
             </View>
           );
         })}
+        <Modal visible={!!acompanhar} animationType="slide" onRequestClose={() => setAcompanhar(null)}>
+          <View style={{ flex: 1, backgroundColor: cores.fundo, padding: espaco.m, gap: espaco.s }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Text style={{ fontSize: 18, fontWeight: '700', flex: 1 }}>Onde está o estafeta</Text>
+              <Text
+                accessibilityRole="button"
+                style={{ color: cores.marca, fontWeight: '700', fontSize: 16, paddingHorizontal: espaco.s }}
+                onPress={() => setAcompanhar(null)}>
+                Fechar
+              </Text>
+            </View>
+            {acompanhar && <AcompanharPedido pedidoId={acompanhar} altura={Dimensions.get('window').height - 180} />}
+          </View>
+        </Modal>
       </Ecra>
     </Guarda>
   );

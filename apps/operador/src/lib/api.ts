@@ -61,6 +61,7 @@ import type {
   Feira,
   FeiraResumo,
   PosicaoEstafeta,
+  PosicaoPedido,
   RelatorioEmpresa,
   SugestaoDespacho,
   PratoCardapio,
@@ -836,6 +837,11 @@ export async function posicoesEstafetas(cozinhaId: string): Promise<PosicaoEstaf
 
 export async function sugestaoDespacho(cozinhaId: string): Promise<SugestaoDespacho[]> {
   return (verificar(await supabase.rpc('sugestao_despacho', { p_cozinha: cozinhaId })) as SugestaoDespacho[]) ?? [];
+}
+
+// Posição do estafeta de um pedido, para a cozinha acompanhar ao vivo (ou o próprio estafeta)
+export async function posicaoPedido(pedidoId: string): Promise<PosicaoPedido> {
+  return verificar(await supabase.rpc('posicao_pedido', { p_pedido: pedidoId })) as PosicaoPedido;
 }
 
 // ---------------------------------------------------------------- Conta de empresa (B2B)

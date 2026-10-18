@@ -2,7 +2,7 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { Dimensions, Modal, Text, View } from 'react-native';
 
-import { Cartao, Paragrafo } from '@/components/ui';
+import { Botao, Cartao, Paragrafo } from '@/components/ui';
 import { posicaoEntrega, refrescarRota } from '@/lib/api';
 import { descodificarPolyline, haQuantoTempo } from '@/lib/mapa';
 import { useSessao } from '@/lib/sessao';
@@ -57,7 +57,7 @@ export function AcompanharEntrega({ pedidoId, aoTerminar }: { pedidoId: string; 
   const marcadores: Marcador[] = [];
   if (posicao.estafeta) marcadores.push({ ...posicao.estafeta, titulo: nomeEstafeta ?? 'Estafeta', cor: cores.marca });
   if (posicao.destino?.lat != null && posicao.destino?.lng != null) {
-    marcadores.push({ lat: posicao.destino.lat, lng: posicao.destino.lng, titulo: 'Entrega', cor: '#1E88E5' });
+    marcadores.push({ lat: posicao.destino.lat, lng: posicao.destino.lng, titulo: 'A tua entrega', cor: '#1E88E5' });
   }
   const tempo = posicao.minutos != null ? `Chega daqui a ~${posicao.minutos} min` : 'O estafeta está a caminho';
   const origem = posicao.fonte === 'google' ? 'Rota por estrada, com trânsito.' : 'Tempo estimado pela distância.';
@@ -71,13 +71,8 @@ export function AcompanharEntrega({ pedidoId, aoTerminar }: { pedidoId: string; 
           {marcadores.length > 0 && (
             <>
               <MapaPontos marcadores={marcadores} interactivo rota={rota} />
-              <Text
-                accessibilityRole="button"
-                accessibilityLabel="Abrir o mapa de rota em ecrã inteiro"
-                style={{ color: cores.marca, fontWeight: '600' }}
-                onPress={() => setEmEcraInteiro(true)}>
-                Arrasta o mapa para explorar · toca aqui para o ver em ecrã inteiro.
-              </Text>
+              <Botao titulo="Ver em ecrã inteiro 🗺️" variante="leve" aoCarregar={() => setEmEcraInteiro(true)} />
+              <Paragrafo suave>Arrasta o mapa para explorar.</Paragrafo>
             </>
           )}
           <Paragrafo suave>

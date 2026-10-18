@@ -102,6 +102,16 @@ export type PosicaoEstafeta = {
   atualizado_em: string;
 };
 
+/** Posição do estafeta de um pedido (cozinha acompanha ao vivo) */
+export type PosicaoPedido = {
+  activo: boolean;
+  estafeta_nome?: string | null;
+  estafeta?: { lat: number; lng: number; actualizado_em: string } | null;
+  destino?: { lat: number | null; lng: number | null } | null;
+  distancia_km?: number | null;
+  minutos?: number | null;
+};
+
 export type Permissao =
   | 'indicacoes.ver'
   | 'indicacoes.verificar'

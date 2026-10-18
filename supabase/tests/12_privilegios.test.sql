@@ -52,7 +52,7 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 -- apagar a conta pela app (exigido pelas lojas)
                 'apagar_conta',
                 -- I10 e I11: localização da cozinha e acompanhamento da entrega
-                'localizacao_cozinha', 'registar_posicao_entrega', 'posicao_entrega',
+                'localizacao_cozinha', 'registar_posicao_entrega', 'posicao_entrega', 'posicao_pedido',
                 -- I12: pacotes pré-pagos
                 'aderir_pacote', 'cancelar_adesao_pacote', 'usar_pacote', 'pausar_pacote', 'meu_pacote',
                 'pacotes_a_minha_volta', 'confirmar_pagamento_pacote', 'reembolsar_pacote', 'adesoes_operador',
