@@ -1,13 +1,13 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, Text } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { Guarda } from '@/components/Guarda';
 import { ACarregar, Aviso, Botao, Cartao, Ecra } from '@/components/ui';
 import { lerCozinhas } from '@/lib/api';
 import { mensagemErro } from '@/lib/formatar';
 import { useSessao } from '@/lib/sessao';
-import { cores } from '@/lib/tema';
+import { cores, espaco } from '@/lib/tema';
 import type { Cozinha } from '@/lib/tipos';
 
 const NOME_ESTADO: Record<Cozinha['estado'], string> = { activa: 'Activa', pausada: 'Pausada', inactiva: 'Inactiva' };
@@ -37,15 +37,17 @@ export default function Cozinhas() {
         {!lista && !erro && <ACarregar />}
         {lista && visiveis?.length === 0 && <Aviso>Ainda não tens nenhuma cozinha atribuída.</Aviso>}
         {visiveis?.map((c) => (
-          <Pressable key={c.id} onPress={() => router.push({ pathname: '/cozinhas/[id]', params: { id: c.id } })}>
-            <Cartao>
-              <Text style={{ fontWeight: '700', fontSize: 16 }}>{c.nome}</Text>
-              <Text>Responsável: {c.responsavel}</Text>
-              <Text style={{ color: cores.textoSuave }}>
-                {NOME_ESTADO[c.estado]} · {c.consentimento_publico ? 'perfil público autorizado' : 'perfil não público'}
-              </Text>
-            </Cartao>
-          </Pressable>
+          <Cartao key={c.id}>
+            <Text style={{ fontWeight: '700', fontSize: 16 }}>{c.nome}</Text>
+            <Text>Responsável: {c.responsavel}</Text>
+            <Text style={{ color: cores.textoSuave }}>
+              {NOME_ESTADO[c.estado]} · {c.consentimento_publico ? 'perfil público autorizado' : 'perfil não público'}
+            </Text>
+            <View style={{ flexDirection: 'row', gap: espaco.s, flexWrap: 'wrap' }}>
+              <Botao titulo="Cozinha" variante="texto" aoCarregar={() => router.push({ pathname: '/cozinhas/[id]', params: { id: c.id } })} />
+              <Botao titulo="Cardápio →" variante="texto" aoCarregar={() => router.push({ pathname: '/cozinhas/[id]/cardapio', params: { id: c.id } })} />
+            </View>
+          </Cartao>
         ))}
         {mestre && (
           <Botao titulo="Nova cozinha" variante="secundario" aoCarregar={() => router.push({ pathname: '/cozinhas/[id]', params: { id: 'nova' } })} />
