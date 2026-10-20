@@ -3,6 +3,7 @@ import { Switch, Text, View } from 'react-native';
 
 import { definirFotoPrato, guardarPrato } from '@/lib/api';
 import { mensagemErro } from '@/lib/formatar';
+import { enviarFotoPublica } from '@/lib/fotos';
 import { cores, espaco } from '@/lib/tema';
 import type { PratoCardapio } from '@/lib/tipos';
 
@@ -56,6 +57,7 @@ export function EditorPrato({
 }) {
   const [prato, setPrato] = useState<PratoEditado>(pratoInicial ? paraEditado(pratoInicial) : pratoNovo(cozinhaId));
   const [categoriaNova, setCategoriaNova] = useState(false);
+  const [fotoLocal, setFotoLocal] = useState<string | null>(null); // foto escolhida antes de criar o prato
   const [erro, setErro] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
 
@@ -70,7 +72,12 @@ export function EditorPrato({
       const { preco, ordem, doses, ...resto } = prato;
       // Operador a editar um prato existente: as doses ficam como estavam (mexe-as no cartão).
       const doses_dia = mostrarDoses ? (doses === '' ? null : Number(doses)) : (pratoInicial?.doses_dia ?? null);
-      await guardarPrato({ ...resto, preco: Number(preco), ordem: Number(ordem || 0), doses_dia });
+      const id = await guardarPrato({ ...resto, preco: Number(preco), ordem: Number(ordem || 0), doses_dia });
+      // Prato novo com foto escolhida: cria primeiro, depois envia a foto para o id novo.
+      if (!prato.id && fotoLocal) {
+        const nova = await enviarFotoPublica('pratos', id, fotoLocal);
+        await definirFotoPrato(id, nova);
+      }
       aoGuardado();
     } catch (e) {
       setErro(mensagemErro(e));
@@ -135,7 +142,7 @@ export function EditorPrato({
           }}
         />
       ) : (
-        <Paragrafo suave>Guarda o prato para lhe juntar a foto.</Paragrafo>
+        <FotoEditavel tipo="pratos" localUri={fotoLocal} aoEscolherLocal={setFotoLocal} />
       )}
       {erro && <Aviso tipo="erro">{erro}</Aviso>}
       <Botao titulo="Guardar prato" aCarregar={ocupado} desactivado={!prato.nome.trim() || !precoValido} aoCarregar={guardar} />

@@ -12,6 +12,7 @@ jest.mock('@/lib/api', () => ({
   lerDosesCardapio: jest.fn(),
 }));
 jest.mock('@/components/FotoEditavel', () => ({ FotoEditavel: () => null }));
+jest.mock('@/lib/fotos', () => ({ enviarFotoPublica: jest.fn(), escolherFoto: jest.fn(), apagarFotoPublica: jest.fn() }));
 const mockSessao = { carregado: true, sessao: {}, funcionario: { id: 'f1', cozinhas_equipa: [], administrador_principal: true }, pode: () => true };
 jest.mock('@/lib/sessao', () => ({ useSessao: () => mockSessao }));
 

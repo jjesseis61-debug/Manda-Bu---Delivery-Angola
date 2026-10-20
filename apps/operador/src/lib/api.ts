@@ -177,10 +177,15 @@ export async function lerCardapio(cozinhaId: string): Promise<PratoCardapio[]> {
   ) as PratoCardapio[];
 }
 
-export async function guardarPrato(p: Omit<PratoCardapio, 'id'> & { id?: string }) {
+/** Grava o prato e devolve o id (o existente, ou o novo no caso de criação). */
+export async function guardarPrato(p: Omit<PratoCardapio, 'id'> & { id?: string }): Promise<string> {
   const { id, ...dados } = p;
-  if (id) verificar(await supabase.from('cardapio').update({ ...dados, atualizado_em: new Date().toISOString() }).eq('id', id));
-  else verificar(await supabase.from('cardapio').insert(dados));
+  if (id) {
+    verificar(await supabase.from('cardapio').update({ ...dados, atualizado_em: new Date().toISOString() }).eq('id', id));
+    return id;
+  }
+  const r = verificar(await supabase.from('cardapio').insert(dados).select('id').single()) as { id: string };
+  return r.id;
 }
 
 /** Doses que restam hoje dos pratos com limite (as de dias anteriores já não contam) */
