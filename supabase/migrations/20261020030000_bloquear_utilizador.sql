@@ -45,6 +45,16 @@ begin
             jsonb_build_object('telefone', v_tel, 'motivo', v_motivo), true);
 end $$;
 
+-- O apagar em si fica num auxiliar privado (nunca exposto às apps); desbloquear_utilizador faz a
+-- verificação de admin e delega. Mantém a mesma garantia e a tabela não fica com a limpeza colada
+-- à verificação de admin na mesma função.
+create or replace function desbloquear_aplicar(p_tel_normalizado text)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  delete from utilizadores_bloqueados where telefone = p_tel_normalizado;
+  update auth.users set banned_until = null where normalizar_telefone(phone) = p_tel_normalizado;
+end $$;
+
 create or replace function desbloquear_utilizador(p_telefone text)
 returns void language plpgsql security definer set search_path = public as $$
 declare
@@ -53,11 +63,9 @@ begin
   if not e_administrador() then
     raise exception 'sem_permissao' using errcode = '42501';
   end if;
-  delete from utilizadores_bloqueados where telefone = v_tel;
-  update auth.users set banned_until = null
-   where normalizar_telefone(phone) = v_tel;
+  perform desbloquear_aplicar(v_tel);
   perform registar_auditoria('utilizador_desbloqueado', 'telefone', null::uuid,
-            jsonb_build_object('telefone', v_tel));
+            jsonb_build_object('telefone', v_tel), false);
 end $$;
 
 -- 4. Reforço no registo: um número bloqueado não cria nem liga um perfil de cliente.
@@ -206,6 +214,7 @@ grant  execute on function procurar_utilizadores(text)      to authenticated;
 revoke execute on function telefone_bloqueado(text)         from public, anon;
 revoke execute on function bloquear_utilizador(text, text)  from public, anon;
 revoke execute on function desbloquear_utilizador(text)     from public, anon;
+revoke execute on function desbloquear_aplicar(text)        from public, anon, authenticated;
 revoke execute on function utilizadores_bloqueados_lista()  from public, anon;
 grant  execute on function telefone_bloqueado(text)         to authenticated;
 grant  execute on function bloquear_utilizador(text, text)  to authenticated;
