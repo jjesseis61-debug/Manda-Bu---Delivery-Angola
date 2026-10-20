@@ -48,7 +48,7 @@ const ecras: {
   { rota: '/zonas', titulo: 'Zonas de entrega', descricao: 'Bairros onde se entrega e a taxa de cada um', permissoes: ['plataforma.parametros'] },
   { rota: '/parametros', titulo: 'Parâmetros e interruptores', descricao: 'Valores do programa e funcionalidades (O5)', permissoes: ['plataforma.parametros'] },
   { rota: { pathname: '/cozinhas', params: { foco: 'cardapio' } }, titulo: 'Cardápio', descricao: 'Pratos, doses e opções de cada cozinha (O6)', permissoes: ['cozinhas.gerir', 'cardapio.gerir'] },
-  { rota: '/cozinhas', titulo: 'Cozinhas', descricao: 'Perfil, consentimento, contactos e localização (O6)', permissoes: ['cozinhas.gerir'] },
+  { rota: '/cozinhas', titulo: 'Cozinhas', descricao: 'Perfil, consentimento, contactos e localização (O6)', permissoes: ['cozinhas.gerir', 'cozinha.perfil'] },
   { rota: '/pessoal', titulo: 'Pessoal', descricao: 'Cadastrar estafetas e funcionários, telefone de login e permissões', permissoes: [], permitir: (f) => f.administrador_principal },
   { rota: '/relatorios', titulo: 'Relatórios de cozinha', descricao: 'Por período, com exportação (O9)', permissoes: ['relatorios.exportar'] },
   { rota: '/moderacao', titulo: 'Moderação', descricao: 'Comentários das avaliações e palavras filtradas (O7)', permissoes: ['avaliacoes.moderar'] },

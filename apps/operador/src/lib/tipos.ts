@@ -135,6 +135,7 @@ export type Permissao =
   | 'avisos.enviar'
   | 'clientes.reconquista'
   | 'cardapio.gerir'
+  | 'cozinha.perfil'
   | 'auditoria.ver';
 
 export type PublicoAviso =

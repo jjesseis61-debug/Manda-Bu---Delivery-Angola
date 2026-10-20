@@ -84,12 +84,12 @@ export default function EditarCozinha() {
     })();
   }
 
-  if (!cozinha) return <Guarda permissoes={['cozinhas.gerir', 'cardapio.gerir']}>{erro ? <Aviso tipo="erro">{erro}</Aviso> : <ACarregar />}</Guarda>;
+  if (!cozinha) return <Guarda permissoes={['cozinhas.gerir', 'cozinha.perfil']}>{erro ? <Aviso tipo="erro">{erro}</Aviso> : <ACarregar />}</Guarda>;
 
   const contactosValidos = [cozinha.telefone_publico, cozinha.whatsapp_publico].every((t) => !t || telefoneValido(t));
 
   return (
-    <Guarda permissoes={['cozinhas.gerir', 'cardapio.gerir']}>
+    <Guarda permissoes={['cozinhas.gerir', 'cozinha.perfil']}>
       <Ecra>
         {erro && <Aviso tipo="erro">{erro}</Aviso>}
         {sucesso && <Aviso tipo="sucesso">{sucesso}</Aviso>}

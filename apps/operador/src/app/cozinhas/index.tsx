@@ -52,7 +52,7 @@ export default function Cozinhas() {
   }
 
   return (
-    <Guarda permissoes={['cozinhas.gerir', 'cardapio.gerir']}>
+    <Guarda permissoes={['cozinhas.gerir', 'cardapio.gerir', 'cozinha.perfil']}>
       <Ecra>
         {erro && <Aviso tipo="erro">{erro}</Aviso>}
         {!lista && !erro && <ACarregar />}
