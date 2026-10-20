@@ -8,6 +8,8 @@ import type {
   MovimentoPreco,
   PublicoAviso,
   ClienteInativo,
+  UtilizadorEncontrado,
+  UtilizadorBloqueado,
   ResumoInativos,
   CampanhaReconquista,
   Notificacao,
@@ -938,6 +940,23 @@ export async function enviarAviso(
 
 export async function listarAvisos(limite = 50): Promise<Aviso[]> {
   return (verificar(await supabase.rpc('listar_avisos', { p_limite: limite })) as Aviso[]) ?? [];
+}
+
+// ---------------------------------------------------------------- Utilizadores (procurar e bloquear)
+export async function procurarUtilizadores(termo: string): Promise<UtilizadorEncontrado[]> {
+  return (verificar(await supabase.rpc('procurar_utilizadores', { p_termo: termo })) as UtilizadorEncontrado[]) ?? [];
+}
+
+export async function bloquearUtilizador(telefone: string, motivo: string | null) {
+  verificar(await supabase.rpc('bloquear_utilizador', { p_telefone: telefone, p_motivo: motivo }));
+}
+
+export async function desbloquearUtilizador(telefone: string) {
+  verificar(await supabase.rpc('desbloquear_utilizador', { p_telefone: telefone }));
+}
+
+export async function listarUtilizadoresBloqueados(): Promise<UtilizadorBloqueado[]> {
+  return (verificar(await supabase.rpc('utilizadores_bloqueados_lista')) as UtilizadorBloqueado[]) ?? [];
 }
 
 // ---------------------------------------------------------------- Reconquista de clientes inativos

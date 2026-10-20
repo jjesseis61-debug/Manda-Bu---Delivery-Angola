@@ -136,6 +136,7 @@ export type Permissao =
   | 'clientes.reconquista'
   | 'cardapio.gerir'
   | 'cozinha.perfil'
+  | 'utilizadores.ver'
   | 'auditoria.ver';
 
 export type PublicoAviso =
@@ -168,6 +169,28 @@ export type ClienteInativo = {
   dias_inativo: number;
   total_pedidos: number;
   tem_push: boolean;
+};
+
+export type UtilizadorEncontrado = {
+  tipo: 'cliente' | 'equipa' | 'login';
+  id: string;
+  nome: string | null;
+  telefone: string | null;
+  inscrito_em: string;
+  tem_login: boolean;
+  cargo: string | null;
+  ultimo_pedido: string | null;
+  total_pedidos: number;
+  bloqueado: boolean;
+  motivo_bloqueio: string | null;
+};
+
+export type UtilizadorBloqueado = {
+  telefone: string;
+  motivo: string | null;
+  bloqueado_em: string;
+  bloqueado_por_nome: string | null;
+  nome: string | null;
 };
 
 export type ResumoInativos = {
