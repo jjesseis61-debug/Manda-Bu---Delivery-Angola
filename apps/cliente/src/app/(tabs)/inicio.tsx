@@ -25,6 +25,7 @@ import {
 import { useCarrinho } from '@/lib/carrinho';
 import { corEstadoPedido, formatarKz, formatarMedia, mensagemErro, nomeEstadoPedido } from '@/lib/formatar';
 import { gruposEsgotados, precoMinimo } from '@/lib/opcoes';
+import { montarRepeticao } from '@/lib/repetir';
 import { useSessao } from '@/lib/sessao';
 import { cores, espaco, raio } from '@/lib/tema';
 import type { CozinhaParaPedir, Endereco, ItemCardapio, MediasAvaliacoes, Pedido } from '@/lib/tipos';
@@ -45,6 +46,9 @@ export default function Inicio() {
   const [trocaPendente, setTrocaPendente] = useState<CozinhaParaPedir | null>(null);
   // Banner no topo: pedido ainda em andamento ("a tua entrega está a caminho, toca para acompanhar")
   const [pedidoActivo, setPedidoActivo] = useState<Pedido | null>(null);
+  // "O teu habitual": o último pedido entregue, para repetir num toque (só quando não há pedido em curso)
+  const [ultimoTerminado, setUltimoTerminado] = useState<Pedido | null>(null);
+  const [aRepetir, setARepetir] = useState(false);
   // Tempo do estafeta vindo do mapa (posição real), quando está a partilhar GPS; senão calcula-se da hora prometida
   const [minutosEstafeta, setMinutosEstafeta] = useState<number | null>(null);
   // I9: pratos com opções (abrem o ecrã de montar em vez de irem direito ao carrinho)
@@ -113,6 +117,8 @@ export default function Inicio() {
       const pedidos = await lerPedidos(perfil?.cliente_id).catch(() => [] as Pedido[]);
       const activo = pedidos.find((p) => EM_ANDAMENTO.includes(p.estado)) ?? null;
       setPedidoActivo(activo);
+      // Enquanto não há pedido em curso, propõe repetir o último entregue ("o teu habitual")
+      setUltimoTerminado(activo ? null : pedidos.find((p) => p.estado === 'entregue_pago') ?? null);
       // Tempo real do estafeta (posição no mapa) enquanto está a caminho; cai para null se não houver GPS
       const posicao =
         activo?.estado === 'em_entrega' && ligada('acompanhamento_entrega')
@@ -141,6 +147,25 @@ export default function Inicio() {
 
   // Trocar de cozinha esvazia o carrinho (os pratos são de outra cozinha): com carrinho cheio,
   // confirma antes de apagar, para uma escolha distraída não deitar fora o trabalho do cliente.
+  // "Pedir de novo" a partir do início: repõe o carrinho com os pratos ainda disponíveis do último pedido
+  async function pedirDeNovo(p: Pedido) {
+    setErro(null);
+    setARepetir(true);
+    try {
+      const { linhas, cozinha: coz, faltam } = await montarRepeticao(p.itens);
+      if (linhas.length === 0) {
+        setErro('Os pratos desse pedido já não estão disponíveis.');
+        return;
+      }
+      carrinho.repor(linhas, coz);
+      router.push({ pathname: '/carrinho', params: faltam.length > 0 ? { faltam: faltam.join(', ') } : {} });
+    } catch (e) {
+      setErro(mensagemErro(e));
+    } finally {
+      setARepetir(false);
+    }
+  }
+
   function trocarCozinha(id: string) {
     const c = cozinhas.find((x) => x.cozinha_id === id);
     if (!c || c.cozinha_id === cozinhaId) return;
@@ -204,6 +229,16 @@ export default function Inicio() {
               <Text style={{ color: cores.textoSuave }}>Toca para acompanhar o teu pedido.</Text>
             </View>
           </Pressable>
+        )}
+        {/* "O teu habitual": repetir o último pedido entregue num toque (só sem pedido em curso e com o carrinho vazio) */}
+        {ultimoTerminado && carrinho.quantidade === 0 && !carrinho.grupo && (
+          <Cartao>
+            <Text style={{ fontSize: 15, fontWeight: '700', color: cores.texto }}>O teu habitual</Text>
+            <Text style={{ color: cores.textoSuave }}>
+              {ultimoTerminado.itens.map((i) => `${i.qtd}× ${i.nome}`).join(', ')}
+            </Text>
+            <Botao titulo="Pedir de novo" aCarregar={aRepetir} aoCarregar={() => pedirDeNovo(ultimoTerminado)} />
+          </Cartao>
         )}
         {/* Convida e Ganha: desconto do 1.º pedido / ganhos / convite (adapta-se ao estado) */}
         <CartaoConvida />
