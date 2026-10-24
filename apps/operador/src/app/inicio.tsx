@@ -37,6 +37,7 @@ const ecras: {
   { rota: '/avisos', titulo: 'Avisos', descricao: 'Enviar notificações a clientes e à equipa (por zona, cozinha, função)', permissoes: ['avisos.enviar'] },
   { rota: '/reconquista', titulo: 'Reconquista', descricao: 'Clientes que pararam de comprar: lista, telefones e campanha de regresso', permissoes: ['clientes.reconquista'] },
   { rota: '/utilizadores', titulo: 'Utilizadores', descricao: 'Procurar clientes, equipa e contas de login por nome ou número; bloquear um número', permissoes: ['utilizadores.ver'] },
+  { rota: '/otp-codigos', titulo: 'Códigos de login', descricao: 'Entregar os códigos de OTP manual aos clientes (WhatsApp/SMS)', permissoes: ['otp.entregar'] },
   { rota: '/estimulos', titulo: 'Estímulos do mês', descricao: 'Desempenho, metas e bónus da equipa e dos melhores clientes', permissoes: ['equipa.gerir'] },
   { rota: '/conferencia', titulo: 'Conferência', descricao: 'Fecho do dia e do mês, extratos e comprovativos', permissoes: ['financas.conferir'] },
   { rota: '/grupos', titulo: 'Grupos do dia', descricao: 'Pedidos de grupo juntos para preparar e expedir (O10)', permissoes: ['pedidos.gerir', 'entregas.registar'] },

@@ -10,6 +10,7 @@ import type {
   ClienteInativo,
   UtilizadorEncontrado,
   UtilizadorBloqueado,
+  OtpPendente,
   ResumoInativos,
   CampanhaReconquista,
   Notificacao,
@@ -957,6 +958,19 @@ export async function desbloquearUtilizador(telefone: string) {
 
 export async function listarUtilizadoresBloqueados(): Promise<UtilizadorBloqueado[]> {
   return (verificar(await supabase.rpc('utilizadores_bloqueados_lista')) as UtilizadorBloqueado[]) ?? [];
+}
+
+// ---------------------------------------------------------------- OTP manual (códigos de login)
+export async function otpPendentes(): Promise<OtpPendente[]> {
+  return (verificar(await supabase.rpc('otp_pendentes_lista')) as OtpPendente[]) ?? [];
+}
+
+export async function otpMarcarEntregue(id: string) {
+  verificar(await supabase.rpc('otp_marcar_entregue', { p_id: id }));
+}
+
+export async function otpLimpar() {
+  verificar(await supabase.rpc('otp_limpar'));
 }
 
 // ---------------------------------------------------------------- Reconquista de clientes inativos

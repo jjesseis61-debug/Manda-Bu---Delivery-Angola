@@ -137,6 +137,7 @@ export type Permissao =
   | 'cardapio.gerir'
   | 'cozinha.perfil'
   | 'utilizadores.ver'
+  | 'otp.entregar'
   | 'auditoria.ver';
 
 export type PublicoAviso =
@@ -183,6 +184,14 @@ export type UtilizadorEncontrado = {
   total_pedidos: number;
   bloqueado: boolean;
   motivo_bloqueio: string | null;
+};
+
+export type OtpPendente = {
+  id: string;
+  telefone: string;
+  codigo: string;
+  criado_em: string;
+  expira_em: string;
 };
 
 export type UtilizadorBloqueado = {
