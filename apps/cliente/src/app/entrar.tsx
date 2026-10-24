@@ -64,7 +64,11 @@ export default function Entrar() {
     const { error } = await supabase.auth.verifyOtp({ phone: enviadoPara, token: codigo.trim(), type: 'sms' });
     setAEnviar(false);
     if (error) setErro('O código não está certo ou já expirou. Pede um novo código.');
-    else router.replace('/');
+    else {
+      // Fecha o código na lista do operador (OTP manual); se falhar não bloqueia o login — expira em 10 min
+      void supabase.rpc('otp_confirmar');
+      router.replace('/');
+    }
   }
 
   const expirado = restante <= 0;

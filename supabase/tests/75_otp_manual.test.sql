@@ -2,7 +2,7 @@
 -- anterior; a lista e a entrega exigem otp.entregar; a limpeza apaga os antigos.
 begin;
 \ir _helpers.psql
-select plan(15);
+select plan(17);
 
 select testes.def('sem_acesso', testes.funcionario('Sem Acesso', array[]::text[]));
 select testes.def('entregador', testes.funcionario('Entregador OTP', array['otp.entregar']));
@@ -61,6 +61,15 @@ insert into notificacoes_fila (funcionario_id, codigo, dados, criado_em)
   values (testes.u('entregador'), 'N40', jsonb_build_object('tel_mascarado', '999'), now() - interval '20 minutes');
 select is((select count(*)::int from notificacoes_por_enviar(200) where dados ->> 'tel_mascarado' = '999'), 0,
           'um N40 com mais de 10 min já não é despachado como push');
+
+-- 4c) otp_confirmar: o cliente fecha o SEU código ao entrar (lê o telefone de auth.users, compara dígitos)
+select testes.def('cli_otp', testes.cliente('Cliente OTP', 'Particular', '+244924000111'));
+select testes.entrar(testes.u('cli_otp'));
+set local role authenticated;
+select lives_ok($$select otp_confirmar()$$, 'otp_confirmar corre na sessão do cliente');
+reset role; select testes.sair();
+select is((select count(*)::int from otp_pendentes where codigo = '654321' and not usado), 0,
+          'otp_confirmar fecha o código pendente do próprio número ao entrar');
 
 -- 5) Limpeza: apaga os códigos antigos (> 1 dia)
 insert into otp_pendentes (telefone, codigo, criado_em) values ('+244000000000', '000000', now() - interval '2 days');

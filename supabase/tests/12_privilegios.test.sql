@@ -122,8 +122,9 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 -- ecrã de utilizadores: procurar e bloquear (telefone_bloqueado é usada no registo)
                 'procurar_utilizadores', 'telefone_bloqueado', 'bloquear_utilizador', 'desbloquear_utilizador',
                 'utilizadores_bloqueados_lista',
-                -- OTP manual: a lista, a entrega e a limpeza (o hook enviar_sms_otp é só do supabase_auth_admin)
-                'otp_pendentes_lista', 'otp_marcar_entregue', 'otp_limpar',
+                -- OTP manual: a lista, a entrega, a limpeza e o fecho automático ao entrar
+                -- (o hook enviar_sms_otp é só do supabase_auth_admin)
+                'otp_pendentes_lista', 'otp_marcar_entregue', 'otp_limpar', 'otp_confirmar',
                 -- receitas (Cozinha de casa): leitura pública, métricas e aviso de nova receita
                 'receitas_publicas', 'receita_publica', 'receita_abriu', 'receita_tocou_pedir', 'avisar_nova_receita',
                 -- cartão de selos: progresso do cliente
