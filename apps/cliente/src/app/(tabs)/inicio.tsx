@@ -12,7 +12,6 @@ import {
   cozinhasParaPedir,
   cozinhasPertoParaPedir,
   lerCardapio,
-  lerCozinhaPublica,
   lerEnderecos,
   lerComponentes,
   lerDoses,
@@ -21,7 +20,6 @@ import {
   mediasAvaliacoes,
   meusSelos,
   posicaoEntrega,
-  type Cozinha,
 } from '@/lib/api';
 import { useCarrinho } from '@/lib/carrinho';
 import { corEstadoPedido, formatarKz, formatarMedia, mensagemErro, nomeEstadoPedido } from '@/lib/formatar';
@@ -40,7 +38,6 @@ export default function Inicio() {
   const [cardapio, setCardapio] = useState<ItemCardapio[] | null>(null);
   const [enderecos, setEnderecos] = useState<Endereco[]>([]);
   const [contador, setContador] = useState<number | null>(null);
-  const [cozinha, setCozinha] = useState<Cozinha | null>(null);
   const [medias, setMedias] = useState<MediasAvaliacoes | null>(null);
   const [cozinhas, setCozinhas] = useState<CozinhaParaPedir[]>([]);
   // Troca de cozinha com carrinho cheio: confirma antes de esvaziar
@@ -112,8 +109,6 @@ export default function Inicio() {
       // C7: contador do bairro do endereço principal (o servidor devolve null abaixo do mínimo)
       const zona = ends[0]?.pontos_entrega?.zona_id;
       setContador(ligada('contadores_zona') && zona ? await contadorZona(zona) : null);
-      // C8: só com o interruptor e o consentimento público da cozinha
-      setCozinha(ligada('perfil_cozinha') ? await lerCozinhaPublica(ligada('multi_cozinha') ? escolhida : null) : null);
       // C10: média de cada prato (só com o mínimo de avaliações)
       setMedias(ligada('avaliacoes') && itens[0] ? await mediasAvaliacoes(itens[0].cozinha_id).catch(() => null) : null);
       // Banner de acompanhamento: o pedido mais recente que ainda está em andamento (lista vem por data desc)
@@ -178,7 +173,6 @@ export default function Inicio() {
     else carrinho.definirCozinha({ id: c.cozinha_id, nome: c.nome });
   }
 
-  const doDia = useMemo(() => (cardapio ?? []).filter((i) => i.do_dia), [cardapio]);
   const categorias = useMemo(() => {
     const grupos = new Map<string, ItemCardapio[]>();
     for (const item of cardapio ?? []) {
@@ -283,15 +277,6 @@ export default function Inicio() {
             <Text style={{ fontSize: 16, fontWeight: '600' }}>{contador} pedidos no teu bairro hoje</Text>
           </Cartao>
         )}
-        {cozinha && doDia.length > 0 && (
-          <Pressable onPress={() => router.push('/cozinha')}>
-            <Cartao>
-              <Text style={{ fontSize: 15 }}>
-                Hoje na {cozinha.nome}: <Text style={{ fontWeight: '700' }}>{doDia.map((i) => i.nome).join(', ')}</Text>
-              </Text>
-            </Cartao>
-          </Pressable>
-        )}
         {enderecos.length === 0 && cardapio !== null && (
           <Aviso>
             Antes do primeiro pedido, adiciona o endereço de entrega.{' '}
@@ -307,16 +292,6 @@ export default function Inicio() {
               Sair do grupo
             </Text>
           </Aviso>
-        )}
-        {/* I10: morada da cozinha e botão para o Google Maps */}
-        {ligada('como_chegar') && (cozinhaId ?? cardapio?.[0]?.cozinha_id) && (
-          <ComoChegar cozinhaId={(cozinhaId ?? cardapio?.[0]?.cozinha_id) as string} />
-        )}
-        {ligada('pacotes') && !carrinho.grupo && (
-          <Botao titulo="Pacote do mês: paga uma vez, almoça o mês todo" variante="secundario" aoCarregar={() => router.push('/pacotes')} />
-        )}
-        {ligada('pedidos_grupo') && !carrinho.grupo && (
-          <Botao titulo="Pedido de grupo com os colegas" variante="secundario" aoCarregar={() => router.push('/grupos')} />
         )}
         {erro && <Aviso tipo="erro">{erro}</Aviso>}
         {cardapio !== null && cardapio.length === 0 && <Paragrafo suave>O cardápio de hoje ainda não está disponível.</Paragrafo>}
@@ -346,7 +321,7 @@ export default function Inicio() {
                       {desde.has(item.id) ? `desde ${formatarKz(desde.get(item.id))}` : formatarKz(item.preco)}
                     </Text>
                   </View>
-                  {item.descricao ? <Text style={{ color: cores.textoSuave }}>{item.descricao}</Text> : null}
+                  {item.descricao ? <Text style={{ color: cores.textoSuave }} numberOfLines={2}>{item.descricao}</Text> : null}
                   {(() => {
                     const m = item.prato_base_id ? medias?.pratos.find((p) => p.prato_base_id === item.prato_base_id) : undefined;
                     return m ? (
@@ -387,6 +362,16 @@ export default function Inicio() {
             })}
           </View>
         ))}
+        {/* Promos e extras ficam DEPOIS do cardápio (comida primeiro): pacote, grupo, como chegar. */}
+        {ligada('pacotes') && !carrinho.grupo && (
+          <Botao titulo="Pacote do mês: paga uma vez, almoça o mês todo" variante="secundario" aoCarregar={() => router.push('/pacotes')} />
+        )}
+        {ligada('pedidos_grupo') && !carrinho.grupo && (
+          <Botao titulo="Pedido de grupo com os colegas" variante="secundario" aoCarregar={() => router.push('/grupos')} />
+        )}
+        {ligada('como_chegar') && (cozinhaId ?? cardapio?.[0]?.cozinha_id) && (
+          <ComoChegar cozinhaId={(cozinhaId ?? cardapio?.[0]?.cozinha_id) as string} />
+        )}
         {/* No fim do cardápio: convite às receitas — "comida primeiro, conteúdo depois".
             Cartão (não botão de rodapé solto) para ser discreto mas descoberto. */}
         {ligada('receitas') && !carrinho.grupo && cardapio !== null && cardapio.length > 0 && (
