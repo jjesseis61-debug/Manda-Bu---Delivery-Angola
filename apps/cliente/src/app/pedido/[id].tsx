@@ -8,6 +8,7 @@ import { PessoasComoTu } from '@/components/PessoasComoTu';
 import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Linha, Paragrafo, Subtitulo } from '@/components/ui';
 import { rotuloAgendamento } from '@/lib/agendar';
 import { useCarrinho } from '@/lib/carrinho';
+import { comprovativoPedidoPdf } from '@/lib/comprovativo';
 import { montarRepeticao } from '@/lib/repetir';
 import {
   atrasoDoPedido,
@@ -32,6 +33,7 @@ export default function PedidoDetalhe() {
   const { ligada, perfil } = useSessao();
   const carrinho = useCarrinho();
   const [aRepetir, setARepetir] = useState(false);
+  const [aGerarPdf, setAGerarPdf] = useState(false);
   const [pedido, setPedido] = useState<Pedido | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [aCancelar, setACancelar] = useState(false);
@@ -198,6 +200,26 @@ export default function PedidoDetalhe() {
         Este é o resumo da tua encomenda, não é uma fatura. A fatura é emitida na cozinha, na entrega. Preços com IVA
         incluído, quando aplicável.
       </Paragrafo>
+
+      {pedido.estado === 'entregue_pago' && (
+        <Botao
+          titulo="Descarregar comprovativo (PDF)"
+          variante="secundario"
+          aCarregar={aGerarPdf}
+          aoCarregar={async () => {
+            if (!pedido) return;
+            setErro(null);
+            setAGerarPdf(true);
+            try {
+              await comprovativoPedidoPdf(pedido, { nome: perfil?.nome, telefone: perfil?.telefone });
+            } catch (e) {
+              setErro(mensagemErro(e));
+            } finally {
+              setAGerarPdf(false);
+            }
+          }}
+        />
+      )}
 
       {terminado && <Botao titulo="Pedir de novo" aCarregar={aRepetir} aoCarregar={pedirDeNovo} />}
 
