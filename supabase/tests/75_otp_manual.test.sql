@@ -2,7 +2,7 @@
 -- anterior; a lista e a entrega exigem otp.entregar; a limpeza apaga os antigos.
 begin;
 \ir _helpers.psql
-select plan(10);
+select plan(13);
 
 select testes.def('sem_acesso', testes.funcionario('Sem Acesso', array[]::text[]));
 select testes.def('entregador', testes.funcionario('Entregador OTP', array['otp.entregar']));
@@ -20,14 +20,25 @@ select is((select count(*)::int from otp_pendentes), 0, 'desligado não grava ne
 -- Ligar o interruptor
 select testes.funcionalidade('otp_manual', true);
 
+-- Dispositivos push: o entregador (com otp.entregar) e o sem_acesso (sem a permissão)
+insert into dispositivos_push (funcionario_id, token, plataforma) values (testes.u('entregador'), 'tok-entregador', 'android');
+insert into dispositivos_push (funcionario_id, token, plataforma) values (testes.u('sem_acesso'), 'tok-semacesso', 'android');
+
 -- 2) Ligado: o hook grava o código
 select is(enviar_sms_otp(testes.v('ev1')::jsonb), '{}'::jsonb, 'ligado o hook devolve sucesso (vazio)');
 select is((select count(*)::int from otp_pendentes where codigo = '123456' and not usado), 1, 'grava o código pendente');
+
+-- 2b) Aviso N40 só a quem tem otp.entregar e dispositivo
+select is((select count(*)::int from notificacoes_fila where codigo = 'N40' and funcionario_id = testes.u('entregador')), 1,
+          'avisa (N40) o funcionário com otp.entregar e dispositivo');
+select is((select count(*)::int from notificacoes_fila where codigo = 'N40' and funcionario_id = testes.u('sem_acesso')), 0,
+          'não avisa quem não tem otp.entregar');
 
 -- 3) Reenvio: invalida o anterior, fica só o novo
 select is(enviar_sms_otp(testes.v('ev2')::jsonb), '{}'::jsonb, 'reenvio aceite');
 select is((select codigo from otp_pendentes where not usado), '654321', 'o pendente é o código mais recente');
 select is((select count(*)::int from otp_pendentes where usado), 1, 'o código anterior fica invalidado');
+select is((select count(*)::int from notificacoes_fila where codigo = 'N40'), 1, 'anti-spam: o reenvio não cria novo aviso');
 
 -- 4) A lista exige otp.entregar
 select testes.entrar_funcionario(testes.u('sem_acesso'));
