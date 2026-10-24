@@ -25,6 +25,12 @@ create table if not exists auth.users (
   banned_until timestamptz
 );
 
+-- Sessões (como no Supabase): apagar linhas aqui revoga as sessões do utilizador.
+create table if not exists auth.sessions (
+  id       uuid primary key default gen_random_uuid(),
+  user_id  uuid references auth.users(id) on delete cascade
+);
+
 -- Igual ao Supabase: o utilizador autenticado vem das claims do JWT.
 create or replace function auth.uid() returns uuid
 language sql stable as $$

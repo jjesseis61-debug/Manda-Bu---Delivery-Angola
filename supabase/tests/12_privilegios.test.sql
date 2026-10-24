@@ -49,8 +49,8 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 'lista_avaliacoes', 'fotos_pendentes', 'foto_pode_enviar', 'foto_pode_ver', 'fotos_da_avaliacao',
                 -- I8: rede de cozinhas (cozinha_aceita_pedidos no trigger da criação de grupos)
                 'cozinhas_para_pedir', 'cozinhas_perto', 'relatorio_comparativo', 'cozinha_aceita_pedidos',
-                -- apagar a conta pela app (exigido pelas lojas)
-                'apagar_conta',
+                -- apagar/recuperar a conta pela app (exigido pelas lojas)
+                'apagar_conta', 'recuperar_conta',
                 -- I10 e I11: localização da cozinha e acompanhamento da entrega
                 'localizacao_cozinha', 'registar_posicao_entrega', 'posicao_entrega', 'posicao_pedido',
                 -- I12: pacotes pré-pagos
