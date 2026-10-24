@@ -1,5 +1,11 @@
 import type { EstadoPedido, Parametros } from './tipos';
 
+/** 125 -> "2:05" (contagem decrescente, minutos:segundos) */
+export function minutosSegundos(segundos: number): string {
+  const s = Math.max(0, Math.round(segundos));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
+
 /** 1300 -> "1.300 Kz" (separador de milhares angolano) */
 export function formatarKz(valor: number | null | undefined): string {
   const inteiro = Math.round(Number(valor ?? 0));

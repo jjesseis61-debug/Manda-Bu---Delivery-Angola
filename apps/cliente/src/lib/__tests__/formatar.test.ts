@@ -8,6 +8,7 @@ import {
   tempoEmFalta,
   mensagemCodigo,
   mensagemConvite,
+  minutosSegundos,
   mensagemErro,
   normalizarCodigo,
   telefoneInternacional,
@@ -51,6 +52,17 @@ describe('textoAmigo (C1)', () => {
   it('distingue à espera do 1.º pedido e período terminado', () => {
     expect(textoAmigo('Ana', 'aguarda_primeiro_pedido', null)).toBe('Ana · à espera do 1.º pedido');
     expect(textoAmigo('Ana', 'expirado', null)).toBe('Ana · terminou');
+  });
+});
+
+describe('minutosSegundos (contagem do OTP)', () => {
+  it('formata minutos:segundos com dois dígitos', () => {
+    expect(minutosSegundos(600)).toBe('10:00');
+    expect(minutosSegundos(125)).toBe('2:05');
+    expect(minutosSegundos(9)).toBe('0:09');
+  });
+  it('nunca é negativo', () => {
+    expect(minutosSegundos(-5)).toBe('0:00');
   });
 });
 
