@@ -1,25 +1,25 @@
 # Marca
 
-Há duas assinaturas, uma por app, com a mesma linguagem gráfica (anel = tacho/prato visto de cima,
-traço contínuo, dourado de realce) e as cores que lembram a bandeira de Angola sem a copiar
-(vermelho, carvão e dourado).
-
-- **Cliente — Cozinha da Alexandra:** **rosto estilizado da fundadora** (persona, no espírito do
-  Coronel do KFC) dentro do prato creme, com **vapor dourado** — comida quente de casa, feita por uma
-  pessoa real a quem os clientes são fiéis. Há uma **versão abstrata** (anel + monograma **A** +
-  vapor), usada no ícone monocromático/temático do Android, onde um rosto a uma só cor não funciona.
-  "Manda Bué" aparece só como endosso discreto ("entregue por Manda Bué"), nunca com símbolo próprio.
+- **Cliente — Cozinha da Alexandra:** no espírito do KFC (marca de comida à volta de uma pessoa real),
+  na paleta **vermelho + branco + preto** (apetite, limpeza, herança). Um só símbolo em todo o lado —
+  **quadrado vermelho + prato branco + retrato a traço (preto) da fundadora** — usado no ícone, no
+  logótipo e no letreiro. Há uma **versão abstrata** (anel + monograma **A**) para o ícone
+  monocromático/temático do Android, onde um retrato a uma só cor não funciona. "Manda Bué" aparece
+  só como endosso discreto ("entregue por Manda Bué"), nunca com símbolo próprio.
 - **Operador — Manda Bué:** anel com o monograma **MB** e três **linhas de velocidade** douradas à
-  esquerda — a camada de logística/entrega.
+  esquerda — a camada de logística/entrega (carvão).
+
+O **dourado não entra na marca do cliente** — fica reservado a **realce funcional** na app (selos,
+"Prato do dia", estrelas): paleta-base curta + uma cor de ação, como nas grandes marcas.
 
 | Ficheiro | Uso |
 |---|---|
-| `simbolo.svg` / `simbolo.png` | Símbolo da app do cliente — rosto da Alexandra (fundo vermelho) |
-| `simbolo-abstrato.png` | Versão abstrata (anel + A + vapor), p/ monocromático/usos a uma cor |
+| `simbolo.svg` / `simbolo.png` | Símbolo da marca — retrato da Alexandra (quadrado vermelho + prato) |
+| `simbolo-abstrato.png` | Versão abstrata (anel + A), p/ monocromático/usos a uma cor |
 | `simbolo-operador.png` | Símbolo da app do operador — Manda Bué (fundo carvão, anel vermelho) |
 | `logotipo.svg` / `logotipo.png` | Logótipo horizontal da Cozinha da Alexandra, fundo transparente |
 | `logotipo-fundo-claro.png` | Logótipo horizontal sobre branco |
-| `simbolo-icone.svg` | Fonte do ícone da app do cliente (1024 × 1024) |
+| `letreiro.png` | Letreiro vertical (montra, menus, marketing, Play Store, redes) |
 
 > Uso da imagem da fundadora mediante a sua autorização. As fotos-base foram fornecidas pelo negócio.
 
@@ -40,7 +40,7 @@ desenhos. Os assets do operador mantêm a marca MB e não são alterados aqui.
 | Marca clara | `#FBE9EA` | Botões leves ("Adicionar"), texto vermelho por cima: 5,85:1 |
 | Carvão | `#1F1A17` | Fundo da app do operador e do seu ícone |
 | Dourado (gráfico) | `#B07800` | Estrelas e molduras sobre branco: 3,8:1 |
-| Dourado (fundo) | `#F4B400` | Selos ("Prato do dia"), sempre com texto escuro: 9,4:1; vapor (cliente) e linhas de velocidade (operador) dos símbolos |
+| Dourado (fundo) | `#F4B400` | Selos ("Prato do dia"), sempre com texto escuro: 9,4:1; realce funcional (não entra na marca do cliente); linhas de velocidade do símbolo do operador |
 | Texto | `#1A1A1A` | 17,4:1 |
 | Texto suave | `#5F6368` | 6,05:1 |
 | Contorno de campos | `#8A8A8A` | 3,45:1 (visível ao sol) |

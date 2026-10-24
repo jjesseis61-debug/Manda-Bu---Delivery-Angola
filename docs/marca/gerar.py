@@ -1,15 +1,16 @@
 # Marcas das apps.
-# Cliente — Cozinha da Alexandra: rosto estilizado da fundadora (persona, estilo "Coronel" do KFC)
-#   dentro do prato creme, com vapor dourado. Versão abstrata (anel + "A" + vapor) usada no ícone
-#   monocromático (temático) do Android, onde um rosto a uma só cor não funciona.
-# Operador — Manda Bué: anel + monograma "MB" + linhas de velocidade douradas (entrega).
-VERMELHO = '#B5121B'; CARVAO = '#1F1A17'; BRANCO = '#FFFFFF'; DOURADO = '#F4B400'; SUAVE = '#5F6368'
-CREME = '#FBF0DA'; PELE = '#774C31'; PELE_ESC = '#5E3A24'; CABELO = '#241812'
-TOP = '#33403F'; TOP2 = '#46555A'; BOCA = '#50241B'
+# Cliente — Cozinha da Alexandra (conceito KFC, paleta VERMELHO + BRANCO + PRETO):
+#   quadrado vermelho + prato branco + retrato a traço (preto) da fundadora. Mesmo símbolo no
+#   ícone, logótipo e letreiro. Dourado NÃO entra na marca — fica só como realce funcional na app
+#   (selos, "Prato do dia", estrelas). Versão abstrata (anel + "A") só no ícone monocromático.
+# Operador — Manda Bué: anel + "MB" + linhas de velocidade (entrega), inalterado.
+VERMELHO = '#B5121B'; CARVAO = '#1F1A17'; PRETO = '#1A1A1A'; BRANCO = '#FFFFFF'; DOURADO = '#F4B400'
+SUAVE = '#5F6368'
+FONTE = 'Liberation Sans, Arial, Helvetica, sans-serif'
 
 
 def marca(anel=BRANCO, letras=BRANCO, linhas=DOURADO):
-    """Manda Bué (operador): anel + MB + linhas de velocidade. Área 1024, centro (512,512)."""
+    """Manda Bué (operador): anel + MB + linhas de velocidade. Centro (512,512)."""
     return f'''
   <g fill="none" stroke-linecap="round" stroke-linejoin="round">
     <circle cx="540" cy="512" r="292" stroke="{anel}" stroke-width="40"/>
@@ -19,8 +20,8 @@ def marca(anel=BRANCO, letras=BRANCO, linhas=DOURADO):
   </g>'''
 
 
-def marca_alexandra(anel=BRANCO, letra=BRANCO, vapor=DOURADO):
-    """Versão abstrata: anel + "A" + vapor (usada no ícone monocromático)."""
+def marca_A(anel=BRANCO, letra=BRANCO, vapor=BRANCO):
+    """Versão abstrata: anel + "A" + vapor (ícone monocromático e marca de apoio). Centro (512,512)."""
     return f'''
   <g fill="none" stroke-linecap="round" stroke-linejoin="round">
     <circle cx="512" cy="512" r="300" stroke="{anel}" stroke-width="42"/>
@@ -32,78 +33,82 @@ def marca_alexandra(anel=BRANCO, letra=BRANCO, vapor=DOURADO):
   </g>'''
 
 
-def rosto(vapor=True):
-    """Rosto estilizado da Alexandra dentro do prato creme. Centro (512,500)."""
-    v = f'''
-  <g fill="none" stroke="{DOURADO}" stroke-width="24" stroke-linecap="round">
-    <path d="M458 150 C434 128 482 112 458 90 C434 68 482 52 458 34"/>
-    <path d="M512 160 C486 136 538 118 512 94 C486 70 538 50 512 26"/>
-    <path d="M566 150 C542 128 590 112 566 90 C542 68 590 52 566 34"/>
-  </g>''' if vapor else ''
+def _retrato(cor=PRETO, dente=BRANCO):
+    """Retrato a traço (coords próprias, rosto ~ centro 600,540). Preto, sorriso aberto (Foto 2)."""
     return f'''
-  <clipPath id="prato"><circle cx="512" cy="500" r="336"/></clipPath>
-  <circle cx="512" cy="500" r="336" fill="{CREME}"/>
-  <g clip-path="url(#prato)">
-    <path d="M150 905 C210 718 352 664 512 664 C672 664 814 718 874 905 Z" fill="{TOP}"/>
-    <path d="M150 905 C210 760 352 712 512 712 C672 712 814 760 874 905 Z" fill="{TOP2}" opacity="0.5"/>
-    <path d="M454 566 h116 v96 a58 58 0 0 1 -116 0 Z" fill="{PELE_ESC}"/>
-    <ellipse cx="350" cy="470" rx="28" ry="40" fill="{PELE}"/>
-    <ellipse cx="674" cy="470" rx="28" ry="40" fill="{PELE}"/>
-    <circle cx="350" cy="516" r="14" fill="{DOURADO}"/>
-    <circle cx="674" cy="516" r="14" fill="{DOURADO}"/>
-    <path d="M362 452 C362 300 662 300 662 452 C662 580 596 648 512 648 C428 648 362 580 362 452 Z" fill="{PELE}"/>
-    <g fill="{CABELO}">
-      <path d="M360 452 C330 452 322 392 340 356 C318 330 338 286 372 288 C372 250 420 232 452 252 C470 214 548 210 572 250 C612 236 664 256 660 300 C700 302 712 356 686 390 C708 420 690 470 660 462 C664 404 646 366 614 352 C560 332 470 330 418 352 C384 366 362 400 360 452 Z"/>
-      <circle cx="356" cy="372" r="34"/><circle cx="392" cy="322" r="34"/><circle cx="440" cy="296" r="32"/>
-      <circle cx="500" cy="286" r="34"/><circle cx="560" cy="292" r="32"/><circle cx="612" cy="318" r="32"/>
-      <circle cx="652" cy="360" r="32"/><circle cx="668" cy="408" r="26"/><circle cx="346" cy="416" r="26"/>
-    </g>
-    <path d="M414 436 Q448 422 482 434" stroke="{CABELO}" stroke-width="10" fill="none" stroke-linecap="round"/>
-    <path d="M542 434 Q576 422 610 436" stroke="{CABELO}" stroke-width="10" fill="none" stroke-linecap="round"/>
-    <ellipse cx="450" cy="472" rx="27" ry="18" fill="{BRANCO}"/>
-    <ellipse cx="574" cy="472" rx="27" ry="18" fill="{BRANCO}"/>
-    <circle cx="453" cy="474" r="12" fill="{CABELO}"/>
-    <circle cx="571" cy="474" r="12" fill="{CABELO}"/>
-    <path d="M512 486 Q498 530 486 540 Q500 552 512 548 Q524 552 538 540 Q526 530 512 486 Z" fill="{PELE_ESC}" opacity="0.55"/>
-    <path d="M454 578 Q512 636 570 578 Q512 600 454 578 Z" fill="{BOCA}"/>
-    <path d="M470 582 Q512 598 554 582 Q512 592 470 582 Z" fill="{CREME}"/>
-    <circle cx="420" cy="528" r="22" fill="#8A5636" opacity="0.4"/>
-    <circle cx="604" cy="528" r="22" fill="#8A5636" opacity="0.4"/>
-  </g>{v}'''
+    <path d="M600 150 C468 150 372 240 360 366 C356 410 360 448 370 478 C384 432 410 392 448 372 C508 342 692 342 752 372 C790 392 816 432 830 478 C840 448 844 410 840 366 C828 240 732 150 600 150 Z" fill="{cor}"/>
+    <path d="M402 418 C388 520 402 612 470 674 C512 712 560 728 600 728 C640 728 688 712 730 674 C798 612 812 520 798 418" fill="none" stroke="{cor}" stroke-width="11" stroke-linecap="round"/>
+    <path d="M402 470 q-26 6 -20 44 q8 26 28 22" fill="none" stroke="{cor}" stroke-width="9"/>
+    <path d="M798 470 q26 6 20 44 q-8 26 -28 22" fill="none" stroke="{cor}" stroke-width="9"/>
+    <circle cx="410" cy="556" r="12" fill="none" stroke="{cor}" stroke-width="9"/>
+    <circle cx="790" cy="556" r="12" fill="none" stroke="{cor}" stroke-width="9"/>
+    <path d="M452 452 Q496 434 540 452" stroke="{cor}" stroke-width="10" fill="none" stroke-linecap="round"/>
+    <path d="M660 452 Q704 434 748 452" stroke="{cor}" stroke-width="10" fill="none" stroke-linecap="round"/>
+    <path d="M454 486 Q496 462 540 486 Q498 502 454 486 Z" fill="none" stroke="{cor}" stroke-width="9"/>
+    <path d="M660 486 Q704 462 748 486 Q706 502 660 486 Z" fill="none" stroke="{cor}" stroke-width="9"/>
+    <circle cx="497" cy="484" r="11" fill="{cor}"/>
+    <circle cx="703" cy="484" r="11" fill="{cor}"/>
+    <path d="M600 500 Q590 556 584 566" stroke="{cor}" stroke-width="8" fill="none" stroke-linecap="round"/>
+    <path d="M576 576 Q600 592 624 576" stroke="{cor}" stroke-width="8" fill="none" stroke-linecap="round"/>
+    <path d="M506 612 Q600 648 694 612 Q600 740 506 612 Z" fill="{dente}" stroke="{cor}" stroke-width="11" stroke-linejoin="round"/>
+    <path d="M524 620 Q600 648 676 620" stroke="{cor}" stroke-width="7" fill="none"/>
+    <path d="M486 596 Q470 626 486 656" stroke="{cor}" stroke-width="7" fill="none" stroke-linecap="round"/>
+    <path d="M714 596 Q730 626 714 656" stroke="{cor}" stroke-width="7" fill="none" stroke-linecap="round"/>'''
 
 
-def svg(conteudo, fundo=None, escala=1.0, tamanho=1024):
-    f = f'<rect width="1024" height="1024" fill="{fundo}"/>' if fundo else ''
+def simbolo_rosto(cx=512, cy=512, raio=438, esc=0.96):
+    """Prato branco + retrato preto (o símbolo da marca). Centro (cx,cy)."""
+    # retrato centrado: leva o seu centro visual (~600,500) para (cx,cy)
+    g = f'<g transform="translate({cx} {cy}) scale({esc}) translate(-600 -500)">{_retrato()}</g>'
+    return f'<circle cx="{cx}" cy="{cy}" r="{raio}" fill="{BRANCO}"/>{g}'
+
+
+def svg(conteudo, fundo=None, escala=1.0, tamanho=1024, keyline=False):
+    f = f'<rect x="8" y="8" width="1008" height="1008" rx="150" fill="{fundo}" stroke="{PRETO}" stroke-width="10"/>' if (fundo and keyline) else (f'<rect width="1024" height="1024" fill="{fundo}"/>' if fundo else '')
     t = f'translate({512 * (1 - escala)} {512 * (1 - escala)}) scale({escala})'
     return f'<svg xmlns="http://www.w3.org/2000/svg" width="{tamanho}" height="{tamanho}" viewBox="0 0 1024 1024">{f}<g transform="{t}">{conteudo}</g></svg>'
 
 
-def logotipo_alexandra(fundo=None):
-    """Logótipo horizontal: rosto da Alexandra num quadrado vermelho + nome."""
-    m = (svg(rosto(), VERMELHO, 0.9)
+def logotipo(fundo=None):
+    """Logótipo horizontal: símbolo (quadrado vermelho + prato + retrato) + nome. Vermelho+branco+preto."""
+    m = (svg(simbolo_rosto(), VERMELHO, 0.9, keyline=True)
          .replace('<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">', '')
          .replace('</svg>', ''))
     f = f'<rect width="1600" height="480" fill="{fundo}"/>' if fundo else ''
-    fonte = 'Liberation Sans, Arial, Helvetica, sans-serif'
     return f'''<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="480" viewBox="0 0 1600 480">{f}
   <defs><clipPath id="c"><rect x="40" y="40" width="400" height="400" rx="88"/></clipPath></defs>
   <g clip-path="url(#c)"><g transform="translate(40 40) scale(0.390625)">{m}</g></g>
-  <text x="500" y="214" font-family="{fonte}" font-weight="600" font-size="84" fill="{CARVAO}" letter-spacing="-1">Cozinha da</text>
-  <text x="500" y="348" font-family="{fonte}" font-weight="800" font-size="150" fill="{VERMELHO}" letter-spacing="-3">Alexandra</text>
-  <text x="506" y="408" font-family="{fonte}" font-size="40" fill="{SUAVE}" letter-spacing="6">ENTREGUE POR MANDA BUÉ</text>
+  <text x="500" y="214" font-family="{FONTE}" font-weight="600" font-size="84" fill="{PRETO}" letter-spacing="-1">Cozinha da</text>
+  <text x="500" y="348" font-family="{FONTE}" font-weight="800" font-size="150" fill="{VERMELHO}" letter-spacing="-3">Alexandra</text>
+  <text x="506" y="408" font-family="{FONTE}" font-weight="600" font-size="40" fill="{PRETO}" letter-spacing="6">ENTREGUE POR MANDA BUÉ</text>
+</svg>'''
+
+
+def letreiro():
+    """Letreiro vertical (montra/marketing): fundo vermelho + prato branco com retrato + nome."""
+    W, H = 1200, 1560
+    m = f'<g transform="translate(600 520) scale(0.95) translate(-600 -500)">{_retrato()}</g>'
+    return f'''<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}">
+  <rect x="40" y="40" width="{W-80}" height="{H-80}" rx="110" fill="{VERMELHO}" stroke="{BRANCO}" stroke-width="12"/>
+  <circle cx="600" cy="520" r="372" fill="{BRANCO}"/>
+  <clipPath id="med"><circle cx="600" cy="520" r="372"/></clipPath>
+  <g clip-path="url(#med)">{m}</g>
+  <text x="600" y="1170" text-anchor="middle" font-family="{FONTE}" font-weight="600" font-size="96" fill="{BRANCO}" letter-spacing="-1">Cozinha da</text>
+  <text x="600" y="1322" text-anchor="middle" font-family="{FONTE}" font-weight="800" font-size="190" fill="{BRANCO}" letter-spacing="-5">Alexandra</text>
+  <text x="600" y="1404" text-anchor="middle" font-family="{FONTE}" font-weight="600" font-size="46" fill="#F3D9DA" letter-spacing="7">ENTREGUE POR MANDA BUÉ</text>
 </svg>'''
 
 
 ficheiros = {}
 
-# Cliente — Cozinha da Alexandra (rosto); monocromático usa a marca abstrata
-r = rosto()
-ficheiros['cliente/icon.png'] = (svg(r, VERMELHO, 0.92), 1024)
+# Cliente — símbolo da marca (rosto, vermelho+branco+preto); monocromático usa o "A"
+r = simbolo_rosto()
+ficheiros['cliente/icon.png'] = (svg(r, VERMELHO, 0.92, keyline=True), 1024)
 ficheiros['cliente/android-icon-background.png'] = (svg('', VERMELHO), 512)
-ficheiros['cliente/android-icon-foreground.png'] = (svg(r, None, 0.72), 512)
-ficheiros['cliente/android-icon-monochrome.png'] = (svg(marca_alexandra(BRANCO, BRANCO, BRANCO), None, 0.72), 432)
-ficheiros['cliente/splash-icon.png'] = (svg(rosto(), None, 1.0), 1024)
-ficheiros['cliente/favicon.png'] = (svg(r, VERMELHO, 0.92), 48)
+ficheiros['cliente/android-icon-foreground.png'] = (svg(r, None, 0.68), 512)
+ficheiros['cliente/android-icon-monochrome.png'] = (svg(marca_A(BRANCO, BRANCO, BRANCO), None, 0.72), 432)
+ficheiros['cliente/splash-icon.png'] = (svg(r, None, 0.96), 1024)
+ficheiros['cliente/favicon.png'] = (svg(r, VERMELHO, 0.92, keyline=True), 48)
 
 # Operador — Manda Bué (carvão)
 mo = marca(anel=VERMELHO)
@@ -115,10 +120,11 @@ ficheiros['operador/splash-icon.png'] = (svg(marca(anel=VERMELHO), None, 1.0), 1
 ficheiros['operador/favicon.png'] = (svg(mo, CARVAO, 0.92), 48)
 
 # Peças de marca (docs)
-ficheiros['marca/logotipo.png'] = (logotipo_alexandra(), None)
-ficheiros['marca/logotipo-fundo-claro.png'] = (logotipo_alexandra('#FFFFFF'), None)
-ficheiros['marca/simbolo.png'] = (svg(rosto(), VERMELHO, 0.92), 1024)
-ficheiros['marca/simbolo-abstrato.png'] = (svg(marca_alexandra(), VERMELHO, 0.92), 1024)
+ficheiros['marca/logotipo.png'] = (logotipo(), None)
+ficheiros['marca/logotipo-fundo-claro.png'] = (logotipo('#FFFFFF'), None)
+ficheiros['marca/letreiro.png'] = (letreiro(), None)
+ficheiros['marca/simbolo.png'] = (svg(simbolo_rosto(), VERMELHO, 0.92, keyline=True), 1024)
+ficheiros['marca/simbolo-abstrato.png'] = (svg(marca_A(), VERMELHO, 0.92, keyline=True), 1024)
 ficheiros['marca/simbolo-operador.png'] = (svg(marca(anel=VERMELHO), CARVAO, 0.92), 1024)
 
 import json, os
@@ -128,10 +134,9 @@ for nome, (conteudo, tam) in ficheiros.items():
     caminho_svg = 'svg/' + nome.replace('/', '__').replace('.png', '.svg')
     open(caminho_svg, 'w').write(conteudo)
     lista.append({'svg': caminho_svg, 'png': 'out/' + nome, 'tamanho': tam})
-open('svg/logotipo.svg', 'w').write(logotipo_alexandra())
-open('svg/simbolo.svg', 'w').write(svg(rosto(), VERMELHO, 0.92))
-open('simbolo.svg', 'w').write(svg(rosto(), VERMELHO, 0.92))
-open('simbolo-icone.svg', 'w').write(svg(rosto(), VERMELHO, 0.92))
-open('logotipo.svg', 'w').write(logotipo_alexandra())
+open('svg/logotipo.svg', 'w').write(logotipo())
+open('svg/simbolo.svg', 'w').write(svg(simbolo_rosto(), VERMELHO, 0.92, keyline=True))
+open('simbolo.svg', 'w').write(svg(simbolo_rosto(), VERMELHO, 0.92, keyline=True))
+open('logotipo.svg', 'w').write(logotipo())
 json.dump(lista, open('lista.json', 'w'), indent=1)
 print(len(lista), 'ficheiros')
