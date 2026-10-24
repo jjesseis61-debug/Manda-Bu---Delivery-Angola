@@ -4,19 +4,24 @@ Há duas assinaturas, uma por app, com a mesma linguagem gráfica (anel = tacho/
 traço contínuo, dourado de realce) e as cores que lembram a bandeira de Angola sem a copiar
 (vermelho, carvão e dourado).
 
-- **Cliente — Cozinha da Alexandra:** anel com o monograma **A** (de Alexandra) ao centro e **vapor
-  dourado** a subir — comida quente de casa. "Manda Bué" aparece só como endosso discreto
-  ("entregue por Manda Bué"), nunca com símbolo próprio a competir.
+- **Cliente — Cozinha da Alexandra:** **rosto estilizado da fundadora** (persona, no espírito do
+  Coronel do KFC) dentro do prato creme, com **vapor dourado** — comida quente de casa, feita por uma
+  pessoa real a quem os clientes são fiéis. Há uma **versão abstrata** (anel + monograma **A** +
+  vapor), usada no ícone monocromático/temático do Android, onde um rosto a uma só cor não funciona.
+  "Manda Bué" aparece só como endosso discreto ("entregue por Manda Bué"), nunca com símbolo próprio.
 - **Operador — Manda Bué:** anel com o monograma **MB** e três **linhas de velocidade** douradas à
   esquerda — a camada de logística/entrega.
 
 | Ficheiro | Uso |
 |---|---|
-| `simbolo.svg` / `simbolo.png` | Símbolo da app do cliente — Cozinha da Alexandra (fundo vermelho) |
+| `simbolo.svg` / `simbolo.png` | Símbolo da app do cliente — rosto da Alexandra (fundo vermelho) |
+| `simbolo-abstrato.png` | Versão abstrata (anel + A + vapor), p/ monocromático/usos a uma cor |
 | `simbolo-operador.png` | Símbolo da app do operador — Manda Bué (fundo carvão, anel vermelho) |
 | `logotipo.svg` / `logotipo.png` | Logótipo horizontal da Cozinha da Alexandra, fundo transparente |
 | `logotipo-fundo-claro.png` | Logótipo horizontal sobre branco |
 | `simbolo-icone.svg` | Fonte do ícone da app do cliente (1024 × 1024) |
+
+> Uso da imagem da fundadora mediante a sua autorização. As fotos-base foram fornecidas pelo negócio.
 
 Os desenhos são gerados por `gerar.py` (produz os SVG + `lista.json`) e rasterizados por `render.js`
 com o Chromium/Playwright (`node render.js`, transparência correta). Os ícones, o ícone adaptativo do
