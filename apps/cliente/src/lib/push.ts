@@ -54,8 +54,10 @@ export async function desactivarPush(): Promise<void> {
 
 /** Ecrã a abrir quando o cliente toca numa notificação */
 export function rotaDaNotificacao(dados: unknown): string | null {
-  const d = (dados ?? {}) as { codigo?: unknown; pedido_id?: unknown; codigo_grupo?: unknown };
+  const d = (dados ?? {}) as { codigo?: unknown; pedido_id?: unknown; codigo_grupo?: unknown; link?: unknown };
   const codigo = d.codigo;
+  // Avisos personalizados (N31) podem trazer um link para um ecrã da app (ex.: uma receita)
+  if (codigo === 'N31' && typeof d.link === 'string' && d.link.startsWith('/')) return d.link;
   if (codigo === 'N2' || codigo === 'N3' || codigo === 'N4' || codigo === 'N5' || codigo === 'N6') return '/convida';
   if (codigo === 'N7') return '/destaques';
   if (codigo === 'N8') return '/levantar';

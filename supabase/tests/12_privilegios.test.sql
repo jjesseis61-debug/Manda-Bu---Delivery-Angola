@@ -124,8 +124,8 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 'utilizadores_bloqueados_lista',
                 -- OTP manual: a lista, a entrega e a limpeza (o hook enviar_sms_otp é só do supabase_auth_admin)
                 'otp_pendentes_lista', 'otp_marcar_entregue', 'otp_limpar',
-                -- receitas (Cozinha de casa): leitura pública pelo cliente
-                'receitas_publicas', 'receita_publica',
+                -- receitas (Cozinha de casa): leitura pública, métricas e aviso de nova receita
+                'receitas_publicas', 'receita_publica', 'receita_abriu', 'receita_tocou_pedir', 'avisar_nova_receita',
                 -- cartão de selos: progresso do cliente
                 'meus_selos',
                 -- auxiliares usadas em políticas RLS, valores por defeito ou triggers SECURITY INVOKER

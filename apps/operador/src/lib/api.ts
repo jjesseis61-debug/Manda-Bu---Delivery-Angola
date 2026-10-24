@@ -1064,3 +1064,15 @@ export async function publicarReceita(id: string, publicar: boolean): Promise<vo
 export async function arquivarReceita(id: string): Promise<void> {
   verificar(await supabase.from('receitas').update({ estado: 'arquivada', atualizado_em: new Date().toISOString() }).eq('id', id));
 }
+
+// Receitas R2/R3: gerar rascunho com Claude e avisar os clientes de uma receita publicada
+export async function gerarRascunhoReceita(tema: string): Promise<string> {
+  const { data, error } = await supabase.functions.invoke('receita-rascunho', { body: { tema } });
+  if (error) throw new Error('nao_gerou');
+  const d = data as { id?: string };
+  if (!d?.id) throw new Error('nao_gerou');
+  return d.id;
+}
+export async function avisarNovaReceita(id: string): Promise<number> {
+  return verificar(await supabase.rpc('avisar_nova_receita', { p_id: id })) as number;
+}

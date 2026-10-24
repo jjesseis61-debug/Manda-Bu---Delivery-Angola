@@ -7,7 +7,9 @@ import { Guarda } from '@/components/Guarda';
 import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Escolha, Paragrafo, Subtitulo } from '@/components/ui';
 import {
   arquivarReceita,
+  avisarNovaReceita,
   definirFotoReceita,
+  gerarRascunhoReceita,
   guardarReceita,
   lerCozinhas,
   lerReceitasGerir,
@@ -32,6 +34,9 @@ export default function Receitas() {
   const [edicao, setEdicao] = useState<Edicao | null>(null);
   const [ocupado, setOcupado] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [tema, setTema] = useState('');
+  const [aGerar, setAGerar] = useState(false);
+  const [aviso, setAviso] = useState<string | null>(null);
 
   const carregar = useCallback(() => {
     Promise.all([lerReceitasGerir(), lerCozinhas()])
@@ -67,6 +72,27 @@ export default function Receitas() {
       setErro(mensagemErro(e));
     } finally {
       setOcupado(false);
+    }
+  }
+
+  async function gerarComIA() {
+    if (!tema.trim()) {
+      setErro('Escreve um tema (ex.: Calulu de peixe).');
+      return;
+    }
+    setErro(null);
+    setAGerar(true);
+    try {
+      const id = await gerarRascunhoReceita(tema.trim());
+      const rs = await lerReceitasGerir();
+      setLista(rs);
+      setTema('');
+      const r = rs.find((x) => x.id === id);
+      if (r) setEdicao({ id: r.id, titulo: r.titulo, resumo: r.resumo ?? '', corpo: r.corpo, cozinha_id: r.cozinha_id ?? '', foto_url: r.foto_url });
+    } catch (e) {
+      setErro(mensagemErro(e));
+    } finally {
+      setAGerar(false);
     }
   }
 
@@ -132,7 +158,13 @@ export default function Receitas() {
     <Guarda permissoes={['receitas.gerir']}>
       <Ecra>
         {erro && <Aviso tipo="erro">{erro}</Aviso>}
+        {aviso && <Aviso>{aviso}</Aviso>}
         <Botao titulo="Nova receita" aoCarregar={() => setEdicao(VAZIA)} />
+        <Cartao>
+          <Campo rotulo="Gerar rascunho com IA" value={tema} onChangeText={setTema} placeholder="Tema ou prato (ex.: Calulu de peixe)" />
+          <Botao titulo="Gerar rascunho com IA" variante="secundario" aCarregar={aGerar} aoCarregar={gerarComIA} />
+          <Paragrafo suave>O Claude escreve um rascunho; tu revês e publicas.</Paragrafo>
+        </Cartao>
         {lista.length === 0 && <Paragrafo suave>Ainda não há receitas. Cria a primeira — aparece aos clientes quando a publicares (e com o interruptor «receitas» ligado).</Paragrafo>}
         {lista.map((r) => (
           <Cartao key={r.id}>
@@ -159,6 +191,19 @@ export default function Receitas() {
                 />
               </View>
             </View>
+            {r.estado === 'publicada' && (
+              <Botao
+                titulo="Avisar clientes"
+                variante="texto"
+                desactivado={ocupado}
+                aoCarregar={() =>
+                  accao(async () => {
+                    const n = await avisarNovaReceita(r.id);
+                    setAviso(`Aviso enviado a ${n} ${n === 1 ? 'cliente' : 'clientes'}.`);
+                  })
+                }
+              />
+            )}
             {r.estado !== 'arquivada' && (
               <Botao titulo="Arquivar" variante="texto" desactivado={ocupado} aoCarregar={() => accao(() => arquivarReceita(r.id))} />
             )}

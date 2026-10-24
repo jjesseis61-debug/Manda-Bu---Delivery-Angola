@@ -669,3 +669,11 @@ export async function lerReceita(id: string): Promise<Receita | null> {
 export async function meusSelos(): Promise<MeusSelos | null> {
   return (verificar(await supabase.rpc('meus_selos')) as MeusSelos | null) ?? null;
 }
+
+// Métricas das receitas (abrir -> pedir): fire-and-forget, nunca atrapalham o cliente
+export async function receitaAbriu(id: string): Promise<void> {
+  await supabase.rpc('receita_abriu', { p_id: id }).then(() => undefined, () => undefined);
+}
+export async function receitaTocouPedir(id: string): Promise<void> {
+  await supabase.rpc('receita_tocou_pedir', { p_id: id }).then(() => undefined, () => undefined);
+}

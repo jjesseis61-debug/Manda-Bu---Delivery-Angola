@@ -113,6 +113,7 @@ Deno.serve(async (req) => {
         // Só o que a app precisa para abrir o ecrã certo
         ...('pedido_id' in n.dados ? { pedido_id: n.dados.pedido_id } : {}),
         ...('codigo_grupo' in n.dados ? { codigo_grupo: n.dados.codigo_grupo } : {}),
+        ...('link' in n.dados ? { link: n.dados.link } : {}),
       },
     }));
 
