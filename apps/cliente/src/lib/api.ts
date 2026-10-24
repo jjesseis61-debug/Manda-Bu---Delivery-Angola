@@ -59,9 +59,20 @@ export async function lerConfiguracao(): Promise<{ parametros: Parametros; funci
 }
 
 // ---------------------------------------------------------------- conta
-/** Apaga a conta do cliente da sessão (dados pessoais e utilizador da Auth); pedidos e vendas ficam anónimos */
+/** Apaga a conta (soft-delete recuperável 60 dias); revoga as sessões em todos os dispositivos */
 export async function apagarConta(): Promise<void> {
   verificar(await supabase.rpc('apagar_conta'));
+}
+
+/** Recupera a conta dentro dos 60 dias */
+export async function recuperarConta(): Promise<void> {
+  verificar(await supabase.rpc('recuperar_conta'));
+}
+
+/** Segurança: termina a sessão em TODOS os dispositivos, incluindo este */
+export async function sairDeTodosOsDispositivos(): Promise<void> {
+  const { error } = await supabase.auth.signOut({ scope: 'global' });
+  if (error) throw error;
 }
 
 export async function meuPerfil(): Promise<Perfil | null> {

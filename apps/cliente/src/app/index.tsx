@@ -9,5 +9,6 @@ export default function Entrada() {
   if (!carregado) return <ACarregar />;
   if (!sessao) return <Redirect href="/entrar" />;
   if (!perfil) return <Redirect href="/registo" />;
+  if (perfil.suspensa) return <Redirect href="/recuperar-conta" />;
   return <Redirect href="/inicio" />;
 }

@@ -8,6 +8,8 @@ export type Perfil = {
   pseudonimo: string | null;
   tem_ligacao: boolean;
   cliente_novo: boolean;
+  suspensa: boolean;
+  recuperar_ate: string | null;
 };
 
 export type Parametros = {

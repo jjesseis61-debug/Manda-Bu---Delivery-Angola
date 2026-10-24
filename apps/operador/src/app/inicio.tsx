@@ -2,8 +2,9 @@ import { Redirect, useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
-import { ACarregar, Botao, Campo, Cartao, Ecra, Paragrafo } from '@/components/ui';
-import { contarNotificacoesNovas } from '@/lib/api';
+import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Paragrafo } from '@/components/ui';
+import { contarNotificacoesNovas, sairDeTodosOsDispositivos } from '@/lib/api';
+import { mensagemErro } from '@/lib/formatar';
 import { useSessao } from '@/lib/sessao';
 import { cores, espaco } from '@/lib/tema';
 import type { Funcionario, Permissao } from '@/lib/tipos';
@@ -69,6 +70,9 @@ export default function Inicio() {
   const { carregado, sessao, funcionario, pode, sair } = useSessao();
   const [procura, setProcura] = useState('');
   const [novas, setNovas] = useState(0);
+  const [protegerConfirmar, setProtegerConfirmar] = useState(false);
+  const [ocupado, setOcupado] = useState(false);
+  const [erroSeguranca, setErroSeguranca] = useState<string | null>(null);
   // Enquanto o ecrã está aberto, reconta as notificações a cada 15 s (quase instantâneo,
   // sem gastar bateria a mais) — senão o badge só mudava ao sair e voltar.
   useFocusEffect(
@@ -157,6 +161,34 @@ export default function Inicio() {
           </Cartao>
         </Pressable>
       ))}
+      {erroSeguranca && <Aviso tipo="erro">{erroSeguranca}</Aviso>}
+      {protegerConfirmar ? (
+        <>
+          <Aviso>Sais em todos os dispositivos, incluindo este. Para voltar a entrar precisas do código SMS do teu número.</Aviso>
+          <Botao
+            titulo="Sim, sair em todos os dispositivos"
+            aCarregar={ocupado}
+            aoCarregar={async () => {
+              setErroSeguranca(null);
+              setOcupado(true);
+              try {
+                await sairDeTodosOsDispositivos();
+                router.replace('/entrar');
+              } catch (e) {
+                setErroSeguranca(mensagemErro(e));
+                setOcupado(false);
+              }
+            }}
+          />
+          <Botao titulo="Cancelar" variante="texto" desactivado={ocupado} aoCarregar={() => setProtegerConfirmar(false)} />
+        </>
+      ) : (
+        <Botao
+          titulo="Proteger a conta — sair em todos os dispositivos"
+          variante="secundario"
+          aoCarregar={() => setProtegerConfirmar(true)}
+        />
+      )}
       <Botao
         titulo="Sair"
         variante="texto"

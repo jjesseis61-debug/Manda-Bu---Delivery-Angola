@@ -973,6 +973,12 @@ export async function otpLimpar() {
   verificar(await supabase.rpc('otp_limpar'));
 }
 
+/** Segurança: termina a sessão em TODOS os dispositivos, incluindo este */
+export async function sairDeTodosOsDispositivos() {
+  const { error } = await supabase.auth.signOut({ scope: 'global' });
+  if (error) throw error;
+}
+
 // ---------------------------------------------------------------- Reconquista de clientes inativos
 export async function clientesInativosResumo(): Promise<ResumoInativos> {
   return verificar(await supabase.rpc('clientes_inativos_resumo')) as ResumoInativos;
