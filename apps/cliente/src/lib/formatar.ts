@@ -67,10 +67,12 @@ export function textoAmigo(nome: string, estado: string, diasRestantes: number |
 }
 
 /** N1: mensagem de partilha enviada pelo próprio cliente */
-export function mensagemConvite(codigo: string, descontoIndicado: number, link: string): string {
+export function mensagemConvite(codigo: string, descontoIndicado: number, link: string, minimo = 0): string {
+  const condicao = minimo > 0 ? ` (em pedidos acima de ${formatarKz(minimo)})` : '';
   return (
-    `Estou a pedir no Manda Bué — Delivery Angola e está bom! ` +
-    `Usa o meu código ${codigo} e ganhas ${formatarKz(descontoIndicado)} de desconto no primeiro pedido. ${link}`
+    `🍲 Peço no Manda Bué — Delivery Angola e recomendo! ` +
+    `Usa o meu código ${codigo} e ganhas ${formatarKz(descontoIndicado)} de desconto no teu 1.º pedido${condicao}. ` +
+    `👉 ${link}`
   );
 }
 

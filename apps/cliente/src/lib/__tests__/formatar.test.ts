@@ -57,11 +57,17 @@ describe('textoAmigo (C1)', () => {
 describe('mensagemConvite (N1)', () => {
   it('leva a marca, o código, o desconto em vigor e o link', () => {
     expect(mensagemConvite('MB-4821', 500, 'mandabue://convite/MB-4821')).toBe(
-      'Estou a pedir no Manda Bué — Delivery Angola e está bom! Usa o meu código MB-4821 e ganhas 500 Kz de desconto no primeiro pedido. mandabue://convite/MB-4821',
+      '🍲 Peço no Manda Bué — Delivery Angola e recomendo! Usa o meu código MB-4821 e ganhas 500 Kz de desconto no teu 1.º pedido. 👉 mandabue://convite/MB-4821',
     );
   });
   it('usa o valor dos parâmetros, não um valor fixo', () => {
     expect(mensagemConvite('MB-4821', 800, 'x')).toContain('ganhas 800 Kz de desconto');
+  });
+  it('inclui o pedido mínimo quando há um', () => {
+    expect(mensagemConvite('MB-4821', 1000, 'x', 5000)).toContain('em pedidos acima de 5.000 Kz');
+  });
+  it('omite o mínimo quando é 0', () => {
+    expect(mensagemConvite('MB-4821', 1000, 'x', 0)).not.toContain('em pedidos acima de');
   });
 });
 

@@ -17,7 +17,12 @@ export function PartilharCodigo({ mostrarCodigo = true }: { mostrarCodigo?: bool
 
   if (!ligada('indicacao') || !perfil?.codigo || !parametros) return null;
   const codigo = perfil.codigo;
-  const mensagem = mensagemConvite(codigo, parametros.desconto_indicado, linkConvite(codigo));
+  const mensagem = mensagemConvite(
+    codigo,
+    parametros.desconto_indicado,
+    linkConvite(codigo),
+    parametros.desconto_subtotal_minimo ?? 0,
+  );
 
   async function partilhar() {
     void registarPartilha().catch(() => undefined);
