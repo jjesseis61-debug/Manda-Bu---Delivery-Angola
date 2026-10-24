@@ -2,11 +2,14 @@
   <defs><clipPath id="c"><rect x="40" y="40" width="400" height="400" rx="88"/></clipPath></defs>
   <g clip-path="url(#c)"><g transform="translate(40 40) scale(0.390625)"><rect width="1024" height="1024" fill="#B5121B"/><g transform="translate(71.68 71.68) scale(0.86)">
   <g fill="none" stroke-linecap="round" stroke-linejoin="round">
-    <circle cx="540" cy="512" r="292" stroke="#FFFFFF" stroke-width="40"/>
-    <path d="M359 636 V392 L433 512 L507 392 V636" stroke="#FFFFFF" stroke-width="58"/>
-    <path d="M595 392 V636 M595 392 H647 a58 58 0 0 1 0 116 H595 M595 508 H659 a64 64 0 0 1 0 128 H595" stroke="#FFFFFF" stroke-width="58"/>
-    <path d="M108 432 H200 M72 512 H200 M108 592 H200" stroke="#F4B400" stroke-width="34"/>
+    <circle cx="512" cy="512" r="300" stroke="#FFFFFF" stroke-width="42"/>
+    <path d="M430 654 L512 360 L594 654" stroke="#FFFFFF" stroke-width="62"/>
+    <path d="M455 560 H569" stroke="#FFFFFF" stroke-width="62"/>
+    <path d="M458 196 C434 174 482 158 458 136 C434 114 482 96 458 76" stroke="#F4B400" stroke-width="24"/>
+    <path d="M512 206 C486 182 538 164 512 140 C486 116 538 96 512 70" stroke="#F4B400" stroke-width="24"/>
+    <path d="M566 196 C542 174 590 158 566 136 C542 114 590 96 566 76" stroke="#F4B400" stroke-width="24"/>
   </g></g></g></g>
-  <text x="500" y="262" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-weight="700" font-size="150" fill="#1F1A17" letter-spacing="-3">Manda <tspan fill="#B5121B">Bué</tspan></text>
-  <text x="506" y="352" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="58" fill="#5F6368" letter-spacing="10">DELIVERY ANGOLA</text>
+  <text x="500" y="214" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-weight="600" font-size="84" fill="#1F1A17" letter-spacing="-1">Cozinha da</text>
+  <text x="500" y="348" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-weight="800" font-size="150" fill="#B5121B" letter-spacing="-3">Alexandra</text>
+  <text x="506" y="408" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="40" fill="#5F6368" letter-spacing="6">ENTREGUE POR MANDA BUÉ</text>
 </svg>
