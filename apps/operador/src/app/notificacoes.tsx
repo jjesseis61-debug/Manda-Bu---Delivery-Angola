@@ -7,6 +7,7 @@ import { Guarda } from '@/components/Guarda';
 import { ACarregar, Ecra, Paragrafo } from '@/components/ui';
 import { marcarNotificacoesVistas, minhasNotificacoes } from '@/lib/api';
 import { mensagemErro } from '@/lib/formatar';
+import { rotaDaNotificacaoNoApp } from '@/lib/push';
 import { useSessao } from '@/lib/sessao';
 import { cores, espaco, raio } from '@/lib/tema';
 import type { Notificacao } from '@/lib/tipos';
@@ -40,13 +41,13 @@ export default function Notificacoes() {
     }, []),
   );
 
+  // O gerente vê o histórico do pedido; o estafeta vai às suas entregas, onde aceita o pedido
+  // reservado. As notificações sem pedido (login, reclamação, conferência…) abrem o seu ecrã.
+  const destinoDe = (n: Notificacao) => rotaDaNotificacaoNoApp(n.dados, { podeGerir: gerir });
+
   const abrir = (n: Notificacao) => {
-    const pedidoId = typeof n.dados?.pedido_id === 'string' ? n.dados.pedido_id : null;
-    if (!pedidoId) return;
-    // O gerente vê o histórico; o estafeta vai às suas entregas, onde aceita o pedido reservado
-    // (o histórico exige pedidos.gerir e, para o estafeta, só abre depois de ele ser o entregador).
-    if (gerir) router.push(`/pedido/${pedidoId}`);
-    else router.push('/entregas?meu=1');
+    const destino = destinoDe(n);
+    if (destino) router.push(destino);
   };
 
   return (
@@ -58,11 +59,12 @@ export default function Notificacoes() {
         {lista?.map((n) => {
           const nova = !n.vista_em;
           const temPedido = typeof n.dados?.pedido_id === 'string';
+          const destino = destinoDe(n);
           return (
             <Pressable
               key={n.id}
               onPress={() => abrir(n)}
-              disabled={!temPedido}
+              disabled={!destino}
               style={{
                 backgroundColor: nova ? cores.marcaClara : cores.fundoSuave,
                 borderRadius: raio,
@@ -77,7 +79,7 @@ export default function Notificacoes() {
                 {n.corpo ? <Text style={{ color: cores.texto }}>{n.corpo}</Text> : null}
                 <Text style={{ color: cores.textoSuave, fontSize: 12, marginTop: 2 }}>
                   {haQuantoTempo(n.criado_em)}
-                  {temPedido ? (gerir ? ' · toca para ver o pedido' : ' · toca para aceitar') : ''}
+                  {destino ? (temPedido ? (gerir ? ' · toca para ver o pedido' : ' · toca para aceitar') : ' · toca para abrir') : ''}
                 </Text>
               </View>
             </Pressable>

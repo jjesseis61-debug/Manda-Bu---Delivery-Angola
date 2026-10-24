@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
+import type { Href } from 'expo-router';
 import { Platform } from 'react-native';
 
 import { registarTokenPush, removerTokenPush } from './api';
@@ -67,4 +68,16 @@ export function rotaDaNotificacao(dados: unknown): '/equipa' | '/pacotes' | '/en
   if (codigo === 'N29') return '/atendimento';
   if (codigo === 'N40') return '/otp-codigos';
   return null;
+}
+
+/**
+ * Ecrã a abrir ao tocar numa notificação DENTRO da app (sino). Reaproveita o mesmo mapa do push
+ * (rotaDaNotificacao), mas com o contexto que só o sino tem: quando há um pedido, o gerente vai ao
+ * histórico desse pedido e o estafeta às suas entregas (onde aceita o pedido reservado). Os ecrãs
+ * de destino protegem-se por permissão (Guarda), por isso não é preciso repetir essa verificação aqui.
+ */
+export function rotaDaNotificacaoNoApp(dados: unknown, opcoes: { podeGerir: boolean }): Href | null {
+  const pedidoId = (dados as { pedido_id?: unknown } | null | undefined)?.pedido_id;
+  if (typeof pedidoId === 'string') return opcoes.podeGerir ? `/pedido/${pedidoId}` : '/entregas?meu=1';
+  return rotaDaNotificacao(dados);
 }

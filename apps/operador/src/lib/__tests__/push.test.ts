@@ -4,7 +4,7 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 );
 jest.mock('../api', () => ({ registarTokenPush: jest.fn(), removerTokenPush: jest.fn() }));
 
-import { rotaDaNotificacao } from '../push';
+import { rotaDaNotificacao, rotaDaNotificacaoNoApp } from '../push';
 
 test('abre o ecrã de cada notificação da equipa', () => {
   expect(rotaDaNotificacao({ codigo: 'N12' })).toBe('/equipa');
@@ -23,4 +23,16 @@ test('abre o ecrã de cada notificação da equipa', () => {
   expect(rotaDaNotificacao({ codigo: 'N40' })).toBe('/otp-codigos');
   expect(rotaDaNotificacao({ codigo: 'N3' })).toBeNull();
   expect(rotaDaNotificacao(undefined)).toBeNull();
+});
+
+test('no sino: pedido abre segundo o papel; o resto abre o seu ecrã', () => {
+  // Com pedido: o gerente vai ao histórico do pedido; o estafeta às suas entregas
+  expect(rotaDaNotificacaoNoApp({ codigo: 'N17', pedido_id: 'abc' }, { podeGerir: true })).toBe('/pedido/abc');
+  expect(rotaDaNotificacaoNoApp({ codigo: 'N18', pedido_id: 'abc' }, { podeGerir: false })).toBe('/entregas?meu=1');
+  // Sem pedido: encaminha pelo mesmo mapa do push (login, reclamação…)
+  expect(rotaDaNotificacaoNoApp({ codigo: 'N40' }, { podeGerir: true })).toBe('/otp-codigos');
+  expect(rotaDaNotificacaoNoApp({ codigo: 'N21' }, { podeGerir: true })).toBe('/reclamacoes');
+  // Sem destino conhecido: não clica
+  expect(rotaDaNotificacaoNoApp({ codigo: 'N23' }, { podeGerir: true })).toBeNull();
+  expect(rotaDaNotificacaoNoApp(undefined, { podeGerir: true })).toBeNull();
 });
