@@ -260,6 +260,11 @@ export default function Inicio() {
             <Botao titulo="Pedir de novo" aCarregar={aRepetir} aoCarregar={() => pedirDeNovo(ultimoTerminado)} />
           </Cartao>
         )}
+        {/* Receitas da terra: conteúdo de marca, em destaque dourado — colocado no topo, longe do
+            "Prato do dia" (também dourado) para os dois destaques não competirem. */}
+        {ligada('receitas') && !carrinho.grupo && (
+          <Botao titulo="🍲 Receitas da terra" variante="destaque" aoCarregar={() => router.push('/receitas')} />
+        )}
         {/* Convida e Ganha: desconto do 1.º pedido / ganhos / convite (adapta-se ao estado) */}
         <CartaoConvida />
         {/* I8: selector de cozinha por zona (só com multi_cozinha e mais de uma cozinha a aceitar pedidos).
@@ -317,9 +322,6 @@ export default function Inicio() {
         )}
         {ligada('pedidos_grupo') && !carrinho.grupo && (
           <Botao titulo="Pedido de grupo com os colegas" variante="secundario" aoCarregar={() => router.push('/grupos')} />
-        )}
-        {ligada('receitas') && !carrinho.grupo && (
-          <Botao titulo="🍲 Receitas da terra" variante="destaque" aoCarregar={() => router.push('/receitas')} />
         )}
         {erro && <Aviso tipo="erro">{erro}</Aviso>}
         {cardapio !== null && cardapio.length === 0 && <Paragrafo suave>O cardápio de hoje ainda não está disponível.</Paragrafo>}
