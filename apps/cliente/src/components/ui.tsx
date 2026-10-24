@@ -71,7 +71,7 @@ export function Linha({ esquerda, direita, forte = false }: { esquerda: ReactNod
 type BotaoProps = {
   titulo: string;
   aoCarregar: () => void;
-  variante?: 'principal' | 'secundario' | 'leve' | 'whatsapp' | 'texto';
+  variante?: 'principal' | 'secundario' | 'leve' | 'whatsapp' | 'destaque' | 'texto';
   desactivado?: boolean;
   aCarregar?: boolean;
 };
@@ -82,12 +82,16 @@ export function Botao({ titulo, aoCarregar, variante = 'principal', desactivado,
       ? cores.marca
       : variante === 'whatsapp'
         ? cores.whatsapp
-        : variante === 'secundario'
-          ? cores.fundoSuave
-          : variante === 'leve'
-            ? cores.marcaClara
-            : 'transparent';
-  const corTexto = variante === 'principal' || variante === 'whatsapp' ? '#fff' : cores.marca;
+        : variante === 'destaque'
+          ? cores.destaqueFundo
+          : variante === 'secundario'
+            ? cores.fundoSuave
+            : variante === 'leve'
+              ? cores.marcaClara
+              : 'transparent';
+  // Dourado de destaque leva texto escuro (9,4:1); principal/whatsapp branco; o resto na cor da marca.
+  const corTexto =
+    variante === 'principal' || variante === 'whatsapp' ? '#fff' : variante === 'destaque' ? cores.texto : cores.marca;
   return (
     <Pressable
       accessibilityRole="button"
