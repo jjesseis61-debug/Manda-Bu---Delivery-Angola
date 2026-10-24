@@ -126,6 +126,8 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 'otp_pendentes_lista', 'otp_marcar_entregue', 'otp_limpar',
                 -- receitas (Cozinha de casa): leitura pública pelo cliente
                 'receitas_publicas', 'receita_publica',
+                -- cartão de selos: progresso do cliente
+                'meus_selos',
                 -- auxiliares usadas em políticas RLS, valores por defeito ou triggers SECURITY INVOKER
                 'cliente_actual', 'cozinha_padrao', 'e_funcionario', 'funcionalidade_activa',
                 'funcionario_actual', 'membro_da_cozinha', 'tem_permissao', 'e_administrador', 'pode_na_cozinha')),

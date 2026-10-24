@@ -33,6 +33,7 @@ import type {
   Perfil,
   PerfilDestaques,
   PreferenciasNotificacao,
+  MeusSelos,
   PessoaComoTu,
   PosicaoEntrega,
   Receita,
@@ -662,4 +663,9 @@ export async function lerReceitas(): Promise<ReceitaResumo[]> {
 export async function lerReceita(id: string): Promise<Receita | null> {
   const r = verificar(await supabase.rpc('receita_publica', { p_id: id })) as Receita[];
   return r[0] ?? null;
+}
+
+// Cartão de selos: progresso do cliente; devolve null com o interruptor 'selos' desligado
+export async function meusSelos(): Promise<MeusSelos | null> {
+  return (verificar(await supabase.rpc('meus_selos')) as MeusSelos | null) ?? null;
 }

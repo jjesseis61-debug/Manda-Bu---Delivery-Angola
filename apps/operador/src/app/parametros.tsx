@@ -51,6 +51,10 @@ const CAMPOS: { grupo: string; chaves: [string, string][] }[] = [
       ['tolerancia_entrega_min', 'Tolerância de entrega (min)'],
     ],
   },
+  {
+    grupo: 'Cartão de selos',
+    chaves: [['selos_necessarios', 'Pedidos para ganhar frete grátis (liga o interruptor «selos»)']],
+  },
 ];
 
 /** Contactos gerais mostrados aos clientes (Contactos e Política de privacidade); texto, em branco = não mostrar */

@@ -45,7 +45,15 @@ export type ChaveFuncionalidade =
   | 'agente_atendimento'
   | 'mapa_google'
   | 'rota_google'
-  | 'receitas';
+  | 'receitas'
+  | 'selos';
+
+export type MeusSelos = {
+  necessarios: number;
+  progresso: number;
+  tem_premio: boolean;
+  faltam: number;
+};
 
 export type ReceitaResumo = {
   id: string;

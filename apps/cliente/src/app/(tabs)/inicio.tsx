@@ -19,6 +19,7 @@ import {
   lerOpcoes,
   lerPedidos,
   mediasAvaliacoes,
+  meusSelos,
   posicaoEntrega,
   type Cozinha,
 } from '@/lib/api';
@@ -28,7 +29,7 @@ import { gruposEsgotados, precoMinimo } from '@/lib/opcoes';
 import { montarRepeticao } from '@/lib/repetir';
 import { useSessao } from '@/lib/sessao';
 import { cores, espaco, raio } from '@/lib/tema';
-import type { CozinhaParaPedir, Endereco, ItemCardapio, MediasAvaliacoes, Pedido } from '@/lib/tipos';
+import type { CozinhaParaPedir, Endereco, ItemCardapio, MediasAvaliacoes, MeusSelos, Pedido } from '@/lib/tipos';
 
 const EM_ANDAMENTO = ['pendente', 'confirmado', 'em_preparacao', 'em_entrega'];
 
@@ -49,6 +50,8 @@ export default function Inicio() {
   // "O teu habitual": o último pedido entregue, para repetir num toque (só quando não há pedido em curso)
   const [ultimoTerminado, setUltimoTerminado] = useState<Pedido | null>(null);
   const [aRepetir, setARepetir] = useState(false);
+  // Cartão de selos (só com o interruptor 'selos' ligado)
+  const [selos, setSelos] = useState<MeusSelos | null>(null);
   // Tempo do estafeta vindo do mapa (posição real), quando está a partilhar GPS; senão calcula-se da hora prometida
   const [minutosEstafeta, setMinutosEstafeta] = useState<number | null>(null);
   // I9: pratos com opções (abrem o ecrã de montar em vez de irem direito ao carrinho)
@@ -119,6 +122,8 @@ export default function Inicio() {
       setPedidoActivo(activo);
       // Enquanto não há pedido em curso, propõe repetir o último entregue ("o teu habitual")
       setUltimoTerminado(activo ? null : pedidos.find((p) => p.estado === 'entregue_pago') ?? null);
+      // Cartão de selos (null se o interruptor estiver desligado)
+      setSelos(ligada('selos') ? await meusSelos().catch(() => null) : null);
       // Tempo real do estafeta (posição no mapa) enquanto está a caminho; cai para null se não houver GPS
       const posicao =
         activo?.estado === 'em_entrega' && ligada('acompanhamento_entrega')
@@ -229,6 +234,21 @@ export default function Inicio() {
               <Text style={{ color: cores.textoSuave }}>Toca para acompanhar o teu pedido.</Text>
             </View>
           </Pressable>
+        )}
+        {/* Cartão de selos: frete grátis a cada N pedidos (só com o interruptor 'selos' ligado) */}
+        {selos && (
+          <Cartao>
+            {selos.tem_premio ? (
+              <Text style={{ fontWeight: '700', color: cores.marca }}>🎟️ Tens frete grátis! Aplica-se no teu próximo pedido.</Text>
+            ) : (
+              <>
+                <Text style={{ fontWeight: '700', color: cores.texto }}>🎟️ Cartão de selos: {selos.progresso}/{selos.necessarios}</Text>
+                <Text style={{ color: cores.textoSuave }}>
+                  {selos.faltam === 1 ? 'Falta 1 pedido' : `Faltam ${selos.faltam} pedidos`} para o próximo frete grátis.
+                </Text>
+              </>
+            )}
+          </Cartao>
         )}
         {/* "O teu habitual": repetir o último pedido entregue num toque (só sem pedido em curso e com o carrinho vazio) */}
         {ultimoTerminado && carrinho.quantidade === 0 && !carrinho.grupo && (

@@ -5,7 +5,7 @@ begin;
 select plan(19);
 
 -- Interruptores: existem os 23 (10 do plano; pratos_montaveis, como_chegar, acompanhamento_entrega e pacotes das fases I9–I12; agente_investigador, agente_analista, agente_vigilante, agente_turno, agente_compras e agente_atendimento; mapa_google e rota_google; otp_manual) e estão todos desligados
-select is((select count(*)::int from funcionalidades), 24, 'existem 24 interruptores');
+select is((select count(*)::int from funcionalidades), 25, 'existem 25 interruptores');
 select is((select count(*)::int from funcionalidades where activa), 0, 'todos os interruptores desligados');
 
 -- Parâmetros iniciais
