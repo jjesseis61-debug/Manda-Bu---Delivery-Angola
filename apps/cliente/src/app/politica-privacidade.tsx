@@ -45,7 +45,7 @@ export default function PoliticaPrivacidade() {
 
       <Subtitulo>Quem vê</Subtitulo>
       <Paragrafo>
-        A equipa do Manda Bué que trata do teu pedido (cozinha, entrega, apoio), cada pessoa só no que precisa
+        A equipa da Cozinha da Alexandra que trata do teu pedido (cozinha, entrega, apoio), cada pessoa só no que precisa
         para o seu trabalho. Nas listas públicas (destaques e avaliações) aparece só o teu pseudónimo ou o primeiro
         nome, se o escolheres. Os dados ficam guardados no Supabase; as notificações passam pela Expo e o SMS pelo
         fornecedor de SMS.

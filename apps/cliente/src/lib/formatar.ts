@@ -45,7 +45,7 @@ export function tempoEmFalta(iso: string, agora: Date = new Date()): string | nu
 
 /** Mensagem de partilha do grupo (C12) */
 export function mensagemGrupo(hora: string, local: string | null, link: string): string {
-  return `Vamos pedir juntos o almoço no Manda Bué — Delivery Angola! Entrega às ${hora}${local ? ` em ${local}` : ''}. Junta o teu pedido: ${link}`;
+  return `Vamos pedir juntos o almoço na Cozinha da Alexandra! Entrega às ${hora}${local ? ` em ${local}` : ''}. Junta o teu pedido: ${link}`;
 }
 
 /** "★ 4,5 · 12 avaliações" */
@@ -76,7 +76,7 @@ export function textoAmigo(nome: string, estado: string, diasRestantes: number |
 export function mensagemConvite(codigo: string, descontoIndicado: number, link: string, minimo = 0): string {
   const condicao = minimo > 0 ? ` (em pedidos acima de ${formatarKz(minimo)})` : '';
   return (
-    `🍲 Peço no Manda Bué — Delivery Angola e recomendo! ` +
+    `🍲 Peço na Cozinha da Alexandra e recomendo! ` +
     `Usa o meu código ${codigo} e ganhas ${formatarKz(descontoIndicado)} de desconto no teu 1.º pedido${condicao}. ` +
     `👉 ${link}`
   );

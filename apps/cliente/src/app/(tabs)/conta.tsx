@@ -44,7 +44,7 @@ export default function Conta() {
       )}
       {ligada('indicacao') && <Botao titulo="Como funciona o Convida e Ganha" variante="texto" aoCarregar={() => router.push('/como-funciona')} />}
       <Botao titulo="Política de privacidade" variante="texto" aoCarregar={() => router.push('/politica-privacidade')} />
-      <Paragrafo suave>Manda Bué — Delivery Angola</Paragrafo>
+      <Paragrafo suave>Cozinha da Alexandra · entregue por Manda Bué</Paragrafo>
       {erro && <Aviso tipo="erro">{erro}</Aviso>}
       {protegerConfirmar ? (
         <>

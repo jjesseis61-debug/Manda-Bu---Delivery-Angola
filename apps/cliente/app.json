@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Manda Bué",
+    "name": "Cozinha da Alexandra",
     "slug": "manda-bue-delivery-angola",
     "owner": "domundo",
     "version": "1.0.0",
@@ -39,14 +39,14 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "A Manda Bué usa a tua localização para marcar o ponto de entrega no mapa."
+          "locationWhenInUsePermission": "A Cozinha da Alexandra usa a tua localização para marcar o ponto de entrega no mapa."
         }
       ],
       "expo-notifications",
       [
         "expo-image-picker",
         {
-          "photosPermission": "A Manda Bué usa as tuas fotos só para as juntares às avaliações que escreves.",
+          "photosPermission": "A Cozinha da Alexandra usa as tuas fotos só para as juntares às avaliações que escreves.",
           "cameraPermission": false
         }
       ],

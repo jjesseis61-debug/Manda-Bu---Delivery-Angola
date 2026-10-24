@@ -69,7 +69,7 @@ describe('minutosSegundos (contagem do OTP)', () => {
 describe('mensagemConvite (N1)', () => {
   it('leva a marca, o código, o desconto em vigor e o link', () => {
     expect(mensagemConvite('MB-4821', 500, 'mandabue://convite/MB-4821')).toBe(
-      '🍲 Peço no Manda Bué — Delivery Angola e recomendo! Usa o meu código MB-4821 e ganhas 500 Kz de desconto no teu 1.º pedido. 👉 mandabue://convite/MB-4821',
+      '🍲 Peço na Cozinha da Alexandra e recomendo! Usa o meu código MB-4821 e ganhas 500 Kz de desconto no teu 1.º pedido. 👉 mandabue://convite/MB-4821',
     );
   });
   it('usa o valor dos parâmetros, não um valor fixo', () => {
@@ -172,7 +172,7 @@ describe('pedidos de grupo (C12, C13)', () => {
 
   it('mensagem de partilha do grupo', () => {
     expect(mensagemGrupo('12h30', 'Edifício Kilamba', 'mandabue://grupo/G-ABC123')).toBe(
-      'Vamos pedir juntos o almoço no Manda Bué — Delivery Angola! Entrega às 12h30 em Edifício Kilamba. Junta o teu pedido: mandabue://grupo/G-ABC123',
+      'Vamos pedir juntos o almoço na Cozinha da Alexandra! Entrega às 12h30 em Edifício Kilamba. Junta o teu pedido: mandabue://grupo/G-ABC123',
     );
   });
 });

@@ -31,7 +31,7 @@ export async function activarPush(): Promise<void> {
 
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', {
-      name: 'Manda Bué',
+      name: 'Cozinha da Alexandra',
       importance: Notifications.AndroidImportance.DEFAULT,
     });
   }

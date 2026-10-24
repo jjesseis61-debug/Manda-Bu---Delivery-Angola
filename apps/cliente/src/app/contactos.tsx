@@ -24,7 +24,7 @@ export default function Contactos() {
 
   return (
     <Ecra>
-      <Subtitulo>Manda Bué</Subtitulo>
+      <Subtitulo>Cozinha da Alexandra</Subtitulo>
       {geral ? <BlocoContactos contacto={geral} /> : <Paragrafo suave>Os contactos gerais ainda não estão disponíveis.</Paragrafo>}
       {contactos.cozinhas.length > 0 && <Subtitulo>Cozinhas</Subtitulo>}
       {contactos.cozinhas.map((c) => (

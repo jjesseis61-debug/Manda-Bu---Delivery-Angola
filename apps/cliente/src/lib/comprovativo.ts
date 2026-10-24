@@ -44,15 +44,15 @@ function html(pedido: Pedido, cliente: { nome?: string; telefone?: string | null
   table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 14px; }
   .rodape { margin-top: 24px; color: #777; font-size: 12px; }
 </style></head><body>
-  <h1><span class="marca">Manda Bué</span> — Delivery Angola</h1>
-  <p class="meta">Comprovativo do pedido</p>
+  <h1><span class="marca">Cozinha da Alexandra</span></h1>
+  <p class="meta">Comprovativo do pedido · entregue por Manda Bué</p>
   <div class="aviso"><b>Documento informativo — não é fatura fiscal.</b> A fatura é emitida na cozinha, na entrega.</div>
   <p class="meta">Pedido n.º <b>${esc(numero)}</b></p>
   <p class="meta">Data: ${esc(quando)}</p>
   ${cliente.nome ? `<p class="meta">Cliente: ${esc(cliente.nome)}</p>` : ''}
   ${cliente.telefone ? `<p class="meta">Telefone: ${esc(cliente.telefone)}</p>` : ''}
   <table>${itens}${extras}</table>
-  <p class="rodape">Preços com IVA incluído, quando aplicável. Obrigado por pedires na Manda Bué.</p>
+  <p class="rodape">Preços com IVA incluído, quando aplicável. Obrigado por pedires na Cozinha da Alexandra.</p>
 </body></html>`;
 }
 

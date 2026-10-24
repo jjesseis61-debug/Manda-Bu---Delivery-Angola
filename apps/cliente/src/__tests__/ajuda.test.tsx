@@ -32,7 +32,7 @@ test('ajuda: mostra a conversa, envia uma mensagem e pede uma pessoa', async () 
   (minhaConversaAtendimento as jest.Mock).mockResolvedValue(conversa);
   const ecra = abrir();
   await waitFor(() => expect(ecra.getByText('Está a ser preparado; atrasou uns 15 minutos.')).toBeTruthy());
-  expect(ecra.getByText('Assistente Manda Bué')).toBeTruthy();
+  expect(ecra.getByText('Assistente Cozinha da Alexandra')).toBeTruthy();
   fireEvent.changeText(ecra.getByLabelText('A tua mensagem'), '  E a entrega é grátis?  ');
   await act(async () => {
     fireEvent.press(ecra.getByText('Enviar'));
@@ -51,7 +51,7 @@ test('ajuda: com uma pessoa, mostra quem respondeu e não oferece outra vez a pe
       { id: 'm3', autor: 'funcionario', texto: 'Olá Ana, já vi o teu pedido.', criado_em: '2026-10-04T11:05:00Z', quem: 'Rita' }],
   });
   const ecra = abrir();
-  await waitFor(() => expect(ecra.getByText('Rita · equipa Manda Bué')).toBeTruthy());
+  await waitFor(() => expect(ecra.getByText('Rita · equipa Cozinha da Alexandra')).toBeTruthy());
   expect(ecra.getByText('Um colega da equipa responde aqui assim que puder.')).toBeTruthy();
   expect(ecra.queryByText('Falar com uma pessoa')).toBeNull();
 });

@@ -89,7 +89,7 @@ export default function Ajuda() {
       >
         {!meu && (
           <Text style={{ color: cores.textoSuave, fontSize: 12 }}>
-            {m.autor === 'funcionario' ? `${m.quem ?? 'Equipa'} · equipa Manda Bué` : 'Assistente Manda Bué'}
+            {m.autor === 'funcionario' ? `${m.quem ?? 'Equipa'} · equipa Cozinha da Alexandra` : 'Assistente Cozinha da Alexandra'}
           </Text>
         )}
         <Text style={{ color: cores.texto }}>{m.texto}</Text>

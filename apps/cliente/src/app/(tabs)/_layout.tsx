@@ -30,7 +30,7 @@ export default function LayoutSeparadores() {
         tabBarInactiveTintColor: cores.textoSuave,
         headerTitleStyle: { color: cores.texto },
       }}>
-      <Tabs.Screen name="inicio" options={{ title: 'Início', headerTitle: 'Manda Bué', tabBarIcon: icone('restaurant-outline', 'restaurant') }} />
+      <Tabs.Screen name="inicio" options={{ title: 'Início', headerTitle: 'Cozinha da Alexandra', tabBarIcon: icone('restaurant-outline', 'restaurant') }} />
       <Tabs.Screen name="pedidos" options={{ title: 'Pedidos', tabBarIcon: icone('receipt-outline', 'receipt') }} />
       {/* Interruptor desligado: o separador não aparece */}
       <Tabs.Screen
