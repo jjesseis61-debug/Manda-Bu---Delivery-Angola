@@ -269,6 +269,7 @@ export default function Inicio() {
               opcoes={cozinhas.map((c) => ({ valor: c.cozinha_id, rotulo: (c.cozinha_id === cozinhaId ? '✓ ' : '') + c.nome }))}
               valor={cozinhaId ?? ''}
               aoMudar={trocarCozinha}
+              horizontal
             />
           </View>
         )}

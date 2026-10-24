@@ -121,25 +121,32 @@ export function Escolha<T extends string>({
   opcoes,
   valor,
   aoMudar,
+  horizontal = false,
 }: {
   opcoes: { valor: T; rotulo: string }[];
   valor: T;
   aoMudar: (v: T) => void;
+  /** Uma só linha com scroll horizontal (ex.: seletor de cozinha com nomes longos); por omissão envolve */
+  horizontal?: boolean;
 }) {
-  return (
-    <View style={estilos.escolha}>
-      {opcoes.map((o) => (
-        <Pressable
-          key={o.valor}
-          accessibilityRole="radio"
-          accessibilityState={{ selected: o.valor === valor }}
-          onPress={() => aoMudar(o.valor)}
-          style={[estilos.opcao, o.valor === valor && estilos.opcaoActiva]}>
-          <Text style={[estilos.opcaoTexto, o.valor === valor && { color: '#fff' }]}>{o.rotulo}</Text>
-        </Pressable>
-      ))}
-    </View>
-  );
+  const chips = opcoes.map((o) => (
+    <Pressable
+      key={o.valor}
+      accessibilityRole="radio"
+      accessibilityState={{ selected: o.valor === valor }}
+      onPress={() => aoMudar(o.valor)}
+      style={[estilos.opcao, o.valor === valor && estilos.opcaoActiva]}>
+      <Text style={[estilos.opcaoTexto, o.valor === valor && { color: '#fff' }]}>{o.rotulo}</Text>
+    </Pressable>
+  ));
+  if (horizontal) {
+    return (
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: 'row', gap: espaco.s, paddingVertical: 2 }}>
+        {chips}
+      </ScrollView>
+    );
+  }
+  return <View style={estilos.escolha}>{chips}</View>;
 }
 
 export function Aviso({ children, tipo = 'aviso' }: { children: ReactNode; tipo?: 'aviso' | 'erro' | 'sucesso' }) {
