@@ -138,7 +138,21 @@ export type Permissao =
   | 'cozinha.perfil'
   | 'utilizadores.ver'
   | 'otp.entregar'
+  | 'receitas.gerir'
   | 'auditoria.ver';
+
+export type Receita = {
+  id: string;
+  titulo: string;
+  resumo: string | null;
+  corpo: string;
+  foto_url: string | null;
+  cozinha_id: string | null;
+  estado: 'rascunho' | 'publicada' | 'arquivada';
+  origem: 'manual' | 'claude';
+  criado_em: string;
+  publicado_em: string | null;
+};
 
 export type PublicoAviso =
   | 'clientes_todos'

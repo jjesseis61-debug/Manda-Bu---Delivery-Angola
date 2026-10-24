@@ -35,6 +35,8 @@ import type {
   PreferenciasNotificacao,
   PessoaComoTu,
   PosicaoEntrega,
+  Receita,
+  ReceitaResumo,
   Saldo,
   Zona,
 } from './tipos';
@@ -650,4 +652,14 @@ export async function lerComponentes(cardapioIds: string[]): Promise<ComponenteP
 /** Doses que restam hoje dos pratos com limite (a cozinha lançou quantas tem) */
 export async function lerDoses(cozinhaId: string): Promise<{ cardapio_id: string; restantes: number }[]> {
   return verificar(await supabase.rpc('doses_cardapio', { p_cozinha: cozinhaId })) as { cardapio_id: string; restantes: number }[];
+}
+
+// Receitas (Cozinha de casa) — só aparecem com o interruptor 'receitas' ligado (garantido no servidor)
+export async function lerReceitas(): Promise<ReceitaResumo[]> {
+  return (verificar(await supabase.rpc('receitas_publicas')) as ReceitaResumo[]) ?? [];
+}
+
+export async function lerReceita(id: string): Promise<Receita | null> {
+  const r = verificar(await supabase.rpc('receita_publica', { p_id: id })) as Receita[];
+  return r[0] ?? null;
 }

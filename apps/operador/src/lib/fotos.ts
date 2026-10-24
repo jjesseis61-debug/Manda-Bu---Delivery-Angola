@@ -60,6 +60,29 @@ export async function apagarFotoPublica(url: string | null | undefined): Promise
   if (caminho) await supabase.storage.from(BUCKET_FOTOS_PRATOS).remove([caminho]).then(() => undefined, () => undefined);
 }
 
+// ---------------------------------------------------------------- fotos das receitas
+// Bucket público `fotos-receitas`: receitas/<id>/<data>.jpg. Escreve quem tem receitas.gerir.
+export const BUCKET_FOTOS_RECEITAS = 'fotos-receitas';
+
+export async function enviarFotoReceita(id: string, uri: string): Promise<string> {
+  const caminho = `receitas/${id}/${new Date().getTime()}.jpg`;
+  const dados = await (await fetch(uri)).arrayBuffer();
+  const { error } = await supabase.storage
+    .from(BUCKET_FOTOS_RECEITAS)
+    .upload(caminho, dados, { contentType: 'image/jpeg', upsert: false });
+  if (error) throw error;
+  return supabase.storage.from(BUCKET_FOTOS_RECEITAS).getPublicUrl(caminho).data.publicUrl;
+}
+
+export async function apagarFotoReceita(url: string | null | undefined): Promise<void> {
+  if (!url) return;
+  const marca = `/object/public/${BUCKET_FOTOS_RECEITAS}/`;
+  const i = url.indexOf(marca);
+  if (i < 0) return;
+  const caminho = decodeURIComponent(url.slice(i + marca.length).split('?')[0]);
+  await supabase.storage.from(BUCKET_FOTOS_RECEITAS).remove([caminho]).then(() => undefined, () => undefined);
+}
+
 // ---------------------------------------------------------------- comprovativos de pagamento
 // Bucket privado `comprovativos`: <pedido_id>/<data>.jpg. Envia quem entrega; vê quem confere a caixa.
 export const BUCKET_COMPROVATIVOS = 'comprovativos';

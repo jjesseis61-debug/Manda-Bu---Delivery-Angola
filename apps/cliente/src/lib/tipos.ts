@@ -44,7 +44,19 @@ export type ChaveFuncionalidade =
   | 'pacotes'
   | 'agente_atendimento'
   | 'mapa_google'
-  | 'rota_google';
+  | 'rota_google'
+  | 'receitas';
+
+export type ReceitaResumo = {
+  id: string;
+  titulo: string;
+  resumo: string | null;
+  foto_url: string | null;
+  cozinha_id: string | null;
+  cozinha_nome: string | null;
+};
+
+export type Receita = ReceitaResumo & { corpo: string };
 
 export type Funcionalidades = Partial<Record<ChaveFuncionalidade, boolean>>;
 

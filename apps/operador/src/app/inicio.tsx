@@ -36,6 +36,7 @@ const ecras: {
   { rota: '/empresas', titulo: 'Empresas (B2B)', descricao: 'Contas de empresa: almoços dos funcionários e fatura mensal', permissoes: ['clientes.gerir'] },
   { rota: '/feiras', titulo: 'Feiras', descricao: 'Vendas por consignação em feiras (preço fixo, fora da app)', permissoes: ['feira.gerir'] },
   { rota: '/avisos', titulo: 'Avisos', descricao: 'Enviar notificações a clientes e à equipa (por zona, cozinha, função)', permissoes: ['avisos.enviar'] },
+  { rota: '/receitas', titulo: 'Receitas', descricao: 'Cozinha de casa: receitas angolanas com botão de pedir (conteúdo para o cliente)', permissoes: ['receitas.gerir'] },
   { rota: '/reconquista', titulo: 'Reconquista', descricao: 'Clientes que pararam de comprar: lista, telefones e campanha de regresso', permissoes: ['clientes.reconquista'] },
   { rota: '/utilizadores', titulo: 'Utilizadores', descricao: 'Procurar clientes, equipa e contas de login por nome ou número; bloquear um número', permissoes: ['utilizadores.ver'] },
   { rota: '/otp-codigos', titulo: 'Códigos de login', descricao: 'Entregar os códigos de OTP manual aos clientes (WhatsApp/SMS)', permissoes: ['otp.entregar'] },

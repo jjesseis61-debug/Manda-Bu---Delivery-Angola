@@ -69,6 +69,7 @@ import type {
   SugestaoDespacho,
   PratoCardapio,
   Reconhecimento,
+  Receita,
   Relatorio,
   TipoReconhecimento,
   FechoCaixa,
@@ -1022,4 +1023,44 @@ export async function listarCampanhasReconquista(limite = 50): Promise<CampanhaR
   return (
     (verificar(await supabase.rpc('listar_campanhas_reconquista', { p_limite: limite })) as CampanhaReconquista[]) ?? []
   );
+}
+
+// ---------------------------------------------------------------- Receitas (Cozinha de casa) — R1
+export async function lerReceitasGerir(): Promise<Receita[]> {
+  return verificar(
+    await supabase
+      .from('receitas')
+      .select('id, titulo, resumo, corpo, foto_url, cozinha_id, estado, origem, criado_em, publicado_em')
+      .is('deletado_em', null)
+      .order('criado_em', { ascending: false }),
+  ) as Receita[];
+}
+
+/** Cria ou actualiza uma receita; devolve o id (preciso para enviar a foto depois de criar) */
+export async function guardarReceita(
+  r: { id?: string; titulo: string; resumo: string | null; corpo: string; cozinha_id: string | null; foto_url?: string | null },
+): Promise<string> {
+  const { id, ...dados } = r;
+  if (id) {
+    verificar(await supabase.from('receitas').update({ ...dados, atualizado_em: new Date().toISOString() }).eq('id', id));
+    return id;
+  }
+  const criada = verificar(await supabase.from('receitas').insert(dados).select('id').single()) as { id: string };
+  return criada.id;
+}
+
+export async function definirFotoReceita(id: string, foto_url: string | null): Promise<void> {
+  verificar(await supabase.from('receitas').update({ foto_url, atualizado_em: new Date().toISOString() }).eq('id', id));
+}
+
+export async function publicarReceita(id: string, publicar: boolean): Promise<void> {
+  verificar(await supabase.from('receitas').update({
+    estado: publicar ? 'publicada' : 'rascunho',
+    publicado_em: publicar ? new Date().toISOString() : null,
+    atualizado_em: new Date().toISOString(),
+  }).eq('id', id));
+}
+
+export async function arquivarReceita(id: string): Promise<void> {
+  verificar(await supabase.from('receitas').update({ estado: 'arquivada', atualizado_em: new Date().toISOString() }).eq('id', id));
 }

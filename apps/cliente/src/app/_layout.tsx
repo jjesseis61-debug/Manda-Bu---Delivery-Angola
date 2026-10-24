@@ -62,6 +62,8 @@ export default function LayoutRaiz() {
           <Stack.Screen name="pacotes" options={{ title: 'Pacote do mês' }} />
           <Stack.Screen name="ajuda" options={{ title: 'Ajuda' }} />
           <Stack.Screen name="contactos" options={{ title: 'Contactos' }} />
+          <Stack.Screen name="receitas" options={{ title: 'Cozinha de casa' }} />
+          <Stack.Screen name="receita/[id]" options={{ title: 'Receita' }} />
           <Stack.Screen name="apagar-conta" options={{ title: 'Apagar a conta' }} />
           <Stack.Screen name="recuperar-conta" options={{ title: 'Recuperar a conta' }} />
           <Stack.Screen name="politica-privacidade" options={{ title: 'Política de privacidade' }} />

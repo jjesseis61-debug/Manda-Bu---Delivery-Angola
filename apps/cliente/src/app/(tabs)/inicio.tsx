@@ -298,6 +298,9 @@ export default function Inicio() {
         {ligada('pedidos_grupo') && !carrinho.grupo && (
           <Botao titulo="Pedido de grupo com os colegas" variante="secundario" aoCarregar={() => router.push('/grupos')} />
         )}
+        {ligada('receitas') && !carrinho.grupo && (
+          <Botao titulo="Cozinha de casa: receitas da terra" variante="secundario" aoCarregar={() => router.push('/receitas')} />
+        )}
         {erro && <Aviso tipo="erro">{erro}</Aviso>}
         {cardapio !== null && cardapio.length === 0 && <Paragrafo suave>O cardápio de hoje ainda não está disponível.</Paragrafo>}
         {categorias.map(([categoria, itens]) => (

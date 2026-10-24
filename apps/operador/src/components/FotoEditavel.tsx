@@ -3,7 +3,7 @@ import { Image, Text, View } from 'react-native';
 
 import { Aviso, Botao } from '@/components/ui';
 import { mensagemErro } from '@/lib/formatar';
-import { apagarFotoPublica, enviarFotoPublica, escolherFoto } from '@/lib/fotos';
+import { apagarFotoPublica, apagarFotoReceita, enviarFotoPublica, enviarFotoReceita, escolherFoto } from '@/lib/fotos';
 import { cores, espaco } from '@/lib/tema';
 
 /**
@@ -22,7 +22,7 @@ export function FotoEditavel({
   localUri,
   aoEscolherLocal,
 }: {
-  tipo: 'pratos' | 'cozinhas';
+  tipo: 'pratos' | 'cozinhas' | 'receitas';
   id?: string;
   url?: string | null;
   aoGravar?: (url: string | null) => Promise<void>;
@@ -44,9 +44,10 @@ export function FotoEditavel({
         return;
       }
       setOcupado(true);
-      const nova = await enviarFotoPublica(tipo, id as string, uri);
+      const nova = tipo === 'receitas' ? await enviarFotoReceita(id as string, uri) : await enviarFotoPublica(tipo, id as string, uri);
       await aoGravar?.(nova);
-      await apagarFotoPublica(url);
+      if (tipo === 'receitas') await apagarFotoReceita(url);
+      else await apagarFotoPublica(url);
     } catch (e) {
       setErro(mensagemErro(e));
     } finally {
@@ -63,7 +64,8 @@ export function FotoEditavel({
     setOcupado(true);
     try {
       await aoGravar?.(null);
-      await apagarFotoPublica(url);
+      if (tipo === 'receitas') await apagarFotoReceita(url);
+      else await apagarFotoPublica(url);
     } catch (e) {
       setErro(mensagemErro(e));
     } finally {

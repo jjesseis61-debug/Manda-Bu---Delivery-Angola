@@ -35,6 +35,7 @@ export default function LayoutRaiz() {
         <Stack.Screen name="sem-acesso" options={{ headerShown: false }} />
         <Stack.Screen name="inicio" options={{ title: 'Manda Bué · Operador', headerBackVisible: false }} />
         <Stack.Screen name="notificacoes" options={{ title: 'Notificações' }} />
+        <Stack.Screen name="receitas" options={{ title: 'Receitas' }} />
         <Stack.Screen name="painel" options={{ title: 'Painel do programa' }} />
         <Stack.Screen name="verificacao" options={{ title: 'Verificação' }} />
         <Stack.Screen name="levantamentos" options={{ title: 'Levantamentos' }} />
