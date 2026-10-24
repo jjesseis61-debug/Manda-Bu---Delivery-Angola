@@ -260,11 +260,6 @@ export default function Inicio() {
             <Botao titulo="Pedir de novo" aCarregar={aRepetir} aoCarregar={() => pedirDeNovo(ultimoTerminado)} />
           </Cartao>
         )}
-        {/* Receitas da terra: conteúdo de marca, em destaque dourado — colocado no topo, longe do
-            "Prato do dia" (também dourado) para os dois destaques não competirem. */}
-        {ligada('receitas') && !carrinho.grupo && (
-          <Botao titulo="🍲 Receitas da terra" variante="destaque" aoCarregar={() => router.push('/receitas')} />
-        )}
         {/* Convida e Ganha: desconto do 1.º pedido / ganhos / convite (adapta-se ao estado) */}
         <CartaoConvida />
         {/* I8: selector de cozinha por zona (só com multi_cozinha e mais de uma cozinha a aceitar pedidos).
@@ -392,6 +387,15 @@ export default function Inicio() {
             })}
           </View>
         ))}
+        {/* No fim do cardápio: convite às receitas — "comida primeiro, conteúdo depois".
+            Cartão (não botão de rodapé solto) para ser discreto mas descoberto. */}
+        {ligada('receitas') && !carrinho.grupo && cardapio !== null && cardapio.length > 0 && (
+          <Cartao>
+            <Text style={{ fontSize: 16, fontWeight: '700', color: cores.texto }}>🍲 Cozinha de casa</Text>
+            <Text style={{ color: cores.textoSuave }}>Não decidiste? Inspira-te nas receitas da terra.</Text>
+            <Botao titulo="Ver receitas da terra" variante="destaque" aoCarregar={() => router.push('/receitas')} />
+          </Cartao>
+        )}
       </ScrollView>
       {carrinho.quantidade > 0 && (
         <View style={{ position: 'absolute', left: espaco.l, right: espaco.l, bottom: espaco.l }}>
