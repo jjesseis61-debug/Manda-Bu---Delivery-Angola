@@ -38,6 +38,10 @@ Deno.serve(async (req) => {
     });
     const servico = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } });
 
+    // Interruptor da IA das receitas: desligado -> não gera (por agora, receitas à mão)
+    const { data: inter } = await servico.from('funcionalidades').select('activa').eq('chave', 'receitas_ia').maybeSingle();
+    if (!inter?.activa) return json({ erro: 'desligado' }, 403);
+
     // Semente: um prato do catálogo ou um tema livre
     let semente = typeof tema === 'string' ? tema.trim() : '';
     if (!semente && typeof prato_base_id === 'string') {

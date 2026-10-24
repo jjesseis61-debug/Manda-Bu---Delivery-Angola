@@ -1076,3 +1076,11 @@ export async function gerarRascunhoReceita(tema: string): Promise<string> {
 export async function avisarNovaReceita(id: string): Promise<number> {
   return verificar(await supabase.rpc('avisar_nova_receita', { p_id: id })) as number;
 }
+
+// A geração por IA das receitas está ligada? (interruptor 'receitas_ia')
+export async function iaDasReceitasLigada(): Promise<boolean> {
+  const r = verificar(await supabase.from('funcionalidades').select('activa').eq('chave', 'receitas_ia').maybeSingle()) as
+    | { activa: boolean }
+    | null;
+  return !!r?.activa;
+}

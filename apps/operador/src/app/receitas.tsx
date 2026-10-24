@@ -11,6 +11,7 @@ import {
   definirFotoReceita,
   gerarRascunhoReceita,
   guardarReceita,
+  iaDasReceitasLigada,
   lerCozinhas,
   lerReceitasGerir,
   publicarReceita,
@@ -37,12 +38,14 @@ export default function Receitas() {
   const [tema, setTema] = useState('');
   const [aGerar, setAGerar] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
+  const [iaLigada, setIaLigada] = useState(false);
 
   const carregar = useCallback(() => {
-    Promise.all([lerReceitasGerir(), lerCozinhas()])
-      .then(([rs, cs]) => {
+    Promise.all([lerReceitasGerir(), lerCozinhas(), iaDasReceitasLigada()])
+      .then(([rs, cs, ia]) => {
         setLista(rs);
         setCozinhas(cs);
+        setIaLigada(ia);
       })
       .catch((e) => setErro(mensagemErro(e)));
   }, []);
@@ -160,11 +163,13 @@ export default function Receitas() {
         {erro && <Aviso tipo="erro">{erro}</Aviso>}
         {aviso && <Aviso>{aviso}</Aviso>}
         <Botao titulo="Nova receita" aoCarregar={() => setEdicao(VAZIA)} />
-        <Cartao>
-          <Campo rotulo="Gerar rascunho com IA" value={tema} onChangeText={setTema} placeholder="Tema ou prato (ex.: Calulu de peixe)" />
-          <Botao titulo="Gerar rascunho com IA" variante="secundario" aCarregar={aGerar} aoCarregar={gerarComIA} />
-          <Paragrafo suave>O Claude escreve um rascunho; tu revês e publicas.</Paragrafo>
-        </Cartao>
+        {iaLigada && (
+          <Cartao>
+            <Campo rotulo="Gerar rascunho com IA" value={tema} onChangeText={setTema} placeholder="Tema ou prato (ex.: Calulu de peixe)" />
+            <Botao titulo="Gerar rascunho com IA" variante="secundario" aCarregar={aGerar} aoCarregar={gerarComIA} />
+            <Paragrafo suave>O Claude escreve um rascunho; tu revês e publicas.</Paragrafo>
+          </Cartao>
+        )}
         {lista.length === 0 && <Paragrafo suave>Ainda não há receitas. Cria a primeira — aparece aos clientes quando a publicares (e com o interruptor «receitas» ligado).</Paragrafo>}
         {lista.map((r) => (
           <Cartao key={r.id}>
