@@ -44,9 +44,9 @@ select is(testes.v('vera_ve_vera'), '(0,10000)', 'quem não escondeu continua co
 -- Textos N5, N6, N7
 -- ---------------------------------------------------------------------------
 select is((texto_notificacao('N5', '{"prato_do_dia": "Muamba de galinha"}')).corpo,
-          'Hoje há Muamba de galinha. Partilha o teu código com os colegas antes do almoço.', 'N5 com o prato do dia');
+          'Hoje há Muamba de galinha. Basta um colega pedir com o teu código para ganhares 100 Kz.', 'N5 com o prato do dia');
 select is((texto_notificacao('N5', '{"prato_do_dia": null}')).corpo,
-          'Partilha o teu código com os colegas antes do almoço.', 'N5 sem prato do dia');
+          'Basta um colega pedir hoje com o teu código para ganhares 100 Kz.', 'N5 sem prato do dia');
 select is((texto_notificacao('N6', '{"indicado_nome": "Ana"}')).corpo,
           'O período de Ana termina em 5 dias. Convida mais amigos para continuares a ganhar.', 'N6');
 select is((texto_notificacao('N7', '{"nome_exibido": "Palanca Azul", "posicao": 12, "amigos_em_falta": 3, "tamanho_top": 10}')).corpo,
@@ -64,7 +64,7 @@ select testes.sair();
 select job_n5_lembrete();
 select is((select (texto_notificacao(codigo, dados)).corpo from notificacoes_fila where codigo = 'N5' and cliente_id = testes.u('vera')),
           case when extract(isodow from hoje_luanda()) between 1 and 5
-               then 'Hoje há Muamba de galinha. Partilha o teu código com os colegas antes do almoço.' end,
+               then 'Hoje há Muamba de galinha. Basta um colega pedir com o teu código para ganhares 100 Kz.' end,
           'N5 enfileirada (dias úteis) com o prato do dia do cardápio');
 
 insert into notificacoes_fila (cliente_id, codigo, dados) values

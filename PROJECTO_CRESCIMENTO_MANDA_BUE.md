@@ -780,6 +780,11 @@ selector e não aceita pedidos.
   Luanda; correr `agendar_jobs()` de novo para o agendar); N15 à equipa com `pacotes.gerir` quando há uma adesão por
   confirmar. Tocar no aviso abre o ecrã dos pacotes nas duas apps.
 
+**Fotos dos pratos e das cozinhas (2 de Outubro de 2026):** no O6, cada prato (depois de guardado) e cada cozinha
+têm "Foto": tirar com a câmara ou escolher da galeria (recorte 4:3, reduzida para 1200 px em JPEG), trocar e remover.
+As fotos ficam no bucket público `fotos-pratos`; só `cozinhas.gerir` envia ou apaga. O cliente vê a foto no cartão do
+prato no Início, no ecrã "Montar o prato" e no perfil da cozinha.
+
 **Correcções depois da análise do sistema (2 de Outubro de 2026):**
 - Pedido criado com id gerado no telemóvel: retentar depois de uma falha de rede já não cria um pedido repetido.
 - Edge Function `enviar-notificacoes` v4: marca as notificações como enviadas lote a lote; uma falha da Expo a meio

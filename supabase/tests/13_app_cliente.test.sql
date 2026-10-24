@@ -186,7 +186,7 @@ select is((select (texto_notificacao('N2', dados)).corpo from notificacoes_fila
 select is((texto_notificacao('N3', '{"valor": 100, "indicado_nome": "João", "saldo_semana": 1300}')).corpo,
           '+100 Kz: o pedido de João foi entregue. Saldo desta semana: 1.300 Kz.', 'N3: texto da secção 11');
 select is((texto_notificacao('N4', '{"limite": 10000}')).corpo,
-          'Passaste os 10.000 Kz esta semana. Os próximos ganhos ficam em verificação e são pagos assim que confirmarmos os pedidos.',
+          'Grande semana: já ganhaste 10.000 Kz! A partir daqui confirmamos cada pedido antes de pagar. É só uma verificação: os teus ganhos continuam a contar.',
           'N4: texto da secção 11');
 select is((texto_notificacao('N8', '{"valor": 5000, "metodo": "multicaixa_express", "referencia": "MCX-1"}')).corpo,
           'Pagámos 5.000 Kz por Multicaixa Express. Referência: MCX-1.', 'N8: texto da secção 11');

@@ -34,17 +34,34 @@ export default function LayoutRaiz() {
         <Stack.Screen name="entrar" options={{ headerShown: false }} />
         <Stack.Screen name="sem-acesso" options={{ headerShown: false }} />
         <Stack.Screen name="inicio" options={{ title: 'Manda Bué · Operador', headerBackVisible: false }} />
+        <Stack.Screen name="notificacoes" options={{ title: 'Notificações' }} />
+        <Stack.Screen name="receitas" options={{ title: 'Receitas' }} />
         <Stack.Screen name="painel" options={{ title: 'Painel do programa' }} />
         <Stack.Screen name="verificacao" options={{ title: 'Verificação' }} />
         <Stack.Screen name="levantamentos" options={{ title: 'Levantamentos' }} />
+        <Stack.Screen name="caixa" options={{ title: 'Caixa' }} />
+        <Stack.Screen name="conferencia" options={{ title: 'Conferência' }} />
+        <Stack.Screen name="reclamacoes" options={{ title: 'Reclamações' }} />
+        <Stack.Screen name="analista" options={{ title: 'Analista' }} />
+        <Stack.Screen name="vigilancia" options={{ title: 'Vigilância do Convida' }} />
+        <Stack.Screen name="turno" options={{ title: 'Gerente de turno' }} />
+        <Stack.Screen name="compras" options={{ title: 'Stock e compras' }} />
+        <Stack.Screen name="atendimento" options={{ title: 'Atendimento' }} />
+        <Stack.Screen name="estimulos" options={{ title: 'Estímulos do mês' }} />
+        <Stack.Screen name="pedido/[id]" options={{ title: 'Histórico do pedido' }} />
         <Stack.Screen name="pacotes" options={{ title: 'Pacotes do mês' }} />
+        <Stack.Screen name="zonas" options={{ title: 'Zonas de entrega' }} />
         <Stack.Screen name="embaixadores" options={{ title: 'Embaixadores' }} />
         <Stack.Screen name="parametros" options={{ title: 'Parâmetros e interruptores' }} />
         <Stack.Screen name="cozinhas/index" options={{ title: 'Cozinhas' }} />
-        <Stack.Screen name="cozinhas/[id]" options={{ title: 'Cozinha' }} />
-        <Stack.Screen name="cozinhas/opcoes/[prato]" options={{ title: 'Opções do prato' }} />
+        <Stack.Screen name="cozinhas/[id]/index" options={{ title: 'Cozinha' }} />
+        <Stack.Screen name="cozinhas/[id]/cardapio" options={{ title: 'Cardápio' }} />
+        <Stack.Screen name="cozinhas/opcoes/[prato]" options={{ title: 'Opções do prato', presentation: 'modal' }} />
+        <Stack.Screen name="cozinhas/historico" options={{ title: 'Histórico do cardápio' }} />
+        <Stack.Screen name="cozinhas/impacto-preco" options={{ title: 'Impacto do preço' }} />
         <Stack.Screen name="relatorios" options={{ title: 'Relatórios de cozinha' }} />
         <Stack.Screen name="entregas" options={{ title: 'Pedidos e entregas' }} />
+        <Stack.Screen name="estafetas" options={{ title: 'Estafetas' }} />
         <Stack.Screen name="moderacao" options={{ title: 'Moderação' }} />
         <Stack.Screen name="equipa" options={{ title: 'Equipa' }} />
         <Stack.Screen name="grupos" options={{ title: 'Grupos do dia' }} />

@@ -19,6 +19,13 @@ create function testes.u(p_nome text) returns uuid language sql stable as $$
   select testes.v(p_nome)::uuid;
 $$;
 
+-- "Hoje" no fuso do negócio (Africa/Luanda, UTC+1). As funções agrupam os dados por data de
+-- Luanda; os testes semeiam dados com now() e têm de limitar as janelas pela mesma data, senão
+-- entre as 23h e a meia-noite UTC (quando em Luanda já é o dia seguinte) os dados caem fora.
+create function testes.hoje() returns date language sql stable as $$
+  select (now() at time zone 'Africa/Luanda')::date;
+$$;
+
 -- Cliente com utilizador autenticado associado
 create function testes.cliente(p_nome text, p_tipo text default 'Particular', p_telefone text default null)
 returns uuid language plpgsql as $$

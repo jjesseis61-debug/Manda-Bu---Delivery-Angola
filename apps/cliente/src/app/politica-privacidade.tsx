@@ -1,8 +1,21 @@
+import { useEffect, useState } from 'react';
+
 import { Aviso, Ecra, Paragrafo, Subtitulo } from '@/components/ui';
+import { lerContactos } from '@/lib/api';
 import { EMPRESA } from '@/lib/empresa';
 
 /** Política de privacidade: o que a app guarda, para quê, quem vê e como apagar (exigida pelas lojas) */
 export default function PoliticaPrivacidade() {
+  // Sem o contacto definido na app, usa o email ou o telefone gerais (Contactos), se houver sessão
+  const [geral, setGeral] = useState<string | null>(null);
+  useEffect(() => {
+    if (EMPRESA.contactoPrivacidade) return;
+    lerContactos()
+      .then((c) => setGeral(c.geral.email ?? c.geral.telefone ?? null))
+      .catch(() => undefined);
+  }, []);
+  const contacto = EMPRESA.contactoPrivacidade || geral;
+
   return (
     <Ecra>
       <Paragrafo suave>Última actualização: {EMPRESA.actualizadaEm}</Paragrafo>
@@ -32,7 +45,7 @@ export default function PoliticaPrivacidade() {
 
       <Subtitulo>Quem vê</Subtitulo>
       <Paragrafo>
-        A equipa do Manda Bué que trata do teu pedido (cozinha, entrega, apoio), cada pessoa só no que precisa
+        A equipa da Cozinha da Alexandra que trata do teu pedido (cozinha, entrega, apoio), cada pessoa só no que precisa
         para o seu trabalho. Nas listas públicas (destaques e avaliações) aparece só o teu pseudónimo ou o primeiro
         nome, se o escolheres. Os dados ficam guardados no Supabase; as notificações passam pela Expo e o SMS pelo
         fornecedor de SMS.
@@ -46,8 +59,8 @@ export default function PoliticaPrivacidade() {
       </Paragrafo>
 
       <Subtitulo>Contacto</Subtitulo>
-      {EMPRESA.contactoPrivacidade ? (
-        <Paragrafo>{EMPRESA.contactoPrivacidade}</Paragrafo>
+      {contacto ? (
+        <Paragrafo>{contacto}</Paragrafo>
       ) : (
         <Aviso>Contacto por definir.</Aviso>
       )}
