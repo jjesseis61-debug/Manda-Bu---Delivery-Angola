@@ -122,6 +122,8 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 -- ecrã de utilizadores: procurar e bloquear (telefone_bloqueado é usada no registo)
                 'procurar_utilizadores', 'telefone_bloqueado', 'bloquear_utilizador', 'desbloquear_utilizador',
                 'utilizadores_bloqueados_lista',
+                -- OTP manual: a lista, a entrega e a limpeza (o hook enviar_sms_otp é só do supabase_auth_admin)
+                'otp_pendentes_lista', 'otp_marcar_entregue', 'otp_limpar',
                 -- auxiliares usadas em políticas RLS, valores por defeito ou triggers SECURITY INVOKER
                 'cliente_actual', 'cozinha_padrao', 'e_funcionario', 'funcionalidade_activa',
                 'funcionario_actual', 'membro_da_cozinha', 'tem_permissao', 'e_administrador', 'pode_na_cozinha')),
