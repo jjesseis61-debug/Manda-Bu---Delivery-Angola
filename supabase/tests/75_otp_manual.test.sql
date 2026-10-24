@@ -2,7 +2,7 @@
 -- anterior; a lista e a entrega exigem otp.entregar; a limpeza apaga os antigos.
 begin;
 \ir _helpers.psql
-select plan(13);
+select plan(15);
 
 select testes.def('sem_acesso', testes.funcionario('Sem Acesso', array[]::text[]));
 select testes.def('entregador', testes.funcionario('Entregador OTP', array['otp.entregar']));
@@ -34,6 +34,11 @@ select is((select count(*)::int from notificacoes_fila where codigo = 'N40' and 
 select is((select count(*)::int from notificacoes_fila where codigo = 'N40' and funcionario_id = testes.u('sem_acesso')), 0,
           'não avisa quem não tem otp.entregar');
 
+-- 2c) O N40 recente é DESPACHADO como push (com o token do entregador), não fica só no sino
+select is((select count(*)::int from notificacoes_por_enviar(200)
+            where codigo = 'N40' and tokens @> array['tok-entregador']), 1,
+          'o N40 recente é despachado como push ao entregador');
+
 -- 3) Reenvio: invalida o anterior, fica só o novo
 select is(enviar_sms_otp(testes.v('ev2')::jsonb), '{}'::jsonb, 'reenvio aceite');
 select is((select codigo from otp_pendentes where not usado), '654321', 'o pendente é o código mais recente');
@@ -50,6 +55,12 @@ select testes.entrar_funcionario(testes.u('entregador'));
 set local role authenticated;
 select is((select codigo from otp_pendentes_lista()), '654321', 'quem tem otp.entregar vê o código pendente');
 reset role; select testes.sair();
+
+-- 4b) Um N40 com mais de 10 min já não é despachado (validade curta: o código de login já expirou)
+insert into notificacoes_fila (funcionario_id, codigo, dados, criado_em)
+  values (testes.u('entregador'), 'N40', jsonb_build_object('tel_mascarado', '999'), now() - interval '20 minutes');
+select is((select count(*)::int from notificacoes_por_enviar(200) where dados ->> 'tel_mascarado' = '999'), 0,
+          'um N40 com mais de 10 min já não é despachado como push');
 
 -- 5) Limpeza: apaga os códigos antigos (> 1 dia)
 insert into otp_pendentes (telefone, codigo, criado_em) values ('+244000000000', '000000', now() - interval '2 days');

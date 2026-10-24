@@ -1,4 +1,5 @@
-// Envia a fila de notificações (clientes: N2–N11, N13, N14, N16; equipa: N12, N15, N17) pelo serviço de push da Expo.
+// Envia a fila de notificações (clientes e equipa) pelo serviço de push da Expo. Que códigos saem e
+// para quem é decidido no servidor (notificacoes_por_enviar); esta função só despacha o que ela devolve.
 // A app do cliente e a do operador são projectos Expo diferentes: a Expo recusa um pedido
 // com tokens de projectos diferentes, por isso cada destino segue num pedido à parte.
 //
