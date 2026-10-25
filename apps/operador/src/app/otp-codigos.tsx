@@ -21,6 +21,14 @@ function emFalta(expiraEm: string, agora: number): string {
   return `${Math.floor(seg / 60)}:${String(seg % 60).padStart(2, '0')}`;
 }
 
+/** "agora mesmo" / "há N min" desde um instante */
+function haQuanto(iso: string | null, agora: number): string {
+  if (!iso) return '';
+  const seg = Math.max(0, Math.round((agora - new Date(iso).getTime()) / 1000));
+  if (seg < 60) return 'agora mesmo';
+  return `há ${Math.floor(seg / 60)} min`;
+}
+
 /** Códigos de login (OTP manual): o operador vê os códigos pendentes e entrega-os por WhatsApp/SMS. */
 export default function OtpCodigos() {
   const [lista, setLista] = useState<OtpPendente[] | null>(null);
@@ -65,13 +73,13 @@ export default function OtpCodigos() {
 
   async function enviarWhatsapp(o: OtpPendente) {
     const digitos = o.telefone.replace(/\D/g, '');
-    const texto = encodeURIComponent(mensagemCodigo(o.codigo));
+    const texto = encodeURIComponent(mensagemCodigo(o.codigo ?? ''));
     await abrir(`whatsapp://send?phone=${digitos}&text=${texto}`, `https://wa.me/${digitos}?text=${texto}`);
   }
 
   async function enviarSms(o: OtpPendente) {
     const sep = Platform.OS === 'ios' ? '&' : '?';
-    await abrir(`sms:${o.telefone}${sep}body=${encodeURIComponent(mensagemCodigo(o.codigo))}`);
+    await abrir(`sms:${o.telefone}${sep}body=${encodeURIComponent(mensagemCodigo(o.codigo ?? ''))}`);
   }
 
   async function marcar(id: string) {
@@ -98,6 +106,13 @@ export default function OtpCodigos() {
         {!lista && !erro && <ACarregar />}
         {lista && lista.length === 0 && <Paragrafo suave>Sem códigos pendentes.</Paragrafo>}
         {lista?.map((o) => {
+          if (o.estado === 'confirmado') {
+            return (
+              <Aviso key={o.id} tipo="sucesso">
+                Login de {o.nome ?? 'cliente'} realizado · {haQuanto(o.confirmado_em, agora)}
+              </Aviso>
+            );
+          }
           const falta = emFalta(o.expira_em, agora);
           return (
             <Cartao key={o.id}>

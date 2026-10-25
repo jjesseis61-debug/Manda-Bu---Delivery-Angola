@@ -2,7 +2,7 @@
 -- anterior; a lista e a entrega exigem otp.entregar; a limpeza apaga os antigos.
 begin;
 \ir _helpers.psql
-select plan(17);
+select plan(20);
 
 select testes.def('sem_acesso', testes.funcionario('Sem Acesso', array[]::text[]));
 select testes.def('entregador', testes.funcionario('Entregador OTP', array['otp.entregar']));
@@ -70,6 +70,17 @@ select lives_ok($$select otp_confirmar()$$, 'otp_confirmar corre na sessão do c
 reset role; select testes.sair();
 select is((select count(*)::int from otp_pendentes where codigo = '654321' and not usado), 0,
           'otp_confirmar fecha o código pendente do próprio número ao entrar');
+
+-- 4d) A confirmação aparece ao operador (5 min): com o primeiro nome e SEM o código; e fica na auditoria
+select testes.entrar_funcionario(testes.u('entregador'));
+set local role authenticated;
+select is((select nome   from otp_pendentes_lista() where estado = 'confirmado'), 'Cliente',
+          'a confirmação mostra o primeiro nome do cliente');
+select is((select codigo from otp_pendentes_lista() where estado = 'confirmado'), null,
+          'a confirmação não mostra o código (já usado)');
+reset role; select testes.sair();
+select is((select count(*)::int from auditoria where acao = 'otp_login'), 1,
+          'o login fica registado na auditoria');
 
 -- 5) Limpeza: apaga os códigos antigos (> 1 dia)
 insert into otp_pendentes (telefone, codigo, criado_em) values ('+244000000000', '000000', now() - interval '2 days');

@@ -203,9 +203,15 @@ export type UtilizadorEncontrado = {
 export type OtpPendente = {
   id: string;
   telefone: string;
-  codigo: string;
+  /** null nas confirmações (código já usado, não se mostra) */
+  codigo: string | null;
   criado_em: string;
   expira_em: string;
+  /** 'pendente' = código por entregar; 'confirmado' = login já feito (dura 5 min) */
+  estado: 'pendente' | 'confirmado';
+  /** nome a mostrar na confirmação (primeiro nome ou …últimos 3 dígitos) */
+  nome: string | null;
+  confirmado_em: string | null;
 };
 
 export type UtilizadorBloqueado = {
