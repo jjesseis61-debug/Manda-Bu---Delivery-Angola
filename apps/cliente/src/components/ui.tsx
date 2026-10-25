@@ -107,12 +107,19 @@ export function Botao({ titulo, aoCarregar, variante = 'principal', desactivado,
   );
 }
 
-export function Campo(props: TextInputProps & { rotulo: string }) {
-  const { rotulo, style, ...resto } = props;
+export function Campo(props: TextInputProps & { rotulo: string; prefixo?: string }) {
+  const { rotulo, style, prefixo, ...resto } = props;
   return (
     <View style={{ marginBottom: espaco.m }}>
       <Text style={estilos.rotulo}>{rotulo}</Text>
-      <TextInput accessibilityLabel={rotulo} placeholderTextColor={cores.textoSuave} style={[estilos.campo, style]} {...resto} />
+      {prefixo ? (
+        <View style={estilos.campoComPrefixo}>
+          <Text style={estilos.prefixo}>{prefixo}</Text>
+          <TextInput accessibilityLabel={rotulo} placeholderTextColor={cores.textoSuave} style={[estilos.campoInterno, style]} {...resto} />
+        </View>
+      ) : (
+        <TextInput accessibilityLabel={rotulo} placeholderTextColor={cores.textoSuave} style={[estilos.campo, style]} {...resto} />
+      )}
     </View>
   );
 }
@@ -195,6 +202,17 @@ export const estilos = StyleSheet.create({
     color: cores.texto,
     backgroundColor: '#fff',
   },
+  campoComPrefixo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: cores.contorno,
+    borderRadius: raio,
+    backgroundColor: '#fff',
+    paddingHorizontal: espaco.m,
+  },
+  prefixo: { fontSize: 16, fontWeight: '600', color: cores.texto, marginRight: espaco.s },
+  campoInterno: { flex: 1, paddingVertical: espaco.m, fontSize: 16, color: cores.texto },
   escolha: { flexDirection: 'row', flexWrap: 'wrap', gap: espaco.s },
   opcao: { borderWidth: 1, borderColor: cores.marca, borderRadius: 20, paddingVertical: espaco.s, paddingHorizontal: espaco.l },
   opcaoActiva: { backgroundColor: cores.marca },

@@ -1,8 +1,9 @@
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { CodigoOtp } from '@/components/CodigoOtp';
 import { Marca } from '@/components/Marca';
 import { Aviso, Botao, Campo, Paragrafo } from '@/components/ui';
 import { minutosSegundos, telefoneInternacional } from '@/lib/formatar';
@@ -22,6 +23,7 @@ export default function Entrar() {
   const [aEnviar, setAEnviar] = useState(false);
   const [restante, setRestante] = useState(0); // segundos até o código expirar
   const [espera, setEspera] = useState(0); // segundos até poder reenviar
+  const tentado = useRef(''); // último código já tentado (evita auto-submeter em ciclo)
 
   // Relógio: desconta a validade e a espera de reenvio a cada segundo
   useEffect(() => {
@@ -57,6 +59,15 @@ export default function Entrar() {
     await enviarPara(numero);
   }
 
+  // Auto-entrar assim que o código tiver 6 dígitos (não repete o mesmo código já tentado)
+  useEffect(() => {
+    if (enviadoPara && codigo.length === 6 && !aEnviar && tentado.current !== codigo) {
+      tentado.current = codigo;
+      void confirmar();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [codigo, enviadoPara, aEnviar]);
+
   async function confirmar() {
     if (!enviadoPara) return;
     setErro(null);
@@ -75,42 +86,37 @@ export default function Entrar() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: cores.fundo }}>
-      <View style={{ flex: 1, padding: espaco.xl, justifyContent: 'center', gap: espaco.l }}>
+      <View style={{ flex: 1, padding: espaco.xl, paddingTop: espaco.xl * 3, gap: espaco.l }}>
         <Marca grande />
         {!enviadoPara ? (
           <>
-            <Paragrafo>Entra com o teu número de telefone. Enviamos um código por SMS.</Paragrafo>
+            <Paragrafo>Entra com o teu número de telefone. Enviamos-te um código para confirmar (por SMS ou WhatsApp).</Paragrafo>
             <Campo
               rotulo="Telefone"
+              prefixo="+244"
               placeholder="923 456 789"
               keyboardType="phone-pad"
               autoComplete="tel"
+              maxLength={11}
               value={telefone}
               onChangeText={setTelefone}
             />
+            <Paragrafo suave>Só usamos o teu número para entrares e para te avisarmos dos teus pedidos.</Paragrafo>
             {erro && <Aviso tipo="erro">{erro}</Aviso>}
             <Botao titulo="Receber código" aoCarregar={pedirCodigo} aCarregar={aEnviar} />
           </>
         ) : (
           <>
             <Paragrafo>Escreve o código que enviámos para {enviadoPara}.</Paragrafo>
-            <Campo
-              rotulo="Código do SMS"
-              placeholder="123456"
-              keyboardType="number-pad"
-              autoComplete="sms-otp"
-              textContentType="oneTimeCode"
-              value={codigo}
-              onChangeText={setCodigo}
-            />
+            <CodigoOtp valor={codigo} aoMudar={setCodigo} />
             <Paragrafo suave>
               {expirado ? 'O código expirou. Pede um novo código.' : `O código é válido por ${minutosSegundos(restante)}.`}
             </Paragrafo>
             {erro && <Aviso tipo="erro">{erro}</Aviso>}
-            <Botao titulo="Entrar" aoCarregar={confirmar} aCarregar={aEnviar} desactivado={codigo.trim().length < 4} />
+            <Botao titulo="Entrar" aoCarregar={confirmar} aCarregar={aEnviar} desactivado={codigo.trim().length < 6} />
             <Botao
               titulo={espera > 0 && !expirado ? `Reenviar em ${espera}s` : 'Reenviar código'}
-              variante="secundario"
+              variante="texto"
               desactivado={espera > 0 && !expirado}
               aCarregar={aEnviar}
               aoCarregar={() => enviarPara(enviadoPara)}
