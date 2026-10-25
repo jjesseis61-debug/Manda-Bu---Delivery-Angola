@@ -76,8 +76,12 @@ export default function Entrar() {
     setAEnviar(false);
     if (error) setErro('O código não está certo ou já expirou. Pede um novo código.');
     else {
-      // Fecha o código na lista do operador (OTP manual); se falhar não bloqueia o login — expira em 10 min
-      void supabase.rpc('otp_confirmar');
+      // Fecha o código na lista do operador (OTP manual). O .then() é necessário: o builder do rpc
+      // só envia o pedido quando é "consumido"; sem isto, nada é enviado. Falha não bloqueia o login.
+      supabase.rpc('otp_confirmar').then(
+        () => undefined,
+        () => undefined,
+      );
       router.replace('/');
     }
   }
