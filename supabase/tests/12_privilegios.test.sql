@@ -131,6 +131,8 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 'meus_selos',
                 -- agendamento do cardápio: janela por data/hora (leitura que fura a RLS)
                 'cardapio_fora_da_janela',
+                -- ecrã geral de auditoria (gated por auditoria.ver)
+                'auditoria_lista',
                 -- auxiliares usadas em políticas RLS, valores por defeito ou triggers SECURITY INVOKER
                 'cliente_actual', 'cozinha_padrao', 'e_funcionario', 'funcionalidade_activa',
                 'funcionario_actual', 'membro_da_cozinha', 'tem_permissao', 'e_administrador', 'pode_na_cozinha')),

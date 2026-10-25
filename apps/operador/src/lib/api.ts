@@ -10,6 +10,7 @@ import type {
   ClienteInativo,
   UtilizadorEncontrado,
   UtilizadorBloqueado,
+  LinhaAuditoria,
   OtpPendente,
   ResumoInativos,
   CampanhaReconquista,
@@ -962,6 +963,12 @@ export async function listarUtilizadoresBloqueados(): Promise<UtilizadorBloquead
 }
 
 // ---------------------------------------------------------------- OTP manual (códigos de login)
+export async function auditoriaLista(categoria?: string | null, desde?: string | null): Promise<LinhaAuditoria[]> {
+  return (
+    (verificar(await supabase.rpc('auditoria_lista', { p_categoria: categoria ?? null, p_desde: desde ?? null })) as LinhaAuditoria[]) ?? []
+  );
+}
+
 export async function otpPendentes(): Promise<OtpPendente[]> {
   return (verificar(await supabase.rpc('otp_pendentes_lista')) as OtpPendente[]) ?? [];
 }

@@ -214,6 +214,17 @@ export type OtpPendente = {
   confirmado_em: string | null;
 };
 
+/** Uma linha do registo de auditoria (ecrã geral) */
+export type LinhaAuditoria = {
+  id: string;
+  criado_em: string;
+  quem: string;
+  acao: string;
+  ref_tipo: string | null;
+  detalhe: string | null;
+  bloqueado: boolean;
+};
+
 export type UtilizadorBloqueado = {
   telefone: string;
   motivo: string | null;

@@ -56,6 +56,7 @@ const ecras: {
   { rota: '/pessoal', titulo: 'Pessoal', descricao: 'Cadastrar estafetas e funcionários, telefone de login e permissões', permissoes: [], permitir: (f) => f.administrador_principal },
   { rota: '/relatorios', titulo: 'Relatórios de cozinha', descricao: 'Por período, com exportação (O9)', permissoes: ['relatorios.exportar'] },
   { rota: '/moderacao', titulo: 'Moderação', descricao: 'Comentários das avaliações e palavras filtradas (O7)', permissoes: ['avaliacoes.moderar'] },
+  { rota: '/auditoria', titulo: 'Auditoria', descricao: 'Registo de tudo o que aconteceu: logins, cardápio, caixa, configuração (quem, o quê e quando)', permissoes: ['auditoria.ver'] },
   {
     rota: '/equipa',
     titulo: 'Equipa',
