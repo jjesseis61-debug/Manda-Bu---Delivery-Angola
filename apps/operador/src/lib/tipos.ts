@@ -553,6 +553,8 @@ export type HistoricoPedido = {
   estado: string;
   cliente: string | null;
   cozinha: string | null;
+  preparado_por: string | null;
+  preparado_em: string | null;
   entregador: string | null;
   caixa: string | null;
   valor: number;

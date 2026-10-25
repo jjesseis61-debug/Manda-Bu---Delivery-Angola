@@ -2,7 +2,7 @@
 -- anterior; a lista e a entrega exigem otp.entregar; a limpeza apaga os antigos.
 begin;
 \ir _helpers.psql
-select plan(20);
+select plan(22);
 
 select testes.def('sem_acesso', testes.funcionario('Sem Acesso', array[]::text[]));
 select testes.def('entregador', testes.funcionario('Entregador OTP', array['otp.entregar']));
@@ -81,6 +81,16 @@ select is((select codigo from otp_pendentes_lista() where estado = 'confirmado')
 reset role; select testes.sair();
 select is((select count(*)::int from auditoria where acao = 'otp_login'), 1,
           'o login fica registado na auditoria');
+
+-- 4e) Login de um número SEM código pendente (ex.: número de teste do painel) também fica auditado
+--     (3 dígitos diferentes do caso acima para não cair no dedup)
+select testes.def('cli_teste', testes.cliente('Teste Num', 'Particular', '+244999000222'));
+select testes.entrar(testes.u('cli_teste'));
+set local role authenticated;
+select lives_ok($$select otp_confirmar()$$, 'otp_confirmar corre para número sem código pendente');
+reset role; select testes.sair();
+select is((select count(*)::int from auditoria where acao = 'otp_login' and (detalhe::jsonb ->> 'sem_codigo') = 'true'), 1,
+          'o login de um número sem código pendente fica registado na auditoria');
 
 -- 5) Limpeza: apaga os códigos antigos (> 1 dia)
 insert into otp_pendentes (telefone, codigo, criado_em) values ('+244000000000', '000000', now() - interval '2 days');

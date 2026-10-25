@@ -29,6 +29,7 @@ export default function HistoricoPedidoEcra() {
             <Linha esquerda="Estado" direita={nomeEstadoPedido[h.estado] ?? h.estado} />
             <Linha esquerda="Valor" direita={formatarKz(h.valor)} forte />
             {h.cozinha && <Linha esquerda="Cozinha" direita={h.cozinha} />}
+            {h.preparado_por && <Linha esquerda="Preparou" direita={h.preparado_por} />}
             {h.entregador && <Linha esquerda="Entregou" direita={h.entregador} />}
             {h.caixa && <Linha esquerda="Caixa" direita={h.caixa} />}
             {(h.parcelas ?? []).map((p, i) => (
