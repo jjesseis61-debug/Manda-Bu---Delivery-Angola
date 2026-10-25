@@ -47,8 +47,10 @@ export default function PoliticaPrivacidade() {
       <Paragrafo>
         A equipa da Cozinha da Alexandra que trata do teu pedido (cozinha, entrega, apoio), cada pessoa só no que precisa
         para o seu trabalho. Nas listas públicas (destaques e avaliações) aparece só o teu pseudónimo ou o primeiro
-        nome, se o escolheres. Os dados ficam guardados no Supabase; as notificações passam pela Expo e o SMS pelo
-        fornecedor de SMS.
+        nome, se o escolheres. Os teus dados ficam guardados numa base de dados em servidores seguros de um fornecedor
+        de alojamento (cloud), com acesso restrito à equipa. As notificações são entregues através dos serviços de
+        notificações do telemóvel (Google no Android, Apple no iOS) e o SMS através de um fornecedor de SMS. Não
+        guardamos dados de cartão de pagamento.
       </Paragrafo>
 
       <Subtitulo>Os teus direitos</Subtitulo>
