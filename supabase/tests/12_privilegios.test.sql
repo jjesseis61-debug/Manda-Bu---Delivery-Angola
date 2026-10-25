@@ -129,6 +129,8 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 'receitas_publicas', 'receita_publica', 'receita_abriu', 'receita_tocou_pedir', 'avisar_nova_receita',
                 -- cartão de selos: progresso do cliente
                 'meus_selos',
+                -- agendamento do cardápio: janela por data/hora (leitura que fura a RLS)
+                'cardapio_fora_da_janela',
                 -- auxiliares usadas em políticas RLS, valores por defeito ou triggers SECURITY INVOKER
                 'cliente_actual', 'cozinha_padrao', 'e_funcionario', 'funcionalidade_activa',
                 'funcionario_actual', 'membro_da_cozinha', 'tem_permissao', 'e_administrador', 'pode_na_cozinha')),

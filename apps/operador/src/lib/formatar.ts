@@ -19,6 +19,16 @@ export function formatarData(iso: string | null | undefined, comHora = false): s
     : d.toLocaleDateString('pt-PT');
 }
 
+/** Texto curto da janela de agendamento de um prato (cartão e editor). null = sem agendamento. */
+export function textoJanela(de?: string | null, ate?: string | null): string | null {
+  if (!de && !ate) return null;
+  const agora = Date.now();
+  const partes: string[] = [];
+  if (de) partes.push((new Date(de).getTime() > agora ? 'disponível ' : 'desde ') + formatarData(de, true));
+  if (ate) partes.push('expira ' + formatarData(ate, true));
+  return partes.join(' · ');
+}
+
 /** "2026-10-01" -> "01/10/2026" (sem fuso horário) */
 export function formatarDia(dia: string | null | undefined): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(dia ?? '');

@@ -591,6 +591,10 @@ export type PratoCardapio = {
   doses_dia?: number | null;
   /** false = prato só de feira (consignação), não aparece aos clientes online */
   visivel_online?: boolean;
+  /** Agendamento: disponível a partir desta data/hora (ISO; null = já) */
+  disponivel_de?: string | null;
+  /** Agendamento: expira nesta data/hora (ISO; null = sem fim) */
+  disponivel_ate?: string | null;
 };
 
 /** Doses que restam hoje de um prato com limite */

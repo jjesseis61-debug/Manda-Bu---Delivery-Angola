@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Image, Switch, Text, View } from 'react-native';
 
-import { formatarKz } from '@/lib/formatar';
+import { formatarKz, textoJanela } from '@/lib/formatar';
 import { cores, espaco } from '@/lib/tema';
 import type { DosesPrato, PratoCardapio } from '@/lib/tipos';
 
@@ -71,6 +71,10 @@ export function CartaoPrato({
         </Text>
         <Text>{formatarKz(p.preco)}</Text>
       </View>
+
+      {textoJanela(p.disponivel_de, p.disponivel_ate) && (
+        <Text style={{ color: cores.textoSuave, fontSize: 12 }}>⏱ {textoJanela(p.disponivel_de, p.disponivel_ate)}</Text>
+      )}
 
       {/* Controlo rápido: disponível */}
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>

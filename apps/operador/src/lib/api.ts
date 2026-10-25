@@ -174,7 +174,7 @@ export async function lerCardapio(cozinhaId: string): Promise<PratoCardapio[]> {
   return verificar(
     await supabase
       .from('cardapio')
-      .select('id, cozinha_id, nome, descricao, categoria, preco, disponivel, do_dia, ordem, foto_url, doses_dia, visivel_online')
+      .select('id, cozinha_id, nome, descricao, categoria, preco, disponivel, do_dia, ordem, foto_url, doses_dia, visivel_online, disponivel_de, disponivel_ate')
       .eq('cozinha_id', cozinhaId)
       .order('ordem')
       .order('nome'),
