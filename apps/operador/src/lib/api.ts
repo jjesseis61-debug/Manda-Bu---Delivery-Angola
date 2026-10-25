@@ -10,6 +10,7 @@ import type {
   ClienteInativo,
   UtilizadorEncontrado,
   UtilizadorBloqueado,
+  HorarioCardapio,
   LinhaAuditoria,
   OtpPendente,
   ResumoInativos,
@@ -967,6 +968,34 @@ export async function auditoriaLista(categoria?: string | null, desde?: string |
   return (
     (verificar(await supabase.rpc('auditoria_lista', { p_categoria: categoria ?? null, p_desde: desde ?? null })) as LinhaAuditoria[]) ?? []
   );
+}
+
+export async function lerHorarios(cardapioId: string): Promise<HorarioCardapio[]> {
+  return (
+    (verificar(
+      await supabase
+        .from('cardapio_horarios')
+        .select('id, cardapio_id, dia_semana, data, hora_inicio, hora_fim')
+        .eq('cardapio_id', cardapioId)
+        .order('dia_semana', { nullsFirst: false })
+        .order('data')
+        .order('hora_inicio'),
+    ) as HorarioCardapio[]) ?? []
+  );
+}
+
+export async function guardarHorario(h: {
+  cardapio_id: string;
+  dia_semana: number | null;
+  data: string | null;
+  hora_inicio: string;
+  hora_fim: string;
+}): Promise<void> {
+  verificar(await supabase.from('cardapio_horarios').insert(h));
+}
+
+export async function apagarHorario(id: string): Promise<void> {
+  verificar(await supabase.from('cardapio_horarios').delete().eq('id', id));
 }
 
 export async function otpPendentes(): Promise<OtpPendente[]> {

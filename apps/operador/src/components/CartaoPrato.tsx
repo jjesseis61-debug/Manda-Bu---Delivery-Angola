@@ -21,6 +21,7 @@ export function CartaoPrato({
   aoEditar,
   aoOpcoes,
   aoImpacto,
+  aoHorarios,
 }: {
   p: PratoCardapio;
   doses?: DosesPrato;
@@ -31,6 +32,7 @@ export function CartaoPrato({
   aoEditar: () => void;
   aoOpcoes: () => void;
   aoImpacto: () => void;
+  aoHorarios: () => void;
 }) {
   const [modo, setModo] = useState<null | 'acrescentar' | 'ajustar'>(null);
   const [valor, setValor] = useState('');
@@ -116,6 +118,7 @@ export function CartaoPrato({
       <View style={{ flexDirection: 'row', gap: espaco.s, flexWrap: 'wrap' }}>
         <Botao titulo="Editar" variante="texto" aoCarregar={aoEditar} />
         <Botao titulo="Opções" variante="texto" aoCarregar={aoOpcoes} />
+        <Botao titulo="Horários" variante="texto" aoCarregar={aoHorarios} />
         {podeAuditoria && <Botao titulo="Impacto" variante="texto" aoCarregar={aoImpacto} />}
       </View>
     </Cartao>

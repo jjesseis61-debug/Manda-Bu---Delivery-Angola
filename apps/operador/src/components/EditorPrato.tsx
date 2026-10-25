@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { Switch, Text, View } from 'react-native';
 
 import { definirFotoPrato, guardarPrato } from '@/lib/api';
-import { mensagemErro, textoJanela } from '@/lib/formatar';
+import { mensagemErro } from '@/lib/formatar';
 import { enviarFotoPublica } from '@/lib/fotos';
 import { cores, espaco } from '@/lib/tema';
 import type { PratoCardapio } from '@/lib/tipos';
@@ -33,94 +33,6 @@ function paraEditado(p: PratoCardapio): PratoEditado {
 
 function pratoNovo(cozinhaId: string): PratoEditado {
   return { cozinha_id: cozinhaId, nome: '', descricao: null, categoria: null, preco: '', disponivel: true, do_dia: false, visivel_online: true, ordem: '0', doses: '', disponivel_de: null, disponivel_ate: null };
-}
-
-const HORA_OK = /^([01]?\d|2[0-3]):[0-5]\d$/;
-
-/**
- * Agendamento da disponibilidade de um prato: preparar hoje o cardápio de amanhã.
- * Sem dependência nativa (presets + hora em texto). Início por dia + hora; fim por duração,
- * fim do dia, ou sem fim. Devolve as datas em ISO (hora local do aparelho — Angola, UTC+1).
- */
-function Agendamento({ de, ate, aoMudar }: { de: string | null; ate: string | null; aoMudar: (de: string | null, ate: string | null) => void }) {
-  const [ligado, setLigado] = useState(!!(de || ate));
-  const [dia, setDia] = useState<'hoje' | 'amanha' | 'depois'>('amanha');
-  const [hora, setHora] = useState('11:00');
-  const [fim, setFim] = useState<'sem' | '2' | '3' | '4' | 'dia'>('sem');
-  const iniciado = useRef(false);
-
-  // Repõe os controlos a partir de um agendamento já existente (uma vez).
-  useEffect(() => {
-    if (iniciado.current) return;
-    iniciado.current = true;
-    if (de) {
-      const d = new Date(de);
-      const meiaHoje = new Date(); meiaHoje.setHours(0, 0, 0, 0);
-      const meiaD = new Date(d); meiaD.setHours(0, 0, 0, 0);
-      const off = Math.round((meiaD.getTime() - meiaHoje.getTime()) / 86400000);
-      setDia(off <= 0 ? 'hoje' : off === 1 ? 'amanha' : 'depois');
-      setHora(`${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`);
-      if (ate) {
-        const a = new Date(ate);
-        const h = (a.getTime() - d.getTime()) / 3600000;
-        setFim(Math.abs(h - 2) < 0.02 ? '2' : Math.abs(h - 3) < 0.02 ? '3' : Math.abs(h - 4) < 0.02 ? '4'
-          : a.getHours() === 23 && a.getMinutes() === 59 ? 'dia' : 'sem');
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  function recompor(l: boolean, d: typeof dia, h: string, f: typeof fim) {
-    if (!l || !HORA_OK.test(h)) { aoMudar(null, null); return; }
-    const base = new Date();
-    base.setDate(base.getDate() + (d === 'hoje' ? 0 : d === 'amanha' ? 1 : 2));
-    const [hh, mm] = h.split(':').map(Number);
-    base.setHours(hh, mm, 0, 0);
-    let ateDate: Date | null = null;
-    if (f === '2' || f === '3' || f === '4') { ateDate = new Date(base); ateDate.setHours(ateDate.getHours() + Number(f)); }
-    else if (f === 'dia') { ateDate = new Date(base); ateDate.setHours(23, 59, 0, 0); }
-    aoMudar(base.toISOString(), ateDate ? ateDate.toISOString() : null);
-  }
-
-  const preview = textoJanela(de, ate);
-
-  return (
-    <View style={{ gap: espaco.s }}>
-      <Interruptor
-        rotulo="Agendar disponibilidade"
-        valor={ligado}
-        aoMudar={(v) => { setLigado(v); recompor(v, dia, hora, fim); }}
-      />
-      {ligado && (
-        <>
-          <Text style={{ color: cores.textoSuave }}>Fica disponível em</Text>
-          <Escolha
-            opcoes={[{ valor: 'hoje', rotulo: 'Hoje' }, { valor: 'amanha', rotulo: 'Amanhã' }, { valor: 'depois', rotulo: 'Depois de amanhã' }]}
-            valor={dia}
-            aoMudar={(v) => { setDia(v); recompor(ligado, v, hora, fim); }}
-          />
-          <Campo
-            rotulo="Hora (HH:MM)"
-            value={hora}
-            keyboardType="numbers-and-punctuation"
-            placeholder="11:00"
-            onChangeText={(t) => { setHora(t); recompor(ligado, dia, t, fim); }}
-          />
-          <Text style={{ color: cores.textoSuave }}>Fica disponível durante</Text>
-          <Escolha
-            opcoes={[
-              { valor: 'sem', rotulo: 'Sem fim' }, { valor: '2', rotulo: '2 h' }, { valor: '3', rotulo: '3 h' },
-              { valor: '4', rotulo: '4 h' }, { valor: 'dia', rotulo: 'Até fim do dia' },
-            ]}
-            valor={fim}
-            aoMudar={(v) => { setFim(v); recompor(ligado, dia, hora, v); }}
-          />
-          {!HORA_OK.test(hora) && <Aviso tipo="erro">Escreve a hora no formato HH:MM (ex.: 11:00).</Aviso>}
-          {preview && <Paragrafo suave>{preview}</Paragrafo>}
-        </>
-      )}
-    </View>
-  );
 }
 
 /**
@@ -219,11 +131,7 @@ export function EditorPrato({
       <Interruptor rotulo="Disponível" valor={prato.disponivel} aoMudar={(v) => setPrato({ ...prato, disponivel: v })} />
       <Interruptor rotulo="Prato do dia" valor={prato.do_dia} aoMudar={(v) => setPrato({ ...prato, do_dia: v })} />
       <Interruptor rotulo="Visível online (desligar = só feira)" valor={prato.visivel_online ?? true} aoMudar={(v) => setPrato({ ...prato, visivel_online: v })} />
-      <Agendamento
-        de={prato.disponivel_de ?? null}
-        ate={prato.disponivel_ate ?? null}
-        aoMudar={(de, ate) => setPrato({ ...prato, disponivel_de: de, disponivel_ate: ate })}
-      />
+      {!novo && <Paragrafo suave>Para agendar horários (ex.: Seg/Qua 08–11), usa &quot;Horários&quot; no cartão do prato.</Paragrafo>}
       {prato.id ? (
         <FotoEditavel
           tipo="pratos"

@@ -129,8 +129,8 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 'receitas_publicas', 'receita_publica', 'receita_abriu', 'receita_tocou_pedir', 'avisar_nova_receita',
                 -- cartão de selos: progresso do cliente
                 'meus_selos',
-                -- agendamento do cardápio: janela por data/hora (leitura que fura a RLS)
-                'cardapio_fora_da_janela',
+                -- agendamento do cardápio: janela por data/hora e lista de horários (leitura que fura a RLS)
+                'cardapio_fora_da_janela', 'cardapio_aberto_agora',
                 -- ecrã geral de auditoria (gated por auditoria.ver)
                 'auditoria_lista',
                 -- auxiliares usadas em políticas RLS, valores por defeito ou triggers SECURITY INVOKER

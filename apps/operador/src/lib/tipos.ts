@@ -214,6 +214,16 @@ export type OtpPendente = {
   confirmado_em: string | null;
 };
 
+/** Uma janela de horário de um prato (recorrente por dia da semana, ou uma vez por data) */
+export type HorarioCardapio = {
+  id: string;
+  cardapio_id: string;
+  dia_semana: number | null; // ISO 1=Seg … 7=Dom (null se for por data)
+  data: string | null; // 'YYYY-MM-DD' (null se for por dia da semana)
+  hora_inicio: string; // 'HH:MM[:SS]'
+  hora_fim: string;
+};
+
 /** Uma linha do registo de auditoria (ecrã geral) */
 export type LinhaAuditoria = {
   id: string;
