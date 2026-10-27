@@ -3,12 +3,20 @@ import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { BlocoContactos, temContacto } from '@/components/BlocoContactos';
 import { CodigoOtp } from '@/components/CodigoOtp';
 import { Marca } from '@/components/Marca';
 import { Aviso, Botao, Campo, Paragrafo } from '@/components/ui';
+import { CONTACTO_AJUDA } from '@/lib/empresa';
 import { minutosSegundos, telefoneInternacional } from '@/lib/formatar';
 import { supabase } from '@/lib/supabase';
 import { cores, espaco } from '@/lib/tema';
+
+// Sem rede, o supabase-js devolve um AuthRetryableFetchError com status 0 (o fetch
+// falhou antes de chegar ao servidor). Um 5xx ou um limite de envio têm outro status.
+function semLigacao(error: { name?: string; status?: number } | null): boolean {
+  return error?.name === 'AuthRetryableFetchError' && error?.status === 0;
+}
 
 const VALIDADE_SEG = 600; // 10 min — igual ao OTP Expiry do servidor
 const ESPERA_REENVIO_SEG = 60;
@@ -41,7 +49,11 @@ export default function Entrar() {
     const { error } = await supabase.auth.signInWithOtp({ phone: numero });
     setAEnviar(false);
     if (error) {
-      setErro('Não conseguimos enviar o código. Tenta outra vez dentro de um minuto.');
+      setErro(
+        semLigacao(error)
+          ? 'Sem ligação à internet. Liga os dados móveis ou o Wi-Fi e tenta de novo.'
+          : 'Não conseguimos enviar o código. Tenta outra vez dentro de um minuto.',
+      );
       return;
     }
     setEnviadoPara(numero);
@@ -74,7 +86,12 @@ export default function Entrar() {
     setAEnviar(true);
     const { error } = await supabase.auth.verifyOtp({ phone: enviadoPara, token: codigo.trim(), type: 'sms' });
     setAEnviar(false);
-    if (error) setErro('O código não está certo ou já expirou. Pede um novo código.');
+    if (error)
+      setErro(
+        semLigacao(error)
+          ? 'Sem ligação à internet. Liga os dados móveis ou o Wi-Fi e tenta de novo.'
+          : 'O código não está certo ou já expirou. Pede um novo código.',
+      );
     else {
       // Fecha o código na lista do operador (OTP manual). O .then() é necessário: o builder do rpc
       // só envia o pedido quando é "consumido"; sem isto, nada é enviado. Falha não bloqueia o login.
@@ -108,6 +125,11 @@ export default function Entrar() {
             <Paragrafo suave>Só usamos o teu número para entrares e para te avisarmos dos teus pedidos.</Paragrafo>
             {erro && <Aviso tipo="erro">{erro}</Aviso>}
             <Botao titulo="Receber código" aoCarregar={pedirCodigo} aCarregar={aEnviar} />
+            {temContacto(CONTACTO_AJUDA) && (
+              <View style={{ marginTop: 'auto' }}>
+                <BlocoContactos contacto={CONTACTO_AJUDA} titulo="Precisas de ajuda? Fala connosco" />
+              </View>
+            )}
           </>
         ) : (
           <>

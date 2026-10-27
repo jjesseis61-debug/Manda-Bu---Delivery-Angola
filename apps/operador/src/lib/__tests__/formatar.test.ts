@@ -1,5 +1,5 @@
 /// <reference types="jest" />
-import { horaLuanda, segundaFeira, diaLuanda, formatarDia, formatarKz, formatarPercentagem, inicioMesLuanda, mensagemErro, paraCsv } from '../formatar';
+import { horaLuanda, segundaFeira, diaLuanda, formatarDia, formatarKz, formatarPercentagem, inicioMesLuanda, mascaraData, mascaraHora, mensagemErro, paraCsv } from '../formatar';
 
 describe('formatar (operador)', () => {
   it('formata kwanzas', () => {
@@ -66,4 +66,26 @@ test('I9: ingredientes das opções', () => {
     { produto_id: 'ovo', quantidade: 1, unidade: 'un' },
     { produto_id: 'arroz', quantidade: 0.05, unidade: 'kg' },
   ]);
+});
+
+describe('máscaras de horário', () => {
+  it('máscara de hora insere os dois pontos', () => {
+    expect(mascaraHora('0800')).toBe('08:00');
+    expect(mascaraHora('8')).toBe('8');
+    expect(mascaraHora('08')).toBe('08');
+    expect(mascaraHora('083')).toBe('08:3');
+    expect(mascaraHora('08:00')).toBe('08:00'); // já formatado, mantém-se
+    expect(mascaraHora('1130')).toBe('11:30');
+    expect(mascaraHora('abc08x00')).toBe('08:00'); // ignora o que não é número
+    expect(mascaraHora('080099')).toBe('08:00'); // nunca passa de 4 algarismos
+  });
+
+  it('máscara de data insere as barras', () => {
+    expect(mascaraData('30102026')).toBe('30/10/2026');
+    expect(mascaraData('30')).toBe('30');
+    expect(mascaraData('3010')).toBe('30/10');
+    expect(mascaraData('301020')).toBe('30/10/20');
+    expect(mascaraData('30/10/2026')).toBe('30/10/2026'); // já formatado
+    expect(mascaraData('3010202699')).toBe('30/10/2026'); // nunca passa de 8 algarismos
+  });
 });

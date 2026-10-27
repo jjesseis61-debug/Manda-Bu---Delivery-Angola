@@ -985,13 +985,19 @@ export async function lerHorarios(cardapioId: string): Promise<HorarioCardapio[]
 }
 
 export async function guardarHorario(h: {
+  id?: string;
   cardapio_id: string;
   dia_semana: number | null;
   data: string | null;
   hora_inicio: string;
   hora_fim: string;
 }): Promise<void> {
-  verificar(await supabase.from('cardapio_horarios').insert(h));
+  if (h.id) {
+    const { id, ...resto } = h;
+    verificar(await supabase.from('cardapio_horarios').update(resto).eq('id', id));
+  } else {
+    verificar(await supabase.from('cardapio_horarios').insert(h));
+  }
 }
 
 export async function apagarHorario(id: string): Promise<void> {

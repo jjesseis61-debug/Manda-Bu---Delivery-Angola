@@ -5,7 +5,7 @@ import { Text, View } from 'react-native';
 import { Guarda } from '@/components/Guarda';
 import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Escolha, Paragrafo, Subtitulo } from '@/components/ui';
 import { apagarHorario, guardarHorario, lerHorarios } from '@/lib/api';
-import { mensagemErro } from '@/lib/formatar';
+import { mascaraData, mascaraHora, mensagemErro } from '@/lib/formatar';
 import { cores, espaco } from '@/lib/tema';
 import type { HorarioCardapio } from '@/lib/tipos';
 
@@ -18,6 +18,11 @@ const hhmm = (t: string) => t.slice(0, 5);
 function isoParaDDMM(iso: string): string {
   const [, m, d] = iso.split('-');
   return `${d}/${m}`;
+}
+/** 'YYYY-MM-DD' -> 'DD/MM/AAAA' (para pré-preencher o campo ao editar) */
+function isoParaDDMMAAAA(iso: string): string {
+  const [a, m, d] = iso.split('-');
+  return `${d}/${m}/${a}`;
 }
 /** 'DD/MM/AAAA' -> 'YYYY-MM-DD' (ou null) */
 function ddmmParaIso(s: string): string | null {
@@ -45,6 +50,7 @@ export default function HorariosPrato() {
   const [data, setData] = useState('');
   const [ini, setIni] = useState('08:00');
   const [fim, setFim] = useState('11:00');
+  const [editId, setEditId] = useState<string | null>(null); // horário a editar; null = acrescentar novo
 
   const carregar = useCallback(() => {
     if (!prato) return;
@@ -57,19 +63,46 @@ export default function HorariosPrato() {
   const dataIso = modo === 'data' ? ddmmParaIso(data) : null;
   const podeGuardar = horasOk && (modo === 'semana' || !!dataIso);
 
-  async function acrescentar() {
+  // Repõe o formulário no modo "acrescentar novo"
+  function limparFormulario() {
+    setEditId(null);
+    setModo('semana');
+    setDia('1');
+    setData('');
+    setIni('08:00');
+    setFim('11:00');
+  }
+
+  // Carrega um horário existente no formulário para o editar
+  function editar(h: HorarioCardapio) {
+    setErro(null);
+    setEditId(h.id);
+    if (h.dia_semana) {
+      setModo('semana');
+      setDia(String(h.dia_semana));
+      setData('');
+    } else {
+      setModo('data');
+      setData(h.data ? isoParaDDMMAAAA(h.data) : '');
+    }
+    setIni(hhmm(h.hora_inicio));
+    setFim(hhmm(h.hora_fim));
+  }
+
+  async function guardar() {
     if (!prato || !podeGuardar) return;
     setOcupado(true);
     setErro(null);
     try {
       await guardarHorario({
+        id: editId ?? undefined,
         cardapio_id: prato,
         dia_semana: modo === 'semana' ? Number(dia) : null,
         data: modo === 'data' ? dataIso : null,
         hora_inicio: ini,
         hora_fim: fim,
       });
-      setData('');
+      limparFormulario();
       carregar();
     } catch (e) {
       setErro(mensagemErro(e));
@@ -80,6 +113,7 @@ export default function HorariosPrato() {
 
   async function remover(id: string) {
     setErro(null);
+    if (id === editId) limparFormulario(); // apagou o que estava a editar
     try {
       await apagarHorario(id);
       carregar();
@@ -101,16 +135,19 @@ export default function HorariosPrato() {
         {!lista && !erro && <ACarregar />}
         {lista && lista.length === 0 && <Paragrafo suave>Sem horários — sempre disponível.</Paragrafo>}
         {lista?.map((h) => (
-          <Cartao key={h.id}>
+          <Cartao key={h.id} estilo={h.id === editId ? { borderWidth: 1, borderColor: cores.marca } : undefined}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <Text style={{ fontWeight: '700', color: cores.texto }}>{descricao(h)}</Text>
-              <Botao titulo="Remover" variante="texto" aoCarregar={() => remover(h.id)} />
+              <View style={{ flexDirection: 'row', gap: espaco.s }}>
+                <Botao titulo="Editar" variante="texto" aoCarregar={() => editar(h)} />
+                <Botao titulo="Remover" variante="texto" aoCarregar={() => remover(h.id)} />
+              </View>
             </View>
           </Cartao>
         ))}
 
         <Cartao estilo={{ gap: espaco.s }}>
-          <Subtitulo>Acrescentar horário</Subtitulo>
+          <Subtitulo>{editId ? 'Editar horário' : 'Acrescentar horário'}</Subtitulo>
           <Escolha
             opcoes={[
               { valor: 'semana', rotulo: 'Dia da semana (repete)' },
@@ -122,19 +159,20 @@ export default function HorariosPrato() {
           {modo === 'semana' ? (
             <Escolha opcoes={[1, 2, 3, 4, 5, 6, 7].map((n) => ({ valor: String(n), rotulo: DIAS[n] }))} valor={dia} aoMudar={setDia} />
           ) : (
-            <Campo rotulo="Data (DD/MM/AAAA)" placeholder="30/10/2026" keyboardType="numbers-and-punctuation" value={data} onChangeText={setData} />
+            <Campo rotulo="Data (DD/MM/AAAA)" placeholder="30/10/2026" keyboardType="number-pad" maxLength={10} value={data} onChangeText={(t) => setData(mascaraData(t))} />
           )}
           <View style={{ flexDirection: 'row', gap: espaco.m }}>
             <View style={{ flex: 1 }}>
-              <Campo rotulo="Das (HH:MM)" placeholder="08:00" keyboardType="numbers-and-punctuation" value={ini} onChangeText={setIni} />
+              <Campo rotulo="Das (HH:MM)" placeholder="08:00" keyboardType="number-pad" maxLength={5} value={ini} onChangeText={(t) => setIni(mascaraHora(t))} />
             </View>
             <View style={{ flex: 1 }}>
-              <Campo rotulo="Às (HH:MM)" placeholder="11:00" keyboardType="numbers-and-punctuation" value={fim} onChangeText={setFim} />
+              <Campo rotulo="Às (HH:MM)" placeholder="11:00" keyboardType="number-pad" maxLength={5} value={fim} onChangeText={(t) => setFim(mascaraHora(t))} />
             </View>
           </View>
           {!horasOk && <Aviso tipo="erro">Escreve as horas no formato HH:MM (ex.: 08:00).</Aviso>}
           {modo === 'data' && data !== '' && !dataIso && <Aviso tipo="erro">Data inválida. Usa DD/MM/AAAA (ex.: 30/10/2026).</Aviso>}
-          <Botao titulo="Acrescentar horário" aCarregar={ocupado} desactivado={!podeGuardar} aoCarregar={acrescentar} />
+          <Botao titulo={editId ? 'Guardar alterações' : 'Acrescentar horário'} aCarregar={ocupado} desactivado={!podeGuardar} aoCarregar={guardar} />
+          {editId && <Botao titulo="Cancelar edição" variante="texto" aoCarregar={limparFormulario} />}
         </Cartao>
       </Ecra>
     </Guarda>

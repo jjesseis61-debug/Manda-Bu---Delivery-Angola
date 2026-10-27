@@ -314,3 +314,17 @@ export function telefoneValido(t: string): boolean {
 export function emailValido(t: string): boolean {
   return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(t.trim()) && t.trim().length <= 120;
 }
+
+/** Máscara de hora: só algarismos, insere o ":" sozinho (ex.: "0800" -> "08:00") */
+export function mascaraHora(s: string): string {
+  const d = s.replace(/\D/g, '').slice(0, 4);
+  return d.length <= 2 ? d : `${d.slice(0, 2)}:${d.slice(2)}`;
+}
+
+/** Máscara de data: só algarismos, insere as "/" sozinhas (ex.: "30102026" -> "30/10/2026") */
+export function mascaraData(s: string): string {
+  const d = s.replace(/\D/g, '').slice(0, 8);
+  if (d.length <= 2) return d;
+  if (d.length <= 4) return `${d.slice(0, 2)}/${d.slice(2)}`;
+  return `${d.slice(0, 2)}/${d.slice(2, 4)}/${d.slice(4)}`;
+}
