@@ -42,6 +42,10 @@ jobs:
       EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_VoD7AGU0YCNyTJjiNmwJ-Q_FaRL1-aM' }}
       EXPO_PUBLIC_CONTACTO_PRIVACIDADE: ${{ vars.CONTACTO_PRIVACIDADE }}
       EXPO_PUBLIC_INSTRUCOES_PAGAMENTO: ${{ vars.INSTRUCOES_PAGAMENTO }}
+      # Contacto de ajuda mostrado no ecrã de entrar (número público). Trocável por um var do repo.
+      EXPO_PUBLIC_CONTACTO_TELEFONE: ${{ vars.CONTACTO_TELEFONE || '958077592' }}
+      EXPO_PUBLIC_CONTACTO_WHATSAPP: ${{ vars.CONTACTO_WHATSAPP || '958077592' }}
+      EXPO_PUBLIC_CONTACTO_HORARIO: ${{ vars.CONTACTO_HORARIO }}
       # Secret do repositório; sem ele o mapa do "Novo endereço" fica em branco.
       GOOGLE_MAPS_ANDROID_API_KEY: ${{ secrets.GOOGLE_MAPS_ANDROID_API_KEY }}
       # Notificações push: projecto de cada app em expo.dev (sem ele a app funciona sem push)
