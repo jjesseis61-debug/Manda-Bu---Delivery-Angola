@@ -1,6 +1,8 @@
-import type { ReactNode } from 'react';
+import { useContext, type ReactNode } from 'react';
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -10,20 +12,33 @@ import {
   type TextInputProps,
   type ViewStyle,
 } from 'react-native';
+import { HeaderHeightContext } from 'expo-router/react-navigation';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { cores, espaco, raio } from '@/lib/tema';
 
+/**
+ * Ecrã com conteúdo que rola. O teclado não tapa os campos: no Android (ecrã inteiro/edge-to-edge desde o Expo 54,
+ * em que o sistema já não encolhe a janela) usa-se o modo "pan" do teclado (app.json: android.softwareKeyboardLayoutMode),
+ * que empurra a janela para manter o campo com o cursor à vista; no iOS o KeyboardAvoidingView reserva o espaço do
+ * teclado (descontando o cabeçalho, que fica por cima).
+ */
 export function Ecra({ children, rolar = true }: { children: ReactNode; rolar?: boolean }) {
+  const alturaCabecalho = useContext(HeaderHeightContext) ?? 0;
   return (
     <SafeAreaView style={estilos.ecra} edges={['bottom', 'left', 'right']}>
-      {rolar ? (
-        <ScrollView contentContainerStyle={estilos.conteudo} keyboardShouldPersistTaps="handled">
-          {children}
-        </ScrollView>
-      ) : (
-        <View style={[estilos.conteudo, { flex: 1 }]}>{children}</View>
-      )}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={alturaCabecalho}>
+        {rolar ? (
+          <ScrollView contentContainerStyle={estilos.conteudo} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+            {children}
+          </ScrollView>
+        ) : (
+          <View style={[estilos.conteudo, { flex: 1 }]}>{children}</View>
+        )}
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -56,15 +71,27 @@ export function Linha({ esquerda, direita, forte = false }: { esquerda: ReactNod
 type BotaoProps = {
   titulo: string;
   aoCarregar: () => void;
-  variante?: 'principal' | 'secundario' | 'whatsapp' | 'texto';
+  variante?: 'principal' | 'secundario' | 'leve' | 'whatsapp' | 'destaque' | 'texto';
   desactivado?: boolean;
   aCarregar?: boolean;
 };
 
 export function Botao({ titulo, aoCarregar, variante = 'principal', desactivado, aCarregar }: BotaoProps) {
   const fundo =
-    variante === 'principal' ? cores.marca : variante === 'whatsapp' ? cores.whatsapp : variante === 'secundario' ? cores.fundoSuave : 'transparent';
-  const corTexto = variante === 'principal' || variante === 'whatsapp' ? '#fff' : cores.marca;
+    variante === 'principal'
+      ? cores.marca
+      : variante === 'whatsapp'
+        ? cores.whatsapp
+        : variante === 'destaque'
+          ? cores.destaqueFundo
+          : variante === 'secundario'
+            ? cores.fundoSuave
+            : variante === 'leve'
+              ? cores.marcaClara
+              : 'transparent';
+  // Dourado de destaque leva texto escuro (9,4:1); principal/whatsapp branco; o resto na cor da marca.
+  const corTexto =
+    variante === 'principal' || variante === 'whatsapp' ? '#fff' : variante === 'destaque' ? cores.texto : cores.marca;
   return (
     <Pressable
       accessibilityRole="button"
@@ -80,12 +107,19 @@ export function Botao({ titulo, aoCarregar, variante = 'principal', desactivado,
   );
 }
 
-export function Campo(props: TextInputProps & { rotulo: string }) {
-  const { rotulo, style, ...resto } = props;
+export function Campo(props: TextInputProps & { rotulo: string; prefixo?: string }) {
+  const { rotulo, style, prefixo, ...resto } = props;
   return (
     <View style={{ marginBottom: espaco.m }}>
       <Text style={estilos.rotulo}>{rotulo}</Text>
-      <TextInput placeholderTextColor={cores.textoSuave} style={[estilos.campo, style]} {...resto} />
+      {prefixo ? (
+        <View style={estilos.campoComPrefixo}>
+          <Text style={estilos.prefixo}>{prefixo}</Text>
+          <TextInput accessibilityLabel={rotulo} placeholderTextColor={cores.textoSuave} style={[estilos.campoInterno, style]} {...resto} />
+        </View>
+      ) : (
+        <TextInput accessibilityLabel={rotulo} placeholderTextColor={cores.textoSuave} style={[estilos.campo, style]} {...resto} />
+      )}
     </View>
   );
 }
@@ -94,33 +128,46 @@ export function Escolha<T extends string>({
   opcoes,
   valor,
   aoMudar,
+  horizontal = false,
 }: {
   opcoes: { valor: T; rotulo: string }[];
   valor: T;
   aoMudar: (v: T) => void;
+  /** Uma só linha com scroll horizontal (ex.: seletor de cozinha com nomes longos); por omissão envolve */
+  horizontal?: boolean;
 }) {
-  return (
-    <View style={estilos.escolha}>
-      {opcoes.map((o) => (
-        <Pressable
-          key={o.valor}
-          accessibilityRole="radio"
-          accessibilityState={{ selected: o.valor === valor }}
-          onPress={() => aoMudar(o.valor)}
-          style={[estilos.opcao, o.valor === valor && estilos.opcaoActiva]}>
-          <Text style={[estilos.opcaoTexto, o.valor === valor && { color: '#fff' }]}>{o.rotulo}</Text>
-        </Pressable>
-      ))}
-    </View>
-  );
+  const chips = opcoes.map((o) => (
+    <Pressable
+      key={o.valor}
+      accessibilityRole="radio"
+      accessibilityState={{ selected: o.valor === valor }}
+      onPress={() => aoMudar(o.valor)}
+      style={[estilos.opcao, o.valor === valor && estilos.opcaoActiva]}>
+      <Text style={[estilos.opcaoTexto, o.valor === valor && { color: '#fff' }]}>{o.rotulo}</Text>
+    </Pressable>
+  ));
+  if (horizontal) {
+    return (
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: 'row', gap: espaco.s, paddingVertical: 2 }}>
+        {chips}
+      </ScrollView>
+    );
+  }
+  return <View style={estilos.escolha}>{chips}</View>;
 }
 
 export function Aviso({ children, tipo = 'aviso' }: { children: ReactNode; tipo?: 'aviso' | 'erro' | 'sucesso' }) {
   const fundo = tipo === 'erro' ? cores.erroFundo : tipo === 'sucesso' ? '#E6F4EA' : cores.avisoFundo;
   const cor = tipo === 'erro' ? cores.erro : tipo === 'sucesso' ? cores.sucesso : cores.aviso;
+  // A cor não é o único sinal: ícone e barra lateral distinguem o aviso dos botões da marca.
+  // No erro o texto fica escuro, para não se confundir com o vermelho das acções.
+  const icone = tipo === 'erro' ? '⚠' : tipo === 'sucesso' ? '✓' : 'ℹ';
   return (
-    <View style={[estilos.aviso, { backgroundColor: fundo }]}>
-      <Text style={{ color: cor, fontSize: 14 }}>{children}</Text>
+    <View
+      accessibilityRole={tipo === 'erro' ? 'alert' : undefined}
+      style={[estilos.aviso, { backgroundColor: fundo, borderLeftColor: cor }]}>
+      <Text style={{ color: cor, fontSize: 15, fontWeight: '700' }}>{icone}</Text>
+      <Text style={{ color: tipo === 'erro' ? cores.texto : cor, fontSize: 14, flex: 1 }}>{children}</Text>
     </View>
   );
 }
@@ -147,7 +194,7 @@ export const estilos = StyleSheet.create({
   rotulo: { fontSize: 13, color: cores.textoSuave, marginBottom: espaco.xs },
   campo: {
     borderWidth: 1,
-    borderColor: cores.linha,
+    borderColor: cores.contorno,
     borderRadius: raio,
     paddingHorizontal: espaco.m,
     paddingVertical: espaco.m,
@@ -155,9 +202,20 @@ export const estilos = StyleSheet.create({
     color: cores.texto,
     backgroundColor: '#fff',
   },
+  campoComPrefixo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: cores.contorno,
+    borderRadius: raio,
+    backgroundColor: '#fff',
+    paddingHorizontal: espaco.m,
+  },
+  prefixo: { fontSize: 16, fontWeight: '600', color: cores.texto, marginRight: espaco.s },
+  campoInterno: { flex: 1, paddingVertical: espaco.m, fontSize: 16, color: cores.texto },
   escolha: { flexDirection: 'row', flexWrap: 'wrap', gap: espaco.s },
   opcao: { borderWidth: 1, borderColor: cores.marca, borderRadius: 20, paddingVertical: espaco.s, paddingHorizontal: espaco.l },
   opcaoActiva: { backgroundColor: cores.marca },
   opcaoTexto: { color: cores.marca, fontWeight: '600' },
-  aviso: { borderRadius: raio, padding: espaco.m },
+  aviso: { borderRadius: raio, padding: espaco.m, borderLeftWidth: 4, flexDirection: 'row', gap: espaco.s },
 });

@@ -8,6 +8,8 @@ import {
   tempoEmFalta,
   mensagemCodigo,
   mensagemConvite,
+  mensagemPartilhaPrato,
+  minutosSegundos,
   mensagemErro,
   normalizarCodigo,
   telefoneInternacional,
@@ -54,14 +56,31 @@ describe('textoAmigo (C1)', () => {
   });
 });
 
+describe('minutosSegundos (contagem do OTP)', () => {
+  it('formata minutos:segundos com dois dígitos', () => {
+    expect(minutosSegundos(600)).toBe('10:00');
+    expect(minutosSegundos(125)).toBe('2:05');
+    expect(minutosSegundos(9)).toBe('0:09');
+  });
+  it('nunca é negativo', () => {
+    expect(minutosSegundos(-5)).toBe('0:00');
+  });
+});
+
 describe('mensagemConvite (N1)', () => {
   it('leva a marca, o código, o desconto em vigor e o link', () => {
     expect(mensagemConvite('MB-4821', 500, 'mandabue://convite/MB-4821')).toBe(
-      'Estou a pedir no Manda Bué — Delivery Angola e está bom! Usa o meu código MB-4821 e ganhas 500 Kz de desconto no primeiro pedido. mandabue://convite/MB-4821',
+      '🍲 Peço na Cozinha da Alexandra e recomendo! Usa o meu código MB-4821 e ganhas 500 Kz de desconto no teu 1.º pedido. 👉 mandabue://convite/MB-4821',
     );
   });
   it('usa o valor dos parâmetros, não um valor fixo', () => {
     expect(mensagemConvite('MB-4821', 800, 'x')).toContain('ganhas 800 Kz de desconto');
+  });
+  it('inclui o pedido mínimo quando há um', () => {
+    expect(mensagemConvite('MB-4821', 1000, 'x', 5000)).toContain('em pedidos acima de 5.000 Kz');
+  });
+  it('omite o mínimo quando é 0', () => {
+    expect(mensagemConvite('MB-4821', 1000, 'x', 0)).not.toContain('em pedidos acima de');
   });
 });
 
@@ -74,6 +93,8 @@ describe('textoRegras (4.13)', () => {
     expect(regras[1]).toBe('O teu amigo ganha 500 Kz de desconto no primeiro pedido.');
     expect(regras[2]).toContain('a partir de 2.000 Kz');
     expect(regras[2]).toContain('Acima de 10.000 Kz por semana');
+    // A regra das contas falsas fica no fim, dita como garantia de justiça e não como ameaça
+    expect(regras.at(-1)).toBe('Para ser justo para todos, os ganhos de contas falsas ou de pedidos não pagos não contam.');
   });
 });
 
@@ -108,6 +129,7 @@ describe('mensagens de erro', () => {
   it('traduz os códigos do servidor', () => {
     expect(mensagemCodigo('proprio_codigo')).toBe('Não podes usar o teu próprio código.');
     expect(mensagemCodigo('limite_local')).toBe('Este convite já foi usado o número máximo de vezes nesta morada.');
+    expect(mensagemCodigo('sem_compra_propria')).toBe('Para levantar o saldo, faz primeiro um pedido teu (entregue e pago).');
     expect(mensagemErro({ message: 'item_indisponivel' })).toBe('Um dos pratos já não está disponível. Actualiza o carrinho.');
   });
   it('tem uma mensagem genérica para erros desconhecidos', () => {
@@ -130,8 +152,8 @@ describe('destaques (C3)', () => {
 
 describe('avaliações (C10)', () => {
   it('média com vírgula e plural', () => {
-    expect(formatarMedia(4.5, 12)).toBe('★ 4,5 · 12 avaliações');
-    expect(formatarMedia(5, 1)).toBe('★ 5,0 · 1 avaliação');
+    expect(formatarMedia(4.5, 12)).toBe('4,5 · 12 avaliações');
+    expect(formatarMedia(5, 1)).toBe('5,0 · 1 avaliação');
   });
 });
 
@@ -151,7 +173,7 @@ describe('pedidos de grupo (C12, C13)', () => {
 
   it('mensagem de partilha do grupo', () => {
     expect(mensagemGrupo('12h30', 'Edifício Kilamba', 'mandabue://grupo/G-ABC123')).toBe(
-      'Vamos pedir juntos o almoço no Manda Bué — Delivery Angola! Entrega às 12h30 em Edifício Kilamba. Junta o teu pedido: mandabue://grupo/G-ABC123',
+      'Vamos pedir juntos o almoço na Cozinha da Alexandra! Entrega às 12h30 em Edifício Kilamba. Junta o teu pedido: mandabue://grupo/G-ABC123',
     );
   });
 });
@@ -168,4 +190,19 @@ test('I12: benefícios do pacote', () => {
     'Pausa até 5 dias (férias, doença)',
     'Reembolso das refeições que não usares',
   ]);
+});
+
+describe('mensagemPartilhaPrato', () => {
+  it('inclui nome, preço, marca e link', () => {
+    const msg = mensagemPartilhaPrato('Choco frito', '2.500 Kz', 'Cozinha da Alexandra', 'https://play.google.com/x');
+    expect(msg).toContain('Choco frito');
+    expect(msg).toContain('2.500 Kz');
+    expect(msg).toContain('Cozinha da Alexandra');
+    expect(msg).toContain('https://play.google.com/x');
+  });
+
+  it('aceita o preço "desde …" dos pratos montáveis', () => {
+    const msg = mensagemPartilhaPrato('Pizza', 'desde 1.800 Kz', 'Cozinha da Alexandra', 'https://x');
+    expect(msg).toContain('desde 1.800 Kz');
+  });
 });

@@ -2,12 +2,46 @@
 // permissão do organograma; a app só esconde o que o funcionário não pode usar.
 import { supabase } from './supabase';
 import type {
+  Aviso,
+  AuditoriaCardapio,
+  ImpactoPreco,
+  MovimentoPreco,
+  PublicoAviso,
+  ClienteInativo,
+  UtilizadorEncontrado,
+  UtilizadorBloqueado,
+  HorarioCardapio,
+  LinhaAuditoria,
+  OtpPendente,
+  ResumoInativos,
+  CampanhaReconquista,
+  Notificacao,
   AdesaoOperador,
+  AlertaPedido,
+  CasoConvida,
+  CasoInvestigacao,
+  PerguntaAnalista,
+  PropostaTurno,
+  PlanoCompras,
+  DosesPrato,
+  ConversaResumo,
+  ConversaDetalhe,
+  Estimulo,
+  Reclamacao,
+  RelatorioReclamacoes,
+  Conciliacao,
+  Extrato,
+  FechoDiario,
+  FechoMensal,
+  HistoricoPedido,
+  MovimentoExtrato,
   Caixa,
+  CaixaGestao,
   ComentarioModeracao,
   Cozinha,
   Embaixador,
   PacoteCatalogo,
+  ZonaEntrega,
   ProdutoStock,
   FotoPendente,
   Funcionario,
@@ -21,12 +55,27 @@ import type {
   OpcaoPrato,
   Painel,
   PalavraFiltrada,
+  PedidoAgendado,
   PedidoOperador,
+  EstafetaAtribuir,
   Periodo,
+  PermissaoCatalogo,
+  PessoalItem,
+  Empresa,
+  EmpresaMembro,
+  Feira,
+  FeiraResumo,
+  PosicaoEstafeta,
+  PosicaoPedido,
+  RelatorioEmpresa,
+  SugestaoDespacho,
   PratoCardapio,
   Reconhecimento,
+  Receita,
   Relatorio,
   TipoReconhecimento,
+  FechoCaixa,
+  ResumoCaixa,
 } from './tipos';
 
 function verificar<T>(r: { data: T | null; error: { message: string } | null }): T {
@@ -98,7 +147,7 @@ export async function lerFuncionalidades(): Promise<{ chave: string; activa: boo
   }[];
 }
 
-export async function alterarParametros(valores: Record<string, number | string>) {
+export async function alterarParametros(valores: Record<string, number | string | null>) {
   verificar(await supabase.rpc('alterar_parametros', { p_valores: valores }));
 }
 
@@ -111,7 +160,7 @@ export async function lerCozinhas(): Promise<Cozinha[]> {
   return verificar(
     await supabase
       .from('cozinhas')
-      .select('id, nome, responsavel, foto_url, historia, estado, consentimento_publico')
+      .select('id, nome, responsavel, foto_url, historia, estado, consentimento_publico, telefone_publico, whatsapp_publico, horario_publico')
       .is('deletado_em', null)
       .order('criado_em'),
   ) as Cozinha[];
@@ -127,17 +176,44 @@ export async function lerCardapio(cozinhaId: string): Promise<PratoCardapio[]> {
   return verificar(
     await supabase
       .from('cardapio')
-      .select('id, cozinha_id, nome, descricao, categoria, preco, disponivel, do_dia, ordem')
+      .select('id, cozinha_id, nome, descricao, categoria, preco, disponivel, do_dia, ordem, foto_url, doses_dia, visivel_online, disponivel_de, disponivel_ate')
       .eq('cozinha_id', cozinhaId)
       .order('ordem')
       .order('nome'),
   ) as PratoCardapio[];
 }
 
-export async function guardarPrato(p: Omit<PratoCardapio, 'id'> & { id?: string }) {
+/** Grava o prato e devolve o id (o existente, ou o novo no caso de criação). */
+export async function guardarPrato(p: Omit<PratoCardapio, 'id'> & { id?: string }): Promise<string> {
   const { id, ...dados } = p;
-  if (id) verificar(await supabase.from('cardapio').update({ ...dados, atualizado_em: new Date().toISOString() }).eq('id', id));
-  else verificar(await supabase.from('cardapio').insert(dados));
+  if (id) {
+    verificar(await supabase.from('cardapio').update({ ...dados, atualizado_em: new Date().toISOString() }).eq('id', id));
+    return id;
+  }
+  const r = verificar(await supabase.from('cardapio').insert(dados).select('id').single()) as { id: string };
+  return r.id;
+}
+
+/** Doses que restam hoje dos pratos com limite (as de dias anteriores já não contam) */
+export async function lerDosesCardapio(cozinhaId: string): Promise<DosesPrato[]> {
+  return verificar(await supabase.rpc('doses_cardapio', { p_cozinha: cozinhaId })) as DosesPrato[];
+}
+
+/** Rasto de alterações do cardápio de uma cozinha: pratos, perfil, morada e opções (de→para). */
+export async function auditoriaCardapio(cozinhaId: string): Promise<AuditoriaCardapio[]> {
+  return (verificar(await supabase.rpc('auditoria_cardapio', { p_cozinha: cozinhaId })) as AuditoriaCardapio[]) ?? [];
+}
+
+/** Impacto de cada preço de um prato: quantos pedidos atendidos, clientes e total recebido. */
+export async function impactoPrecoPrato(cardapioId: string): Promise<ImpactoPreco[]> {
+  return (verificar(await supabase.rpc('impacto_preco_prato', { p_cardapio: cardapioId })) as ImpactoPreco[]) ?? [];
+}
+
+/** Movimento cliente a cliente de um prato (opcionalmente só de um preço). */
+export async function movimentoPrecoPrato(cardapioId: string, preco?: number): Promise<MovimentoPreco[]> {
+  return (
+    (verificar(await supabase.rpc('movimento_preco_prato', { p_cardapio: cardapioId, p_preco: preco ?? null })) as MovimentoPreco[]) ?? []
+  );
 }
 
 // ---------------------------------------------------------------- I9: opções dos pratos
@@ -206,6 +282,19 @@ export async function guardarLocalizacao(l: LocalizacaoCozinha) {
   else verificar(await supabase.from('cozinhas_localizacao').insert(dados));
 }
 
+// ---------------------------------------------------------------- Sino de notificações
+export async function minhasNotificacoes(limite = 30): Promise<Notificacao[]> {
+  return (verificar(await supabase.rpc('minhas_notificacoes', { p_limite: limite })) as Notificacao[]) ?? [];
+}
+
+export async function contarNotificacoesNovas(): Promise<number> {
+  return (verificar(await supabase.rpc('contar_notificacoes_novas')) as number) ?? 0;
+}
+
+export async function marcarNotificacoesVistas(ids?: string[]): Promise<number> {
+  return (verificar(await supabase.rpc('marcar_notificacoes_vistas', { p_ids: ids ?? null })) as number) ?? 0;
+}
+
 // ---------------------------------------------------------------- I11: posição do estafeta
 /** Envia a posição; devolve quantos pedidos o estafeta tem a caminho (0 = parar de enviar) */
 export async function registarPosicaoEntrega(lat: number, lng: number, precisao: number | null): Promise<number> {
@@ -230,16 +319,136 @@ export async function pedidosOperador(): Promise<PedidoOperador[]> {
   return verificar(await supabase.rpc('pedidos_operador')) as PedidoOperador[];
 }
 
+export async function estafetasParaAtribuir(cozinhaId: string): Promise<EstafetaAtribuir[]> {
+  return (
+    (verificar(await supabase.rpc('estafetas_para_atribuir', { p_cozinha: cozinhaId })) as EstafetaAtribuir[]) ?? []
+  );
+}
+
+export async function atribuirEntrega(pedidoId: string, estafetaId: string): Promise<void> {
+  verificar(await supabase.rpc('atribuir_entrega', { p_pedido: pedidoId, p_estafeta: estafetaId }));
+}
+
+export async function recusarEntrega(pedidoId: string): Promise<void> {
+  verificar(await supabase.rpc('recusar_entrega', { p_pedido: pedidoId }));
+}
+
 export async function caixasAbertas(): Promise<Caixa[]> {
   return verificar(
     await supabase.from('caixa').select('id, posto, data, cozinha_id').is('fechamento', null).order('data', { ascending: false }),
   ) as Caixa[];
 }
 
+// ---------------------------------------------------------------- Caixa
+/** Caixas que o funcionário pode gerir (só a sua cozinha): abertas e as últimas fechadas */
+export async function caixasRecentes(): Promise<CaixaGestao[]> {
+  return (verificar(await supabase.rpc('caixas_geridas', { p_limite: 20 })) as CaixaGestao[]) ?? [];
+}
+
+export async function resumoCaixa(caixaId: string): Promise<ResumoCaixa> {
+  return verificar(await supabase.rpc('resumo_caixa', { p_caixa: caixaId })) as ResumoCaixa;
+}
+
+export async function abrirCaixa(cozinhaId: string, posto: string, troco: number): Promise<string> {
+  return verificar(await supabase.rpc('abrir_caixa', { p_cozinha: cozinhaId, p_posto: posto, p_troco: troco })) as string;
+}
+
+export async function registarSangria(caixaId: string, valor: number, motivo: string) {
+  verificar(await supabase.rpc('registar_sangria', { p_caixa: caixaId, p_valor: valor, p_motivo: motivo }));
+}
+
+export async function fecharCaixa(caixaId: string, contado: number, observacao: string | null): Promise<FechoCaixa> {
+  return verificar(
+    await supabase.rpc('fechar_caixa', { p_caixa: caixaId, p_contado: contado, p_observacao: observacao }),
+  ) as FechoCaixa;
+}
+
+// ---------------------------------------------------------------- alertas dos pedidos
+export async function alertasAbertos(): Promise<AlertaPedido[]> {
+  return verificar(await supabase.rpc('alertas_abertos')) as AlertaPedido[];
+}
+
+/** Diz ao cliente porque é que o pedido vai atrasar (e, se quiser, quantos minutos mais) */
+export async function informarAtraso(pedidoId: string, motivo: string, maisMinutos: number | null) {
+  verificar(await supabase.rpc('informar_atraso', { p_pedido: pedidoId, p_motivo: motivo, p_mais_minutos: maisMinutos }));
+}
+
+// ---------------------------------------------------------------- conferência financeira
+export async function lerExtratos(): Promise<Extrato[]> {
+  return verificar(
+    await supabase.from('extratos').select('id, conta, periodo_inicio, periodo_fim, caminho, tipo_ficheiro, estado, ia_nota, criado_em')
+      .order('criado_em', { ascending: false }).limit(40),
+  ) as Extrato[];
+}
+
+export async function lerMovimentos(extratoId: string): Promise<MovimentoExtrato[]> {
+  return verificar(
+    await supabase.from('extrato_movimentos')
+      .select('id, extrato_id, data, valor, referencia, descricao, origem, comprovativo_id, ligacao')
+      .eq('extrato_id', extratoId).order('data').order('valor'),
+  ) as MovimentoExtrato[];
+}
+
+export async function criarExtrato(conta: string, inicio: string, fim: string): Promise<string> {
+  return verificar(await supabase.rpc('criar_extrato', { p_conta: conta, p_inicio: inicio, p_fim: fim })) as string;
+}
+
+/** Ficheiro já enviado (caminho) ou null para escrever as entradas à mão */
+export async function confirmarExtrato(extratoId: string, caminho: string | null) {
+  verificar(await supabase.rpc('confirmar_extrato', { p_extrato: extratoId, p_caminho: caminho }));
+}
+
+export async function pedirNovaLeitura(tipo: 'extrato' | 'comprovativo', id: string) {
+  verificar(await supabase.rpc('pedir_nova_leitura', { p_tipo: tipo, p_id: id }));
+}
+
+export async function registarMovimento(extratoId: string, data: string, valor: number, referencia: string | null, descricao: string | null) {
+  return verificar(
+    await supabase.rpc('registar_movimento_extrato', {
+      p_extrato: extratoId, p_data: data, p_valor: valor, p_referencia: referencia, p_descricao: descricao,
+    }),
+  ) as string;
+}
+
+export async function apagarMovimento(movimentoId: string, motivo: string) {
+  verificar(await supabase.rpc('apagar_movimento_extrato', { p_movimento: movimentoId, p_motivo: motivo }));
+}
+
+/** Liga (ou desliga, com null) uma entrada do extrato a um comprovativo */
+export async function ligarMovimento(movimentoId: string, comprovativoId: string | null) {
+  verificar(await supabase.rpc('ligar_movimento', { p_movimento: movimentoId, p_comprovativo: comprovativoId }));
+}
+
+export async function relatorioConciliacao(inicio: string, fim: string): Promise<Conciliacao> {
+  return verificar(await supabase.rpc('relatorio_conciliacao', { p_inicio: inicio, p_fim: fim })) as Conciliacao;
+}
+
+export async function fechoDiario(dia: string, cozinhaId: string | null = null): Promise<FechoDiario> {
+  return verificar(await supabase.rpc('fecho_diario', { p_dia: dia, p_cozinha: cozinhaId })) as FechoDiario;
+}
+
+export async function fechoMensal(ano: number, mes: number): Promise<FechoMensal> {
+  return verificar(await supabase.rpc('fecho_mensal', { p_ano: ano, p_mes: mes })) as FechoMensal;
+}
+
+export async function historicoPedido(pedidoId: string): Promise<HistoricoPedido> {
+  return verificar(await supabase.rpc('historico_pedido', { p_pedido: pedidoId })) as HistoricoPedido;
+}
+
+/** Confere (ou rejeita, com nota) um pagamento electrónico da caixa */
+export async function conferirComprovativo(id: string, conferido: boolean, nota: string | null = null) {
+  verificar(await supabase.rpc('conferir_comprovativo', { p_comprovativo: id, p_conferido: conferido, p_nota: nota }));
+}
+
 export async function mudarEstado(
   pedidoId: string,
   estado: string,
-  extra: { motivo?: string; caixa?: string; parcelas?: { metodo: string; valor: number }[] } = {},
+  extra: {
+    motivo?: string;
+    caixa?: string;
+    /** Pagamentos electrónicos levam a referência e o caminho da foto do comprovativo */
+    parcelas?: { metodo: string; valor: number; referencia?: string; comprovativo?: string }[];
+  } = {},
 ) {
   verificar(
     await supabase.rpc('mudar_estado_pedido', {
@@ -393,4 +602,527 @@ export async function guardarPacote(p: Omit<PacoteCatalogo, 'id'> & { id?: strin
   const { id, ...dados } = p;
   if (id) verificar(await supabase.from('pacotes').update({ ...dados, atualizado_em: new Date().toISOString() }).eq('id', id));
   else verificar(await supabase.from('pacotes').insert(dados));
+}
+
+// ---------------------------------------------------------------- Fotos dos pratos e das cozinhas
+/** Grava logo a foto (ou a remoção) do prato, sem mexer nos outros campos */
+export async function definirFotoPrato(id: string, fotoUrl: string | null) {
+  verificar(await supabase.from('cardapio').update({ foto_url: fotoUrl, atualizado_em: new Date().toISOString() }).eq('id', id));
+}
+
+export async function definirFotoCozinha(id: string, fotoUrl: string | null) {
+  verificar(await supabase.from('cozinhas').update({ foto_url: fotoUrl, atualizado_em: new Date().toISOString() }).eq('id', id));
+}
+
+// ---------------------------------------------------------------- Zonas de entrega
+export async function lerZonasEntrega(): Promise<ZonaEntrega[]> {
+  const r = await supabase.from('zonas').select('id, nome, taxa, tipo, centro_lat, centro_lng').is('deletado_em', null).order('nome');
+  return (verificar(r) as ZonaEntrega[]).map((z) => ({
+    ...z,
+    taxa: Number(z.taxa ?? 0),
+    centro_lat: z.centro_lat != null ? Number(z.centro_lat) : null,
+    centro_lng: z.centro_lng != null ? Number(z.centro_lng) : null,
+  }));
+}
+
+export async function guardarZonaEntrega(z: Omit<ZonaEntrega, 'id'> & { id?: string }) {
+  const { id, ...dados } = z;
+  const linha = { ...dados, modo_calculo: 'Fixo' };
+  if (id) verificar(await supabase.from('zonas').update({ ...linha, atualizado_em: new Date().toISOString() }).eq('id', id));
+  else verificar(await supabase.from('zonas').insert(linha));
+}
+
+/** Apagar = marcar deletado_em: os pontos e pedidos antigos continuam a apontar para a zona */
+export async function apagarZonaEntrega(id: string) {
+  const agora = new Date().toISOString();
+  verificar(await supabase.from('zonas').update({ deletado_em: agora, atualizado_em: agora }).eq('id', id));
+}
+
+// ---------------------------------------------------------------- reclamações e estímulos
+export async function lerReclamacoes(estado: 'aberta' | 'resolvida' | 'todas'): Promise<Reclamacao[]> {
+  return verificar(await supabase.rpc('reclamacoes_lista', { p_estado: estado })) as Reclamacao[];
+}
+
+export async function decidirReclamacao(
+  id: string,
+  procedente: boolean,
+  resposta: string,
+  categoria: string | null,
+  compensacao: string,
+  valor: number | null,
+) {
+  verificar(
+    await supabase.rpc('decidir_reclamacao', {
+      p_id: id,
+      p_procedente: procedente,
+      p_resposta: resposta,
+      p_categoria: categoria,
+      p_compensacao: compensacao,
+      p_valor: valor,
+    }),
+  );
+}
+
+export async function relatorioReclamacoes(ano: number, mes: number): Promise<RelatorioReclamacoes> {
+  return verificar(await supabase.rpc('relatorio_reclamacoes', { p_ano: ano, p_mes: mes })) as RelatorioReclamacoes;
+}
+
+export async function pedirNovaAnalise(tipo: 'reclamacao' | 'estimulo', id: string) {
+  verificar(await supabase.rpc('pedir_nova_analise', { p_tipo: tipo, p_id: id }));
+}
+
+export async function gerarEstimulos(ano: number, mes: number): Promise<number> {
+  return verificar(await supabase.rpc('gerar_estimulos', { p_ano: ano, p_mes: mes })) as number;
+}
+
+export async function estimulosDoMes(ano: number, mes: number): Promise<Estimulo[]> {
+  return verificar(await supabase.rpc('estimulos_do_mes', { p_ano: ano, p_mes: mes })) as Estimulo[];
+}
+
+export async function decidirEstimulo(id: string, aprovar: boolean, bonus: number | null, mensagem: string | null) {
+  verificar(await supabase.rpc('decidir_estimulo', { p_id: id, p_aprovar: aprovar, p_bonus: bonus, p_mensagem: mensagem }));
+}
+
+// ---------------------------------------------------------------- agente investigador
+export async function lerCasosInvestigacao(): Promise<CasoInvestigacao[]> {
+  return verificar(await supabase.rpc('casos_investigacao_lista')) as CasoInvestigacao[];
+}
+
+export async function abrirInvestigacoes(inicio: string, fim: string): Promise<number> {
+  return verificar(await supabase.rpc('abrir_investigacoes', { p_inicio: inicio, p_fim: fim })) as number;
+}
+
+export async function decidirCaso(id: string, decisao: string, nota: string) {
+  verificar(await supabase.rpc('decidir_caso', { p_id: id, p_decisao: decisao, p_nota: nota }));
+}
+
+export async function investigarDeNovo(id: string) {
+  verificar(await supabase.rpc('investigar_de_novo', { p_id: id }));
+}
+
+// ---------------------------------------------------------------- analista do administrador
+export async function lerPerguntasAnalista(): Promise<PerguntaAnalista[]> {
+  return verificar(await supabase.rpc('perguntas_analista_lista')) as PerguntaAnalista[];
+}
+
+/** Faz a pergunta e pede logo a resposta (se a chamada falhar, o servidor responde no minuto seguinte) */
+export async function perguntarAnalista(pergunta: string): Promise<string> {
+  const id = verificar(await supabase.rpc('perguntar_analista', { p_pergunta: pergunta })) as string;
+  supabase.functions.invoke('analista', { body: { pergunta_id: id } }).catch(() => undefined);
+  return id;
+}
+
+export async function pedirRelatorioAnalista(ano: number, mes: number): Promise<string> {
+  const id = verificar(await supabase.rpc('pedir_relatorio_analista', { p_ano: ano, p_mes: mes })) as string;
+  supabase.functions.invoke('analista', { body: { pergunta_id: id } }).catch(() => undefined);
+  return id;
+}
+
+// ---------------------------------------------------------------- vigilante do Convida e Ganha
+export async function lerCasosConvida(): Promise<CasoConvida[]> {
+  return verificar(await supabase.rpc('casos_convida_lista')) as CasoConvida[];
+}
+
+export async function abrirVigilancia(inicio: string, fim: string): Promise<number> {
+  return verificar(await supabase.rpc('abrir_vigilancia', { p_inicio: inicio, p_fim: fim })) as number;
+}
+
+export async function decidirCasoConvida(id: string, decisao: string, nota: string) {
+  verificar(await supabase.rpc('decidir_caso_convida', { p_id: id, p_decisao: decisao, p_nota: nota }));
+}
+
+export async function vigiarDeNovo(id: string) {
+  verificar(await supabase.rpc('vigiar_de_novo', { p_id: id }));
+}
+
+// ---------------------------------------------------------------- gerente de turno
+export async function lerPropostasTurno(): Promise<PropostaTurno[]> {
+  return verificar(await supabase.rpc('propostas_turno_lista')) as PropostaTurno[];
+}
+
+export async function decidirPropostaTurno(id: string, aceitar: boolean, motivo: string | null, maisMinutos: number | null) {
+  verificar(await supabase.rpc('decidir_proposta_turno', { p_id: id, p_aceitar: aceitar, p_motivo: motivo, p_mais_minutos: maisMinutos }));
+}
+
+// ---------------------------------------------------------------- stock e compras
+export async function lerPlanosCompras(): Promise<PlanoCompras[]> {
+  return verificar(await supabase.rpc('planos_compras_lista')) as PlanoCompras[];
+}
+
+/** Pede um plano agora e chama logo o agente (o pg_cron apanha-o se esta chamada falhar) */
+export async function pedirPlanoCompras(cozinhaId: string): Promise<string> {
+  const id = verificar(await supabase.rpc('pedir_plano_compras', { p_cozinha: cozinhaId })) as string;
+  supabase.functions.invoke('compras', { body: { plano_id: id } }).catch(() => undefined);
+  return id;
+}
+
+export async function marcarCompra(planoId: string, indice: number, estado: 'pendente' | 'comprado' | 'ignorado') {
+  verificar(await supabase.rpc('marcar_compra', { p_plano: planoId, p_indice: indice, p_estado: estado }));
+}
+
+// ---------------------------------------------------------------- atendimento ao cliente
+export async function lerConversasAtendimento(): Promise<ConversaResumo[]> {
+  return verificar(await supabase.rpc('conversas_atendimento_lista')) as ConversaResumo[];
+}
+
+export async function lerConversaAtendimento(id: string): Promise<ConversaDetalhe> {
+  return verificar(await supabase.rpc('conversa_atendimento', { p_id: id })) as ConversaDetalhe;
+}
+
+export async function responderAtendimento(id: string, texto: string) {
+  verificar(await supabase.rpc('responder_atendimento', { p_id: id, p_texto: texto }));
+}
+
+export async function mudarConversaAtendimento(id: string, estado: 'agente' | 'fechada') {
+  verificar(await supabase.rpc('mudar_conversa_atendimento', { p_id: id, p_estado: estado }));
+}
+
+// ---------------------------------------------------------------- Pessoal (só administrador principal)
+export async function listarPessoal(): Promise<PessoalItem[]> {
+  return (verificar(await supabase.rpc('listar_pessoal')) as PessoalItem[]) ?? [];
+}
+
+export async function criarFuncionario(dados: {
+  nome: string;
+  cargo: string | null;
+  telefone: string | null;
+  estafeta: boolean;
+}): Promise<string> {
+  return verificar(
+    await supabase.rpc('criar_funcionario', {
+      p_nome: dados.nome,
+      p_cargo: dados.cargo,
+      p_telefone: dados.telefone,
+      p_estafeta: dados.estafeta,
+    }),
+  ) as string;
+}
+
+export async function editarFuncionario(dados: {
+  id: string;
+  nome: string;
+  cargo: string | null;
+  activo: boolean;
+  /** Opcional: as permissões são geridas à parte (definirPermissoes); null não toca em entregas.registar */
+  estafeta?: boolean;
+}) {
+  verificar(
+    await supabase.rpc('editar_funcionario', {
+      p_id: dados.id,
+      p_nome: dados.nome,
+      p_cargo: dados.cargo,
+      p_estafeta: dados.estafeta ?? null,
+      p_activo: dados.activo,
+    }),
+  );
+}
+
+export async function definirTelefoneFuncionario(id: string, telefone: string | null) {
+  verificar(await supabase.rpc('definir_telefone_funcionario', { p_funcionario: id, p_telefone: telefone }));
+}
+
+/** Catálogo de permissões (para montar os checkboxes por grupo) */
+export async function permissoesCatalogo(): Promise<PermissaoCatalogo[]> {
+  return (verificar(await supabase.rpc('permissoes_catalogo')) as PermissaoCatalogo[]) ?? [];
+}
+
+/** Define todas as permissões de um funcionário (objeto {chave: true}) */
+export async function definirPermissoes(funcionarioId: string, permissoes: Record<string, boolean>) {
+  verificar(await supabase.rpc('definir_permissoes_funcionario', { p_func: funcionarioId, p_permissoes: permissoes }));
+}
+
+/** Define as cozinhas (equipa fixa) de um funcionário */
+export async function definirCozinhas(funcionarioId: string, cozinhas: string[]) {
+  verificar(await supabase.rpc('definir_cozinhas_funcionario', { p_func: funcionarioId, p_cozinhas: cozinhas }));
+}
+
+// ---------------------------------------------------------------- Pedidos agendados
+export async function pedidosAgendados(): Promise<PedidoAgendado[]> {
+  return (verificar(await supabase.rpc('pedidos_agendados')) as PedidoAgendado[]) ?? [];
+}
+
+// ---------------------------------------------------------------- Mapa de estafetas (despacho)
+export async function posicoesEstafetas(cozinhaId: string): Promise<PosicaoEstafeta[]> {
+  return (verificar(await supabase.rpc('posicoes_estafetas', { p_cozinha: cozinhaId })) as PosicaoEstafeta[]) ?? [];
+}
+
+export async function sugestaoDespacho(cozinhaId: string): Promise<SugestaoDespacho[]> {
+  return (verificar(await supabase.rpc('sugestao_despacho', { p_cozinha: cozinhaId })) as SugestaoDespacho[]) ?? [];
+}
+
+// Posição do estafeta de um pedido, para a cozinha acompanhar ao vivo (ou o próprio estafeta)
+export async function posicaoPedido(pedidoId: string): Promise<PosicaoPedido> {
+  return verificar(await supabase.rpc('posicao_pedido', { p_pedido: pedidoId })) as PosicaoPedido;
+}
+
+// ---------------------------------------------------------------- Conta de empresa (B2B)
+export async function listarEmpresas(): Promise<Empresa[]> {
+  return (verificar(await supabase.rpc('listar_empresas')) as Empresa[]) ?? [];
+}
+
+export async function criarEmpresa(nome: string, limite: number): Promise<string> {
+  return verificar(await supabase.rpc('criar_empresa', { p_nome: nome, p_limite: limite })) as string;
+}
+
+export async function editarEmpresa(id: string, nome: string, limite: number, activa: boolean) {
+  verificar(await supabase.rpc('editar_empresa', { p_id: id, p_nome: nome, p_limite: limite, p_activa: activa }));
+}
+
+export async function empresaMembrosLista(empresaId: string): Promise<EmpresaMembro[]> {
+  return (verificar(await supabase.rpc('empresa_membros_lista', { p_empresa: empresaId })) as EmpresaMembro[]) ?? [];
+}
+
+export async function empresaAdicionarMembro(empresaId: string, codigo: string) {
+  verificar(await supabase.rpc('empresa_adicionar_membro', { p_empresa: empresaId, p_codigo: codigo }));
+}
+
+export async function empresaRemoverMembro(empresaId: string, clienteId: string) {
+  verificar(await supabase.rpc('empresa_remover_membro', { p_empresa: empresaId, p_cliente: clienteId }));
+}
+
+export async function relatorioEmpresa(empresaId: string, ano: number, mes: number): Promise<RelatorioEmpresa> {
+  return verificar(await supabase.rpc('relatorio_empresa', { p_empresa: empresaId, p_ano: ano, p_mes: mes })) as RelatorioEmpresa;
+}
+
+// ---------------------------------------------------------------- Feira (consignação)
+export async function listarFeiras(cozinhaId: string): Promise<Feira[]> {
+  return (verificar(await supabase.rpc('listar_feiras', { p_cozinha: cozinhaId })) as Feira[]) ?? [];
+}
+
+export async function criarFeira(cozinhaId: string, vendedorId: string, nome: string): Promise<string> {
+  return verificar(await supabase.rpc('criar_feira', { p_cozinha: cozinhaId, p_vendedor: vendedorId, p_nome: nome })) as string;
+}
+
+export async function feiraAdicionarItem(feiraId: string, cardapioId: string, qtd: number): Promise<string> {
+  return verificar(await supabase.rpc('feira_adicionar_item', { p_feira: feiraId, p_cardapio: cardapioId, p_qtd: qtd })) as string;
+}
+
+export async function feiraVender(
+  itemId: string,
+  qtd: number,
+  metodo: 'dinheiro' | 'transferencia',
+  referencia?: string | null,
+): Promise<number> {
+  return verificar(
+    await supabase.rpc('feira_vender', { p_item: itemId, p_qtd: qtd, p_metodo: metodo, p_referencia: referencia ?? null }),
+  ) as number;
+}
+
+export async function feiraFechar(feiraId: string, acertos: { item_id: string; devolvida: number; perda: number }[]) {
+  verificar(await supabase.rpc('feira_fechar', { p_feira: feiraId, p_acertos: acertos }));
+}
+
+export async function feiraResumo(feiraId: string): Promise<FeiraResumo> {
+  return verificar(await supabase.rpc('feira_resumo', { p_feira: feiraId })) as FeiraResumo;
+}
+
+// ---------------------------------------------------------------- Central de Avisos
+export async function preVisualizarAviso(
+  publico: PublicoAviso,
+  alvo: Record<string, unknown> = {},
+): Promise<number> {
+  return (verificar(await supabase.rpc('pre_visualizar_aviso', { p_publico: publico, p_alvo: alvo })) as number) ?? 0;
+}
+
+export async function enviarAviso(
+  publico: PublicoAviso,
+  titulo: string,
+  corpo: string,
+  alvo: Record<string, unknown> = {},
+  link?: string,
+): Promise<{ id: string; total: number }> {
+  return verificar(
+    await supabase.rpc('enviar_aviso', {
+      p_publico: publico,
+      p_titulo: titulo,
+      p_corpo: corpo,
+      p_alvo: alvo,
+      p_link: link ?? null,
+    }),
+  ) as { id: string; total: number };
+}
+
+export async function listarAvisos(limite = 50): Promise<Aviso[]> {
+  return (verificar(await supabase.rpc('listar_avisos', { p_limite: limite })) as Aviso[]) ?? [];
+}
+
+// ---------------------------------------------------------------- Utilizadores (procurar e bloquear)
+export async function procurarUtilizadores(termo: string): Promise<UtilizadorEncontrado[]> {
+  return (verificar(await supabase.rpc('procurar_utilizadores', { p_termo: termo })) as UtilizadorEncontrado[]) ?? [];
+}
+
+export async function bloquearUtilizador(telefone: string, motivo: string | null) {
+  verificar(await supabase.rpc('bloquear_utilizador', { p_telefone: telefone, p_motivo: motivo }));
+}
+
+export async function desbloquearUtilizador(telefone: string) {
+  verificar(await supabase.rpc('desbloquear_utilizador', { p_telefone: telefone }));
+}
+
+export async function listarUtilizadoresBloqueados(): Promise<UtilizadorBloqueado[]> {
+  return (verificar(await supabase.rpc('utilizadores_bloqueados_lista')) as UtilizadorBloqueado[]) ?? [];
+}
+
+// ---------------------------------------------------------------- OTP manual (códigos de login)
+export async function auditoriaLista(categoria?: string | null, desde?: string | null): Promise<LinhaAuditoria[]> {
+  return (
+    (verificar(await supabase.rpc('auditoria_lista', { p_categoria: categoria ?? null, p_desde: desde ?? null })) as LinhaAuditoria[]) ?? []
+  );
+}
+
+export async function lerHorarios(cardapioId: string): Promise<HorarioCardapio[]> {
+  return (
+    (verificar(
+      await supabase
+        .from('cardapio_horarios')
+        .select('id, cardapio_id, dia_semana, data, hora_inicio, hora_fim')
+        .eq('cardapio_id', cardapioId)
+        .order('dia_semana', { nullsFirst: false })
+        .order('data')
+        .order('hora_inicio'),
+    ) as HorarioCardapio[]) ?? []
+  );
+}
+
+export async function guardarHorario(h: {
+  id?: string;
+  cardapio_id: string;
+  dia_semana: number | null;
+  data: string | null;
+  hora_inicio: string;
+  hora_fim: string;
+}): Promise<void> {
+  if (h.id) {
+    const { id, ...resto } = h;
+    verificar(await supabase.from('cardapio_horarios').update(resto).eq('id', id));
+  } else {
+    verificar(await supabase.from('cardapio_horarios').insert(h));
+  }
+}
+
+export async function apagarHorario(id: string): Promise<void> {
+  verificar(await supabase.from('cardapio_horarios').delete().eq('id', id));
+}
+
+export async function otpPendentes(): Promise<OtpPendente[]> {
+  return (verificar(await supabase.rpc('otp_pendentes_lista')) as OtpPendente[]) ?? [];
+}
+
+export async function otpMarcarEntregue(id: string) {
+  verificar(await supabase.rpc('otp_marcar_entregue', { p_id: id }));
+}
+
+export async function otpLimpar() {
+  verificar(await supabase.rpc('otp_limpar'));
+}
+
+/** Segurança: termina a sessão em TODOS os dispositivos, incluindo este */
+export async function sairDeTodosOsDispositivos() {
+  const { error } = await supabase.auth.signOut({ scope: 'global' });
+  if (error) throw error;
+}
+
+// ---------------------------------------------------------------- Reconquista de clientes inativos
+export async function clientesInativosResumo(): Promise<ResumoInativos> {
+  return verificar(await supabase.rpc('clientes_inativos_resumo')) as ResumoInativos;
+}
+
+export async function clientesInativos(
+  diasMin: number,
+  diasMax: number | null = null,
+  zonaId: string | null = null,
+): Promise<ClienteInativo[]> {
+  return (
+    (verificar(
+      await supabase.rpc('clientes_inativos', { p_dias_min: diasMin, p_dias_max: diasMax, p_zona: zonaId }),
+    ) as ClienteInativo[]) ?? []
+  );
+}
+
+export async function enviarCampanhaReconquista(dados: {
+  diasMin: number;
+  diasMax: number | null;
+  zonaId: string | null;
+  titulo: string;
+  corpo: string;
+  link?: string | null;
+  controloPct?: number | null;
+}): Promise<{ campanha_id: string; elegiveis: number; enviados: number; controlo: number; enviados_push: number }> {
+  return verificar(
+    await supabase.rpc('enviar_campanha_reconquista', {
+      p_dias_min: dados.diasMin,
+      p_dias_max: dados.diasMax,
+      p_zona: dados.zonaId,
+      p_titulo: dados.titulo,
+      p_corpo: dados.corpo,
+      p_link: dados.link ?? null,
+      p_controlo_pct: dados.controloPct ?? null,
+    }),
+  ) as { campanha_id: string; elegiveis: number; enviados: number; controlo: number; enviados_push: number };
+}
+
+export async function listarCampanhasReconquista(limite = 50): Promise<CampanhaReconquista[]> {
+  return (
+    (verificar(await supabase.rpc('listar_campanhas_reconquista', { p_limite: limite })) as CampanhaReconquista[]) ?? []
+  );
+}
+
+// ---------------------------------------------------------------- Receitas (Cozinha de casa) — R1
+export async function lerReceitasGerir(): Promise<Receita[]> {
+  return verificar(
+    await supabase
+      .from('receitas')
+      .select('id, titulo, resumo, corpo, foto_url, cozinha_id, estado, origem, criado_em, publicado_em')
+      .is('deletado_em', null)
+      .order('criado_em', { ascending: false }),
+  ) as Receita[];
+}
+
+/** Cria ou actualiza uma receita; devolve o id (preciso para enviar a foto depois de criar) */
+export async function guardarReceita(
+  r: { id?: string; titulo: string; resumo: string | null; corpo: string; cozinha_id: string | null; foto_url?: string | null },
+): Promise<string> {
+  const { id, ...dados } = r;
+  if (id) {
+    verificar(await supabase.from('receitas').update({ ...dados, atualizado_em: new Date().toISOString() }).eq('id', id));
+    return id;
+  }
+  const criada = verificar(await supabase.from('receitas').insert(dados).select('id').single()) as { id: string };
+  return criada.id;
+}
+
+export async function definirFotoReceita(id: string, foto_url: string | null): Promise<void> {
+  verificar(await supabase.from('receitas').update({ foto_url, atualizado_em: new Date().toISOString() }).eq('id', id));
+}
+
+export async function publicarReceita(id: string, publicar: boolean): Promise<void> {
+  verificar(await supabase.from('receitas').update({
+    estado: publicar ? 'publicada' : 'rascunho',
+    publicado_em: publicar ? new Date().toISOString() : null,
+    atualizado_em: new Date().toISOString(),
+  }).eq('id', id));
+}
+
+export async function arquivarReceita(id: string): Promise<void> {
+  verificar(await supabase.from('receitas').update({ estado: 'arquivada', atualizado_em: new Date().toISOString() }).eq('id', id));
+}
+
+// Receitas R2/R3: gerar rascunho com Claude e avisar os clientes de uma receita publicada
+export async function gerarRascunhoReceita(tema: string): Promise<string> {
+  const { data, error } = await supabase.functions.invoke('receita-rascunho', { body: { tema } });
+  if (error) throw new Error('nao_gerou');
+  const d = data as { id?: string };
+  if (!d?.id) throw new Error('nao_gerou');
+  return d.id;
+}
+export async function avisarNovaReceita(id: string): Promise<number> {
+  return verificar(await supabase.rpc('avisar_nova_receita', { p_id: id })) as number;
+}
+
+// A geração por IA das receitas está ligada? (interruptor 'receitas_ia')
+export async function iaDasReceitasLigada(): Promise<boolean> {
+  const r = verificar(await supabase.from('funcionalidades').select('activa').eq('chave', 'receitas_ia').maybeSingle()) as
+    | { activa: boolean }
+    | null;
+  return !!r?.activa;
 }

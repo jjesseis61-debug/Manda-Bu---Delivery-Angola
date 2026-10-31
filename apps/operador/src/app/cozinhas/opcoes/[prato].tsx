@@ -72,7 +72,7 @@ export default function OpcoesPrato() {
   const grupoValido = grupo !== null && grupo.nome.trim() !== '' && maximo >= 1 && maximo <= 20 && minimo <= maximo;
 
   return (
-    <Guarda permissoes={['cozinhas.gerir']}>
+    <Guarda permissoes={['cozinhas.gerir', 'cardapio.gerir']}>
       <Ecra>
         {nome && <Subtitulo>{nome}</Subtitulo>}
         <Paragrafo suave>
@@ -142,10 +142,10 @@ export default function OpcoesPrato() {
             <Campo rotulo="Ordem" value={opcao.ordem} keyboardType="number-pad" onChangeText={(t) => setOpcao({ ...opcao, ordem: numero(t) })} />
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <Text>Disponível (desligar quando esgotar)</Text>
-              <Switch
+              <Switch thumbColor="#FFFFFF"
                 value={opcao.disponivel}
                 onValueChange={(v) => setOpcao({ ...opcao, disponivel: v })}
-                trackColor={{ true: cores.marca, false: cores.linha }}
+                trackColor={{ true: cores.marca, false: cores.contorno }}
               />
             </View>
             <Text style={{ fontWeight: '700', marginTop: espaco.s }}>Ingredientes (descontam stock)</Text>

@@ -30,6 +30,14 @@ jobs:
         with:
           node-version: 22
       - run: node --experimental-strip-types supabase/functions/enviar-notificacoes/envio.test.mjs
+      - run: node --experimental-strip-types supabase/functions/ler-documentos/leitura.test.mjs
+      - run: node --experimental-strip-types supabase/functions/analisar-ia/analisar.test.mjs
+      - run: node --experimental-strip-types supabase/functions/investigar/investigar.test.mjs
+      - run: node --experimental-strip-types supabase/functions/analista/analista.test.mjs
+      - run: node --experimental-strip-types supabase/functions/vigiar/vigiar.test.mjs
+      - run: node --experimental-strip-types supabase/functions/turno/turno.test.mjs
+      - run: node --experimental-strip-types supabase/functions/compras/compras.test.mjs
+      - run: node --experimental-strip-types supabase/functions/atendimento/atendimento.test.mjs
 
   apps:
     name: App do ${{ matrix.app }}

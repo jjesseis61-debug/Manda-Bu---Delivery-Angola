@@ -31,7 +31,7 @@ export async function activarPush(): Promise<void> {
 
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', {
-      name: 'Manda Bué',
+      name: 'Cozinha da Alexandra',
       importance: Notifications.AndroidImportance.DEFAULT,
     });
   }
@@ -54,13 +54,17 @@ export async function desactivarPush(): Promise<void> {
 
 /** Ecrã a abrir quando o cliente toca numa notificação */
 export function rotaDaNotificacao(dados: unknown): string | null {
-  const d = (dados ?? {}) as { codigo?: unknown; pedido_id?: unknown; codigo_grupo?: unknown };
+  const d = (dados ?? {}) as { codigo?: unknown; pedido_id?: unknown; codigo_grupo?: unknown; link?: unknown };
   const codigo = d.codigo;
+  // Avisos personalizados (N31) podem trazer um link para um ecrã da app (ex.: uma receita)
+  if (codigo === 'N31' && typeof d.link === 'string' && d.link.startsWith('/')) return d.link;
   if (codigo === 'N2' || codigo === 'N3' || codigo === 'N4' || codigo === 'N5' || codigo === 'N6') return '/convida';
   if (codigo === 'N7') return '/destaques';
   if (codigo === 'N8') return '/levantar';
   if (codigo === 'N13' || codigo === 'N14') return '/pacotes';
   if (codigo === 'N9' && typeof d.pedido_id === 'string') return `/avaliar/${d.pedido_id}`;
+  if ((codigo === 'N16' || codigo === 'N20' || codigo === 'N22') && typeof d.pedido_id === 'string') return `/pedido/${d.pedido_id}`;
+  if (codigo === 'N30') return '/ajuda';
   if ((codigo === 'N10' || codigo === 'N11') && typeof d.codigo_grupo === 'string') return `/grupo/${d.codigo_grupo}`;
   return null;
 }

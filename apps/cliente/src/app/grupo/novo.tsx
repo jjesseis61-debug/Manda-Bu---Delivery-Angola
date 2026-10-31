@@ -43,7 +43,7 @@ export default function NovoGrupo() {
 
   useFocusEffect(
     useCallback(() => {
-      lerEnderecos()
+      lerEnderecos(perfil?.cliente_id)
         .then((e) => {
           const trabalho = e.filter((x) => x.pontos_entrega?.tipo === 'empresa');
           setEnderecos(trabalho);

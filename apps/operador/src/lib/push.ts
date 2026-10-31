@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
+import type { Href } from 'expo-router';
 import { Platform } from 'react-native';
 
 import { registarTokenPush, removerTokenPush } from './api';
@@ -53,9 +54,30 @@ export async function desactivarPush(): Promise<void> {
 }
 
 /** Ecrã a abrir quando o funcionário toca numa notificação */
-export function rotaDaNotificacao(dados: unknown): '/equipa' | '/pacotes' | null {
+export function rotaDaNotificacao(dados: unknown): '/equipa' | '/pacotes' | '/entregas' | '/reclamacoes' | '/conferencia' | '/analista' | '/vigilancia' | '/turno' | '/compras' | '/atendimento' | '/otp-codigos' | null {
   const codigo = (dados as { codigo?: unknown } | null | undefined)?.codigo;
   if (codigo === 'N12') return '/equipa';
   if (codigo === 'N15') return '/pacotes';
+  if (codigo === 'N17' || codigo === 'N18' || codigo === 'N19') return '/entregas';
+  if (codigo === 'N21') return '/reclamacoes';
+  if (codigo === 'N24') return '/conferencia';
+  if (codigo === 'N25') return '/analista';
+  if (codigo === 'N26') return '/vigilancia';
+  if (codigo === 'N27') return '/turno';
+  if (codigo === 'N28') return '/compras';
+  if (codigo === 'N29') return '/atendimento';
+  if (codigo === 'N40') return '/otp-codigos';
   return null;
+}
+
+/**
+ * Ecrã a abrir ao tocar numa notificação DENTRO da app (sino). Reaproveita o mesmo mapa do push
+ * (rotaDaNotificacao), mas com o contexto que só o sino tem: quando há um pedido, o gerente vai ao
+ * histórico desse pedido e o estafeta às suas entregas (onde aceita o pedido reservado). Os ecrãs
+ * de destino protegem-se por permissão (Guarda), por isso não é preciso repetir essa verificação aqui.
+ */
+export function rotaDaNotificacaoNoApp(dados: unknown, opcoes: { podeGerir: boolean }): Href | null {
+  const pedidoId = (dados as { pedido_id?: unknown } | null | undefined)?.pedido_id;
+  if (typeof pedidoId === 'string') return opcoes.podeGerir ? `/pedido/${pedidoId}` : '/entregas?meu=1';
+  return rotaDaNotificacao(dados);
 }
