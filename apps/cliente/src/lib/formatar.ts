@@ -49,8 +49,9 @@ export function mensagemGrupo(hora: string, local: string | null, link: string):
 }
 
 /** "★ 4,5 · 12 avaliações" */
+/** Texto da média de avaliações (sem a estrela — essa é um ícone dourado, ver MediaAvaliacao) */
 export function formatarMedia(media: number, total: number): string {
-  return `★ ${media.toFixed(1).replace('.', ',')} · ${total} ${total === 1 ? 'avaliação' : 'avaliações'}`;
+  return `${media.toFixed(1).replace('.', ',')} · ${total} ${total === 1 ? 'avaliação' : 'avaliações'}`;
 }
 
 /** Valor na lista de destaques: exacto, em intervalo ("10.000–20.000 Kz") ou escondido (null) */

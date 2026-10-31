@@ -152,8 +152,8 @@ describe('destaques (C3)', () => {
 
 describe('avaliações (C10)', () => {
   it('média com vírgula e plural', () => {
-    expect(formatarMedia(4.5, 12)).toBe('★ 4,5 · 12 avaliações');
-    expect(formatarMedia(5, 1)).toBe('★ 5,0 · 1 avaliação');
+    expect(formatarMedia(4.5, 12)).toBe('4,5 · 12 avaliações');
+    expect(formatarMedia(5, 1)).toBe('5,0 · 1 avaliação');
   });
 });
 

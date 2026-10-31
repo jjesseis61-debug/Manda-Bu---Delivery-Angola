@@ -4,9 +4,10 @@ import { Image } from 'react-native';
 
 import { BlocoContactos, temContacto } from '@/components/BlocoContactos';
 import { ComoChegar } from '@/components/ComoChegar';
+import { MediaAvaliacao } from '@/components/MediaAvaliacao';
 import { ACarregar, Botao, Cartao, Ecra, Linha, Paragrafo, Subtitulo, Titulo } from '@/components/ui';
 import { lerCardapio, lerContactos, lerCozinhaPublica, mediasAvaliacoes, type Cozinha } from '@/lib/api';
-import { formatarKz, formatarMedia } from '@/lib/formatar';
+import { formatarKz } from '@/lib/formatar';
 import { useCarrinho } from '@/lib/carrinho';
 import { useSessao } from '@/lib/sessao';
 import { raio } from '@/lib/tema';
@@ -55,7 +56,7 @@ export default function PerfilCozinha() {
       )}
       <Titulo>{cozinha.nome}</Titulo>
       {/* A média só aparece com o mínimo de avaliações (o servidor não a devolve abaixo disso) */}
-      {media && <Paragrafo suave>{formatarMedia(media.media, media.total)}</Paragrafo>}
+      {media && <MediaAvaliacao media={media.media} total={media.total} suave />}
       {cozinha.historia && <Paragrafo>{cozinha.historia}</Paragrafo>}
       {doDia.length > 0 && (
         <>

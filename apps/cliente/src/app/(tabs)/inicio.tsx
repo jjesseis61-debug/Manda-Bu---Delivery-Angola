@@ -6,6 +6,7 @@ import { Image, Pressable, RefreshControl, ScrollView, Text, View } from 'react-
 import { CartaoConvida } from '@/components/CartaoConvida';
 import { Confirmar } from '@/components/Confirmar';
 import { ComoChegar } from '@/components/ComoChegar';
+import { MediaAvaliacao } from '@/components/MediaAvaliacao';
 import { Aviso, Botao, Cartao, Escolha, Paragrafo, Subtitulo, estilos } from '@/components/ui';
 import {
   contadorZona,
@@ -23,7 +24,7 @@ import {
   posicaoEntrega,
 } from '@/lib/api';
 import { useCarrinho } from '@/lib/carrinho';
-import { corEstadoPedido, formatarKz, formatarMedia, mensagemErro, nomeEstadoPedido } from '@/lib/formatar';
+import { corEstadoPedido, formatarKz, mensagemErro, nomeEstadoPedido } from '@/lib/formatar';
 import { gruposEsgotados, precoMinimo } from '@/lib/opcoes';
 import { partilharPrato } from '@/lib/partilha';
 import { montarRepeticao } from '@/lib/repetir';
@@ -336,7 +337,7 @@ export default function Inicio() {
                             params: { cozinha: item.cozinha_id, prato: item.prato_base_id ?? '', nome: item.nome },
                           })
                         }>
-                        <Text style={{ color: cores.marca, fontWeight: '600' }}>{formatarMedia(m.media, m.total)}</Text>
+                        <MediaAvaliacao media={m.media} total={m.total} />
                       </Pressable>
                     ) : null;
                   })()}
