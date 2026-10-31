@@ -8,6 +8,7 @@ import {
   tempoEmFalta,
   mensagemCodigo,
   mensagemConvite,
+  mensagemPartilhaPrato,
   minutosSegundos,
   mensagemErro,
   normalizarCodigo,
@@ -189,4 +190,19 @@ test('I12: benefícios do pacote', () => {
     'Pausa até 5 dias (férias, doença)',
     'Reembolso das refeições que não usares',
   ]);
+});
+
+describe('mensagemPartilhaPrato', () => {
+  it('inclui nome, preço, marca e link', () => {
+    const msg = mensagemPartilhaPrato('Choco frito', '2.500 Kz', 'Cozinha da Alexandra', 'https://play.google.com/x');
+    expect(msg).toContain('Choco frito');
+    expect(msg).toContain('2.500 Kz');
+    expect(msg).toContain('Cozinha da Alexandra');
+    expect(msg).toContain('https://play.google.com/x');
+  });
+
+  it('aceita o preço "desde …" dos pratos montáveis', () => {
+    const msg = mensagemPartilhaPrato('Pizza', 'desde 1.800 Kz', 'Cozinha da Alexandra', 'https://x');
+    expect(msg).toContain('desde 1.800 Kz');
+  });
 });

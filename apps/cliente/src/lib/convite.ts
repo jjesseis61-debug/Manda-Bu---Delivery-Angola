@@ -37,3 +37,11 @@ export function linkConvite(codigo: string): string {
 export function linkGrupo(codigo: string): string {
   return Linking.createURL(`/grupo/${codigo}`);
 }
+
+/**
+ * Link para instalar/abrir a app (página da Play Store). https clicável no WhatsApp; serve para
+ * partilhar um prato sem depender de um deep link (que só abriria para quem já tem a app).
+ */
+export function linkApp(): string {
+  return `https://play.google.com/store/apps/details?id=${PACOTE_ANDROID}`;
+}

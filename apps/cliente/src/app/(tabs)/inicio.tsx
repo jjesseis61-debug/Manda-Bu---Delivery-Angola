@@ -1,3 +1,4 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { Image, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
@@ -24,6 +25,7 @@ import {
 import { useCarrinho } from '@/lib/carrinho';
 import { corEstadoPedido, formatarKz, formatarMedia, mensagemErro, nomeEstadoPedido } from '@/lib/formatar';
 import { gruposEsgotados, precoMinimo } from '@/lib/opcoes';
+import { partilharPrato } from '@/lib/partilha';
 import { montarRepeticao } from '@/lib/repetir';
 import { useSessao } from '@/lib/sessao';
 import { cores, espaco, raio } from '@/lib/tema';
@@ -339,6 +341,20 @@ export default function Inicio() {
                     ) : null;
                   })()}
                   <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: espaco.m }}>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`Partilhar ${item.nome} no WhatsApp`}
+                      onPress={() =>
+                        void partilharPrato(
+                          item.nome,
+                          desde.has(item.id) ? `desde ${formatarKz(desde.get(item.id))}` : formatarKz(item.preco),
+                        )
+                      }
+                      hitSlop={8}
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginRight: 'auto' }}>
+                      <Ionicons name="share-social-outline" size={18} color={cores.marca} />
+                      <Text style={{ color: cores.marca, fontWeight: '600' }}>Partilhar</Text>
+                    </Pressable>
                     {noCarrinho > 0 && <Text style={{ color: cores.marca, fontWeight: '600' }}>{noCarrinho} no carrinho</Text>}
                     {!esgotados.has(item.id) && doses.has(item.id) && doses.get(item.id)! > 0 && doses.get(item.id)! <= 5 && (
                       <Text style={{ color: cores.aviso, fontWeight: '600' }}>{`Restam ${doses.get(item.id)}`}</Text>
