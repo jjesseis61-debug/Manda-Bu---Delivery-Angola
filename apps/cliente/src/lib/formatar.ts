@@ -262,3 +262,8 @@ export function beneficiosPacote(p: {
 export function mensagemPartilhaPrato(nome: string, precoLabel: string, marca: string, link: string): string {
   return `🍲 ${nome} — ${marca}\n${precoLabel}\n\nInstala a app e faz o teu pedido 👇\n${link}`;
 }
+
+/** Prova social: "X pessoas pediram este mês" (singular quando é 1) */
+export function textoPediram(n: number): string {
+  return n === 1 ? '1 pessoa pediu este mês' : `${n} pessoas pediram este mês`;
+}

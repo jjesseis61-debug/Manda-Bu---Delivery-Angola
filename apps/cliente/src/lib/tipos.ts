@@ -22,6 +22,8 @@ export type Parametros = {
   /** Subtotal mínimo para aplicar o desconto de indicação (anti-fraude) */
   desconto_subtotal_minimo?: number;
   contador_minimo: number;
+  /** A partir de quantas pessoas se mostra "X pediram este mês" no cartão do prato */
+  limiar_pediram: number;
   tamanho_top: number;
   /** Minutos até à hora de entrega prometida (o servidor marca-a em cada pedido) */
   tempo_entrega_min?: number;
@@ -78,6 +80,8 @@ export type ItemCardapio = {
   do_dia: boolean;
   cozinha_id: string;
   prato_base_id: string | null;
+  /** Prova social: pessoas distintas que pediram nos últimos 30 dias (0 se poucas/nenhuma) */
+  pedidos_mes: number;
 };
 
 export type ItemOrcamento = {

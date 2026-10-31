@@ -10,6 +10,7 @@ import {
   mensagemConvite,
   mensagemPartilhaPrato,
   minutosSegundos,
+  textoPediram,
   mensagemErro,
   normalizarCodigo,
   telefoneInternacional,
@@ -28,6 +29,7 @@ const parametros: Parametros = {
   levantamento_minimo: 2000,
   limite_parcelamento: 20000,
   contador_minimo: 10,
+  limiar_pediram: 20,
   tamanho_top: 10,
 };
 
@@ -204,5 +206,13 @@ describe('mensagemPartilhaPrato', () => {
   it('aceita o preço "desde …" dos pratos montáveis', () => {
     const msg = mensagemPartilhaPrato('Pizza', 'desde 1.800 Kz', 'Cozinha da Alexandra', 'https://x');
     expect(msg).toContain('desde 1.800 Kz');
+  });
+});
+
+describe('textoPediram', () => {
+  it('plural e singular', () => {
+    expect(textoPediram(285)).toBe('285 pessoas pediram este mês');
+    expect(textoPediram(1)).toBe('1 pessoa pediu este mês');
+    expect(textoPediram(20)).toBe('20 pessoas pediram este mês');
   });
 });

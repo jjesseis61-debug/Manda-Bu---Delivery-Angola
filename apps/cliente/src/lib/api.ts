@@ -111,7 +111,7 @@ export async function cozinhaPadrao(): Promise<string | null> {
 export async function lerCardapio(cozinhaId?: string | null): Promise<ItemCardapio[]> {
   let q = supabase
     .from('cardapio')
-    .select('id, nome, descricao, categoria, preco, foto_url, do_dia, cozinha_id, prato_base_id')
+    .select('id, nome, descricao, categoria, preco, foto_url, do_dia, cozinha_id, prato_base_id, cardapio_popularidade(pessoas)')
     .eq('disponivel', true)
     .eq('visivel_online', true);
   if (cozinhaId) q = q.eq('cozinha_id', cozinhaId);
@@ -119,7 +119,14 @@ export async function lerCardapio(cozinhaId?: string | null): Promise<ItemCardap
     .order('do_dia', { ascending: false })
     .order('ordem')
     .order('nome');
-  return verificar(r) as ItemCardapio[];
+  // O embed vem tipado como array no supabase-js; em runtime é objeto (relação 1-para-1) ou null.
+  const linhas = verificar(r) as unknown as (Omit<ItemCardapio, 'pedidos_mes'> & {
+    cardapio_popularidade: { pessoas: number } | { pessoas: number }[] | null;
+  })[];
+  return linhas.map(({ cardapio_popularidade, ...resto }) => {
+    const pop = Array.isArray(cardapio_popularidade) ? cardapio_popularidade[0] : cardapio_popularidade;
+    return { ...resto, pedidos_mes: pop?.pessoas ?? 0 };
+  });
 }
 
 export type Cozinha = { id: string; nome: string; foto_url: string | null; historia: string | null };

@@ -24,7 +24,7 @@ import {
   posicaoEntrega,
 } from '@/lib/api';
 import { useCarrinho } from '@/lib/carrinho';
-import { corEstadoPedido, formatarKz, mensagemErro, nomeEstadoPedido } from '@/lib/formatar';
+import { corEstadoPedido, formatarKz, mensagemErro, nomeEstadoPedido, textoPediram } from '@/lib/formatar';
 import { gruposEsgotados, precoMinimo } from '@/lib/opcoes';
 import { partilharPrato } from '@/lib/partilha';
 import { montarRepeticao } from '@/lib/repetir';
@@ -36,7 +36,7 @@ const EM_ANDAMENTO = ['pendente', 'confirmado', 'em_preparacao', 'em_entrega'];
 
 export default function Inicio() {
   const router = useRouter();
-  const { ligada, perfil } = useSessao();
+  const { ligada, perfil, parametros } = useSessao();
   const carrinho = useCarrinho();
   const [cardapio, setCardapio] = useState<ItemCardapio[] | null>(null);
   const [enderecos, setEnderecos] = useState<Endereco[]>([]);
@@ -341,6 +341,9 @@ export default function Inicio() {
                       </Pressable>
                     ) : null;
                   })()}
+                  {parametros && item.pedidos_mes >= parametros.limiar_pediram && (
+                    <Text style={{ color: cores.textoSuave, fontSize: 13 }}>👍 {textoPediram(item.pedidos_mes)}</Text>
+                  )}
                   <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: espaco.m }}>
                     <Pressable
                       accessibilityRole="button"
