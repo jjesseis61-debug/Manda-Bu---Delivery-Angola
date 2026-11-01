@@ -196,17 +196,13 @@ test('I12: benefícios do pacote', () => {
 });
 
 describe('mensagemPartilhaPrato', () => {
-  it('inclui nome, preço, marca e link', () => {
-    const msg = mensagemPartilhaPrato('Choco frito', '2.500 Kz', 'Cozinha da Alexandra', 'https://play.google.com/x');
+  it('inclui nome, marca, chamada à ação e link (sem repetir o preço — vem no cartão)', () => {
+    const msg = mensagemPartilhaPrato('Choco frito', 'Cozinha da Alexandra', 'https://x/prato?id=1');
     expect(msg).toContain('Choco frito');
-    expect(msg).toContain('2.500 Kz');
     expect(msg).toContain('Cozinha da Alexandra');
-    expect(msg).toContain('https://play.google.com/x');
-  });
-
-  it('aceita o preço "desde …" dos pratos montáveis', () => {
-    const msg = mensagemPartilhaPrato('Pizza', 'desde 1.800 Kz', 'Cozinha da Alexandra', 'https://x');
-    expect(msg).toContain('desde 1.800 Kz');
+    expect(msg).toContain('Instala a app e faz o teu pedido');
+    expect(msg).toContain('https://x/prato?id=1');
+    expect(msg).not.toContain('Kz');
   });
 });
 

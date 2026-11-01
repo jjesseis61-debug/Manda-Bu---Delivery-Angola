@@ -349,11 +349,7 @@ export default function Inicio() {
                       accessibilityRole="button"
                       accessibilityLabel={`Partilhar ${item.nome} no WhatsApp`}
                       onPress={() =>
-                        void partilharPrato(
-                          item.nome,
-                          desde.has(item.id) ? `desde ${formatarKz(desde.get(item.id))}` : formatarKz(item.preco),
-                          item.id,
-                        )
+                        void partilharPrato(item.nome, item.id)
                       }
                       hitSlop={8}
                       style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginRight: 'auto' }}>
