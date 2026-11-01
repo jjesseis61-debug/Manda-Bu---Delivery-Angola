@@ -1,0 +1,60 @@
+{
+  "expo": {
+    "name": "Manda Bué Estafeta",
+    "slug": "manda-bue-estafeta",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "ao.mandabue.estafeta"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#1F1A17",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "ao.mandabue.estafeta",
+      "softwareKeyboardLayoutMode": "pan"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#1F1A17",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200
+        }
+      ],
+      "expo-sharing",
+      "expo-notifications",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "A Manda Bué usa a tua localização para mostrar ao cliente onde está a entrega, só enquanto tens pedidos a caminho, e para marcar a localização das cozinhas."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "A Manda Bué usa as tuas fotos para mostrar os pratos e a cozinha aos clientes.",
+          "cameraPermission": "A Manda Bué usa a câmara para fotografares os pratos e a cozinha."
+        }
+      ],
+      "@maplibre/maplibre-react-native"
+    ],
+    "scheme": "mandabueestafeta",
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
