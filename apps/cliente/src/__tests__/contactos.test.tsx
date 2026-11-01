@@ -27,7 +27,7 @@ test('contactos: gerais e de cada cozinha, com ligar, WhatsApp e email', async (
   expect(Linking.openURL).toHaveBeenCalledWith('https://wa.me/244923000001');
   fireEvent.press(ecra.getByText('Email ola@mandabue.ao'));
   expect(Linking.openURL).toHaveBeenCalledWith('mailto:ola@mandabue.ao');
-  fireEvent.press(ecra.getByText('Ligar 923111222'));
+  fireEvent.press(ecra.getByText('Ligar +244 923 111 222'));
   expect(Linking.openURL).toHaveBeenCalledWith('tel:923111222');
 });
 

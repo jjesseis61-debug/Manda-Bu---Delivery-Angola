@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { View } from 'react-native';
+import { Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BlocoContactos, temContacto } from '@/components/BlocoContactos';
@@ -109,6 +109,9 @@ export default function Entrar() {
     <SafeAreaView style={{ flex: 1, backgroundColor: cores.fundo }}>
       <View style={{ flex: 1, padding: espaco.xl, paddingTop: espaco.xl * 3, gap: espaco.l }}>
         <Marca grande />
+        <Text style={{ textAlign: 'center', color: cores.textoSuave, fontSize: 15, marginTop: -espaco.s }}>
+          Comida de casa, entregue quente 🍲
+        </Text>
         {!enviadoPara ? (
           <>
             <Paragrafo>Entra com o teu número de telefone. Enviamos-te um código para confirmar (por SMS ou WhatsApp).</Paragrafo>

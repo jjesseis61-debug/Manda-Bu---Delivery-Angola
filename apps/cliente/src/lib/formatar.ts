@@ -267,3 +267,11 @@ export function mensagemPartilhaPrato(nome: string, precoLabel: string, marca: s
 export function textoPediram(n: number): string {
   return n === 1 ? '1 pessoa pediu este mês' : `${n} pessoas pediram este mês`;
 }
+
+/** Mostra um número angolano agrupado e com indicativo: "958077592" -> "+244 958 077 592" */
+export function formatarTelefone(t: string): string {
+  const d = t.replace(/\D/g, '');
+  const n = d.startsWith('244') ? d.slice(3) : d;
+  if (n.length === 9) return `+244 ${n.slice(0, 3)} ${n.slice(3, 6)} ${n.slice(6)}`;
+  return t;
+}

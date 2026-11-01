@@ -3,6 +3,7 @@
 import {
   formatarKz,
   formatarMedia,
+  formatarTelefone,
   horaLuanda,
   mensagemGrupo,
   tempoEmFalta,
@@ -214,5 +215,16 @@ describe('textoPediram', () => {
     expect(textoPediram(285)).toBe('285 pessoas pediram este mês');
     expect(textoPediram(1)).toBe('1 pessoa pediu este mês');
     expect(textoPediram(20)).toBe('20 pessoas pediram este mês');
+  });
+});
+
+describe('formatarTelefone', () => {
+  it('agrupa número angolano com indicativo', () => {
+    expect(formatarTelefone('958077592')).toBe('+244 958 077 592');
+    expect(formatarTelefone('244958077592')).toBe('+244 958 077 592');
+    expect(formatarTelefone('958 077 592')).toBe('+244 958 077 592');
+  });
+  it('deixa como está o que não encaixa', () => {
+    expect(formatarTelefone('12345')).toBe('12345');
   });
 });
