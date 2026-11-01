@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { Guarda } from '@/components/Guarda';
 import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Escolha, Paragrafo, Subtitulo } from '@/components/ui';
@@ -46,7 +46,8 @@ export default function HorariosPrato() {
   const [ocupado, setOcupado] = useState(false);
 
   const [modo, setModo] = useState<'semana' | 'data'>('semana');
-  const [dia, setDia] = useState('1');
+  const [dia, setDia] = useState('1'); // dia único (ao editar)
+  const [dias, setDias] = useState<string[]>(['1']); // vários dias (ao acrescentar)
   const [data, setData] = useState('');
   const [ini, setIni] = useState('08:00');
   const [fim, setFim] = useState('11:00');
@@ -61,13 +62,15 @@ export default function HorariosPrato() {
 
   const horasOk = HORA_OK.test(ini) && HORA_OK.test(fim);
   const dataIso = modo === 'data' ? ddmmParaIso(data) : null;
-  const podeGuardar = horasOk && (modo === 'semana' || !!dataIso);
+  const semanaAdd = modo === 'semana' && !editId; // acrescentar vários dias de uma vez
+  const podeGuardar = horasOk && (modo === 'data' ? !!dataIso : editId ? true : dias.length > 0);
 
   // Repõe o formulário no modo "acrescentar novo"
   function limparFormulario() {
     setEditId(null);
     setModo('semana');
     setDia('1');
+    setDias(['1']);
     setData('');
     setIni('08:00');
     setFim('11:00');
@@ -94,14 +97,21 @@ export default function HorariosPrato() {
     setOcupado(true);
     setErro(null);
     try {
-      await guardarHorario({
-        id: editId ?? undefined,
-        cardapio_id: prato,
-        dia_semana: modo === 'semana' ? Number(dia) : null,
-        data: modo === 'data' ? dataIso : null,
-        hora_inicio: ini,
-        hora_fim: fim,
-      });
+      if (semanaAdd) {
+        // Acrescentar: cria um horário por cada dia marcado, com a mesma janela.
+        for (const d of dias) {
+          await guardarHorario({ cardapio_id: prato, dia_semana: Number(d), data: null, hora_inicio: ini, hora_fim: fim });
+        }
+      } else {
+        await guardarHorario({
+          id: editId ?? undefined,
+          cardapio_id: prato,
+          dia_semana: modo === 'semana' ? Number(dia) : null,
+          data: modo === 'data' ? dataIso : null,
+          hora_inicio: ini,
+          hora_fim: fim,
+        });
+      }
       limparFormulario();
       carregar();
     } catch (e) {
@@ -157,7 +167,38 @@ export default function HorariosPrato() {
             aoMudar={setModo}
           />
           {modo === 'semana' ? (
-            <Escolha opcoes={[1, 2, 3, 4, 5, 6, 7].map((n) => ({ valor: String(n), rotulo: DIAS[n] }))} valor={dia} aoMudar={setDia} />
+            editId ? (
+              // A editar um horário: um só dia.
+              <Escolha opcoes={[1, 2, 3, 4, 5, 6, 7].map((n) => ({ valor: String(n), rotulo: DIAS[n] }))} valor={dia} aoMudar={setDia} />
+            ) : (
+              // A acrescentar: vários dias de uma vez (com a mesma janela).
+              <View style={{ gap: espaco.xs }}>
+                <Text style={{ fontSize: 13, color: cores.textoSuave }}>Dias (podes marcar vários)</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: espaco.s }}>
+                  {[1, 2, 3, 4, 5, 6, 7].map((n) => {
+                    const v = String(n);
+                    const on = dias.includes(v);
+                    return (
+                      <Pressable
+                        key={v}
+                        accessibilityRole="checkbox"
+                        accessibilityState={{ checked: on }}
+                        onPress={() => setDias((ds) => (on ? ds.filter((x) => x !== v) : [...ds, v]))}
+                        style={{
+                          borderWidth: 1,
+                          borderColor: cores.marca,
+                          borderRadius: 20,
+                          paddingVertical: espaco.s,
+                          paddingHorizontal: espaco.l,
+                          backgroundColor: on ? cores.marca : 'transparent',
+                        }}>
+                        <Text style={{ color: on ? '#fff' : cores.marca, fontWeight: '600' }}>{DIAS[n]}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+            )
           ) : (
             <Campo rotulo="Data (DD/MM/AAAA)" placeholder="30/10/2026" keyboardType="number-pad" maxLength={10} value={data} onChangeText={(t) => setData(mascaraData(t))} />
           )}
@@ -171,7 +212,12 @@ export default function HorariosPrato() {
           </View>
           {!horasOk && <Aviso tipo="erro">Escreve as horas no formato HH:MM (ex.: 08:00).</Aviso>}
           {modo === 'data' && data !== '' && !dataIso && <Aviso tipo="erro">Data inválida. Usa DD/MM/AAAA (ex.: 30/10/2026).</Aviso>}
-          <Botao titulo={editId ? 'Guardar alterações' : 'Acrescentar horário'} aCarregar={ocupado} desactivado={!podeGuardar} aoCarregar={guardar} />
+          <Botao
+            titulo={editId ? 'Guardar alterações' : semanaAdd && dias.length > 1 ? `Acrescentar ${dias.length} horários` : 'Acrescentar horário'}
+            aCarregar={ocupado}
+            desactivado={!podeGuardar}
+            aoCarregar={guardar}
+          />
           {editId && <Botao titulo="Cancelar edição" variante="texto" aoCarregar={limparFormulario} />}
         </Cartao>
       </Ecra>
