@@ -49,7 +49,7 @@ jobs:
       # Secret do repositório; sem ele o mapa do "Novo endereço" fica em branco.
       GOOGLE_MAPS_ANDROID_API_KEY: ${{ secrets.GOOGLE_MAPS_ANDROID_API_KEY }}
       # Notificações push: projecto de cada app em expo.dev (sem ele a app funciona sem push)
-      EXPO_PROJECT_ID: ${{ matrix.app == 'cliente' && secrets.EXPO_PROJECT_ID_CLIENTE || matrix.app == 'operador' && secrets.EXPO_PROJECT_ID_OPERADOR || '' }}
+      EXPO_PROJECT_ID: ${{ matrix.app == 'cliente' && secrets.EXPO_PROJECT_ID_CLIENTE || matrix.app == 'operador' && secrets.EXPO_PROJECT_ID_OPERADOR || matrix.app == 'estafeta' && secrets.EXPO_PROJECT_ID_ESTAFETA || '' }}
       NODE_ENV: production
     steps:
       - uses: actions/checkout@v4
@@ -69,14 +69,14 @@ jobs:
         # seu segredo: cliente -> GOOGLE_SERVICES_JSON, operador -> GOOGLE_SERVICES_JSON_OPERADOR.
         # Sem o segredo da app, o passo não faz nada e a app compila sem push (não dá erro).
         env:
-          GOOGLE_SERVICES_JSON: ${{ matrix.app == 'cliente' && secrets.GOOGLE_SERVICES_JSON || matrix.app == 'operador' && secrets.GOOGLE_SERVICES_JSON_OPERADOR || '' }}
+          GOOGLE_SERVICES_JSON: ${{ matrix.app == 'cliente' && secrets.GOOGLE_SERVICES_JSON || matrix.app == 'operador' && secrets.GOOGLE_SERVICES_JSON_OPERADOR || matrix.app == 'estafeta' && secrets.GOOGLE_SERVICES_JSON_ESTAFETA || '' }}
           PACOTE_ESPERADO: ${{ matrix.app == 'cliente' && 'ao.mandabue.cliente' || matrix.app == 'operador' && 'ao.mandabue.operador' || 'ao.mandabue.estafeta' }}
         run: |
           if [ -n "$GOOGLE_SERVICES_JSON" ]; then
             printf '%s' "$GOOGLE_SERVICES_JSON" > google-services.json
             # JSON completo? (um segredo colado cortado passa nos grep mas rebenta no gradle)
             if ! node -e 'JSON.parse(require("fs").readFileSync("google-services.json","utf8"))' 2>/dev/null; then
-              echo "::error::O segredo ${{ matrix.app == 'cliente' && 'GOOGLE_SERVICES_JSON' || 'GOOGLE_SERVICES_JSON_OPERADOR' }} não é um JSON completo — provavelmente foi colado cortado. Re-cola o ficheiro google-services.json INTEIRO (do início '{' ao fim '}')."
+              echo "::error::O segredo ${{ matrix.app == 'cliente' && 'GOOGLE_SERVICES_JSON' || matrix.app == 'operador' && 'GOOGLE_SERVICES_JSON_OPERADOR' || 'GOOGLE_SERVICES_JSON_ESTAFETA' }} não é um JSON completo — provavelmente foi colado cortado. Re-cola o ficheiro google-services.json INTEIRO (do início '{' ao fim '}')."
               exit 1
             fi
             if ! grep -q '"project_info"' google-services.json; then

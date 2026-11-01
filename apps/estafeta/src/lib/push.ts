@@ -7,7 +7,7 @@ import { Platform } from 'react-native';
 
 import { registarTokenPush, removerTokenPush } from './api';
 
-const CHAVE = 'manda-bue-operador:token-push';
+const CHAVE = 'manda-bue-estafeta:token-push';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -32,7 +32,7 @@ export async function activarPush(): Promise<void> {
 
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', {
-      name: 'Manda Bué Operador',
+      name: 'Manda Bué Estafeta',
       importance: Notifications.AndroidImportance.DEFAULT,
     });
   }
