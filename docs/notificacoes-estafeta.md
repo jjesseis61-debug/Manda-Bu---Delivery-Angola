@@ -10,6 +10,20 @@ configuração que só se fazem fora do repositório. Este guia é esses passos.
 
 Package da app: **`ao.mandabue.estafeta`** (tem de ser exactamente este em todo o lado).
 
+### Links rápidos
+
+| Passo | Link direto |
+|---|---|
+| Firebase Console | https://console.firebase.google.com/ |
+| Firebase → Cloud Messaging (depois de escolher o projecto) | https://console.firebase.google.com/project/_/settings/cloudmessaging |
+| Firebase → Contas de serviço (gerar a chave FCM) | https://console.firebase.google.com/project/_/settings/serviceaccounts/adminsdk |
+| Expo (entrar / projectos) | https://expo.dev/ |
+| GitHub → lista de segredos deste repositório | https://github.com/jjesseis61-debug/Manda-Bu---Delivery-Angola/settings/secrets/actions |
+| GitHub → **criar** um segredo novo (atalho) | https://github.com/jjesseis61-debug/Manda-Bu---Delivery-Angola/settings/secrets/actions/new |
+
+> Nos links do Firebase, o `_` escolhe automaticamente o projecto onde já estás. Se tiveres
+> vários projectos, abre primeiro o Console e escolhe o projecto certo.
+
 ---
 
 ## Parte A — Firebase (ficheiro `google-services.json` + chave FCM)
@@ -28,10 +42,12 @@ acrescentas lá uma app Android nova. (Se não tens nenhum, cria um projecto pri
    - ⚠️ Não precisas de mexer no Gradle nem seguir os passos "Adicionar SDK" que o Firebase
      mostra a seguir — o nosso build trata disso. Carrega só em "Seguinte / Continuar para a consola".
 5. Confirma que o **Cloud Messaging** está ligado:
-   **Definições do projeto → separador "Cloud Messaging"**. Se aparecer *"Firebase Cloud
-   Messaging API (V1)"* com estado **Ativado**, está bom.
+   **Definições do projeto → separador "Cloud Messaging"**
+   (link direto: https://console.firebase.google.com/project/_/settings/cloudmessaging).
+   Se aparecer *"Firebase Cloud Messaging API (V1)"* com estado **Ativado**, está bom.
 6. Gera a **chave da conta de serviço** (é o que o Expo usa para entregar ao Google):
-   **Definições do projeto → separador "Contas de serviço" → Gerar nova chave privada → Gerar chave.**
+   **Definições do projeto → separador "Contas de serviço" → Gerar nova chave privada → Gerar chave**
+   (link direto: https://console.firebase.google.com/project/_/settings/serviceaccounts/adminsdk).
    Descarrega esse JSON (nome parecido com `nome-do-projeto-firebase-adminsdk-xxxx.json`).
    - ⚠️ **Não é o mesmo** que o `google-services.json`. Este (`firebase-adminsdk…`) vai **para o
      Expo** (Parte B). O `google-services.json` vai para o GitHub (Parte C). Não troques os dois.
@@ -55,7 +71,8 @@ acrescentas lá uma app Android nova. (Se não tens nenhum, cria um projecto pri
 
 ## Parte C — Segredos no GitHub
 
-No repositório: **Settings → Secrets and variables → Actions → New repository secret.**
+No repositório: **Settings → Secrets and variables → Actions → New repository secret**
+(atalho direto: https://github.com/jjesseis61-debug/Manda-Bu---Delivery-Angola/settings/secrets/actions/new).
 Cria estes **dois**:
 
 | Nome do segredo | Valor |
