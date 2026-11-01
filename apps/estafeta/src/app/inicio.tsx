@@ -4,12 +4,14 @@ import { Pressable, RefreshControl, ScrollView, Switch, Text, View } from 'react
 
 import { Guarda } from '@/components/Guarda';
 import { MapaEntregas, type PontoEntrega } from '@/components/MapaEntregas';
-import { ACarregar, Aviso, Cartao, Paragrafo, Subtitulo } from '@/components/ui';
+import { ACarregar, Aviso, Botao, Cartao, Paragrafo, Subtitulo } from '@/components/ui';
 import { pedidosOperador } from '@/lib/api';
 import { guardarEntregasCache, lerEntregasCache } from '@/lib/entregasCache';
+import { lerFila, pedidosNaFila } from '@/lib/filaOffline';
 import { formatarKz, mensagemErro } from '@/lib/formatar';
 import { usePartilharLocalizacao } from '@/lib/partilharLocalizacao';
 import { guardarModoEstafeta, lerModoEstafeta } from '@/lib/preferencias';
+import { sincronizar } from '@/lib/sincronizar';
 import { cores, espaco, raio } from '@/lib/tema';
 import type { PedidoOperador } from '@/lib/tipos';
 
@@ -29,6 +31,9 @@ export default function Inicio() {
   const [aActualizar, setAActualizar] = useState(false);
   const [emServico, setEmServico] = useState(false);
   const [versao, setVersao] = useState(0);
+  const [pendentes, setPendentes] = useState(0);
+  const [naFila, setNaFila] = useState<Set<string>>(new Set());
+  const [aSincronizar, setASincronizar] = useState(false);
 
   // Lê a preferência "em serviço" ao abrir
   useEffect(() => {
@@ -45,6 +50,8 @@ export default function Inicio() {
 
   const carregar = useCallback(async () => {
     setAActualizar(true);
+    // Primeiro tenta enviar o que está em fila (se houver rede); depois recarrega a lista.
+    await sincronizar().catch(() => undefined);
     try {
       const todos = await pedidosOperador();
       const entregas = todos.filter((p) => ESTADOS[p.estado]);
@@ -63,9 +70,18 @@ export default function Inicio() {
         setErro(mensagemErro(e));
       }
     } finally {
+      setPendentes((await lerFila()).length);
+      setNaFila(await pedidosNaFila());
       setAActualizar(false);
     }
   }, []);
+
+  async function sincronizarAgora() {
+    setASincronizar(true);
+    await sincronizar().catch(() => undefined);
+    await carregar();
+    setASincronizar(false);
+  }
 
   useFocusEffect(
     useCallback(() => {
@@ -101,6 +117,14 @@ export default function Inicio() {
           {emServico && erroLoc && <Aviso tipo="erro">{erroLoc}</Aviso>}
         </Cartao>
 
+        {pendentes > 0 && (
+          <Cartao>
+            <Text style={{ fontWeight: '700', color: cores.texto }}>{pendentes} por sincronizar</Text>
+            <Text style={{ color: cores.textoSuave, fontSize: 13 }}>Entregas guardadas sem rede — envia quando tiveres ligação.</Text>
+            <Botao titulo="Sincronizar agora" variante="leve" aCarregar={aSincronizar} aoCarregar={sincronizarAgora} />
+          </Cartao>
+        )}
+
         {pontos.length > 0 && <MapaEntregas pontos={pontos} />}
 
         <Subtitulo>Entregas de hoje</Subtitulo>
@@ -133,6 +157,7 @@ export default function Inicio() {
                   )}
                 </View>
                 <Text style={{ color: cores.textoSuave }}>{local}{p.zona_nome && p.ponto_referencia ? ` · ${p.zona_nome}` : ''}</Text>
+                {naFila.has(p.pedido_id) && <Text style={{ color: cores.sucesso, fontSize: 12, fontWeight: '700' }}>✓ guardado — a enviar</Text>}
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                   <Text style={{ color: cores.textoSuave }}>{p.itens.reduce((n, i) => n + i.qtd, 0)} itens</Text>
                   <Text style={{ fontWeight: '700' }}>{formatarKz(p.a_pagar)}</Text>

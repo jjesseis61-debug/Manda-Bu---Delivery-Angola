@@ -6,8 +6,11 @@ import { Image, Linking, Text, View } from 'react-native';
 import { Guarda } from '@/components/Guarda';
 import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Escolha, Paragrafo, Subtitulo } from '@/components/ui';
 import { caixasAbertas, mudarEstado, pedidosOperador } from '@/lib/api';
+import { guardarCaixasCache, lerCaixasCache, lerEntregasCache } from '@/lib/entregasCache';
+import { enfileirar, pedidosNaFila } from '@/lib/filaOffline';
 import { formatarKz, mensagemErro } from '@/lib/formatar';
 import { enviarComprovativo, escolherFoto } from '@/lib/fotos';
+import { semRede } from '@/lib/sincronizar';
 import { cores, espaco } from '@/lib/tema';
 import type { Caixa, PedidoOperador } from '@/lib/tipos';
 
@@ -36,6 +39,7 @@ export default function Entrega() {
   const [caixas, setCaixas] = useState<Caixa[]>([]);
   const [erro, setErro] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
+  const [naFila, setNaFila] = useState(false); // já tem acção guardada à espera de rede
 
   // Fecho da entrega (pagamento)
   const [aFechar, setAFechar] = useState(false);
@@ -44,12 +48,24 @@ export default function Entrega() {
 
   const carregar = useCallback(async () => {
     if (!id) return;
+    setNaFila((await pedidosNaFila()).has(id));
     try {
-      const [todos, cx] = await Promise.all([pedidosOperador(), caixasAbertas().catch(() => [] as Caixa[])]);
+      const [todos, cx] = await Promise.all([pedidosOperador(), caixasAbertas()]);
       setCaixas(cx);
+      void guardarCaixasCache(cx);
       setPedido(todos.find((p) => p.pedido_id === id) ?? null);
+      setErro(null);
     } catch (e) {
-      setErro(mensagemErro(e));
+      if (semRede(e)) {
+        // Sem rede: usa as caches (lista e caixas) para ainda poder ver e agir offline.
+        const [lista, cx] = await Promise.all([lerEntregasCache(), lerCaixasCache()]);
+        setCaixas(cx ?? []);
+        setPedido(lista?.find((p) => p.pedido_id === id) ?? null);
+        setErro(null);
+      } else {
+        setErro(mensagemErro(e));
+        setPedido(null);
+      }
     }
   }, [id]);
 
@@ -59,16 +75,22 @@ export default function Entrega() {
     }, [carregar]),
   );
 
-  async function marcar(estado: string, extra?: Parameters<typeof mudarEstado>[2]) {
+  // "Saiu para entrega": online se houver rede; senão fica na fila (sincroniza depois).
+  async function marcarSaiu() {
     if (!pedido) return;
     setOcupado(true);
     setErro(null);
     try {
-      await mudarEstado(pedido.pedido_id, estado, extra);
+      await mudarEstado(pedido.pedido_id, 'em_entrega');
       router.back();
     } catch (e) {
-      setErro(mensagemErro(e));
-      setOcupado(false);
+      if (semRede(e)) {
+        await enfileirar({ pedido_id: pedido.pedido_id, tipo: 'em_entrega' });
+        router.back();
+      } else {
+        setErro(mensagemErro(e));
+        setOcupado(false);
+      }
     }
   }
 
@@ -91,6 +113,7 @@ export default function Entrega() {
 
   async function entregar() {
     if (!pedido) return;
+    const temElectronico = parcelas.some((x) => electronico(x.metodo));
     setOcupado(true);
     setErro(null);
     try {
@@ -104,8 +127,24 @@ export default function Entrega() {
       await mudarEstado(pedido.pedido_id, 'entregue_pago', { caixa: caixa ?? undefined, parcelas: enviadas });
       router.back();
     } catch (e) {
-      setErro(mensagemErro(e));
-      setOcupado(false);
+      if (semRede(e)) {
+        // O comprovativo electrónico precisa de rede para a foto subir; só dinheiro vai para a fila.
+        if (temElectronico) {
+          setErro('Sem rede: o comprovativo precisa de ligação para enviar a foto. Entrega quando tiveres rede.');
+          setOcupado(false);
+          return;
+        }
+        await enfileirar({
+          pedido_id: pedido.pedido_id,
+          tipo: 'entregue_pago',
+          caixa: caixa as string,
+          parcelas: parcelas.map((x) => ({ metodo: x.metodo, valor: Number(x.valor) })),
+        });
+        router.back();
+      } else {
+        setErro(mensagemErro(e));
+        setOcupado(false);
+      }
     }
   }
 
@@ -153,12 +192,14 @@ export default function Entrega() {
 
         {erro && <Aviso tipo="erro">{erro}</Aviso>}
 
-        {/* Acção conforme o estado */}
-        {!aFechar && (pedido.estado === 'confirmado' || pedido.estado === 'em_preparacao') && (
-          <Botao titulo="Saiu para entrega" aCarregar={ocupado} aoCarregar={() => marcar('em_entrega')} />
+        {naFila && <Aviso tipo="sucesso">Guardado — será enviado assim que houver rede.</Aviso>}
+
+        {/* Acção conforme o estado (escondida se já está na fila à espera de envio) */}
+        {!naFila && !aFechar && (pedido.estado === 'confirmado' || pedido.estado === 'em_preparacao') && (
+          <Botao titulo="Saiu para entrega" aCarregar={ocupado} aoCarregar={marcarSaiu} />
         )}
 
-        {!aFechar && pedido.estado === 'em_entrega' && (
+        {!naFila && !aFechar && pedido.estado === 'em_entrega' && (
           <Botao titulo="Marcar como entregue" aCarregar={ocupado} aoCarregar={comecarFecho} />
         )}
 
