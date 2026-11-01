@@ -352,6 +352,7 @@ export default function Inicio() {
                         void partilharPrato(
                           item.nome,
                           desde.has(item.id) ? `desde ${formatarKz(desde.get(item.id))}` : formatarKz(item.preco),
+                          item.id,
                         )
                       }
                       hitSlop={8}

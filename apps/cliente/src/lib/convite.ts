@@ -45,3 +45,13 @@ export function linkGrupo(codigo: string): string {
 export function linkApp(): string {
   return `https://play.google.com/store/apps/details?id=${PACOTE_ANDROID}`;
 }
+
+/**
+ * Link de partilha de um prato: aponta para a função edge `prato`, que gera a página com a
+ * pré-visualização (foto + nome + preço, via Open Graph) e reencaminha para a Play Store.
+ * É o que faz a foto do prato aparecer no cartão do WhatsApp.
+ */
+export function linkPartilhaPrato(cardapioId: string): string {
+  const base = (process.env.EXPO_PUBLIC_SUPABASE_URL ?? '').replace(/\/+$/, '');
+  return `${base}/functions/v1/prato?id=${encodeURIComponent(cardapioId)}`;
+}
