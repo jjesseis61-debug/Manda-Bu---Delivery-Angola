@@ -1,0 +1,5 @@
+# Artefactos intermédios do gerador da marca (gerar.py + render.js).
+# Os PNG finais ficam em docs/marca/*.png e em apps/*/assets/.
+/svg/
+/out/
+/lista.json
