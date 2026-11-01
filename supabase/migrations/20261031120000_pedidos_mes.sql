@@ -7,7 +7,7 @@
 -- Limiar próprio: abaixo disto não se mostra o número (evita "3 pediram" em pratos novos).
 alter table parametros add column if not exists limiar_pediram int not null default 20;
 
-create table cardapio_popularidade (
+create table if not exists cardapio_popularidade (
   cardapio_id   uuid primary key references cardapio(id) on delete cascade,
   pessoas       int not null default 0,
   atualizado_em timestamptz not null default now()
@@ -17,6 +17,7 @@ alter table cardapio_popularidade enable row level security;
 revoke all on cardapio_popularidade from anon, authenticated;
 grant select on cardapio_popularidade to authenticated;
 -- É só um agregado (uma contagem), não expõe ninguém; o cliente lê-o junto do cardápio.
+drop policy if exists ler on cardapio_popularidade;
 create policy ler on cardapio_popularidade for select to authenticated using (true);
 
 -- Recalcula do zero: limpa e reinsere os pratos com pelo menos 1 pessoa nos últimos 30 dias.
