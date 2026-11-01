@@ -17,6 +17,7 @@ export default function LayoutRaiz() {
         <Stack.Screen name="entrar" options={{ headerShown: false }} />
         <Stack.Screen name="sem-acesso" options={{ headerShown: false }} />
         <Stack.Screen name="inicio" options={{ title: 'Manda Bué · Estafeta', headerBackVisible: false }} />
+        <Stack.Screen name="entrega/[id]" options={{ title: 'Entrega' }} />
       </Stack>
       <StatusBar style="dark" />
     </SessaoProvider>

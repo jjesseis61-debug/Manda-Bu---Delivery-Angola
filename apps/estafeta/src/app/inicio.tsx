@@ -1,6 +1,6 @@
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { RefreshControl, ScrollView, Text, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 
 import { Guarda } from '@/components/Guarda';
 import { ACarregar, Aviso, Cartao, Paragrafo, Subtitulo } from '@/components/ui';
@@ -19,6 +19,7 @@ const ESTADOS: Record<string, { rotulo: string; ordem: number } | undefined> = {
 
 /** Hoje: entregas por fazer, com cache offline (mostra a última lista mesmo sem rede). */
 export default function Inicio() {
+  const router = useRouter();
   const [lista, setLista] = useState<PedidoOperador[] | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [semRede, setSemRede] = useState(false);
@@ -74,7 +75,8 @@ export default function Inicio() {
           const est = ESTADOS[p.estado];
           const local = p.ponto_referencia || p.zona_nome || 'Ponto de entrega';
           return (
-            <Cartao key={p.pedido_id}>
+            <Pressable key={p.pedido_id} onPress={() => router.push({ pathname: '/entrega/[id]', params: { id: p.pedido_id } })}>
+            <Cartao>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: espaco.s }}>
                 <Text style={{ fontWeight: '700', color: cores.texto, flex: 1 }}>{p.cliente_nome}</Text>
                 {est && (
@@ -101,6 +103,7 @@ export default function Inicio() {
                 <Text style={{ color: cores.textoSuave, fontSize: 12 }}>Atribuído a {p.atribuido_a_nome}</Text>
               )}
             </Cartao>
+            </Pressable>
           );
         })}
       </ScrollView>
