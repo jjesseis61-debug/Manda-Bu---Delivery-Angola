@@ -71,11 +71,23 @@ ficheiros['operador/android-icon-monochrome.png'] = (svg(marca(BRANCO, BRANCO, B
 ficheiros['operador/splash-icon.png'] = (svg(marca(anel=VERMELHO), None, 1.0), 1024)
 ficheiros['operador/favicon.png'] = (svg(mo, CARVAO, 0.92), 48)
 
+# Estafeta — Manda Bué logística (campo dourado: a cor da velocidade/entrega)
+# Mesmo MB do operador, mas em fundo dourado, com anel e letras a carvão e as linhas de
+# velocidade a vermelho (movimento). Distingue-se do operador (carvão) e do cliente (vermelho).
+me = marca(anel=CARVAO, letras=CARVAO, linhas=VERMELHO)
+ficheiros['estafeta/icon.png'] = (svg(me, DOURADO, 0.92), 1024)
+ficheiros['estafeta/android-icon-background.png'] = (svg('', DOURADO), 512)
+ficheiros['estafeta/android-icon-foreground.png'] = (svg(me, None, 0.72), 512)
+ficheiros['estafeta/android-icon-monochrome.png'] = (svg(marca(BRANCO, BRANCO, BRANCO), None, 0.72), 432)
+ficheiros['estafeta/splash-icon.png'] = (svg(marca(anel=CARVAO, letras=CARVAO, linhas=VERMELHO), None, 1.0), 1024)
+ficheiros['estafeta/favicon.png'] = (svg(me, DOURADO, 0.92), 48)
+
 # Peças de marca (docs)
 ficheiros['marca/logotipo.png'] = (logotipo_alexandra(), None)
 ficheiros['marca/logotipo-fundo-claro.png'] = (logotipo_alexandra('#FFFFFF'), None)
 ficheiros['marca/simbolo.png'] = (svg(marca_alexandra(), VERMELHO, 0.92), 1024)
 ficheiros['marca/simbolo-operador.png'] = (svg(marca(anel=VERMELHO), CARVAO, 0.92), 1024)
+ficheiros['marca/simbolo-estafeta.png'] = (svg(marca(anel=CARVAO, letras=CARVAO, linhas=VERMELHO), DOURADO, 0.92), 1024)
 
 import json, os
 os.makedirs('svg', exist_ok=True)
