@@ -467,7 +467,9 @@ export async function marcarPagadorDistinto(pedidoId: string, valor: boolean) {
 
 // ---------------------------------------------------------------- push da equipa (N12)
 export async function registarTokenPush(token: string, plataforma: string) {
-  verificar(await supabase.rpc('registar_token_push_funcionario', { p_token: token, p_plataforma: plataforma }));
+  // app: 'estafeta' para o servidor só mandar a esta app as notificações de entrega (N32, …)
+  // e não as da cozinha/gestão. O operador usa o default ('operador').
+  verificar(await supabase.rpc('registar_token_push_funcionario', { p_token: token, p_plataforma: plataforma, p_app: 'estafeta' }));
 }
 
 export async function removerTokenPush(token: string) {
