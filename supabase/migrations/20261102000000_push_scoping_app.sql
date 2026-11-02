@@ -56,6 +56,10 @@ begin
         activo = true, atualizado_em = now(), deletado_em = null, app = excluded.app;
 end $$;
 
+-- O drop+create apaga os privilégios; repor como estavam (só a app autenticada chama, nunca o anon).
+revoke execute on function registar_token_push_funcionario(text, text, text) from public, anon;
+grant  execute on function registar_token_push_funcionario(text, text, text) to authenticated;
+
 -- 4) Envio: igual ao anterior, mas para notificações de FUNCIONÁRIO só junta os tokens cuja app
 --    corresponde ao código. As de cliente ficam exactamente como estavam.
 create or replace function notificacoes_por_enviar(p_limite integer default 100)
