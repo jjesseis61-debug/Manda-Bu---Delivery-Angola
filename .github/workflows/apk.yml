@@ -49,12 +49,10 @@ jobs:
       # Secret do repositório; sem ele o mapa do "Novo endereço" fica em branco.
       GOOGLE_MAPS_ANDROID_API_KEY: ${{ secrets.GOOGLE_MAPS_ANDROID_API_KEY }}
       # Notificações push: projecto de cada app em expo.dev (sem ele a app funciona sem push).
-      # O estafeta usa o MESMO projecto Expo do operador de propósito: esse projecto já tem a chave
-      # FCM V1 e cobre o mesmo projecto Firebase (onde a app ao.mandabue.estafeta está registada),
-      # por isso entrega às duas apps. Mantém todos os tokens de funcionário num só projecto Expo
-      # (o que o envio em lote da função enviar-notificacoes agradece). O google-services.json de
-      # cada app continua a ser o seu (GOOGLE_SERVICES_JSON_ESTAFETA tem o package do estafeta).
-      EXPO_PROJECT_ID: ${{ matrix.app == 'cliente' && secrets.EXPO_PROJECT_ID_CLIENTE || matrix.app == 'operador' && secrets.EXPO_PROJECT_ID_OPERADOR || matrix.app == 'estafeta' && secrets.EXPO_PROJECT_ID_OPERADOR || '' }}
+      # Cada app usa o SEU próprio projecto Expo, porque a entrega (FCM) é por projecto: o Expo usa a
+      # credencial FCM do projecto do token. O estafeta precisa do seu projecto (EXPO_PROJECT_ID_ESTAFETA
+      # = c412f0ea) COM a chave FCM V1 do projecto Firebase onde a app ao.mandabue.estafeta vive.
+      EXPO_PROJECT_ID: ${{ matrix.app == 'cliente' && secrets.EXPO_PROJECT_ID_CLIENTE || matrix.app == 'operador' && secrets.EXPO_PROJECT_ID_OPERADOR || matrix.app == 'estafeta' && secrets.EXPO_PROJECT_ID_ESTAFETA || '' }}
       NODE_ENV: production
     steps:
       - uses: actions/checkout@v4
