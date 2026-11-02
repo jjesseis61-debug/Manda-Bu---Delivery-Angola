@@ -8,6 +8,7 @@ import { ACarregar, Aviso, Botao, Cartao, Paragrafo, Subtitulo } from '@/compone
 import { pedidosOperador } from '@/lib/api';
 import { guardarEntregasCache, lerEntregasCache } from '@/lib/entregasCache';
 import { lerFila, pedidosNaFila } from '@/lib/filaOffline';
+import { estadoDoPush } from '@/lib/push';
 import { formatarKz, mensagemErro } from '@/lib/formatar';
 import { usePartilharLocalizacao } from '@/lib/partilharLocalizacao';
 import { guardarModoEstafeta, lerModoEstafeta } from '@/lib/preferencias';
@@ -34,6 +35,7 @@ export default function Inicio() {
   const [pendentes, setPendentes] = useState(0);
   const [naFila, setNaFila] = useState<Set<string>>(new Set());
   const [aSincronizar, setASincronizar] = useState(false);
+  const [diagPush, setDiagPush] = useState(''); // diagnóstico do registo de push
 
   // Lê a preferência "em serviço" ao abrir
   useEffect(() => {
@@ -72,6 +74,7 @@ export default function Inicio() {
     } finally {
       setPendentes((await lerFila()).length);
       setNaFila(await pedidosNaFila());
+      setDiagPush(await estadoDoPush());
       setAActualizar(false);
     }
   }, []);
@@ -115,6 +118,14 @@ export default function Inicio() {
             <Switch thumbColor="#FFFFFF" value={emServico} onValueChange={alternarServico} trackColor={{ true: cores.marca, false: cores.contorno }} />
           </View>
           {emServico && erroLoc && <Aviso tipo="erro">{erroLoc}</Aviso>}
+        </Cartao>
+
+        {/* Diagnóstico temporário do registo de push */}
+        <Cartao>
+          <Text style={{ fontWeight: '700', color: cores.texto }}>Diagnóstico push</Text>
+          <Text selectable style={{ color: diagPush.startsWith('ok') ? cores.sucesso : cores.marca, fontSize: 12 }}>
+            {diagPush || '…'}
+          </Text>
         </Cartao>
 
         {pendentes > 0 && (
