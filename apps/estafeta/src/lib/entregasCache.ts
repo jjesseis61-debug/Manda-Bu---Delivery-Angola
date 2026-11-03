@@ -6,13 +6,28 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Caixa, PedidoOperador } from './tipos';
 
 const CHAVE = 'manda-bue-estafeta:entregas-hoje';
+const CHAVE_EM = 'manda-bue-estafeta:entregas-hoje-em'; // quando foi a última carga com sucesso
 const CHAVE_CAIXAS = 'manda-bue-estafeta:caixas';
 
 export async function guardarEntregasCache(lista: PedidoOperador[]): Promise<void> {
   try {
-    await AsyncStorage.setItem(CHAVE, JSON.stringify(lista));
+    await AsyncStorage.multiSet([
+      [CHAVE, JSON.stringify(lista)],
+      [CHAVE_EM, String(Date.now())],
+    ]);
   } catch {
     // sem storage: ignora
+  }
+}
+
+/** Instante (ms) da última carga com sucesso guardada em cache, ou null. */
+export async function lerEntregasCacheEm(): Promise<number | null> {
+  try {
+    const s = await AsyncStorage.getItem(CHAVE_EM);
+    const n = s ? Number(s) : NaN;
+    return Number.isFinite(n) ? n : null;
+  } catch {
+    return null;
   }
 }
 

@@ -319,6 +319,13 @@ export async function pedidosOperador(): Promise<PedidoOperador[]> {
   return verificar(await supabase.rpc('pedidos_operador')) as PedidoOperador[];
 }
 
+export type EntregaFeita = { pedido_id: string; cliente_nome: string; entregue_em: string; a_pagar: number };
+
+/** Entregas que este estafeta concluiu hoje (hora de Luanda), para o resumo do dia. */
+export async function entregasFeitasHoje(): Promise<EntregaFeita[]> {
+  return (verificar(await supabase.rpc('entregas_feitas_hoje')) as EntregaFeita[]) ?? [];
+}
+
 export async function estafetasParaAtribuir(cozinhaId: string): Promise<EstafetaAtribuir[]> {
   return (
     (verificar(await supabase.rpc('estafetas_para_atribuir', { p_cozinha: cozinhaId })) as EstafetaAtribuir[]) ?? []

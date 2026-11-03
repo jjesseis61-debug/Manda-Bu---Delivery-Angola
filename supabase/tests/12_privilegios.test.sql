@@ -114,6 +114,8 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 'caixas_geridas',
                 -- atribuição explícita de entregas
                 'atribuir_entrega', 'recusar_entrega', 'estafetas_para_atribuir',
+                -- resumo do dia do estafeta (entregas feitas hoje)
+                'entregas_feitas_hoje',
                 -- sino de notificações do funcionário
                 'minhas_notificacoes', 'contar_notificacoes_novas', 'marcar_notificacoes_vistas',
                 -- reconquista de clientes inativos

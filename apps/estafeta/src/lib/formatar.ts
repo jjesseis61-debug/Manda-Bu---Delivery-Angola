@@ -61,6 +61,29 @@ export function horaPrometida(iso: string | null | undefined): { texto: string; 
   return { texto: `para as ${horaLuanda(iso)}`, atrasado: new Date(iso).getTime() < Date.now() };
 }
 
+/** "agora mesmo", "há 3 min", "há 2 h" — tempo decorrido desde um instante (ms). */
+export function haQuantoTempo(desde: number): string {
+  const min = Math.floor((Date.now() - desde) / 60000);
+  if (min < 1) return 'agora mesmo';
+  if (min < 60) return `há ${min} min`;
+  return `há ${Math.floor(min / 60)} h`;
+}
+
+/** Distância em linha reta entre dois pontos, em km (fórmula de haversine). */
+export function distanciaKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371;
+  const rad = (g: number) => (g * Math.PI) / 180;
+  const dLat = rad(lat2 - lat1);
+  const dLng = rad(lng2 - lng1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(rad(lat1)) * Math.cos(rad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(a)));
+}
+
+/** "1,2 km" ou "350 m" */
+export function formatarDistancia(km: number): string {
+  return km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1).replace('.', ',')} km`;
+}
+
 export const nomeEstadoGrupo: Record<string, string> = {
   aberto: 'Aberto (aceita pedidos)',
   fechado: 'Fechado',

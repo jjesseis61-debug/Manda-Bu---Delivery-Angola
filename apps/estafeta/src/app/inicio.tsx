@@ -1,3 +1,4 @@
+import * as Location from 'expo-location';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Linking, Pressable, RefreshControl, ScrollView, Switch, Text, View } from 'react-native';
@@ -5,10 +6,10 @@ import { Linking, Pressable, RefreshControl, ScrollView, Switch, Text, View } fr
 import { Guarda } from '@/components/Guarda';
 import { MapaEntregas, type PontoEntrega } from '@/components/MapaEntregas';
 import { ACarregar, Aviso, Botao, Cartao, Paragrafo, Subtitulo } from '@/components/ui';
-import { pedidosOperador } from '@/lib/api';
-import { guardarEntregasCache, lerEntregasCache } from '@/lib/entregasCache';
+import { entregasFeitasHoje, pedidosOperador, type EntregaFeita } from '@/lib/api';
+import { guardarEntregasCache, lerEntregasCache, lerEntregasCacheEm } from '@/lib/entregasCache';
 import { lerFila, pedidosNaFila } from '@/lib/filaOffline';
-import { formatarKz, horaPrometida, mensagemErro } from '@/lib/formatar';
+import { distanciaKm, formatarDistancia, formatarKz, haQuantoTempo, horaLuanda, horaPrometida, mensagemErro } from '@/lib/formatar';
 import { usePartilharLocalizacao } from '@/lib/partilharLocalizacao';
 import { guardarModoEstafeta, lerModoEstafeta } from '@/lib/preferencias';
 import { sincronizar } from '@/lib/sincronizar';
@@ -22,14 +23,28 @@ const ESTADOS: Record<string, { rotulo: string; ordem: number } | undefined> = {
   confirmado: { rotulo: 'Confirmado', ordem: 2 },
 };
 
+// Número de ajuda/despacho (público, vem do build). Sem ele, o botão de ajuda não aparece.
+const TELEFONE_AJUDA = process.env.EXPO_PUBLIC_CONTACTO_TELEFONE || '';
+
 const abrir = (url: string) => Linking.openURL(url).catch(() => undefined);
 const urlComoChegar = (lat: number, lng: number) =>
   `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
 
-/** Hoje: entregas por fazer, "Em serviço" (partilha a localização ao cliente), mapa e cache offline. */
+/** Uma métrica do resumo do dia (número grande + rótulo). */
+function Metrica({ valor, rotulo }: { valor: string; rotulo: string }) {
+  return (
+    <View style={{ flex: 1 }}>
+      <Text style={{ fontWeight: '700', color: cores.texto, fontSize: 20 }}>{valor}</Text>
+      <Text style={{ color: cores.textoSuave, fontSize: 13 }}>{rotulo}</Text>
+    </View>
+  );
+}
+
+/** Hoje: resumo do dia, entregas por fazer, "Em serviço", mapa, feitas hoje e cache offline. */
 export default function Inicio() {
   const router = useRouter();
   const [lista, setLista] = useState<PedidoOperador[] | null>(null);
+  const [feitas, setFeitas] = useState<EntregaFeita[]>([]);
   const [erro, setErro] = useState<string | null>(null);
   const [semRede, setSemRede] = useState(false);
   const [aActualizar, setAActualizar] = useState(false);
@@ -38,10 +53,27 @@ export default function Inicio() {
   const [pendentes, setPendentes] = useState(0);
   const [naFila, setNaFila] = useState<Set<string>>(new Set());
   const [aSincronizar, setASincronizar] = useState(false);
+  const [atualizadoEm, setAtualizadoEm] = useState<number | null>(null);
+  const [minhaPos, setMinhaPos] = useState<{ lat: number; lng: number } | null>(null);
 
   // Lê a preferência "em serviço" ao abrir
   useEffect(() => {
     void lerModoEstafeta().then((v) => setEmServico(v ?? false));
+  }, []);
+
+  // Posição atual (uma leitura), só se a permissão já estiver dada — para mostrar a distância a cada
+  // entrega sem pedir autorização neste ecrã (a autorização é pedida no "Em serviço").
+  useEffect(() => {
+    void (async () => {
+      try {
+        const { status } = await Location.getForegroundPermissionsAsync();
+        if (status !== 'granted') return;
+        const p = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        setMinhaPos({ lat: p.coords.latitude, lng: p.coords.longitude });
+      } catch {
+        // sem localização: segue sem distâncias
+      }
+    })();
   }, []);
 
   // Partilha a posição ao cliente enquanto está em serviço (pára sozinho quando não há nada a caminho)
@@ -57,12 +89,14 @@ export default function Inicio() {
     // Primeiro tenta enviar o que está em fila (se houver rede); depois recarrega a lista.
     await sincronizar().catch(() => undefined);
     try {
-      const todos = await pedidosOperador();
+      const [todos, feitasHoje] = await Promise.all([pedidosOperador(), entregasFeitasHoje()]);
       const entregas = todos.filter((p) => ESTADOS[p.estado]);
       setLista(entregas);
+      setFeitas(feitasHoje);
       setSemRede(false);
       setErro(null);
       setVersao((v) => v + 1);
+      setAtualizadoEm(Date.now());
       void guardarEntregasCache(entregas);
     } catch (e) {
       const cache = await lerEntregasCache();
@@ -70,6 +104,7 @@ export default function Inicio() {
         setLista(cache);
         setSemRede(true);
         setErro(null);
+        setAtualizadoEm(await lerEntregasCacheEm());
       } else {
         setErro(mensagemErro(e));
       }
@@ -101,8 +136,9 @@ export default function Inicio() {
     .filter((p) => p.ponto_lat != null && p.ponto_lng != null)
     .map((p) => ({ id: p.pedido_id, lat: p.ponto_lat as number, lng: p.ponto_lng as number, titulo: p.cliente_nome, aCaminho: p.estado === 'em_entrega' }));
 
-  // Resumo do dia: quantas entregas faltam e quanto há a receber (soma do que falta cobrar).
+  // Resumo do dia: o que falta (por fazer / a receber) e o que já se fez (feitas / recebido hoje).
   const totalReceber = ordenada.reduce((s, p) => s + (p.a_pagar ?? 0), 0);
+  const recebidoHoje = feitas.reduce((s, f) => s + (f.a_pagar ?? 0), 0);
 
   return (
     <Guarda permissoes={['entregas.registar']}>
@@ -116,7 +152,9 @@ export default function Inicio() {
             <View style={{ flex: 1 }}>
               <Text style={{ fontWeight: '700', color: cores.texto }}>Em serviço</Text>
               <Text style={{ color: cores.textoSuave, fontSize: 13 }}>
-                {emServico ? `A partilhar a tua posição · ${aCaminho} a caminho` : 'Liga para o cliente ver onde está a entrega'}
+                {emServico
+                  ? `A partilhar a tua posição · ${aCaminho} a caminho`
+                  : 'Liga ao começar o turno — o cliente passa a ver onde está a entrega.'}
               </Text>
             </View>
             <Switch thumbColor="#FFFFFF" value={emServico} onValueChange={alternarServico} trackColor={{ true: cores.marca, false: cores.contorno }} />
@@ -124,23 +162,20 @@ export default function Inicio() {
           {emServico && erroLoc && <Aviso tipo="erro">{erroLoc}</Aviso>}
         </Cartao>
 
-        {/* Resumo do dia: entregas por fazer e total a receber */}
-        {ordenada.length > 0 && (
-          <Cartao>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <View>
-                <Text style={{ fontWeight: '700', color: cores.texto, fontSize: 20 }}>{ordenada.length}</Text>
-                <Text style={{ color: cores.textoSuave, fontSize: 13 }}>
-                  {ordenada.length === 1 ? 'entrega por fazer' : 'entregas por fazer'}
-                </Text>
-              </View>
-              <View style={{ alignItems: 'flex-end' }}>
-                <Text style={{ fontWeight: '700', color: cores.texto, fontSize: 20 }}>{formatarKz(totalReceber)}</Text>
-                <Text style={{ color: cores.textoSuave, fontSize: 13 }}>a receber</Text>
-              </View>
-            </View>
-          </Cartao>
-        )}
+        {/* Resumo do dia: sempre visível (por fazer / a receber / feitas hoje / recebido hoje) */}
+        <Cartao>
+          <View style={{ flexDirection: 'row', gap: espaco.m }}>
+            <Metrica valor={String(ordenada.length)} rotulo="por fazer" />
+            <Metrica valor={formatarKz(totalReceber)} rotulo="a receber" />
+          </View>
+          <View style={{ flexDirection: 'row', gap: espaco.m, marginTop: espaco.s }}>
+            <Metrica valor={String(feitas.length)} rotulo="feitas hoje" />
+            <Metrica valor={formatarKz(recebidoHoje)} rotulo="recebido hoje" />
+          </View>
+          {atualizadoEm != null && (
+            <Text style={{ color: cores.textoSuave, fontSize: 12, marginTop: espaco.xs }}>Atualizado {haQuantoTempo(atualizadoEm)}</Text>
+          )}
+        </Cartao>
 
         {pendentes > 0 && (
           <Cartao>
@@ -163,6 +198,7 @@ export default function Inicio() {
           const local = p.ponto_referencia || p.zona_nome || 'Ponto de entrega';
           const hp = horaPrometida(p.hora_prometida);
           const temGeo = p.ponto_lat != null && p.ponto_lng != null;
+          const dist = minhaPos && temGeo ? distanciaKm(minhaPos.lat, minhaPos.lng, p.ponto_lat as number, p.ponto_lng as number) : null;
           return (
             <Pressable key={p.pedido_id} onPress={() => router.push({ pathname: '/entrega/[id]', params: { id: p.pedido_id } })}>
               <Cartao>
@@ -198,17 +234,41 @@ export default function Inicio() {
                   <Text style={{ color: cores.textoSuave, fontSize: 12 }}>Atribuído a {p.atribuido_a_nome}</Text>
                 )}
                 {temGeo && (
-                  <Pressable
-                    onPress={() => abrir(urlComoChegar(p.ponto_lat as number, p.ponto_lng as number))}
-                    hitSlop={8}
-                    style={{ alignSelf: 'flex-start', marginTop: espaco.xs, paddingVertical: 6, paddingHorizontal: 12, borderRadius: raio, backgroundColor: cores.fundoSuave }}>
-                    <Text style={{ color: cores.marca, fontWeight: '700', fontSize: 13 }}>Como chegar</Text>
-                  </Pressable>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: espaco.xs }}>
+                    <Text style={{ color: cores.textoSuave, fontSize: 13 }}>{dist != null ? `📍 ~${formatarDistancia(dist)}` : ''}</Text>
+                    <Pressable
+                      onPress={() => abrir(urlComoChegar(p.ponto_lat as number, p.ponto_lng as number))}
+                      hitSlop={8}
+                      style={{ paddingVertical: 6, paddingHorizontal: 12, borderRadius: raio, backgroundColor: cores.fundoSuave }}>
+                      <Text style={{ color: cores.marca, fontWeight: '700', fontSize: 13 }}>Como chegar</Text>
+                    </Pressable>
+                  </View>
                 )}
               </Cartao>
             </Pressable>
           );
         })}
+
+        {/* Feitas hoje: o estafeta confirma o que já entregou e os valores */}
+        {feitas.length > 0 && (
+          <>
+            <Subtitulo>Feitas hoje</Subtitulo>
+            {feitas.map((f) => (
+              <Cartao key={f.pedido_id}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Text style={{ color: cores.texto, flex: 1 }}>{f.cliente_nome}</Text>
+                  <Text style={{ color: cores.textoSuave, fontSize: 13 }}>{horaLuanda(f.entregue_em)}</Text>
+                </View>
+                <Text style={{ fontWeight: '700', textAlign: 'right' }}>{formatarKz(f.a_pagar)}</Text>
+              </Cartao>
+            ))}
+          </>
+        )}
+
+        {/* Ajuda: ligar ao despacho se precisar */}
+        {TELEFONE_AJUDA !== '' && (
+          <Botao titulo="Precisas de ajuda? Ligar ao despacho" variante="texto" aoCarregar={() => abrir(`tel:${TELEFONE_AJUDA}`)} />
+        )}
       </ScrollView>
     </Guarda>
   );
