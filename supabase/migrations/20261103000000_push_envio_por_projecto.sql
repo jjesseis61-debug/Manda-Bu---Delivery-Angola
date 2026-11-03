@@ -47,6 +47,7 @@ create function notificacoes_por_enviar(p_limite integer default 100)
    limit greatest(coalesce(p_limite, 100), 1);
 $function$;
 
--- Privilégios como estavam: só o service_role chama (via edge function); nunca o anon nem o public.
-revoke execute on function notificacoes_por_enviar(integer) from public;
+-- Privilégios como estavam: só o service_role chama (via edge function). É preciso revogar também
+-- de anon e authenticated — no Supabase as default privileges dão-lhes execute em funções novas.
+revoke execute on function notificacoes_por_enviar(integer) from public, anon, authenticated;
 grant  execute on function notificacoes_por_enviar(integer) to service_role;
