@@ -6,12 +6,13 @@ import { Linking, Pressable, RefreshControl, ScrollView, Switch, Text, View } fr
 import { Guarda } from '@/components/Guarda';
 import { MapaEntregas, type PontoEntrega } from '@/components/MapaEntregas';
 import { ACarregar, Aviso, Botao, Cartao, Paragrafo, Subtitulo } from '@/components/ui';
-import { entregasFeitasHoje, pedidosOperador, type EntregaFeita } from '@/lib/api';
+import { entregasFeitasHoje, pedidosOperador, sairDeTodosOsDispositivos, type EntregaFeita } from '@/lib/api';
 import { guardarEntregasCache, lerEntregasCache, lerEntregasCacheEm } from '@/lib/entregasCache';
 import { lerFila, pedidosNaFila } from '@/lib/filaOffline';
 import { distanciaKm, formatarDistancia, formatarKz, haQuantoTempo, horaLuanda, horaPrometida, mensagemErro } from '@/lib/formatar';
 import { usePartilharLocalizacao } from '@/lib/partilharLocalizacao';
 import { guardarModoEstafeta, lerModoEstafeta } from '@/lib/preferencias';
+import { useSessao } from '@/lib/sessao';
 import { sincronizar } from '@/lib/sincronizar';
 import { cores, espaco, raio } from '@/lib/tema';
 import type { PedidoOperador } from '@/lib/tipos';
@@ -43,6 +44,7 @@ function Metrica({ valor, rotulo }: { valor: string; rotulo: string }) {
 /** Hoje: resumo do dia, entregas por fazer, "Em serviço", mapa, feitas hoje e cache offline. */
 export default function Inicio() {
   const router = useRouter();
+  const { funcionario, sair } = useSessao();
   const [lista, setLista] = useState<PedidoOperador[] | null>(null);
   const [feitas, setFeitas] = useState<EntregaFeita[]>([]);
   const [erro, setErro] = useState<string | null>(null);
@@ -55,6 +57,10 @@ export default function Inicio() {
   const [aSincronizar, setASincronizar] = useState(false);
   const [atualizadoEm, setAtualizadoEm] = useState<number | null>(null);
   const [minhaPos, setMinhaPos] = useState<{ lat: number; lng: number } | null>(null);
+  // Conta: sair / proteger (sair em todos os dispositivos)
+  const [protegerConfirmar, setProtegerConfirmar] = useState(false);
+  const [ocupadoConta, setOcupadoConta] = useState(false);
+  const [erroConta, setErroConta] = useState<string | null>(null);
 
   // Lê a preferência "em serviço" ao abrir
   useEffect(() => {
@@ -146,15 +152,15 @@ export default function Inicio() {
         style={{ flex: 1, backgroundColor: cores.fundo }}
         contentContainerStyle={{ padding: espaco.l, gap: espaco.m, paddingBottom: espaco.xl * 2 }}
         refreshControl={<RefreshControl refreshing={aActualizar} onRefresh={carregar} tintColor={cores.marca} />}>
-        {/* Em serviço */}
+        {/* Estafeta + Em serviço */}
         <Cartao>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: espaco.s }}>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontWeight: '700', color: cores.texto }}>Em serviço</Text>
-              <Text style={{ color: cores.textoSuave, fontSize: 13 }}>
+              <Text style={{ fontSize: 17, fontWeight: '700', color: cores.texto }}>{funcionario?.nome ?? 'Estafeta'}</Text>
+              <Text style={{ color: emServico ? cores.sucesso : cores.textoSuave, fontSize: 13, fontWeight: emServico ? '700' : '400' }}>
                 {emServico
-                  ? `A partilhar a tua posição · ${aCaminho} a caminho`
-                  : 'Liga ao começar o turno — o cliente passa a ver onde está a entrega.'}
+                  ? `Em serviço · ${aCaminho} a caminho`
+                  : 'Em serviço — liga ao começar o turno'}
               </Text>
             </View>
             <Switch thumbColor="#FFFFFF" value={emServico} onValueChange={alternarServico} trackColor={{ true: cores.marca, false: cores.contorno }} />
@@ -269,6 +275,45 @@ export default function Inicio() {
         {TELEFONE_AJUDA !== '' && (
           <Botao titulo="Precisas de ajuda? Ligar ao despacho" variante="texto" aoCarregar={() => abrir(`tel:${TELEFONE_AJUDA}`)} />
         )}
+
+        {/* Conta: sair / proteger (sair em todos os dispositivos) */}
+        <Subtitulo>Conta</Subtitulo>
+        {erroConta && <Aviso tipo="erro">{erroConta}</Aviso>}
+        {protegerConfirmar ? (
+          <>
+            <Aviso>Sais em todos os dispositivos, incluindo este. Para voltar a entrar precisas do código SMS do teu número.</Aviso>
+            <Botao
+              titulo="Sim, sair em todos os dispositivos"
+              aCarregar={ocupadoConta}
+              aoCarregar={async () => {
+                setErroConta(null);
+                setOcupadoConta(true);
+                try {
+                  await sairDeTodosOsDispositivos();
+                  router.replace('/entrar');
+                } catch (e) {
+                  setErroConta(mensagemErro(e));
+                  setOcupadoConta(false);
+                }
+              }}
+            />
+            <Botao titulo="Cancelar" variante="texto" desactivado={ocupadoConta} aoCarregar={() => setProtegerConfirmar(false)} />
+          </>
+        ) : (
+          <Botao
+            titulo="Proteger a conta — sair em todos os dispositivos"
+            variante="secundario"
+            aoCarregar={() => setProtegerConfirmar(true)}
+          />
+        )}
+        <Botao
+          titulo="Sair"
+          variante="texto"
+          aoCarregar={async () => {
+            await sair();
+            router.replace('/entrar');
+          }}
+        />
       </ScrollView>
     </Guarda>
   );
