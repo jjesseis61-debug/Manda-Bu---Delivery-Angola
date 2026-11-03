@@ -54,7 +54,7 @@ jobs:
       # Firebase (443044448859), e o projecto Expo do cliente já tem a chave FCM V1 desse projecto a
       # funcionar — logo entrega também ao estafeta. (O projecto do operador usa outro Firebase, por
       # isso não servia.) O google-services.json de cada app continua a ser o seu.
-      EXPO_PROJECT_ID: ${{ matrix.app == 'cliente' && secrets.EXPO_PROJECT_ID_CLIENTE || matrix.app == 'operador' && secrets.EXPO_PROJECT_ID_OPERADOR || matrix.app == 'estafeta' && secrets.EXPO_PROJECT_ID_CLIENTE || '' }}
+      EXPO_PROJECT_ID: ${{ matrix.app == 'cliente' && secrets.EXPO_PROJECT_ID_CLIENTE || matrix.app == 'operador' && secrets.EXPO_PROJECT_ID_OPERADOR || matrix.app == 'estafeta' && secrets.EXPO_PROJECT_ID_ESTAFETA || '' }}
       NODE_ENV: production
     steps:
       - uses: actions/checkout@v4
