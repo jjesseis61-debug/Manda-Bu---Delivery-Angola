@@ -4,6 +4,7 @@ import { useFocusEffect } from 'expo-router';
 import { Image, Linking, Text, View } from 'react-native';
 
 import { Guarda } from '@/components/Guarda';
+import { MapaEntregas } from '@/components/MapaEntregas';
 import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Escolha, Paragrafo, Subtitulo } from '@/components/ui';
 import { caixasAbertas, mudarEstado, pedidosOperador } from '@/lib/api';
 import { guardarCaixasCache, lerCaixasCache, lerEntregasCache } from '@/lib/entregasCache';
@@ -181,6 +182,20 @@ export default function Entrega() {
           {pedido.cliente_telefone && <Botao titulo="WhatsApp" variante="whatsapp" aoCarregar={() => abrir(urlWhatsapp(pedido.cliente_telefone!))} />}
           {temGeo && <Botao titulo="Como chegar" variante="secundario" aoCarregar={() => abrir(`https://www.google.com/maps/dir/?api=1&destination=${pedido.ponto_lat},${pedido.ponto_lng}`)} />}
         </View>
+
+        {/* Mini-mapa do destino */}
+        {temGeo && (
+          <MapaEntregas
+            altura={180}
+            pontos={[{
+              id: pedido.pedido_id,
+              lat: pedido.ponto_lat as number,
+              lng: pedido.ponto_lng as number,
+              titulo: pedido.cliente_nome,
+              aCaminho: pedido.estado === 'em_entrega',
+            }]}
+          />
+        )}
 
         {/* Itens e valor */}
         <Cartao>
