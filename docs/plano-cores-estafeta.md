@@ -1,6 +1,6 @@
-# Plano — cor por estado nas entregas do estafeta (POR FAZER)
+# Plano — cor por estado nas entregas do estafeta
 
-> Estado: **planeado, ainda não implementado.** Decidido com o Jesse em 2026-11-03.
+> Estado: **IMPLEMENTADO** em 2026-11-03 (`apps/estafeta/src/app/inicio.tsx`). Decidido com o Jesse em 2026-11-03.
 > Motivo: no ecrã do estafeta está "tudo muito parecido" (todos os cartões no mesmo
 > cinzento #F5F5F5). A cor deve destacar o que há **para fazer agora**.
 

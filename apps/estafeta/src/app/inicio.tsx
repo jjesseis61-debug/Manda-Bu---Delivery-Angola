@@ -205,9 +205,14 @@ export default function Inicio() {
           const hp = horaPrometida(p.hora_prometida);
           const temGeo = p.ponto_lat != null && p.ponto_lng != null;
           const dist = minhaPos && temGeo ? distanciaKm(minhaPos.lat, minhaPos.lng, p.ponto_lat as number, p.ponto_lng as number) : null;
+          // Cor por estado: o atrasado manda; a caminho = rosa da marca; o resto = cinzento.
+          const atrasado = hp?.atrasado ?? false;
+          const emEntrega = p.estado === 'em_entrega';
+          const corFundo = atrasado ? cores.erroFundo : emEntrega ? cores.marcaClara : cores.fundoSuave;
+          const corFaixa = atrasado ? cores.erro : emEntrega ? cores.marca : cores.destaque;
           return (
             <Pressable key={p.pedido_id} onPress={() => router.push({ pathname: '/entrega/[id]', params: { id: p.pedido_id } })}>
-              <Cartao>
+              <Cartao estilo={{ backgroundColor: corFundo, borderLeftWidth: 6, borderLeftColor: corFaixa }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: espaco.s }}>
                   <Text style={{ fontWeight: '700', color: cores.texto, flex: 1 }}>{p.cliente_nome}</Text>
                   {est && (
@@ -215,8 +220,8 @@ export default function Inicio() {
                       style={{
                         fontSize: 12,
                         fontWeight: '700',
-                        color: p.estado === 'em_entrega' ? cores.marca : cores.textoSuave,
-                        backgroundColor: p.estado === 'em_entrega' ? cores.marcaClara : cores.fundoSuave,
+                        color: emEntrega ? '#FFFFFF' : cores.textoSuave,
+                        backgroundColor: emEntrega ? cores.marca : cores.linha,
                         paddingHorizontal: espaco.s,
                         paddingVertical: 2,
                         borderRadius: raio,
@@ -245,7 +250,7 @@ export default function Inicio() {
                     <Pressable
                       onPress={() => abrir(urlComoChegar(p.ponto_lat as number, p.ponto_lng as number))}
                       hitSlop={8}
-                      style={{ paddingVertical: 6, paddingHorizontal: 12, borderRadius: raio, backgroundColor: cores.fundoSuave }}>
+                      style={{ paddingVertical: 6, paddingHorizontal: 12, borderRadius: raio, backgroundColor: cores.fundo }}>
                       <Text style={{ color: cores.marca, fontWeight: '700', fontSize: 13 }}>Como chegar</Text>
                     </Pressable>
                   </View>
