@@ -44,7 +44,7 @@ const ficheiro = join(mkdtempSync(join(tmpdir(), 'enviar-notificacoes-')), 'inde
 writeFileSync(ficheiro, fonte);
 await import(pathToFileURL(ficheiro).href);
 const pedido = () => handler(new Request('http://x', { method: 'POST', headers: { 'x-envio-segredo': 's' } }));
-const n = (i, destino, tokens) => ({ id: `n${i}`, destino, codigo: 'N3', titulo: 't', corpo: 'c', dados: {}, tokens });
+const n = (i, destino, tokens, apps) => ({ id: `n${i}`, destino, codigo: 'N3', titulo: 't', corpo: 'c', dados: {}, tokens, apps });
 const assert = (c, m) => { console.log(c ? 'ok  ' : 'FALHA', m); if (!c) process.exitCode = 1; };
 
 // 120 notificações de cliente com 1 telemóvel cada → 2 lotes; o 2.º falha
@@ -71,6 +71,28 @@ pendentes = [n(300, 'cliente', Array.from({ length: 60 }, (_, i) => `a${i}`)), n
 marcadas = []; lotesRecebidos = 0;
 await pedido();
 assert(lotesRecebidos === 2, 'duas notificações de 60 telemóveis vão em 2 lotes, sem se partirem');
+
+// A equipa tem dois projectos Expo (operador e estafeta): nunca vão no mesmo pedido à Expo
+pendentes = [n(500, 'funcionario', ['op-1'], ['operador']), n(501, 'funcionario', ['est-1'], ['estafeta'])];
+marcadas = []; lotesRecebidos = 0;
+r = await pedido();
+assert(lotesRecebidos === 2, 'operador e estafeta (projectos Expo diferentes) seguem em pedidos separados');
+assert(marcadas.length === 2, 'as duas notificações de equipa saem da fila');
+
+// Uma notificação para os dois projectos (ex. N19) parte-se e só é marcada quando ambos enviam
+pendentes = [n(600, 'funcionario', ['op-x', 'est-x'], ['operador', 'estafeta'])];
+marcadas = []; lotesRecebidos = 0;
+await pedido();
+assert(lotesRecebidos === 2, 'uma notificação com tokens de dois projectos vai em 2 pedidos');
+assert(marcadas.length === 1 && marcadas[0] === 'n600', 'a notificação mista só é marcada depois de ambos os projectos enviarem');
+
+// Se um dos projectos falha, a notificação mista NÃO é marcada (tenta tudo no minuto seguinte)
+pendentes = [n(700, 'funcionario', ['op-y', 'est-y'], ['operador', 'estafeta'])];
+marcadas = []; lotesRecebidos = 0; falharLote = 2;
+r = await pedido();
+assert(r.status === 502, 'falha num dos projectos devolve 502');
+assert(!marcadas.includes('n700'), 'notificação mista não é marcada se um dos projectos falhou');
+lotesRecebidos = 0; falharLote = null;
 
 // Fase 2 (receipts): os tickets ok ficam guardados para verificar o receipt mais tarde
 pendentes = [n(400, 'cliente', ['viva-1', 'viva-2'])];

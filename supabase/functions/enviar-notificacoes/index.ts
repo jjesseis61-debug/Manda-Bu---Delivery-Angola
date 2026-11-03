@@ -1,7 +1,7 @@
 // Envia a fila de notificações (clientes e equipa) pelo serviço de push da Expo. Que códigos saem e
 // para quem é decidido no servidor (notificacoes_por_enviar); esta função só despacha o que ela devolve.
-// A app do cliente e a do operador são projectos Expo diferentes: a Expo recusa um pedido
-// com tokens de projectos diferentes, por isso cada destino segue num pedido à parte.
+// Cada app (cliente, operador, estafeta) é um projecto Expo diferente e a Expo recusa um pedido que
+// junte tokens de projectos diferentes, por isso agrupa-se por app: um pedido à Expo por projecto.
 //
 // Chamada de minuto a minuto por pg_cron (agendar_envio). Só despacha
 // o que já está na fila: os textos e os destinatários vêm do servidor
@@ -27,6 +27,8 @@ type Pendente = {
   corpo: string;
   dados: Record<string, unknown>;
   tokens: string[];
+  // projecto Expo (app) de cada token, na mesma ordem que `tokens`. Pode faltar em dados antigos.
+  apps?: string[];
 };
 
 type Mensagem = { to: string; title: string; body: string; sound: 'default'; data: Record<string, unknown> };
@@ -101,42 +103,62 @@ Deno.serve(async (req) => {
     return Response.json({ enviadas: 0, mensagens: 0, tokens_desactivados: d });
   }
 
-  const mensagensDe = (n: Pendente): Mensagem[] =>
-    n.tokens.map((token) => ({
-      to: token,
-      title: n.titulo,
-      body: n.corpo,
-      sound: 'default' as const,
-      data: {
-        codigo: n.codigo,
-        notificacao_id: n.id,
-        // Só o que a app precisa para abrir o ecrã certo
-        ...('pedido_id' in n.dados ? { pedido_id: n.dados.pedido_id } : {}),
-        ...('codigo_grupo' in n.dados ? { codigo_grupo: n.dados.codigo_grupo } : {}),
-        ...('link' in n.dados ? { link: n.dados.link } : {}),
-      },
-    }));
+  const dadosDe = (n: Pendente): Record<string, unknown> => ({
+    codigo: n.codigo,
+    notificacao_id: n.id,
+    // Só o que a app precisa para abrir o ecrã certo
+    ...('pedido_id' in n.dados ? { pedido_id: n.dados.pedido_id } : {}),
+    ...('codigo_grupo' in n.dados ? { codigo_grupo: n.dados.codigo_grupo } : {}),
+    ...('link' in n.dados ? { link: n.dados.link } : {}),
+  });
+  // Projecto Expo (app) de um token; se faltar (dados antigos), deduz-se pelo destino.
+  const appDoToken = (n: Pendente, i: number): string =>
+    n.apps?.[i] ?? (n.destino === 'funcionario' ? 'operador' : 'cliente');
 
-  // Lotes de até 100 mensagens, um destino de cada vez, sem partir uma notificação entre dois
-  // lotes: assim cada lote aceite pela Expo marca as suas notificações como enviadas logo a
-  // seguir, e uma falha a meio não faz repetir o que já chegou aos telemóveis.
-  type Lote = { ids: string[]; mensagens: Mensagem[] };
-  const lotes: Lote[] = [];
+  // Agrupa as mensagens de cada notificação pelo seu projecto Expo (app). Uma notificação pode
+  // tocar mais do que um projecto (ex. N19: operador + estafeta) e, nesse caso, parte-se: só sai da
+  // fila quando TODOS os seus projectos forem enviados.
+  type NotifApp = { id: string; mensagens: Mensagem[] };
+  const porApp = new Map<string, NotifApp[]>();
   const semTelemovel: string[] = [];
-  for (const destino of ['cliente', 'funcionario'] as const) {
-    let actual: Lote = { ids: [], mensagens: [] };
-    for (const n of pendentes.filter((p) => (p.destino === 'funcionario') === (destino === 'funcionario'))) {
-      const m = mensagensDe(n);
-      if (m.length === 0) {
-        semTelemovel.push(n.id);
-        continue;
-      }
-      if (actual.mensagens.length > 0 && actual.mensagens.length + m.length > LOTE_EXPO) {
+  const totalPorId = new Map<string, number>(); // nº de mensagens (tokens) por notificação
+  for (const n of pendentes) {
+    if (!n.tokens || n.tokens.length === 0) {
+      semTelemovel.push(n.id);
+      continue;
+    }
+    const data = dadosDe(n);
+    const desta = new Map<string, Mensagem[]>(); // app -> mensagens desta notificação
+    n.tokens.forEach((token, i) => {
+      const app = appDoToken(n, i);
+      const msg: Mensagem = { to: token, title: n.titulo, body: n.corpo, sound: 'default', data };
+      const arr = desta.get(app);
+      if (arr) arr.push(msg);
+      else desta.set(app, [msg]);
+    });
+    totalPorId.set(n.id, n.tokens.length);
+    for (const [app, msgs] of desta) {
+      const arr = porApp.get(app);
+      if (arr) arr.push({ id: n.id, mensagens: msgs });
+      else porApp.set(app, [{ id: n.id, mensagens: msgs }]);
+    }
+  }
+
+  // Lotes de até 100 mensagens, sempre dentro do mesmo projecto (app), sem partir a parte de uma
+  // notificação que cabe no mesmo projecto entre dois lotes. porId guarda quantas mensagens cada
+  // notificação leva neste lote, para só a marcar quando todas as suas mensagens saírem.
+  type Lote = { ids: string[]; mensagens: Mensagem[]; porId: Map<string, number> };
+  const lotes: Lote[] = [];
+  for (const notifs of porApp.values()) {
+    let actual: Lote = { ids: [], mensagens: [], porId: new Map() };
+    for (const na of notifs) {
+      if (actual.mensagens.length > 0 && actual.mensagens.length + na.mensagens.length > LOTE_EXPO) {
         lotes.push(actual);
-        actual = { ids: [], mensagens: [] };
+        actual = { ids: [], mensagens: [], porId: new Map() };
       }
-      actual.ids.push(n.id);
-      actual.mensagens.push(...m);
+      actual.ids.push(na.id);
+      actual.porId.set(na.id, (actual.porId.get(na.id) ?? 0) + na.mensagens.length);
+      actual.mensagens.push(...na.mensagens);
     }
     if (actual.mensagens.length > 0) lotes.push(actual);
   }
@@ -146,6 +168,17 @@ Deno.serve(async (req) => {
     const { data: n, error: e } = await supabase.rpc('marcar_notificacoes_enviadas', { p_ids: ids });
     if (e) throw new Error(e.message);
     return (n as number | null) ?? 0;
+  };
+  // Conta as mensagens já enviadas de cada notificação e devolve as que ficaram completas.
+  const enviadoPorId = new Map<string, number>();
+  const completasDoLote = (lote: Lote): string[] => {
+    const prontas: string[] = [];
+    for (const [id, c] of lote.porId) {
+      const total = (enviadoPorId.get(id) ?? 0) + c;
+      enviadoPorId.set(id, total);
+      if (total >= (totalPorId.get(id) ?? 0)) prontas.push(id);
+    }
+    return prontas;
   };
 
   let enviadas = 0;
@@ -165,7 +198,7 @@ Deno.serve(async (req) => {
         // os lotes anteriores já estão marcados e não se repetem
         return Response.json({ erro: `expo_${resposta.status}`, enviadas, mensagens }, { status: 502 });
       }
-      enviadas += await marcar(lote.ids);
+      enviadas += await marcar(completasDoLote(lote));
       mensagens += lote.mensagens.length;
 
       const corpo = (await resposta.json()) as { data?: Bilhete[] };
