@@ -1,6 +1,6 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, Switch, Text, View } from 'react-native';
+import { Linking, Pressable, RefreshControl, ScrollView, Switch, Text, View } from 'react-native';
 
 import { Guarda } from '@/components/Guarda';
 import { MapaEntregas, type PontoEntrega } from '@/components/MapaEntregas';
@@ -8,8 +8,7 @@ import { ACarregar, Aviso, Botao, Cartao, Paragrafo, Subtitulo } from '@/compone
 import { pedidosOperador } from '@/lib/api';
 import { guardarEntregasCache, lerEntregasCache } from '@/lib/entregasCache';
 import { lerFila, pedidosNaFila } from '@/lib/filaOffline';
-import { estadoDoPush } from '@/lib/push';
-import { formatarKz, mensagemErro } from '@/lib/formatar';
+import { formatarKz, horaPrometida, mensagemErro } from '@/lib/formatar';
 import { usePartilharLocalizacao } from '@/lib/partilharLocalizacao';
 import { guardarModoEstafeta, lerModoEstafeta } from '@/lib/preferencias';
 import { sincronizar } from '@/lib/sincronizar';
@@ -23,6 +22,10 @@ const ESTADOS: Record<string, { rotulo: string; ordem: number } | undefined> = {
   confirmado: { rotulo: 'Confirmado', ordem: 2 },
 };
 
+const abrir = (url: string) => Linking.openURL(url).catch(() => undefined);
+const urlComoChegar = (lat: number, lng: number) =>
+  `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+
 /** Hoje: entregas por fazer, "Em serviço" (partilha a localização ao cliente), mapa e cache offline. */
 export default function Inicio() {
   const router = useRouter();
@@ -35,7 +38,6 @@ export default function Inicio() {
   const [pendentes, setPendentes] = useState(0);
   const [naFila, setNaFila] = useState<Set<string>>(new Set());
   const [aSincronizar, setASincronizar] = useState(false);
-  const [diagPush, setDiagPush] = useState(''); // diagnóstico do registo de push
 
   // Lê a preferência "em serviço" ao abrir
   useEffect(() => {
@@ -74,7 +76,6 @@ export default function Inicio() {
     } finally {
       setPendentes((await lerFila()).length);
       setNaFila(await pedidosNaFila());
-      setDiagPush(await estadoDoPush());
       setAActualizar(false);
     }
   }, []);
@@ -100,6 +101,9 @@ export default function Inicio() {
     .filter((p) => p.ponto_lat != null && p.ponto_lng != null)
     .map((p) => ({ id: p.pedido_id, lat: p.ponto_lat as number, lng: p.ponto_lng as number, titulo: p.cliente_nome, aCaminho: p.estado === 'em_entrega' }));
 
+  // Resumo do dia: quantas entregas faltam e quanto há a receber (soma do que falta cobrar).
+  const totalReceber = ordenada.reduce((s, p) => s + (p.a_pagar ?? 0), 0);
+
   return (
     <Guarda permissoes={['entregas.registar']}>
       <ScrollView
@@ -120,13 +124,23 @@ export default function Inicio() {
           {emServico && erroLoc && <Aviso tipo="erro">{erroLoc}</Aviso>}
         </Cartao>
 
-        {/* Diagnóstico temporário do registo de push */}
-        <Cartao>
-          <Text style={{ fontWeight: '700', color: cores.texto }}>Diagnóstico push</Text>
-          <Text selectable style={{ color: diagPush.startsWith('ok') ? cores.sucesso : cores.marca, fontSize: 12 }}>
-            {diagPush || '…'}
-          </Text>
-        </Cartao>
+        {/* Resumo do dia: entregas por fazer e total a receber */}
+        {ordenada.length > 0 && (
+          <Cartao>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <View>
+                <Text style={{ fontWeight: '700', color: cores.texto, fontSize: 20 }}>{ordenada.length}</Text>
+                <Text style={{ color: cores.textoSuave, fontSize: 13 }}>
+                  {ordenada.length === 1 ? 'entrega por fazer' : 'entregas por fazer'}
+                </Text>
+              </View>
+              <View style={{ alignItems: 'flex-end' }}>
+                <Text style={{ fontWeight: '700', color: cores.texto, fontSize: 20 }}>{formatarKz(totalReceber)}</Text>
+                <Text style={{ color: cores.textoSuave, fontSize: 13 }}>a receber</Text>
+              </View>
+            </View>
+          </Cartao>
+        )}
 
         {pendentes > 0 && (
           <Cartao>
@@ -147,6 +161,8 @@ export default function Inicio() {
         {ordenada.map((p) => {
           const est = ESTADOS[p.estado];
           const local = p.ponto_referencia || p.zona_nome || 'Ponto de entrega';
+          const hp = horaPrometida(p.hora_prometida);
+          const temGeo = p.ponto_lat != null && p.ponto_lng != null;
           return (
             <Pressable key={p.pedido_id} onPress={() => router.push({ pathname: '/entrega/[id]', params: { id: p.pedido_id } })}>
               <Cartao>
@@ -168,13 +184,26 @@ export default function Inicio() {
                   )}
                 </View>
                 <Text style={{ color: cores.textoSuave }}>{local}{p.zona_nome && p.ponto_referencia ? ` · ${p.zona_nome}` : ''}</Text>
+                {hp && (
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: hp.atrasado ? cores.erro : cores.textoSuave }}>
+                    {hp.atrasado ? `⚠ atrasado · ${hp.texto}` : hp.texto}
+                  </Text>
+                )}
                 {naFila.has(p.pedido_id) && <Text style={{ color: cores.sucesso, fontSize: 12, fontWeight: '700' }}>✓ guardado — a enviar</Text>}
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Text style={{ color: cores.textoSuave }}>{p.itens.reduce((n, i) => n + i.qtd, 0)} itens</Text>
                   <Text style={{ fontWeight: '700' }}>{formatarKz(p.a_pagar)}</Text>
                 </View>
                 {p.atribuido_a_nome && !p.atribuido_a_mim && (
                   <Text style={{ color: cores.textoSuave, fontSize: 12 }}>Atribuído a {p.atribuido_a_nome}</Text>
+                )}
+                {temGeo && (
+                  <Pressable
+                    onPress={() => abrir(urlComoChegar(p.ponto_lat as number, p.ponto_lng as number))}
+                    hitSlop={8}
+                    style={{ alignSelf: 'flex-start', marginTop: espaco.xs, paddingVertical: 6, paddingHorizontal: 12, borderRadius: raio, backgroundColor: cores.fundoSuave }}>
+                    <Text style={{ color: cores.marca, fontWeight: '700', fontSize: 13 }}>Como chegar</Text>
+                  </Pressable>
                 )}
               </Cartao>
             </Pressable>

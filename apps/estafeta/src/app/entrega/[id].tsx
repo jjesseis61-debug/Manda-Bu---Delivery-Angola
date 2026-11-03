@@ -8,7 +8,7 @@ import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Escolha, Paragrafo, Subti
 import { caixasAbertas, mudarEstado, pedidosOperador } from '@/lib/api';
 import { guardarCaixasCache, lerCaixasCache, lerEntregasCache } from '@/lib/entregasCache';
 import { enfileirar, pedidosNaFila } from '@/lib/filaOffline';
-import { formatarKz, mensagemErro } from '@/lib/formatar';
+import { formatarKz, horaPrometida, mensagemErro } from '@/lib/formatar';
 import { enviarComprovativo, escolherFoto } from '@/lib/fotos';
 import { semRede } from '@/lib/sincronizar';
 import { cores, espaco } from '@/lib/tema';
@@ -159,6 +159,7 @@ export default function Entrega() {
 
   const temGeo = pedido.ponto_lat != null && pedido.ponto_lng != null;
   const local = pedido.ponto_referencia || pedido.zona_nome || 'Ponto de entrega';
+  const hp = horaPrometida(pedido.hora_prometida);
   const daCozinha = caixas.filter((c) => c.cozinha_id === pedido.cozinha_id);
   const podeEntregar = parcelas.length > 0 && parcelas.every(parcelaCompleta) && !!caixa;
 
@@ -167,6 +168,12 @@ export default function Entrega() {
       <Ecra>
         <Subtitulo>{pedido.cliente_nome}</Subtitulo>
         <Text style={{ color: cores.textoSuave }}>{local}{pedido.zona_nome && pedido.ponto_referencia ? ` · ${pedido.zona_nome}` : ''}</Text>
+        {hp && (
+          <Text style={{ fontWeight: '700', color: hp.atrasado ? cores.erro : cores.textoSuave }}>
+            {hp.atrasado ? `⚠ atrasado · ${hp.texto}` : `Entrega ${hp.texto}`}
+          </Text>
+        )}
+        {pedido.pagador_distinto && <Aviso>Quem paga é outra pessoa (pagador diferente do cliente).</Aviso>}
 
         {/* Contactar o cliente */}
         <View style={{ flexDirection: 'row', gap: espaco.s, flexWrap: 'wrap' }}>

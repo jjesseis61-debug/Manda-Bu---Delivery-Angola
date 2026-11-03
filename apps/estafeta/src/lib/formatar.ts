@@ -55,6 +55,12 @@ export function horaLuanda(iso: string): string {
   return `${String(d.getUTCHours()).padStart(2, '0')}h${String(d.getUTCMinutes()).padStart(2, '0')}`;
 }
 
+/** Hora prometida de uma entrega: "para as 13h30" e se a hora já passou (atrasado). null = sem hora. */
+export function horaPrometida(iso: string | null | undefined): { texto: string; atrasado: boolean } | null {
+  if (!iso) return null;
+  return { texto: `para as ${horaLuanda(iso)}`, atrasado: new Date(iso).getTime() < Date.now() };
+}
+
 export const nomeEstadoGrupo: Record<string, string> = {
   aberto: 'Aberto (aceita pedidos)',
   fechado: 'Fechado',
