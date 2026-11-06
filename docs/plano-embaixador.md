@@ -75,3 +75,59 @@ Embaixador partilha link do prato no WhatsApp
   com capacidade limitada (doses/horários) e frota própria. Por isso o embaixador **indica/promove** (ganha
   comissão), não "revende com stock". Densidade **zona-a-zona** e confiança do **pagamento em dinheiro**
   continuam a ser as alavancas locais.
+
+---
+
+## Painel do embaixador — à luz da autoeficácia (Bandura)
+
+Desenho assente nas 4 fontes de autoeficácia; a **"primeira vitória garantida"** é a peça central.
+
+| Fonte de autoeficácia | No painel |
+|---|---|
+| **1. Experiência de domínio** (a mais forte) | "A tua primeira vitória" — missão guiada de 3 passos que leva aos **primeiros 100 Kz rápido e garantido** |
+| **2. Aprendizagem vicária** (modelagem) | Cartão "Pessoas como tu" — um embaixador **real da mesma zona** a ganhar |
+| **3. Persuasão social** | **Bónus de boas-vindas** + celebração ruidosa quando a 1.ª comissão cai |
+| **4. Estados emocionais** (baixar ansiedade) | "Leva 10 segundos · a mensagem já vai pronta" — passos claros, sem jargão |
+
+**"Garantida" = mecânica, não slogan:** (a) mensagem pronta + partilha 1-toque; (b) a vitória dispara
+no **1.º pedido do 1.º amigo** (barreira mínima); (c) **bónus de boas-vindas** no 1.º amigo para a
+primeira recompensa ser maior e certa; (d) **celebração** imediata que reforça o domínio.
+
+**Ecrã 1 — novo embaixador (primeira vitória):** cartão-herói "A tua primeira vitória" (3 passos +
+barra: *és embaixador* ✓ · *partilha um prato* ● · *um amigo pede → ganhas* ○) + botão WhatsApp grande;
+bónus de boas-vindas (ex.: +300 Kz no 1.º amigo); "Pessoas como tu" (modelo real da zona); "Como ganhas" 1-2-3.
+
+**Ecrã 2 — já ativo:** saldo + Levantar; progresso para "Embaixador Ouro" (sub-metas próximas);
+ganhos do mês + nº de pedidos; ranking da zona (#2 na Maianga); lista de amigos ativos.
+
+> Ideia-chave: a primeira vitória **não se deixa ao acaso** — desenha-se para acontecer cedo, ser pequena e ser celebrada.
+
+## Mensagem pronta (WhatsApp) + deep-link do prato
+
+### Deep-link do prato
+- **Link partilhado (https):** `https://mandabue.ao/p/{cardapio_id}?r={CODIGO_DO_EMBAIXADOR}`
+  (`cardapio_id` → rota `montar/[id]`; `r` → `codigos_indicacao.codigo`).
+- **Cartão no WhatsApp (Open Graph):** página web do prato com `og:image` (foto), `og:title`, `og:description`
+  ("…ganha 500 Kz no 1.º pedido"). Sem OG, o WhatsApp mostra só o link cru.
+- **Ao clicar:**
+  - App instalada → abre `montar/{id}` com `?r=` → a app chama **`ligarIndicacao(r)`** 1× (se ainda não ligado)
+    e mostra o prato. Scheme equivalente: `mandabue://montar/{id}?r={CODIGO}`.
+  - Sem app → página web do prato + "Abrir/Instalar"; o `r` fica guardado (*deferred deep link*) para aplicar
+    após instalar/registar.
+- **Reutiliza:** rota `convite/[codigo]` (fallback só-código, já liga a indicação); rota `montar/[id]`
+  (passa a ler `?r=`); **`registarPartilha()`** ao partilhar (atualiza `ultima_partilha_em` e alimenta o
+  progresso da 1.ª vitória). Antifraude de `ligar_indicacao` mantém-se (o link não o contorna).
+- **Infra nova (1×):** domínio `mandabue.ao` + Android App Links / iOS Universal Links (o `scheme mandabue`
+  já existe para o caso interno) + página web do prato com meta-tags OG. Sem domínio ainda: começar com
+  `mandabue://` + `convite/{codigo}` e evoluir para o link-do-prato com preview.
+
+### Mensagem pronta (a app compõe; editável)
+Via `Share` nativo ou `https://wa.me/?text=<texto+link URL-encoded>`. Benefício do amigo primeiro (500 Kz),
+prato + preço concretos, 1 emoji, negrito do WhatsApp, link no fim. Valores vêm dos parâmetros reais
+(`desconto_indicado`) e do cardápio.
+
+- **Prato específico:** `🐟 Experimenta o *Choco frito* da Manda Bué (12.000 Kz) — comida de casa entregue aí. Pede pela app e ganhas *500 Kz de desconto* no teu 1.º pedido 👇 {link}`
+- **Cozinha / geral:** `🍛 A *Cozinha da Tia* (aqui da Maianga) está a bombar na Manda Bué. Pede pela app e tens *500 Kz* no 1.º pedido 👇 {link}`
+- **Curta:** `Comida de casa na Manda Bué 😋 Ganha *500 Kz* no 1.º pedido 👇 {link}`
+
+> Mockups de referência (painel + WhatsApp) foram partilhados no chat em 2026-11-05/06.
