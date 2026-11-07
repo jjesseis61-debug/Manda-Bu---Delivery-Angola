@@ -57,3 +57,37 @@ export function regraGrupo(g: GrupoOpcoes): string {
 export function chaveLinha(itemId: string, opcoes: OpcaoEscolhida[], tirados: ComponentePrato[] = []): string {
   return [itemId, ...opcoes.map((o) => o.id).sort(), ...tirados.map((c) => `-${c.produto_id}`).sort()].join('|');
 }
+
+// Emoji por palavra-chave do nome da opção (as opções não têm imagem): só decorativo,
+// para dar o efeito visual do prato a montar-se. Ordem importa (do mais específico ao geral).
+const EMOJIS: [RegExp, string][] = [
+  [/funge|pirao|pirão/, '🍲'],
+  [/arroz/, '🍚'],
+  [/batata|mandioca|inhame/, '🥔'],
+  [/massa|esparguete|esparguette|macarr/, '🍝'],
+  [/muamba|galinha|frango|cabidela/, '🍗'],
+  [/calulu|peixe|bacalhau|carapau|dourada/, '🐟'],
+  [/camar|marisco|lagosta|gamba/, '🦐'],
+  [/feijoad|feij[aã]o|muteta|mutet/, '🫘'],
+  [/carne|bife|vaca|porco|cabrito|chouri/, '🥩'],
+  [/salada|alface|tomate/, '🥗'],
+  [/gimboa|quiabo|verdura|legume|couve|espinafre/, '🥬'],
+  [/banana/, '🍌'],
+  [/ovo/, '🍳'],
+  [/p[aã]o|broa/, '🍞'],
+  [/ging(u|ú)ba|amendoim/, '🥜'],
+  [/mel[aã]o|melancia/, '🍈'],
+  [/m[uú]cua|sumo|refresco|refriger|cola/, '🥤'],
+  [/[aá]gua/, '💧'],
+  [/cocada|doce|sobremesa|gelado|bolo|pudim/, '🍮'],
+];
+
+/** Emoji decorativo a partir do nome da opção; 🍽️ quando nada combina. */
+export function emojiOpcao(nome: string): string {
+  const n = nome
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase();
+  for (const [re, emoji] of EMOJIS) if (re.test(n)) return emoji;
+  return '🍽️';
+}

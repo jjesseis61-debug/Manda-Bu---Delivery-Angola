@@ -7,7 +7,7 @@ import { ACarregar, Aviso, Botao, Ecra, Paragrafo, Subtitulo } from '@/component
 import { lerComponentes, lerDoses, lerItemCardapio, lerOpcoes } from '@/lib/api';
 import { useCarrinho } from '@/lib/carrinho';
 import { formatarKz, mensagemErro } from '@/lib/formatar';
-import { alternar, gruposEmFalta, gruposEsgotados, opcoesEscolhidas, precoMontado, regraGrupo } from '@/lib/opcoes';
+import { alternar, emojiOpcao, gruposEmFalta, gruposEsgotados, opcoesEscolhidas, precoMontado, regraGrupo } from '@/lib/opcoes';
 import { useSessao } from '@/lib/sessao';
 import { cores, espaco, raio } from '@/lib/tema';
 import type { ComponentePrato, GrupoOpcoes, ItemCardapio } from '@/lib/tipos';
@@ -78,10 +78,13 @@ export default function MontarPrato() {
 
           {grupos.map((g) => {
             const noGrupo = g.opcoes.filter((o) => escolhidas.includes(o.id)).length;
+            const satisfeito = g.minimo > 0 && noGrupo >= g.minimo;
             return (
               <View key={g.id} style={{ gap: espaco.s }}>
-                <Subtitulo>{g.nome}</Subtitulo>
-                <Text style={{ color: cores.textoSuave }}>{regraGrupo(g)}</Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginTop: espaco.s }}>
+                  <Text style={{ color: cores.marca, fontSize: 14, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.3 }}>{g.nome}</Text>
+                  <Text style={{ color: cores.textoSuave, fontSize: 12, textTransform: 'lowercase' }}>{regraGrupo(g)}{satisfeito ? ' ✓' : ''}</Text>
+                </View>
                 {g.opcoes.map((o) => {
                   const marcada = escolhidas.includes(o.id);
                   const cheio = !marcada && g.maximo > 1 && noGrupo >= g.maximo;
@@ -95,16 +98,31 @@ export default function MontarPrato() {
                         flexDirection: 'row',
                         alignItems: 'center',
                         gap: espaco.s,
-                        padding: espaco.m,
+                        padding: espaco.s,
                         borderRadius: raio,
                         borderWidth: 1,
                         borderColor: marcada ? cores.marca : cores.linha,
                         backgroundColor: marcada ? cores.marcaClara : '#fff',
                         opacity: cheio ? 0.45 : 1,
                       }}>
-                      <Text style={{ color: cores.marca, fontSize: 18 }}>{g.maximo === 1 ? (marcada ? '●' : '○') : marcada ? '☑' : '☐'}</Text>
+                      <View style={{ width: 40, height: 40, borderRadius: 10, backgroundColor: cores.fundoSuave, alignItems: 'center', justifyContent: 'center' }}>
+                        <Text style={{ fontSize: 20 }}>{emojiOpcao(o.nome)}</Text>
+                      </View>
                       <Text style={{ flex: 1, fontSize: 15 }}>{o.nome}</Text>
                       {o.preco_extra > 0 && <Text style={{ color: cores.textoSuave, fontSize: 13 }}>+{formatarKz(o.preco_extra)}</Text>}
+                      <View
+                        style={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: 14,
+                          borderWidth: 1.5,
+                          borderColor: cores.marca,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          backgroundColor: marcada ? cores.marca : '#fff',
+                        }}>
+                        <Text style={{ color: marcada ? '#fff' : cores.marca, fontSize: 16, fontWeight: '800', lineHeight: 18 }}>{marcada ? '✓' : '+'}</Text>
+                      </View>
                     </Pressable>
                   );
                 })}
@@ -158,14 +176,10 @@ export default function MontarPrato() {
             🍽️ O teu prato
           </Text>
           <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: espaco.m, gap: espaco.s }}>
-            {/* O prato em si */}
-            <View style={{ backgroundColor: '#fff', borderWidth: 1, borderColor: cores.linha, borderRadius: 9, padding: espaco.s }}>
-              <Text style={{ fontSize: 13, fontWeight: '600', color: cores.texto }}>{item.nome}</Text>
-            </View>
             {/* Opções escolhidas */}
             {opcoes.map((o) => (
               <View key={o.id} style={{ backgroundColor: '#fff', borderWidth: 1, borderColor: cores.linha, borderRadius: 9, padding: espaco.s, flexDirection: 'row', justifyContent: 'space-between', gap: espaco.xs }}>
-                <Text style={{ fontSize: 13, color: cores.texto, flex: 1 }}>{o.nome}</Text>
+                <Text numberOfLines={1} style={{ fontSize: 13, color: cores.texto, flex: 1 }}>{emojiOpcao(o.nome)}  {o.nome}</Text>
                 {o.preco_extra > 0 && <Text style={{ fontSize: 12, color: cores.textoSuave }}>+{formatarKz(o.preco_extra)}</Text>}
               </View>
             ))}
