@@ -12,7 +12,8 @@
 --  * "Activo" = indicado com pelo menos um ganho confirmado/pago E vínculo vivo
 --    (não basta criar a ligação — isso seria trivialmente fraudável).
 --  * Bónus de boas-vindas = uma vez por embaixador, na 1.ª vitória confirmada
---    (a "primeira vitória garantida" de Bandura; já prometida na app a todos).
+--    (a "primeira vitória garantida" de Bandura). DESLIGADO por defeito (0);
+--    liga-se só com um valor confirmado via parametros.
 --  * Promoção automática só SOBE de nível; a despromoção suave fica para um
 --    cron posterior (nunca se retira um nível/benefício dentro do trigger).
 --  * A comissão por ligação continua GARANTIDA pelo valor snapshot
@@ -28,7 +29,9 @@ alter table parametros
     check (ganho_por_pedido_embaixador >= 0),
   add column if not exists ganho_por_pedido_ouro       int not null default 200
     check (ganho_por_pedido_ouro >= 0),
-  add column if not exists bonus_boas_vindas            int not null default 300
+  -- Bónus de boas-vindas DESLIGADO por defeito (0): o mecanismo fica pronto, mas
+  -- liga-se só com um valor confirmado (update parametros set bonus_boas_vindas=300).
+  add column if not exists bonus_boas_vindas            int not null default 0
     check (bonus_boas_vindas >= 0),
   add column if not exists limiar_ouro                  int not null default 30
     check (limiar_ouro > 0);
@@ -174,13 +177,14 @@ begin
     end if;
   end if;
 
-  -- Comissão por nível, nunca abaixo do valor garantido na ligação
-  v_valor := greatest(lig.ganho_por_pedido_garantido,
-                      case nivel_ind
-                        when 'ouro'       then p.ganho_por_pedido_ouro
-                        when 'embaixador' then p.ganho_por_pedido_embaixador
-                        else                   p.ganho_por_pedido
-                      end);
+  -- Comissão por nível. NORMAL mantém exactamente o valor garantido na ligação
+  -- (snapshot imutável — mudar o parâmetro não altera ligações existentes).
+  -- EMBAIXADOR/OURO recebem a taxa do nível como uplift, nunca abaixo do garantido.
+  v_valor := case nivel_ind
+               when 'ouro'       then greatest(lig.ganho_por_pedido_garantido, p.ganho_por_pedido_ouro)
+               when 'embaixador' then greatest(lig.ganho_por_pedido_garantido, p.ganho_por_pedido_embaixador)
+               else                   lig.ganho_por_pedido_garantido
+             end;
 
   -- Bónus de boas-vindas: uma vez por embaixador, na 1.ª vitória confirmada
   if v_estado = 'confirmado' and p.bonus_boas_vindas > 0

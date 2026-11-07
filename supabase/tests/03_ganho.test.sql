@@ -119,15 +119,15 @@ select is((select estado from ganhos_indicacao where pedido_id = testes.u('p18b'
 select is((select count(*)::int from notificacoes_fila where cliente_id = testes.u('forte') and codigo = 'N4'), 1,
           '18. N4 só uma vez por semana');
 
--- 19. Embaixador acima de 10.000 Kz -> confirmado
-select testes.def('emb', testes.cliente('Embaixadora'));
-update codigos_indicacao set nivel = 'embaixador' where cliente_id = testes.u('emb');
+-- 19. Embaixador Ouro acima de 10.000 Kz -> confirmado (isenção do limite semanal é do topo)
+select testes.def('emb', testes.cliente('Embaixadora Ouro'));
+update codigos_indicacao set nivel = 'ouro' where cliente_id = testes.u('emb');
 select testes.ganhos(testes.u('emb'), 100, 100);
 select testes.def('ae', testes.indicado(testes.u('emb'), 'Amigo E'));
 select testes.def('p19', testes.pedido(testes.u('ae'), testes.ponto('residencial')));
 select testes.pagar(testes.u('p19'));
 select is((select estado from ganhos_indicacao where pedido_id = testes.u('p19')), 'confirmado',
-          '19. embaixador acima de 10.000 Kz -> confirmado');
+          '19. embaixador Ouro acima de 10.000 Kz -> confirmado (só o Ouro é isento)');
 
 -- 20. Estorno: ganho confirmado -> anulado; ganho pago -> mantém-se
 select testes.def('e1', testes.indicado(testes.u('ana'), 'Estorno Um'));

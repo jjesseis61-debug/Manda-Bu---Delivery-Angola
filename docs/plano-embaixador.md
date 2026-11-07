@@ -79,9 +79,11 @@ Embaixador partilha link do prato no WhatsApp
   comissão nunca abaixo do valor garantido. Sem funções novas chamáveis pelas apps → 12_privilegios intacto.
   - **Decisões aplicadas na migração (a confirmar antes de produção):**
     - *"Activo"* = indicado com ≥1 ganho confirmado/pago **e** vínculo vivo (não basta criar a ligação — evita fraude).
-    - *Bónus de boas-vindas* = **uma vez por embaixador**, na 1.ª vitória confirmada (a "primeira vitória garantida"
-      que a app já promete a todos), somado ao valor desse ganho (aparece no push N3). Aplica-se a qualquer nível,
-      porque na 1.ª vitória o embaixador ainda é `normal`.
+    - *Comissão normal* = **exactamente o valor garantido (snapshot)** da ligação; subir o parâmetro não altera
+      ligações existentes. Só Embaixador/Ouro recebem a taxa do nível (150/200) como uplift (nunca abaixo do garantido).
+    - *Bónus de boas-vindas* = **uma vez por embaixador**, na 1.ª vitória confirmada (a "primeira vitória garantida").
+      **Desligado por defeito (`bonus_boas_vindas=0`)** — o mecanismo está pronto e testado; liga-se com um valor
+      confirmado (`update parametros set bonus_boas_vindas=300`). Quando ligado, soma-se ao valor do ganho (aparece no push N3).
     - *Despromoção* automática **não** implementada (só sobe); fica para um cron posterior.
     - *Push de parabéns pela promoção* não implementado nesta fase (a app mostra o novo nível via `meu_perfil`);
       evita tocar no pipeline de texto/envio das notificações.
