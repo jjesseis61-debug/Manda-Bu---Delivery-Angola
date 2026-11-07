@@ -10,6 +10,10 @@ export type Perfil = {
   cliente_novo: boolean;
   suspensa: boolean;
   recuperar_ate: string | null;
+  /** Nível no programa de indicação: normal → embaixador (≥ limiar) → ouro */
+  nivel?: 'normal' | 'embaixador' | 'ouro';
+  /** Indicados activos (com ganho confirmado e vínculo vivo) — para o painel */
+  indicados_activos?: number;
 };
 
 export type Parametros = {
@@ -27,6 +31,16 @@ export type Parametros = {
   tamanho_top: number;
   /** Minutos até à hora de entrega prometida (o servidor marca-a em cada pedido) */
   tempo_entrega_min?: number;
+  /** Comissão por pedido para embaixadores (≥ limiar_embaixador indicados activos) */
+  ganho_por_pedido_embaixador?: number;
+  /** Comissão por pedido para embaixadores Ouro (≥ limiar_ouro) */
+  ganho_por_pedido_ouro?: number;
+  /** Bónus de boas-vindas na 1.ª vitória do embaixador */
+  bonus_boas_vindas?: number;
+  /** Indicados activos para subir a Embaixador */
+  limiar_embaixador?: number;
+  /** Indicados activos para subir a Embaixador Ouro */
+  limiar_ouro?: number;
 };
 
 export type ChaveFuncionalidade =

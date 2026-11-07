@@ -70,6 +70,23 @@ Embaixador partilha link do prato no WhatsApp
   → partilha mais  →  mais pedidos   (CAC ≈ comissão, não ads)
 ```
 
+## Estado de implementação
+- **Fase 1 (app — primeira vitória):** ✅ implementada (`apps/cliente/.../convida.tsx`, commit d0abbd3).
+- **Fase 2 (backend — economia 2 níveis):** ✅ migração escrita e **validada localmente**
+  (`supabase/migrations/20261104000000_embaixador_niveis.sql`); **falta aplicar à produção com autorização**.
+  Validado: comissão por nível (100/150/200), bónus de boas-vindas +300 só na 1.ª vitória,
+  promoção automática a embaixador aos 5 activos, isenção do limite semanal só para Ouro,
+  comissão nunca abaixo do valor garantido. Sem funções novas chamáveis pelas apps → 12_privilegios intacto.
+  - **Decisões aplicadas na migração (a confirmar antes de produção):**
+    - *"Activo"* = indicado com ≥1 ganho confirmado/pago **e** vínculo vivo (não basta criar a ligação — evita fraude).
+    - *Bónus de boas-vindas* = **uma vez por embaixador**, na 1.ª vitória confirmada (a "primeira vitória garantida"
+      que a app já promete a todos), somado ao valor desse ganho (aparece no push N3). Aplica-se a qualquer nível,
+      porque na 1.ª vitória o embaixador ainda é `normal`.
+    - *Despromoção* automática **não** implementada (só sobe); fica para um cron posterior.
+    - *Push de parabéns pela promoção* não implementado nesta fase (a app mostra o novo nível via `meu_perfil`);
+      evita tocar no pipeline de texto/envio das notificações.
+- **Fase 3 (deep-link do prato + OG + PWA/domínio):** planeada (secção abaixo).
+
 ## Onde mexer (implementação futura)
 - **Backend (Fase 2 — 2 níveis):**
   - `codigos_indicacao.nivel`: alterar o CHECK para aceitar **`ouro`** (hoje só `normal`/`embaixador`).
