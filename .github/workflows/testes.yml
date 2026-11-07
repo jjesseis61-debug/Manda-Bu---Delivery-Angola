@@ -11,7 +11,7 @@ jobs:
     name: Base de dados (pgTAP)
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Instalar Postgres 16 e pgTAP
         run: |
           sudo apt-get update
@@ -25,8 +25,8 @@ jobs:
     name: Edge Function enviar-notificacoes
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
       - run: node --experimental-strip-types supabase/functions/enviar-notificacoes/envio.test.mjs
@@ -53,8 +53,8 @@ jobs:
       EXPO_PUBLIC_SUPABASE_URL: https://exemplo.supabase.co
       EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: testes
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
