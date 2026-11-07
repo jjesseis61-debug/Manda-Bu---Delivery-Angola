@@ -21,18 +21,26 @@
 
 ## Desenho proposto
 
-### 1) Identidade & promoção
-- **Auto-promoção** a embaixador ao atingir `limiar_embaixador` (30) indicados ativos (hoje é manual).
-  Notificação de parabéns.
-- **Despromoção suave:** cair abaixo de um mínimo de ativos durante N semanas → volta a normal.
+### 1) Identidade & promoção — **2 níveis** (decisão 2026-11-07)
+30 indicados ativos como porta de entrada é **demasiado alto** (quase ninguém chega → o benefício
+nunca liga; e mata a autoeficácia, que precisa de metas próximas). Por isso: **dois degraus** — um
+baixo e motivador, outro alto para o benefício caro/sensível.
+- **Auto-promoção a Embaixador** ao atingir **~5 indicados ativos** (alcançável). Notificação de parabéns.
+- **Auto-promoção a Embaixador Ouro** ao atingir **~30 indicados ativos** (onde vive o benefício arriscado).
+- **Despromoção suave:** cair abaixo de um mínimo de ativos durante N semanas → desce de nível.
 
-### 2) Economia diferenciada (o que o embaixador ganha a mais)
-| Perk | Normal | Embaixador |
-|---|---|---|
-| Comissão por pedido | `ganho_por_pedido` (100) | **mais alta** — novo param `ganho_por_pedido_embaixador` (ex.: 150–200) |
-| Limite semanal | 10.000 → verificação | **isento** (já existe) |
-| Duração do vínculo | `duracao_dias` | **renovável** enquanto o indicado se mantém ativo (novo) |
-| Levantamento | mínimo/ritmo normal | **mínimo mais baixo / mais rápido** (novo) |
+### 2) Economia diferenciada (valores propostos, ajustáveis)
+| Perk | Normal | **Embaixador** (≥5) | **Embaixador Ouro** (≥30) |
+|---|---|---|---|
+| Comissão por pedido | `ganho_por_pedido` (100) | **150** (`ganho_por_pedido_embaixador`) | **200** (`ganho_por_pedido_ouro`) |
+| Bónus de boas-vindas (1.º amigo) | — | **+300** (`bonus_boas_vindas`) | **+300** |
+| **Limite semanal** (10.000 → verificação) | aplica-se | **aplica-se** (segurança) | **isento** (o perk atual, só no topo) |
+| Levantamento mínimo | normal | **mais baixo** | **ainda mais baixo** |
+| Duração do vínculo | `duracao_dias` | renovável enquanto o indicado se mantém ativo | renovável |
+
+> **Chave de segurança:** o degrau **barato e motivador** (comissão 150 + bónus) fica **baixo (5)**; o
+> degrau **caro e sensível** (isenção do limite semanal) fica **em cima (30)** — exatamente onde está
+> hoje. Assim não se baixa a segurança atual e ganha-se um nível de entrada atingível.
 
 ### 3) Ferramentas de venda social (o salto Meesho)
 - **Deep-link partilhável** do cardápio / cozinha / prato com o código embutido → abre a app do
@@ -41,7 +49,7 @@
 - **Material pronto** — imagem do prato + texto + código, para colar em grupos de WhatsApp.
 
 ### 4) Progressão / gamificação
-- Níveis: Normal → Embaixador → **Embaixador Ouro** (ex.: 30 → 100 ativos), com comissão/benefícios crescentes.
+- Níveis: **Normal → Embaixador (≥5) → Embaixador Ouro (≥30)**, com comissão/benefícios crescentes.
 - Metas, distintivos e **ranking por zona**.
 
 ### 5) Painel do embaixador
@@ -63,9 +71,18 @@ Embaixador partilha link do prato no WhatsApp
 ```
 
 ## Onde mexer (implementação futura)
-- **Backend:** novos parâmetros (`ganho_por_pedido_embaixador`, mínimos de levantamento por nível,
-  regras de auto-promoção/renovação); ajustar `processar_ganho_indicacao()` para usar a comissão por
-  nível e a renovação do vínculo; função de auto-promoção (cron ou no fecho do pedido); deep-links.
+- **Backend (Fase 2 — 2 níveis):**
+  - `codigos_indicacao.nivel`: alterar o CHECK para aceitar **`ouro`** (hoje só `normal`/`embaixador`).
+  - Novos parâmetros: `ganho_por_pedido_embaixador` (150), `ganho_por_pedido_ouro` (200),
+    `bonus_boas_vindas` (300), `limiar_embaixador` = **5** (entrada) e `limiar_ouro` = **30**
+    (hoje `limiar_embaixador`=30 passa a ser o de Ouro), mínimos de levantamento por nível.
+  - `processar_ganho_indicacao()`: comissão por **nível** (100/150/200); **bónus** no 1.º ganho de cada
+    indicado; **isenção do limite semanal só para `ouro`** (hoje é para `embaixador`); renovação do vínculo.
+  - **Auto-promoção** (cron ou no fecho do pedido): `embaixador` ao atingir 5 ativos, `ouro` aos 30;
+    despromoção suave.
+  - Expor `nivel` no `meu_perfil` e `limiar_embaixador`/`limiar_ouro` nos parâmetros (para o painel).
+  - Testes pgTAP (incl. 12_privilegios) + aplicar com autorização.
+- **Deep-links** (Fase 3): ver secção própria abaixo.
 - **App cliente:** montra/painel do embaixador, botões de partilha WhatsApp com o link, progresso de nível.
 - **App operador:** já tem gestão de embaixadores, ganhos e levantamentos; acrescentar os novos níveis.
 - Sem alterar a lógica de comida/entrega. Implica APKs novos quando se fizer.
