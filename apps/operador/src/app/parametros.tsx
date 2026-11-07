@@ -14,12 +14,16 @@ const CAMPOS: { grupo: string; chaves: [string, string][] }[] = [
     grupo: 'Indicação',
     chaves: [
       ['ganho_por_pedido', 'Ganho por pedido (Kz)'],
+      ['ganho_por_pedido_embaixador', 'Ganho por pedido — Embaixador (Kz)'],
+      ['ganho_por_pedido_ouro', 'Ganho por pedido — Ouro (Kz)'],
+      ['bonus_boas_vindas', 'Bónus de boas-vindas, 1.ª vitória (Kz, 0 = desligado)'],
       ['duracao_dias', 'Duração do período (dias)'],
       ['desconto_indicado', 'Desconto do indicado (Kz)'],
       ['limite_verificacao_semanal', 'Limite semanal sem verificação (Kz)'],
       ['levantamento_minimo', 'Levantamento mínimo (Kz)'],
       ['limite_parcelamento', 'Parcelar acima de (Kz)'],
       ['limiar_embaixador', 'Indicados activos para Embaixador'],
+      ['limiar_ouro', 'Indicados activos para Embaixador Ouro'],
     ],
   },
   {
