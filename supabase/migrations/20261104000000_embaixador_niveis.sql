@@ -24,10 +24,12 @@
 -- =============================================================================
 
 -- ---------------------------------------------------------------- 1. Parâmetros
+-- Taxas por nível acima da base de produção (ganho_por_pedido = 390 Kz):
+-- Embaixador 1,5× (585) e Ouro 2× (780). greatest(snapshot, taxa) garante uplift real.
 alter table parametros
-  add column if not exists ganho_por_pedido_embaixador int not null default 150
+  add column if not exists ganho_por_pedido_embaixador int not null default 585
     check (ganho_por_pedido_embaixador >= 0),
-  add column if not exists ganho_por_pedido_ouro       int not null default 200
+  add column if not exists ganho_por_pedido_ouro       int not null default 780
     check (ganho_por_pedido_ouro >= 0),
   -- Bónus de boas-vindas DESLIGADO por defeito (0): o mecanismo fica pronto, mas
   -- liga-se só com um valor confirmado (update parametros set bonus_boas_vindas=300).
