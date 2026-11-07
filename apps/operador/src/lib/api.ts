@@ -220,7 +220,7 @@ export async function movimentoPrecoPrato(cardapioId: string, preco?: number): P
 export async function lerGruposOpcoes(cardapioId: string): Promise<GrupoOpcoesPrato[]> {
   const r = await supabase
     .from('opcoes_grupos')
-    .select('id, cardapio_id, nome, minimo, maximo, ordem, opcoes(id, grupo_id, nome, preco_extra, disponivel, ordem, componentes, deletado_em)')
+    .select('id, cardapio_id, nome, minimo, maximo, ordem, opcoes(id, grupo_id, nome, preco_extra, disponivel, ordem, componentes, foto_url, deletado_em)')
     .eq('cardapio_id', cardapioId)
     .is('deletado_em', null)
     .order('ordem')
@@ -612,6 +612,11 @@ export async function definirFotoPrato(id: string, fotoUrl: string | null) {
 
 export async function definirFotoCozinha(id: string, fotoUrl: string | null) {
   verificar(await supabase.from('cozinhas').update({ foto_url: fotoUrl, atualizado_em: new Date().toISOString() }).eq('id', id));
+}
+
+/** Grava logo a foto (ou a remoção) de uma opção do prato montável, sem mexer nos outros campos */
+export async function definirFotoOpcao(id: string, fotoUrl: string | null) {
+  verificar(await supabase.from('opcoes').update({ foto_url: fotoUrl, atualizado_em: new Date().toISOString() }).eq('id', id));
 }
 
 // ---------------------------------------------------------------- Zonas de entrega

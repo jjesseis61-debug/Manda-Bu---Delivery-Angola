@@ -31,7 +31,7 @@ export async function escolherFoto(origem: 'camera' | 'galeria', recortar = true
 }
 
 /** Caminho no bucket: pratos/<id>/<data>.jpg ou cozinhas/<id>/<data>.jpg (um nome novo de cada vez, sem cache antiga) */
-export function caminhoFoto(tipo: 'pratos' | 'cozinhas', id: string, agora: Date = new Date()): string {
+export function caminhoFoto(tipo: 'pratos' | 'cozinhas' | 'opcoes', id: string, agora: Date = new Date()): string {
   return `${tipo}/${id}/${agora.getTime()}.jpg`;
 }
 
@@ -44,7 +44,7 @@ export function caminhoDoEndereco(url: string | null | undefined): string | null
 }
 
 /** Envia a foto e devolve o endereço público */
-export async function enviarFotoPublica(tipo: 'pratos' | 'cozinhas', id: string, uri: string): Promise<string> {
+export async function enviarFotoPublica(tipo: 'pratos' | 'cozinhas' | 'opcoes', id: string, uri: string): Promise<string> {
   const caminho = caminhoFoto(tipo, id);
   const dados = await (await fetch(uri)).arrayBuffer();
   const { error } = await supabase.storage

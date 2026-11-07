@@ -22,7 +22,7 @@ export function FotoEditavel({
   localUri,
   aoEscolherLocal,
 }: {
-  tipo: 'pratos' | 'cozinhas' | 'receitas';
+  tipo: 'pratos' | 'cozinhas' | 'receitas' | 'opcoes';
   id?: string;
   url?: string | null;
   aoGravar?: (url: string | null) => Promise<void>;

@@ -105,9 +105,13 @@ export default function MontarPrato() {
                         backgroundColor: marcada ? cores.marcaClara : '#fff',
                         opacity: cheio ? 0.45 : 1,
                       }}>
-                      <View style={{ width: 40, height: 40, borderRadius: 10, backgroundColor: cores.fundoSuave, alignItems: 'center', justifyContent: 'center' }}>
-                        <Text style={{ fontSize: 20 }}>{emojiOpcao(o.nome)}</Text>
-                      </View>
+                      {o.foto_url ? (
+                        <Image source={{ uri: o.foto_url }} style={{ width: 40, height: 40, borderRadius: 10 }} accessibilityLabel={o.nome} />
+                      ) : (
+                        <View style={{ width: 40, height: 40, borderRadius: 10, backgroundColor: cores.fundoSuave, alignItems: 'center', justifyContent: 'center' }}>
+                          <Text style={{ fontSize: 20 }}>{emojiOpcao(o.nome)}</Text>
+                        </View>
+                      )}
                       <Text style={{ flex: 1, fontSize: 15 }}>{o.nome}</Text>
                       {o.preco_extra > 0 && <Text style={{ color: cores.textoSuave, fontSize: 13 }}>+{formatarKz(o.preco_extra)}</Text>}
                       <View

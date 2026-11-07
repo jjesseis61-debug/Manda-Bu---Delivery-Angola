@@ -155,7 +155,7 @@ export async function lerOpcoes(cardapioIds: string[]): Promise<GrupoOpcoes[]> {
   if (cardapioIds.length === 0) return [];
   const r = await supabase
     .from('opcoes_grupos')
-    .select('id, cardapio_id, nome, minimo, maximo, ordem, opcoes(id, nome, preco_extra, ordem, disponivel, deletado_em)')
+    .select('id, cardapio_id, nome, minimo, maximo, ordem, opcoes(id, nome, preco_extra, ordem, foto_url, disponivel, deletado_em)')
     .in('cardapio_id', cardapioIds)
     .is('deletado_em', null)
     .order('ordem')
@@ -168,7 +168,7 @@ export async function lerOpcoes(cardapioIds: string[]): Promise<GrupoOpcoes[]> {
     opcoes: g.opcoes
       .filter((o) => o.disponivel && !o.deletado_em)
       .sort((a, b) => a.ordem - b.ordem || a.nome.localeCompare(b.nome))
-      .map(({ id, nome, preco_extra, ordem }) => ({ id, nome, preco_extra, ordem })),
+      .map(({ id, nome, preco_extra, ordem, foto_url }) => ({ id, nome, preco_extra, ordem, foto_url })),
   }));
 }
 

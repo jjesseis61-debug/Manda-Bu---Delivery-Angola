@@ -289,7 +289,7 @@ export type CozinhaParaPedir = {
 };
 
 // I9 · Pratos montáveis
-export type Opcao = { id: string; nome: string; preco_extra: number; ordem: number };
+export type Opcao = { id: string; nome: string; preco_extra: number; ordem: number; foto_url?: string | null };
 export type GrupoOpcoes = {
   id: string;
   cardapio_id: string;

@@ -2,9 +2,10 @@ import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Switch, Text, View } from 'react-native';
 
+import { FotoEditavel } from '@/components/FotoEditavel';
 import { Guarda } from '@/components/Guarda';
 import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Paragrafo, Subtitulo } from '@/components/ui';
-import { apagarGrupoOpcoes, apagarOpcao, guardarGrupoOpcoes, guardarOpcao, lerGruposOpcoes, lerProdutos } from '@/lib/api';
+import { apagarGrupoOpcoes, apagarOpcao, definirFotoOpcao, guardarGrupoOpcoes, guardarOpcao, lerGruposOpcoes, lerProdutos } from '@/lib/api';
 import { componentesParaGuardar, formatarKz, mensagemErro, unidadePorDefeito } from '@/lib/formatar';
 import { cores, espaco } from '@/lib/tema';
 import type { GrupoOpcoesPrato, ProdutoStock } from '@/lib/tipos';
@@ -19,6 +20,7 @@ type OpcaoEditada = {
   disponivel: boolean;
   ordem: string;
   componentes: ComponenteEditado[];
+  foto_url: string | null;
 };
 
 const numero = (t: string) => t.replace(/\D/g, '');
@@ -107,6 +109,7 @@ export default function OpcoesPrato() {
                       preco_extra: String(o.preco_extra),
                       ordem: String(o.ordem),
                       componentes: (o.componentes ?? []).map((c) => ({ ...c, quantidade: String(c.quantidade) })),
+                      foto_url: o.foto_url ?? null,
                     })
                   }
                 />
@@ -116,7 +119,7 @@ export default function OpcoesPrato() {
               <Botao
                 titulo="Nova opção"
                 variante="secundario"
-                aoCarregar={() => setOpcao({ grupo_id: g.id, nome: '', preco_extra: '0', disponivel: true, ordem: '0', componentes: [] })}
+                aoCarregar={() => setOpcao({ grupo_id: g.id, nome: '', preco_extra: '0', disponivel: true, ordem: '0', componentes: [], foto_url: null })}
               />
               <Botao
                 titulo="Editar grupo"
@@ -206,6 +209,19 @@ export default function OpcoesPrato() {
             ))}
             {procura.trim().length >= 2 && encontrados.length === 0 && produtos !== null && (
               <Paragrafo suave>Nenhum produto com esse nome.</Paragrafo>
+            )}
+            {opcao.id ? (
+              <FotoEditavel
+                tipo="opcoes"
+                id={opcao.id}
+                url={opcao.foto_url}
+                aoGravar={async (u) => {
+                  await definirFotoOpcao(opcao.id as string, u);
+                  setOpcao({ ...opcao, foto_url: u });
+                }}
+              />
+            ) : (
+              <Paragrafo suave>Guarda a opção primeiro para lhe pôr uma foto.</Paragrafo>
             )}
             <Botao
               titulo="Guardar opção"

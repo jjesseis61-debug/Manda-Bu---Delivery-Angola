@@ -771,6 +771,8 @@ export type OpcaoPrato = {
   disponivel: boolean;
   ordem: number;
   componentes: ComponenteOpcao[];
+  /** Foto própria da opção (bucket fotos-pratos); a app mostra-a no lugar do emoji */
+  foto_url?: string | null;
 };
 export type ProdutoStock = { id: string; nome: string; categoria_medida: 'Peso' | 'Volume' | 'Unidade' | null; tipo_estoque: string | null };
 export type GrupoOpcoesPrato = {
