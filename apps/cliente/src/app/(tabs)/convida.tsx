@@ -14,7 +14,7 @@ import type { Amigo, Saldo } from '@/lib/tipos';
 /** C1. Convida e Ganha */
 export default function Convida() {
   const router = useRouter();
-  const { carregado, perfil, ligada } = useSessao();
+  const { carregado, perfil, parametros, ligada } = useSessao();
   const [saldo, setSaldo] = useState<Saldo | null>(null);
   const [amigos, setAmigos] = useState<Amigo[] | null>(null);
   const [verExpirados, setVerExpirados] = useState(false);
@@ -39,13 +39,35 @@ export default function Convida() {
 
   const activos = (amigos ?? []).filter((a) => a.estado !== 'expirado');
   const expirados = (amigos ?? []).filter((a) => a.estado === 'expirado');
+  // "Primeira vitória" (Bandura): até o embaixador ganhar a 1.ª comissão, guia-se o primeiro passo.
+  const jaGanhou = (amigos ?? []).some((a) => a.ganho_total > 0);
+  const gpp = parametros?.ganho_por_pedido ?? 0;
+  const descInd = parametros?.desconto_indicado ?? 0;
 
   return (
     <Ecra>
-      <Cartao>
-        <Paragrafo suave>O teu código de convite</Paragrafo>
-        <PartilharCodigo />
-      </Cartao>
+      {!jaGanhou ? (
+        <Cartao>
+          <Subtitulo>A tua primeira vitória</Subtitulo>
+          <Text style={{ fontSize: 20, fontWeight: '800', color: cores.marca, lineHeight: 26 }}>
+            Partilha e ganha os teus primeiros{gpp ? ` ${formatarKz(gpp)}` : ''} 🎉
+          </Text>
+          <View style={{ gap: 6, marginVertical: 4 }}>
+            <Text style={{ color: cores.texto }}>1. Partilha o teu código no WhatsApp.</Text>
+            <Text style={{ color: cores.texto }}>
+              2. O teu amigo pede e ganha{descInd ? ` ${formatarKz(descInd)}` : ''} de desconto.
+            </Text>
+            <Text style={{ color: cores.texto }}>3. Ganhas{gpp ? ` ${formatarKz(gpp)}` : ''} por cada pedido dele.</Text>
+          </View>
+          <PartilharCodigo />
+          <Text style={{ color: cores.textoSuave, fontSize: 13 }}>Leva 10 segundos · a mensagem já vai pronta.</Text>
+        </Cartao>
+      ) : (
+        <Cartao>
+          <Paragrafo suave>O teu código de convite</Paragrafo>
+          <PartilharCodigo />
+        </Cartao>
+      )}
 
       {erro && <Aviso tipo="erro">{erro}</Aviso>}
 
@@ -76,10 +98,7 @@ export default function Convida() {
 
       <Subtitulo>Os teus amigos</Subtitulo>
       {activos.length === 0 && expirados.length === 0 ? (
-        <Paragrafo suave>
-          Ainda não convidaste ninguém. Partilha o teu código: os teus amigos ganham desconto no primeiro pedido e tu ganhas em
-          cada pedido deles.
-        </Paragrafo>
+        <Paragrafo suave>Ainda não convidaste ninguém — partilha o teu código acima.</Paragrafo>
       ) : (
         activos.map((a, i) => (
           <Linha key={`${a.primeiro_nome}-${i}`} esquerda={textoAmigo(a.primeiro_nome, a.estado, a.dias_restantes)} direita={formatarKz(a.ganho_total)} />
