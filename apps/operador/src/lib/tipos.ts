@@ -618,6 +618,8 @@ export type PratoCardapio = {
   foto_url?: string | null;
   /** Doses lançadas para hoje (null = sem limite) */
   doses_dia?: number | null;
+  /** Prato montável: valor mínimo (base + extras) para servir; null = sem mínimo */
+  minimo_montavel?: number | null;
   /** false = prato só de feira (consignação), não aparece aos clientes online */
   visivel_online?: boolean;
   /** Agendamento: disponível a partir desta data/hora (ISO; null = já) */

@@ -269,12 +269,7 @@ export default function Inicio() {
                     <Text style={{ color: cores.marca, fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.4 }}>
                       Serve o teu próprio prato · à tua maneira
                     </Text>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', gap: espaco.s }}>
-                      <Text style={{ fontSize: 18, fontWeight: '800', color: cores.texto, flex: 1 }}>{item.nome}</Text>
-                      <Text style={{ fontSize: 15, fontWeight: '700', color: cores.texto }}>
-                        {desde.has(item.id) ? `desde ${formatarKz(desde.get(item.id))}` : formatarKz(item.preco)}
-                      </Text>
-                    </View>
+                    <Text style={{ fontSize: 18, fontWeight: '800', color: cores.texto }}>{item.nome}</Text>
                     {item.descricao ? (
                       <Text style={{ color: cores.texto }} numberOfLines={2}>{item.descricao}</Text>
                     ) : null}

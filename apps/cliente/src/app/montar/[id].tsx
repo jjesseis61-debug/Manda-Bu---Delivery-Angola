@@ -62,6 +62,8 @@ export default function MontarPrato() {
   const esgotados = [...gruposEsgotados(grupos), ...(semDoses ? ['as doses de hoje'] : [])];
   const faltam = gruposEmFalta(grupos, escolhidas);
   const total = precoMontado(item.preco, opcoes, semEstes);
+  const minimo = item.minimo_montavel ?? 0;
+  const abaixoMinimo = minimo > 0 && total < minimo;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: cores.fundo }} edges={['bottom', 'left', 'right']}>
@@ -76,6 +78,11 @@ export default function MontarPrato() {
           </Text>
           <Text style={{ fontSize: 22, fontWeight: '700', color: cores.texto }}>{item.nome}</Text>
           {item.descricao && <Paragrafo suave>{item.descricao}</Paragrafo>}
+          {minimo > 0 && (
+            <Text style={{ color: cores.marca, fontSize: 13, fontWeight: '600' }}>
+              O valor mínimo para servir é {formatarKz(minimo)}.
+            </Text>
+          )}
 
           {grupos.map((g) => {
             const noGrupo = g.opcoes.filter((o) => escolhidas.includes(o.id)).length;
@@ -208,6 +215,13 @@ export default function MontarPrato() {
             {opcoes.length === 0 && faltam.length === 0 && (
               <Text style={{ fontSize: 12, color: cores.textoSuave, fontStyle: 'italic' }}>Escolhe à esquerda para montar o prato.</Text>
             )}
+            {esgotados.length === 0 && faltam.length === 0 && abaixoMinimo && (
+              <View style={{ backgroundColor: cores.marcaClara, borderLeftWidth: 4, borderLeftColor: cores.marca, borderRadius: 8, padding: espaco.s }}>
+                <Text style={{ fontSize: 12, fontWeight: '600', color: cores.marcaEscura }}>
+                  Falta {formatarKz(minimo - total)} para o mínimo de {formatarKz(minimo)}.
+                </Text>
+              </View>
+            )}
           </ScrollView>
 
           {/* Soma + Adicionar, sempre à vista */}
@@ -218,7 +232,7 @@ export default function MontarPrato() {
             </View>
             <Botao
               titulo={esgotados.length > 0 ? 'Esgotado' : `Adicionar · ${formatarKz(total)}`}
-              desactivado={faltam.length > 0 || esgotados.length > 0}
+              desactivado={faltam.length > 0 || esgotados.length > 0 || abaixoMinimo}
               aoCarregar={() => {
                 carrinho.adicionar(item, opcoes, semEstes);
                 // Aberto por link não há ecrã anterior: segue para o início

@@ -96,6 +96,8 @@ export type ItemCardapio = {
   prato_base_id: string | null;
   /** Prova social: pessoas distintas que pediram nos últimos 30 dias (0 se poucas/nenhuma) */
   pedidos_mes: number;
+  /** Prato montável: valor mínimo (base + extras) para servir; null/0 = sem mínimo */
+  minimo_montavel?: number | null;
 };
 
 export type ItemOrcamento = {

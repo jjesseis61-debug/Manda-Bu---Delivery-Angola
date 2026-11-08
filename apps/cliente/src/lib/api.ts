@@ -111,7 +111,7 @@ export async function cozinhaPadrao(): Promise<string | null> {
 export async function lerCardapio(cozinhaId?: string | null): Promise<ItemCardapio[]> {
   let q = supabase
     .from('cardapio')
-    .select('id, nome, descricao, categoria, preco, foto_url, do_dia, cozinha_id, prato_base_id, cardapio_popularidade(pessoas)')
+    .select('id, nome, descricao, categoria, preco, foto_url, do_dia, cozinha_id, prato_base_id, minimo_montavel, cardapio_popularidade(pessoas)')
     .eq('disponivel', true)
     .eq('visivel_online', true);
   if (cozinhaId) q = q.eq('cozinha_id', cozinhaId);
@@ -143,7 +143,7 @@ export async function lerCozinhaPublica(cozinhaId?: string | null): Promise<Cozi
 export async function lerItemCardapio(id: string): Promise<ItemCardapio | null> {
   const r = await supabase
     .from('cardapio')
-    .select('id, nome, descricao, categoria, preco, foto_url, do_dia, cozinha_id, prato_base_id')
+    .select('id, nome, descricao, categoria, preco, foto_url, do_dia, cozinha_id, prato_base_id, minimo_montavel')
     .eq('id', id)
     .eq('disponivel', true)
     .maybeSingle();

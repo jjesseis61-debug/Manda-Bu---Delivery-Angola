@@ -10,11 +10,12 @@ import type { PratoCardapio } from '@/lib/tipos';
 import { FotoEditavel } from './FotoEditavel';
 import { Aviso, Botao, Campo, Escolha, Paragrafo, Subtitulo } from './ui';
 
-type PratoEditado = Omit<PratoCardapio, 'id' | 'preco' | 'ordem' | 'doses_dia'> & {
+type PratoEditado = Omit<PratoCardapio, 'id' | 'preco' | 'ordem' | 'doses_dia' | 'minimo_montavel'> & {
   id?: string;
   preco: string;
   ordem: string;
   doses: string;
+  minimo_montavel: string;
 };
 
 function Interruptor({ rotulo, valor, aoMudar }: { rotulo: string; valor: boolean; aoMudar: (v: boolean) => void }) {
@@ -27,12 +28,18 @@ function Interruptor({ rotulo, valor, aoMudar }: { rotulo: string; valor: boolea
 }
 
 function paraEditado(p: PratoCardapio): PratoEditado {
-  const { preco, ordem, doses_dia, ...resto } = p;
-  return { ...resto, preco: String(preco), ordem: String(ordem), doses: doses_dia == null ? '' : String(doses_dia) };
+  const { preco, ordem, doses_dia, minimo_montavel, ...resto } = p;
+  return {
+    ...resto,
+    preco: String(preco),
+    ordem: String(ordem),
+    doses: doses_dia == null ? '' : String(doses_dia),
+    minimo_montavel: minimo_montavel == null ? '' : String(minimo_montavel),
+  };
 }
 
 function pratoNovo(cozinhaId: string): PratoEditado {
-  return { cozinha_id: cozinhaId, nome: '', descricao: null, categoria: null, preco: '', disponivel: true, do_dia: false, visivel_online: true, ordem: '0', doses: '', disponivel_de: null, disponivel_ate: null };
+  return { cozinha_id: cozinhaId, nome: '', descricao: null, categoria: null, preco: '', disponivel: true, do_dia: false, visivel_online: true, ordem: '0', doses: '', minimo_montavel: '', disponivel_de: null, disponivel_ate: null };
 }
 
 /**
@@ -69,10 +76,16 @@ export function EditorPrato({
     setErro(null);
     setOcupado(true);
     try {
-      const { preco, ordem, doses, ...resto } = prato;
+      const { preco, ordem, doses, minimo_montavel, ...resto } = prato;
       // Operador a editar um prato existente: as doses ficam como estavam (mexe-as no cartão).
       const doses_dia = mostrarDoses ? (doses === '' ? null : Number(doses)) : (pratoInicial?.doses_dia ?? null);
-      const id = await guardarPrato({ ...resto, preco: Number(preco), ordem: Number(ordem || 0), doses_dia });
+      const id = await guardarPrato({
+        ...resto,
+        preco: Number(preco),
+        ordem: Number(ordem || 0),
+        doses_dia,
+        minimo_montavel: minimo_montavel ? Number(minimo_montavel) : null,
+      });
       // Prato novo com foto escolhida: cria primeiro, depois envia a foto para o id novo.
       if (!prato.id && fotoLocal) {
         const nova = await enviarFotoPublica('pratos', id, fotoLocal);
@@ -110,6 +123,13 @@ export function EditorPrato({
       )}
       <Campo rotulo="Preço (Kz)" value={prato.preco} keyboardType="number-pad" onChangeText={(t) => setPrato({ ...prato, preco: t.replace(/\D/g, '') })} />
       {prato.preco === '0' && <Aviso>Preço 0: só para pratos montáveis em que o preço vem das opções obrigatórias (em Opções).</Aviso>}
+      <Campo
+        rotulo="Valor mínimo para montar (Kz, 0 = sem mínimo)"
+        value={prato.minimo_montavel}
+        keyboardType="number-pad"
+        onChangeText={(t) => setPrato({ ...prato, minimo_montavel: t.replace(/\D/g, '') })}
+      />
+      <Paragrafo suave>Só para pratos montáveis: o cliente só pode servir quando o prato (base + extras) atingir este valor.</Paragrafo>
       <Campo rotulo="Ordem no cardápio" value={prato.ordem} keyboardType="number-pad" onChangeText={(t) => setPrato({ ...prato, ordem: t.replace(/\D/g, '') })} />
       {mostrarDoses ? (
         <>
