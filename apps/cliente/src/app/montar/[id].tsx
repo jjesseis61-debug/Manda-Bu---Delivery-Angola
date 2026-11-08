@@ -57,6 +57,7 @@ export default function MontarPrato() {
   if (item === null) return <Ecra><Aviso tipo="erro">{erro ?? 'Este prato já não está disponível.'}</Aviso></Ecra>;
 
   const opcoes = opcoesEscolhidas(grupos, escolhidas);
+  const fotoDaOpcao = (id: string) => grupos.flatMap((g) => g.opcoes).find((x) => x.id === id)?.foto_url ?? null;
   const semEstes = componentes.filter((c) => tirados.includes(c.produto_id));
   const esgotados = [...gruposEsgotados(grupos), ...(semDoses ? ['as doses de hoje'] : [])];
   const faltam = gruposEmFalta(grupos, escolhidas);
@@ -182,8 +183,13 @@ export default function MontarPrato() {
           <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: espaco.m, gap: espaco.s }}>
             {/* Opções escolhidas */}
             {opcoes.map((o) => (
-              <View key={o.id} style={{ backgroundColor: '#fff', borderWidth: 1, borderColor: cores.linha, borderRadius: 9, padding: espaco.s, flexDirection: 'row', justifyContent: 'space-between', gap: espaco.xs }}>
-                <Text numberOfLines={1} style={{ fontSize: 13, color: cores.texto, flex: 1 }}>{emojiOpcao(o.nome)}  {o.nome}</Text>
+              <View key={o.id} style={{ backgroundColor: '#fff', borderWidth: 1, borderColor: cores.linha, borderRadius: 9, padding: espaco.s, flexDirection: 'row', alignItems: 'center', gap: espaco.xs }}>
+                {fotoDaOpcao(o.id) ? (
+                  <Image source={{ uri: fotoDaOpcao(o.id) as string }} style={{ width: 22, height: 22, borderRadius: 5 }} accessibilityLabel={o.nome} />
+                ) : (
+                  <Text style={{ fontSize: 15 }}>{emojiOpcao(o.nome)}</Text>
+                )}
+                <Text numberOfLines={1} style={{ fontSize: 13, color: cores.texto, flex: 1 }}>{o.nome}</Text>
                 {o.preco_extra > 0 && <Text style={{ fontSize: 12, color: cores.textoSuave }}>+{formatarKz(o.preco_extra)}</Text>}
               </View>
             ))}
