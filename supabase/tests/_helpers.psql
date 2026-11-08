@@ -122,11 +122,13 @@ declare
   v_cozinha uuid := coalesce(p_cozinha, cozinha_padrao());
 begin
   select id into v from caixa
-   where posto = p_posto and cozinha_id = v_cozinha and data = current_date
+   where posto = p_posto and cozinha_id = v_cozinha and data = testes.hoje()
      and fechamento is null and deletado_em is null
    limit 1;
   if v is null then
-    insert into caixa (posto, cozinha_id, troco_inicial) values (p_posto, v_cozinha, 0) returning id into v;
+    -- Data de Luanda, como abrir_caixa (hoje_luanda); current_date é UTC e entre as 23h e as 24h UTC
+    -- (já o dia seguinte em Luanda) a caixa ficava no dia anterior e o fecho do dia não a via.
+    insert into caixa (posto, cozinha_id, troco_inicial, data) values (p_posto, v_cozinha, 0, testes.hoje()) returning id into v;
   end if;
   return v;
 end $$;

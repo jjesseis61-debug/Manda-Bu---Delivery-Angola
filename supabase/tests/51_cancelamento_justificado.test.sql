@@ -8,7 +8,7 @@ with z as (insert into zonas (nome, tipo, taxa) values ('Talatona', 'Própria', 
 with m as (insert into cardapio (nome, preco) values ('Muamba de galinha', 3500) returning id) select testes.def('muamba', id) from m;
 with m as (insert into cardapio (nome, preco) values ('Sumo', 500) returning id) select testes.def('sumo', id) from m;
 select testes.def('gerente', testes.funcionario('Gerente', array['pedidos.gerir']));
-insert into turnos (data, funcionario_id, cozinha_id) values (current_date, testes.u('gerente'), cozinha_padrao());
+insert into turnos (data, funcionario_id, cozinha_id) values (testes.hoje(), testes.u('gerente'), cozinha_padrao());
 select testes.def('ana', testes.cliente('Ana Sousa'));
 select testes.def('bia', testes.cliente('Bia Neto'));
 select testes.def('casa', testes.ponto('residencial', null, null, testes.u('zona')));
