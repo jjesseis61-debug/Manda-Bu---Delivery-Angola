@@ -13,7 +13,7 @@ import { cores, espaco, raio } from '@/lib/tema';
 import type { ComponentePrato, GrupoOpcoes, ItemCardapio } from '@/lib/tipos';
 
 /** Largura da coluna fixa "O teu prato" (a soma do prato, sempre à vista) */
-const LARGURA_RESUMO = 168;
+const LARGURA_RESUMO = 150;
 
 /**
  * I9. Montar o prato em 2 colunas (modelo Meesho): à esquerda os grupos/opções em rolagem,
@@ -107,26 +107,28 @@ export default function MontarPrato() {
                         opacity: cheio ? 0.45 : 1,
                       }}>
                       {o.foto_url ? (
-                        <Image source={{ uri: o.foto_url }} style={{ width: 40, height: 40, borderRadius: 10 }} accessibilityLabel={o.nome} />
+                        <Image source={{ uri: o.foto_url }} style={{ width: 38, height: 38, borderRadius: 9 }} accessibilityLabel={o.nome} />
                       ) : (
-                        <View style={{ width: 40, height: 40, borderRadius: 10, backgroundColor: cores.fundoSuave, alignItems: 'center', justifyContent: 'center' }}>
+                        <View style={{ width: 38, height: 38, borderRadius: 9, backgroundColor: cores.fundoSuave, alignItems: 'center', justifyContent: 'center' }}>
                           <Text style={{ fontSize: 20 }}>{emojiOpcao(o.nome)}</Text>
                         </View>
                       )}
-                      <Text style={{ flex: 1, fontSize: 15 }}>{o.nome}</Text>
-                      {o.preco_extra > 0 && <Text style={{ color: cores.textoSuave, fontSize: 13 }}>+{formatarKz(o.preco_extra)}</Text>}
+                      <View style={{ flex: 1, gap: 2 }}>
+                        <Text style={{ fontSize: 15 }}>{o.nome}</Text>
+                        {o.preco_extra > 0 && <Text style={{ color: cores.textoSuave, fontSize: 12 }}>+{formatarKz(o.preco_extra)}</Text>}
+                      </View>
                       <View
                         style={{
-                          width: 28,
-                          height: 28,
-                          borderRadius: 14,
+                          width: 26,
+                          height: 26,
+                          borderRadius: 13,
                           borderWidth: 1.5,
                           borderColor: cores.marca,
                           alignItems: 'center',
                           justifyContent: 'center',
                           backgroundColor: marcada ? cores.marca : '#fff',
                         }}>
-                        <Text style={{ color: marcada ? '#fff' : cores.marca, fontSize: 16, fontWeight: '800', lineHeight: 18 }}>{marcada ? '✓' : '+'}</Text>
+                        <Text style={{ color: marcada ? '#fff' : cores.marca, fontSize: 15, fontWeight: '800', lineHeight: 17 }}>{marcada ? '✓' : '+'}</Text>
                       </View>
                     </Pressable>
                   );
