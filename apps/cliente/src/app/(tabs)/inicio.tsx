@@ -59,6 +59,9 @@ export default function Inicio() {
   const [esgotados, setEsgotados] = useState<Set<string>>(new Set());
   /** Pratos montáveis com grupos obrigatórios: preço mais baixo possível ("desde ...") */
   const [desde, setDesde] = useState<Map<string, number>>(new Map());
+  // Herói do montável no topo + barra fixa que aparece quando o herói sai do ecrã ao rolar
+  const [heroiFora, setHeroiFora] = useState(false);
+  const heroiFimY = useRef(0);
   /** Doses que restam hoje (só os pratos em que a cozinha lançou doses) */
   const [doses, setDoses] = useState<Map<string, number>>(new Map());
   const cozinhaId = carrinho.cozinhaActual?.id ?? null;
@@ -179,16 +182,27 @@ export default function Inicio() {
   const categorias = useMemo(() => {
     const grupos = new Map<string, ItemCardapio[]>();
     for (const item of cardapio ?? []) {
+      if (montaveis.has(item.id)) continue; // os montáveis aparecem como herói no topo
       const chave = item.do_dia ? 'Prato do dia' : item.categoria || 'Cardápio';
       grupos.set(chave, [...(grupos.get(chave) ?? []), item]);
     }
     return [...grupos.entries()];
-  }, [cardapio]);
+  }, [cardapio, montaveis]);
+
+  // Montáveis em destaque (herói) e o primeiro servível (para a barra fixa)
+  const herois = (cardapio ?? []).filter((i) => montaveis.has(i.id));
+  const heroiServivel = herois.find((i) => !(esgotados.has(i.id) || doses.get(i.id) === 0));
 
   return (
     <View style={{ flex: 1, backgroundColor: cores.fundo }}>
       <ScrollView
         contentContainerStyle={[estilos.conteudo, { paddingBottom: 120 }]}
+        scrollEventThrottle={16}
+        onScroll={(e) => {
+          const y = e.nativeEvent.contentOffset.y;
+          const fora = heroiFimY.current > 0 && y > heroiFimY.current - 8;
+          setHeroiFora((v) => (v === fora ? v : fora));
+        }}
         refreshControl={
           <RefreshControl
             refreshing={aActualizar}
@@ -231,6 +245,62 @@ export default function Inicio() {
               <Text style={{ color: cores.textoSuave }}>Toca para acompanhar o teu pedido.</Text>
             </View>
           </Pressable>
+        )}
+        {/* Herói: "Serve o teu próprio prato" em destaque no topo (rompe o padrão da lista) */}
+        {ligada('pratos_montaveis') && herois.length > 0 && (
+          <View
+            style={{ gap: espaco.s }}
+            onLayout={(e) => {
+              heroiFimY.current = e.nativeEvent.layout.y + e.nativeEvent.layout.height;
+            }}>
+            {herois.map((item) => {
+              const servivel = !(esgotados.has(item.id) || doses.get(item.id) === 0);
+              return (
+                <Pressable
+                  key={item.id}
+                  accessibilityRole="button"
+                  disabled={!servivel}
+                  onPress={() => router.push({ pathname: '/montar/[id]', params: { id: item.id } })}
+                  style={{ backgroundColor: cores.marcaClara, borderRadius: raio, borderWidth: 1.5, borderColor: cores.marca, overflow: 'hidden' }}>
+                  {item.foto_url ? (
+                    <Image source={{ uri: item.foto_url }} style={{ width: '100%', aspectRatio: 16 / 9 }} accessibilityLabel={item.nome} />
+                  ) : null}
+                  <View style={{ padding: espaco.m, gap: 4 }}>
+                    <Text style={{ color: cores.marca, fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.4 }}>
+                      Serve o teu próprio prato · à tua maneira
+                    </Text>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', gap: espaco.s }}>
+                      <Text style={{ fontSize: 18, fontWeight: '800', color: cores.texto, flex: 1 }}>{item.nome}</Text>
+                      <Text style={{ fontSize: 15, fontWeight: '700', color: cores.texto }}>
+                        {desde.has(item.id) ? `desde ${formatarKz(desde.get(item.id))}` : formatarKz(item.preco)}
+                      </Text>
+                    </View>
+                    {item.descricao ? (
+                      <Text style={{ color: cores.texto }} numberOfLines={2}>{item.descricao}</Text>
+                    ) : null}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: espaco.m, marginTop: 4 }}>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={`Partilhar ${item.nome} no WhatsApp`}
+                        hitSlop={8}
+                        onPress={() => void partilharPrato(item.nome, item.id)}
+                        style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginRight: 'auto' }}>
+                        <Ionicons name="share-social-outline" size={18} color={cores.marca} />
+                        <Text style={{ color: cores.marca, fontWeight: '600' }}>Partilhar</Text>
+                      </Pressable>
+                      {servivel ? (
+                        <View style={{ backgroundColor: cores.marca, borderRadius: 20, paddingHorizontal: espaco.l, paddingVertical: 8 }}>
+                          <Text style={{ color: '#FFFFFF', fontWeight: '800' }}>Servir</Text>
+                        </View>
+                      ) : (
+                        <Text style={{ color: cores.textoSuave, fontWeight: '700' }}>Esgotado</Text>
+                      )}
+                    </View>
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
         )}
         {/* Cartão de selos: frete grátis a cada N pedidos (só com o interruptor 'selos' ligado) */}
         {selos && (
@@ -400,6 +470,30 @@ export default function Inicio() {
           </Cartao>
         )}
       </ScrollView>
+      {/* Barra fixa: reaparece quando o herói sai do ecrã ao rolar (recupera a visibilidade) */}
+      {heroiFora && heroiServivel && (
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push({ pathname: '/montar/[id]', params: { id: heroiServivel.id } })}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            backgroundColor: cores.marca,
+            paddingHorizontal: espaco.l,
+            paddingVertical: espaco.m,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: espaco.s,
+          }}>
+          <Text numberOfLines={1} style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 15, flex: 1 }}>🍽️ Serve o teu próprio prato</Text>
+          <View style={{ backgroundColor: '#FFFFFF', borderRadius: 16, paddingHorizontal: espaco.m, paddingVertical: 4 }}>
+            <Text style={{ color: cores.marca, fontWeight: '800' }}>Servir</Text>
+          </View>
+        </Pressable>
+      )}
       {carrinho.quantidade > 0 && (
         <View style={{ position: 'absolute', left: espaco.l, right: espaco.l, bottom: espaco.l }}>
           <Botao
