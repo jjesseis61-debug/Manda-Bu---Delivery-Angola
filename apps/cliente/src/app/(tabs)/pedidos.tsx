@@ -5,9 +5,8 @@ import { Pressable, Text, View } from 'react-native';
 import { ACarregar, Aviso, Botao, Cartao, Ecra, Paragrafo } from '@/components/ui';
 import { lerPedidos } from '@/lib/api';
 import { rotuloAgendamento } from '@/lib/agendar';
-import { useCarrinho } from '@/lib/carrinho';
 import { corEstadoPedido, formatarKz, mensagemErro, nomeEstadoPedido } from '@/lib/formatar';
-import { montarRepeticao } from '@/lib/repetir';
+import { usePedirDeNovo } from '@/lib/pedirDeNovo';
 import { useSessao } from '@/lib/sessao';
 import { cores } from '@/lib/tema';
 import type { Pedido } from '@/lib/tipos';
@@ -16,7 +15,7 @@ const TERMINADO = ['entregue_pago', 'cancelado', 'estornado'];
 
 export default function Pedidos() {
   const router = useRouter();
-  const carrinho = useCarrinho();
+  const pedirDeNovoNoCarrinho = usePedirDeNovo();
   const { perfil } = useSessao();
   const [pedidos, setPedidos] = useState<Pedido[] | null>(null);
   const [erro, setErro] = useState<string | null>(null);
@@ -34,13 +33,7 @@ export default function Pedidos() {
     setErro(null);
     setARepetir(p.id);
     try {
-      const { linhas, cozinha, faltam } = await montarRepeticao(p.itens);
-      if (linhas.length === 0) {
-        setErro('Os pratos deste pedido já não estão disponíveis.');
-        return;
-      }
-      carrinho.repor(linhas, cozinha);
-      router.push({ pathname: '/carrinho', params: faltam.length > 0 ? { faltam: faltam.join(', ') } : {} });
+      if (!(await pedirDeNovoNoCarrinho(p.itens))) setErro('Os pratos deste pedido já não estão disponíveis.');
     } catch (e) {
       setErro(mensagemErro(e));
     } finally {

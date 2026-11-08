@@ -7,9 +7,8 @@ import { PartilharCodigo } from '@/components/PartilharCodigo';
 import { PessoasComoTu } from '@/components/PessoasComoTu';
 import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Linha, Paragrafo, Subtitulo } from '@/components/ui';
 import { rotuloAgendamento } from '@/lib/agendar';
-import { useCarrinho } from '@/lib/carrinho';
 import { comprovativoPedidoPdf } from '@/lib/comprovativo';
-import { montarRepeticao } from '@/lib/repetir';
+import { usePedirDeNovo } from '@/lib/pedirDeNovo';
 import {
   atrasoDoPedido,
   avaliacaoPermitida,
@@ -31,7 +30,7 @@ export default function PedidoDetalhe() {
   const router = useRouter();
   const { id, fim, saldo, pacote } = useLocalSearchParams<{ id: string; fim?: string; saldo?: string; pacote?: string }>();
   const { ligada, perfil } = useSessao();
-  const carrinho = useCarrinho();
+  const pedirDeNovoNoCarrinho = usePedirDeNovo();
   const [aRepetir, setARepetir] = useState(false);
   const [aGerarPdf, setAGerarPdf] = useState(false);
   const [pedido, setPedido] = useState<Pedido | null>(null);
@@ -105,13 +104,7 @@ export default function PedidoDetalhe() {
     setErro(null);
     setARepetir(true);
     try {
-      const { linhas, cozinha, faltam } = await montarRepeticao(pedido.itens);
-      if (linhas.length === 0) {
-        setErro('Os pratos deste pedido já não estão disponíveis.');
-        return;
-      }
-      carrinho.repor(linhas, cozinha);
-      router.push({ pathname: '/carrinho', params: faltam.length > 0 ? { faltam: faltam.join(', ') } : {} });
+      if (!(await pedirDeNovoNoCarrinho(pedido.itens))) setErro('Os pratos deste pedido já não estão disponíveis.');
     } catch (e) {
       setErro(mensagemErro(e));
     } finally {

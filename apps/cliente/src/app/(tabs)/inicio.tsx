@@ -27,7 +27,7 @@ import { useCarrinho } from '@/lib/carrinho';
 import { corEstadoPedido, formatarKz, mensagemErro, nomeEstadoPedido, textoPediram } from '@/lib/formatar';
 import { gruposEsgotados, precoMinimo } from '@/lib/opcoes';
 import { partilharPrato } from '@/lib/partilha';
-import { montarRepeticao } from '@/lib/repetir';
+import { usePedirDeNovo } from '@/lib/pedirDeNovo';
 import { useSessao } from '@/lib/sessao';
 import { cores, espaco, raio } from '@/lib/tema';
 import type { CozinhaParaPedir, Endereco, ItemCardapio, MediasAvaliacoes, MeusSelos, Pedido } from '@/lib/tipos';
@@ -38,6 +38,7 @@ export default function Inicio() {
   const router = useRouter();
   const { ligada, perfil, parametros } = useSessao();
   const carrinho = useCarrinho();
+  const pedirDeNovoNoCarrinho = usePedirDeNovo();
   const [cardapio, setCardapio] = useState<ItemCardapio[] | null>(null);
   const [enderecos, setEnderecos] = useState<Endereco[]>([]);
   const [contador, setContador] = useState<number | null>(null);
@@ -158,13 +159,7 @@ export default function Inicio() {
     setErro(null);
     setARepetir(true);
     try {
-      const { linhas, cozinha: coz, faltam } = await montarRepeticao(p.itens);
-      if (linhas.length === 0) {
-        setErro('Os pratos desse pedido já não estão disponíveis.');
-        return;
-      }
-      carrinho.repor(linhas, coz);
-      router.push({ pathname: '/carrinho', params: faltam.length > 0 ? { faltam: faltam.join(', ') } : {} });
+      if (!(await pedirDeNovoNoCarrinho(p.itens))) setErro('Os pratos desse pedido já não estão disponíveis.');
     } catch (e) {
       setErro(mensagemErro(e));
     } finally {

@@ -1,11 +1,11 @@
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ACarregar, Aviso, Botao, Ecra, Paragrafo, Subtitulo } from '@/components/ui';
 import { lerComponentes, lerDoses, lerItemCardapio, lerOpcoes } from '@/lib/api';
-import { useCarrinho } from '@/lib/carrinho';
+import { type PendenteMontar, useCarrinho } from '@/lib/carrinho';
 import { formatarKz, mensagemErro } from '@/lib/formatar';
 import { alternar, emojiOpcao, gruposEmFalta, gruposEsgotados, opcoesEscolhidas, precoMontado, regraGrupo } from '@/lib/opcoes';
 import { useSessao } from '@/lib/sessao';
@@ -22,7 +22,7 @@ const LARGURA_RESUMO = 150;
  * O servidor volta a validar e calcula o preço a pagar.
  */
 export default function MontarPrato() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, rever } = useLocalSearchParams<{ id: string; rever?: string }>();
   const router = useRouter();
   const { carregado, ligada } = useSessao();
   const carrinho = useCarrinho();
@@ -33,6 +33,10 @@ export default function MontarPrato() {
   const [tirados, setTirados] = useState<string[]>([]);
   const [semDoses, setSemDoses] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  // "Pedir de novo" de um prato que mudou: chega com rever=1 e o prato pendente à frente da fila
+  const [pendente, setPendente] = useState<PendenteMontar | null>(null);
+  const repeticaoRef = useRef(carrinho.repeticao);
+  repeticaoRef.current = carrinho.repeticao;
 
   useEffect(() => {
     Promise.all([lerItemCardapio(String(id)), lerOpcoes([String(id)]), lerComponentes([String(id)]).catch(() => [])])
@@ -43,12 +47,21 @@ export default function MontarPrato() {
         setComponentes(c.length > 1 ? c : []);
         // Grupos opcionais sem opções disponíveis não aparecem; os obrigatórios ficam para mostrar que esgotaram
         setGrupos(g.filter((x) => x.opcoes.length > 0 || x.minimo > 0));
+        const frente = repeticaoRef.current?.fila[0];
+        const pend = rever === '1' && frente && frente.itemId === String(id) ? frente : null;
+        setPendente(pend);
+        if (pend) {
+          // Volta como estava, só com o que ainda há; o cliente troca o que faltou ou segue sem ele
+          const ids = new Set(g.flatMap((x) => x.opcoes.map((o) => o.id)));
+          setEscolhidas(pend.escolhidas.filter((x) => ids.has(x)));
+          setTirados(c.length > 1 ? pend.tirados.filter((x) => c.some((k) => k.produto_id === x)) : []);
+        }
       })
       .catch((e) => {
         setErro(mensagemErro(e));
         setItem(null);
       });
-  }, [id]);
+  }, [id, rever]);
 
   // Aberto por link: espera pelos interruptores antes de decidir
   if (!carregado) return <ACarregar />;
@@ -64,6 +77,14 @@ export default function MontarPrato() {
   const total = precoMontado(item.preco, opcoes, semEstes);
   const minimo = item.minimo_montavel ?? 0;
   const abaixoMinimo = minimo > 0 && total < minimo;
+
+  /** Fila do "Pedir de novo": passa ao prato seguinte a rever, ou ao carrinho quando acaba */
+  function seguirFila() {
+    const faltamRepeticao = carrinho.repeticao?.faltam ?? [];
+    const seguinte = carrinho.avancarFila();
+    if (seguinte) router.replace({ pathname: '/montar/[id]', params: { id: seguinte.itemId, rever: '1' } });
+    else router.replace({ pathname: '/carrinho', params: faltamRepeticao.length > 0 ? { faltam: faltamRepeticao.join(', ') } : {} });
+  }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: cores.fundo }} edges={['bottom', 'left', 'right']}>
@@ -82,6 +103,13 @@ export default function MontarPrato() {
             <Text style={{ color: cores.marca, fontSize: 13, fontWeight: '600' }}>
               O valor mínimo para servir é {formatarKz(minimo)}.
             </Text>
+          )}
+          {pendente && (
+            <Aviso>
+              {pendente.faltaram.length > 0
+                ? `Do teu pedido anterior já não temos: ${pendente.faltaram.join(', ')}. Escolhe outra opção ou continua sem ela.`
+                : 'Revê o teu prato do pedido anterior: as opções ou o valor mínimo mudaram desde então.'}
+            </Aviso>
           )}
 
           {grupos.map((g) => {
@@ -231,15 +259,27 @@ export default function MontarPrato() {
               <Text style={{ fontSize: 17, fontWeight: '800', color: cores.texto }}>{formatarKz(total)}</Text>
             </View>
             <Botao
-              titulo={esgotados.length > 0 ? 'Esgotado' : `Adicionar · ${formatarKz(total)}`}
+              titulo={
+                esgotados.length > 0
+                  ? 'Esgotado'
+                  : pendente && pendente.qtd > 1
+                    ? `Adicionar ${pendente.qtd}× · ${formatarKz(total * pendente.qtd)}`
+                    : `Adicionar · ${formatarKz(total)}`
+              }
               desactivado={faltam.length > 0 || esgotados.length > 0 || abaixoMinimo}
               aoCarregar={() => {
+                if (pendente) {
+                  carrinho.adicionar(item, opcoes, semEstes, pendente.qtd);
+                  seguirFila();
+                  return;
+                }
                 carrinho.adicionar(item, opcoes, semEstes);
                 // Aberto por link não há ecrã anterior: segue para o início
                 if (router.canGoBack()) router.back();
                 else router.replace('/inicio');
               }}
             />
+            {pendente && <Botao titulo="Tirar este prato do pedido" variante="texto" aoCarregar={seguirFila} />}
           </View>
         </View>
       </View>

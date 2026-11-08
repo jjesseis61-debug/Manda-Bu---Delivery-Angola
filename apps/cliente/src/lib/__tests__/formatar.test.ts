@@ -135,6 +135,10 @@ describe('mensagens de erro', () => {
     expect(mensagemCodigo('sem_compra_propria')).toBe('Para levantar o saldo, faz primeiro um pedido teu (entregue e pago).');
     expect(mensagemErro({ message: 'item_indisponivel' })).toBe('Um dos pratos já não está disponível. Actualiza o carrinho.');
   });
+  it('traduz a recusa do valor mínimo do prato montado (não parece erro de ligação)', () => {
+    expect(mensagemErro(new Error('abaixo_do_minimo'))).toMatch(/valor mínimo/);
+    expect(mensagemErro(new Error('agendamento_invalido'))).toMatch(/20 minutos e 14 dias/);
+  });
   it('tem uma mensagem genérica para erros desconhecidos', () => {
     expect(mensagemErro(new Error('boom'))).toBe('Não foi possível concluir. Verifica a ligação e tenta outra vez.');
   });

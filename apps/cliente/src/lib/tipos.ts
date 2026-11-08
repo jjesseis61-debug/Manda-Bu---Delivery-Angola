@@ -106,6 +106,10 @@ export type ItemOrcamento = {
   qtd: number;
   preco_unitario: number;
   prato_base_id?: string | null;
+  /** Prato montado: as opções escolhidas, tal como o servidor as gravou no pedido */
+  opcoes?: { id: string; nome: string; preco_extra: number }[] | null;
+  /** Ids dos ingredientes que o cliente tirou */
+  componentes_excluidos?: string[] | null;
 };
 
 /** Avaliação na lista pública (C10): sem ids */
