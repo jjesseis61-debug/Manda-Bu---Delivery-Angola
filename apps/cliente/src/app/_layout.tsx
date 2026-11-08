@@ -58,7 +58,7 @@ export default function LayoutRaiz() {
           <Stack.Screen name="grupo/novo" options={{ title: 'Novo pedido de grupo' }} />
           <Stack.Screen name="grupo/[codigo]" options={{ title: 'Pedido de grupo' }} />
           <Stack.Screen name="enderecos/index" options={{ title: 'Endereços' }} />
-          <Stack.Screen name="montar/[id]" options={{ title: 'Montar o prato' }} />
+          <Stack.Screen name="montar/[id]" options={{ title: 'Servir o prato' }} />
           <Stack.Screen name="pacotes" options={{ title: 'Pacote do mês' }} />
           <Stack.Screen name="ajuda" options={{ title: 'Ajuda' }} />
           <Stack.Screen name="contactos" options={{ title: 'Contactos' }} />

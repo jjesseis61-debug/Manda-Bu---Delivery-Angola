@@ -371,7 +371,7 @@ export default function Inicio() {
                             : carrinho.adicionar(item)
                         }
                         style={{ backgroundColor: cores.marcaClara, borderRadius: 20, paddingHorizontal: espaco.l, paddingVertical: 6 }}>
-                        <Text style={{ color: cores.marca, fontWeight: '700' }}>{montaveis.has(item.id) ? 'Montar' : 'Adicionar'}</Text>
+                        <Text style={{ color: cores.marca, fontWeight: '700' }}>{montaveis.has(item.id) ? 'Servir' : 'Adicionar'}</Text>
                       </Pressable>
                     )}
                   </View>

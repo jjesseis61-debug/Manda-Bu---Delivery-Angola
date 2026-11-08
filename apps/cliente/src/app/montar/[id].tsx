@@ -72,7 +72,7 @@ export default function MontarPrato() {
             <Image source={{ uri: item.foto_url }} style={{ width: '100%', aspectRatio: 4 / 3, borderRadius: raio }} accessibilityLabel={item.nome} />
           ) : null}
           <Text style={{ color: cores.marca, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.4 }}>
-            Serve o teu próprio prato
+            À tua maneira
           </Text>
           <Text style={{ fontSize: 22, fontWeight: '700', color: cores.texto }}>{item.nome}</Text>
           {item.descricao && <Paragrafo suave>{item.descricao}</Paragrafo>}
