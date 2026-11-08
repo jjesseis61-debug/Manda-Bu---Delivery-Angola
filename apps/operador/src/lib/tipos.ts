@@ -353,7 +353,7 @@ export type PedidoOperador = {
   cozinha_id: string;
   cliente_nome: string;
   cliente_telefone: string | null;
-  itens: { nome: string; qtd: number; preco_unitario: number }[];
+  itens: { nome: string; qtd: number; preco_unitario: number; opcoes?: { nome: string }[] | null; componentes_excluidos?: string[] | null }[];
   subtotal: number;
   taxa_entrega: number;
   desconto_indicacao: number;

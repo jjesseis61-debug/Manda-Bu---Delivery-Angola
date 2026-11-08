@@ -31,6 +31,16 @@ export async function exportarPdf(html: string) {
   await Sharing.shareAsync(uri, { mimeType: 'application/pdf', UTI: 'com.adobe.pdf' });
 }
 
+/** Imprime um talão: abre a janela de impressão do sistema (impressora Wi-Fi, de talões via serviço de impressão, ou guardar em PDF) */
+export async function imprimirHtml(html: string) {
+  try {
+    await Print.printAsync({ html });
+  } catch (e) {
+    // Cancelar a impressão não é um erro para o operador
+    if (!/did not complete|cancel/i.test(String((e as Error)?.message ?? e))) throw e;
+  }
+}
+
 export function escaparHtml(texto: string): string {
   return texto.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string);
 }

@@ -7,10 +7,12 @@ import { Guarda } from '@/components/Guarda';
 import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Escolha, Paragrafo, Subtitulo } from '@/components/ui';
 import { alertasAbertos, atribuirEntrega, caixasAbertas, estafetasParaAtribuir, informarAtraso, lerCozinhas, marcarPagadorDistinto, mudarEstado, pedidosAgendados, pedidosOperador, recusarEntrega } from '@/lib/api';
 import { formatarData, formatarDia, formatarKz, mensagemErro, nomeEstadoPedido } from '@/lib/formatar';
+import { imprimirHtml } from '@/lib/exportar';
 import { enviarComprovativo, escolherFoto } from '@/lib/fotos';
 import { usePartilharLocalizacao } from '@/lib/partilharLocalizacao';
 import { guardarModoEstafeta, lerModoEstafeta, modoEstafetaInicial } from '@/lib/preferencias';
 import { useSessao } from '@/lib/sessao';
+import { htmlTalaoCozinha, htmlTalaoEntrega } from '@/lib/talao';
 import { cores, espaco } from '@/lib/tema';
 import type { AlertaPedido, Caixa, Cozinha, EstafetaAtribuir, PedidoAgendado, PedidoOperador } from '@/lib/tipos';
 
@@ -62,6 +64,12 @@ export default function Entregas() {
   const [pedidos, setPedidos] = useState<PedidoOperador[] | null>(null);
   const [caixas, setCaixas] = useState<Caixa[]>([]);
   const [erro, setErro] = useState<string | null>(null);
+
+  /** Talão da cozinha ou de entrega: abre a janela de impressão do sistema */
+  function imprimir(html: string) {
+    setErro(null);
+    imprimirHtml(html).catch((e) => setErro(mensagemErro(e)));
+  }
   const [accao, setAccao] = useState<Accao | null>(null);
   const [estafetas, setEstafetas] = useState<EstafetaAtribuir[]>([]);
   const [cancelar, setCancelar] = useState({ motivo: '', outro: '' });
@@ -457,6 +465,12 @@ export default function Entregas() {
               <Botao titulo="Acompanhar no mapa 🛵" variante="leve" aoCarregar={() => setAcompanhar(p.pedido_id)} />
             )}
             {p.estado === 'em_entrega' && (gerir || entregar) && <Botao titulo="Entregue e pago…" aoCarregar={() => abrirEntrega(p)} />}
+            {gerir && !modoEstafeta && p.estado !== 'cancelado' && (
+              <Botao titulo="🖨 Imprimir talão da cozinha" variante="texto" aoCarregar={() => imprimir(htmlTalaoCozinha(p))} />
+            )}
+            {(gerir || entregar) && p.estado !== 'cancelado' && (
+              <Botao titulo="🖨 Imprimir talão de entrega" variante="texto" aoCarregar={() => imprimir(htmlTalaoEntrega(p))} />
+            )}
             {(gerir || (entregar && p.estado === 'em_entrega')) && (
               <Botao
                 titulo="Avisar cliente do atraso…"
