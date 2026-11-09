@@ -31,13 +31,35 @@ export async function exportarPdf(html: string) {
   await Sharing.shareAsync(uri, { mimeType: 'application/pdf', UTI: 'com.adobe.pdf' });
 }
 
-/** Imprime um talão: abre a janela de impressão do sistema (impressora Wi-Fi, de talões via serviço de impressão, ou guardar em PDF) */
+/**
+ * Imprime um talão. No Android há três degraus, para nunca ficar sem saída:
+ * 1) gera o PDF do talão; 2) manda-o para a janela de impressão do sistema (impressora Wi-Fi,
+ * de talões via serviço de impressão, ou "Guardar como PDF"); 3) se a impressão directa falhar,
+ * abre "Partilhar" com o PDF (RawBT, outra app de impressão, WhatsApp).
+ * Se tudo falhar, lança um erro com o motivo real (não o genérico "verifica a ligação").
+ */
 export async function imprimirHtml(html: string) {
-  try {
+  const cancelou = (e: unknown) => /did not complete|cancel/i.test(String((e as Error)?.message ?? e));
+  if (Platform.OS === 'web') {
     await Print.printAsync({ html });
+    return;
+  }
+  let uri: string;
+  try {
+    ({ uri } = await Print.printToFileAsync({ html }));
   } catch (e) {
-    // Cancelar a impressão não é um erro para o operador
-    if (!/did not complete|cancel/i.test(String((e as Error)?.message ?? e))) throw e;
+    throw new Error(`Não foi possível preparar o talão: ${String((e as Error)?.message ?? e)}`);
+  }
+  try {
+    await Print.printAsync({ uri });
+    return;
+  } catch (e) {
+    if (cancelou(e)) return; // cancelar a impressão não é um erro
+    if (await Sharing.isAvailableAsync()) {
+      await Sharing.shareAsync(uri, { mimeType: 'application/pdf', UTI: 'com.adobe.pdf', dialogTitle: 'Imprimir talão' });
+      return;
+    }
+    throw new Error(`Não foi possível imprimir: ${String((e as Error)?.message ?? e)}`);
   }
 }
 

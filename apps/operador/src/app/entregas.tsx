@@ -68,7 +68,8 @@ export default function Entregas() {
   /** Talão da cozinha ou de entrega: abre a janela de impressão do sistema */
   function imprimir(html: string) {
     setErro(null);
-    imprimirHtml(html).catch((e) => setErro(mensagemErro(e)));
+    // Mostra o motivo real: a impressão não é um pedido ao servidor, o texto genérico enganava
+    imprimirHtml(html).catch((e) => setErro(String((e as Error)?.message ?? e)));
   }
   const [accao, setAccao] = useState<Accao | null>(null);
   const [estafetas, setEstafetas] = useState<EstafetaAtribuir[]>([]);
