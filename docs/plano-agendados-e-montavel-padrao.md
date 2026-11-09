@@ -112,8 +112,16 @@ atribuir estafeta antecipadamente · avisar o cliente (lembrete) · cancelar com
 
 ---
 
-## Perguntas em aberto
-1. O montável clonado nasce **desactivado** (recomendado) ou já activo?
-2. O modelo é **sempre o da Viana**, ou o admin escolhe qual é o modelo?
-3. Criar já o montável nas **9 cozinhas existentes** sem ele, ou só nas novas?
-4. Nos agendados: a partir de quantas horas antes um pendente deve gerar alerta?
+## Decisões (dono do produto, 09/11/2026)
+1. **O montável clonado nasce desactivado** (rascunho) — a cozinha revê e activa.
+2. **O administrador escolhe o prato modelo** (ecrã de parâmetros/cardápio do admin);
+   enquanto não escolher, usa-se o "Serve o teu próprio prato" da Viana.
+3. **Criar também nas 9 cozinhas existentes** sem montável (acção única, aplicada à
+   produção com autorização no momento da implementação), além das cozinhas novas.
+4. **Alerta de agendado por confirmar** (recomendação adoptada):
+   - **3 h antes** da hora agendada, se o pedido ainda estiver **pendente**;
+   - se as 3 h caírem **fora do turno** da cozinha (parâmetros `turno_hora_inicio`/`fim`,
+     hoje 9h–23h), o alerta sai **no início do turno** (ex.: entrega às 10h → alerta às 9h);
+   - agendado feito com **menos de 3 h** de antecedência → alerta **imediato**;
+   - alerta **urgente** quando entra na fila (90 min antes) e continua pendente;
+   - as 3 h ficam num **parâmetro editável** (`alerta_agendado_horas`, por defeito 3).
