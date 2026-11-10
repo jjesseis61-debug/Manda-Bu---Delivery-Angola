@@ -1,0 +1,49 @@
+"$schema" = "https://open-api.netlify.com/netlify.schema.json"
+
+# PWA da app do CLIENTE (Expo web). Operador e estafeta continuam em APK.
+[build]
+  base = "apps/cliente"
+  command = "npm run build:web"
+  publish = "dist"
+
+# Valores PÚBLICOS da app (os mesmos dos APKs, em .github/workflows/apk.yml):
+# a chave publicável do Supabase vai sempre no código do cliente; a segurança está no RLS
+# e nas funções do servidor. Segredos verdadeiros NUNCA vão para variáveis EXPO_PUBLIC_.
+[build.environment]
+  NODE_VERSION = "22"
+  EXPO_PUBLIC_SUPABASE_URL = "https://laruvuambdovnkojwrzp.supabase.co"
+  EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_VoD7AGU0YCNyTJjiNmwJ-Q_FaRL1-aM"
+  EXPO_PUBLIC_CONTACTO_TELEFONE = "958077592"
+  EXPO_PUBLIC_CONTACTO_WHATSAPP = "958077592"
+
+# App de página única: qualquer endereço (ex.: /convite/ABC, /pedido/123) abre a app,
+# que trata da rota. Ficheiros que existem (JS, ícones, sw.js) são servidos antes desta regra.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# JS e imagens com hash no nome nunca mudam: cache longa
+[[headers]]
+  for = "/_expo/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Service worker e manifesto: sempre a versão mais recente
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Cache-Control = "no-cache"
+    Content-Type = "application/manifest+json"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    X-Frame-Options = "DENY"
+    Permissions-Policy = "geolocation=(self), camera=(self), microphone=()"

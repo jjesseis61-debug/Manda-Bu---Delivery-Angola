@@ -1,0 +1,17 @@
+{
+  "name": "Cozinha da Alexandra — entregue por Manda Bué",
+  "short_name": "Cozinha da Alexandra",
+  "description": "Comida de casa, entregue quente. Pede a tua refeição e acompanha a entrega.",
+  "lang": "pt-AO",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FFFFFF",
+  "theme_color": "#B5121B",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

@@ -46,7 +46,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
-    "test": "jest"
+    "test": "jest",
+    "build:web": "expo export --platform web && node scripts/pwa.mjs dist"
   },
   "private": true,
   "jest": {
