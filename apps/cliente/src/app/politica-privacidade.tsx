@@ -26,7 +26,8 @@ export default function PoliticaPrivacidade() {
       </Paragrafo>
       <Paragrafo>
         Os endereços de entrega que gravas, com o ponto que marcas no mapa. Só usamos a localização do telemóvel
-        quando carregas em &quot;Usar a minha localização&quot;, e só para marcar esse ponto.
+        quando carregas em &quot;Usar a minha localização&quot;, e só para marcar esse ponto. Se procurares a
+        morada pelo nome da rua ou do bairro, só esse texto é enviado a um serviço de mapas (OpenStreetMap).
       </Paragrafo>
       <Paragrafo>
         Os teus pedidos, pagamentos, convites e ganhos do Convida e Ganha, as avaliações e fotos que envias, e um

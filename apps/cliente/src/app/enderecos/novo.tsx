@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Text } from 'react-native';
 
 import { MapaPin, type Coordenadas } from '@/components/MapaPin';
+import { PesquisaMorada } from '@/components/PesquisaMorada';
 import { Aviso, Botao, Campo, Cartao, Ecra, Escolha, Paragrafo, Subtitulo } from '@/components/ui';
 import { criarEndereco, lerEnderecos, lerZonas, pontosProximos, type PontoProximo } from '@/lib/api';
 import { mensagemErro } from '@/lib/formatar';
@@ -33,6 +34,7 @@ export default function NovoEndereco() {
   const [erro, setErro] = useState<string | null>(null);
   const [aGuardar, setAGuardar] = useState(false);
   const [aLocalizar, setALocalizar] = useState(false);
+  const [pesquisado, setPesquisado] = useState(false);
 
   useEffect(() => {
     lerZonas()
@@ -135,6 +137,20 @@ export default function NovoEndereco() {
 
   return (
     <Ecra>
+      <PesquisaMorada
+        zonas={zonas}
+        perto={marcado ? { lat: ponto.latitude, lng: ponto.longitude } : undefined}
+        aoEscolher={(r) => {
+          const p = { latitude: r.lat, longitude: r.lng };
+          setPonto(p);
+          setCentrarEm(p);
+          setMarcado(true);
+          setPesquisado(true);
+          // Escolheu um bairro onde entregamos: fica já seleccionado
+          if (r.zonaId) setZonaId(r.zonaId);
+        }}
+      />
+      {pesquisado && <Paragrafo suave>Confirma o pino: arrasta-o ou toca no mapa na porta exacta.</Paragrafo>}
       <MapaPin
         ponto={ponto}
         centrarEm={centrarEm}

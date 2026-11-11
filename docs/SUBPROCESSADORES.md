@@ -19,6 +19,9 @@
 | Alojamento + base de dados | **Supabase** (projeto `laruvuambdovnkojwrzp`) | Conta, pedidos, pagamentos, endereços, avaliações, auditoria | Acesso restrito por RLS (cada utilizador só vê os seus dados) e por permissões da equipa |
 | Notificações push | **Expo** (serviço de envio) → **Google FCM** (Android) e **Apple APNs** (iOS) | Token do dispositivo e conteúdo da notificação | A Expo é o intermediário; a entrega final é da Google/Apple. O push não leva o código OTP |
 | SMS / código de login (OTP) | **Nenhum fornecedor externo** no momento | Código de uso único | O OTP é **manual** (o operador entrega o código ao cliente). Atualizar esta linha se ligarem um provedor (ex.: Twilio, Africell) no painel do Supabase |
+| Notificações push na web (PWA) | Serviço de push do **navegador** (Google para o Chrome, Apple para o Safari, Mozilla para o Firefox) | Assinatura do navegador e conteúdo do aviso (cifrado) | Só para quem toca em «Ligar avisos» na versão web |
+| Mapa (imagens do mapa) | **OpenFreeMap** (OpenStreetMap) | Zona do mapa a mostrar (como qualquer mapa) | Sem conta nem chave; não recebe dados da conta |
+| Pesquisa de morada | **Photon** (komoot, dados OpenStreetMap) | Só o texto pesquisado (ex.: nome da rua) | Sem conta nem chave; não envia nome, telefone nem a conta |
 | Distribuição da app | **Google Play** (e Apple App Store, se publicarem no iOS) | Instalação e atualizações | Dados de conta de programador/loja geridos pelas próprias plataformas |
 
 ## Dados e retenção
