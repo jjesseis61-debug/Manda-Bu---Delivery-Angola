@@ -8,6 +8,20 @@ jest.mock('@/lib/api', () => ({
   lerCozinhas: jest.fn(),
   relatorioComparativo: jest.fn(),
   relatorioCozinhaDetalhado: jest.fn(),
+  temposEtapasCozinha: jest.fn().mockResolvedValue({
+    pedidos: 2, agendados_fora: 0,
+    etapas: [
+      { chave: 'confirmar', nome: 'Confirmar o pedido', n: 2, mediana: 3, p90: 4 },
+      { chave: 'comecar', nome: 'Começar a preparar', n: 2, mediana: 7, p90: 8 },
+      { chave: 'preparar', nome: 'Preparar e esperar estafeta', n: 2, mediana: 15, p90: 19 },
+      { chave: 'entregar', nome: 'Entrega (caminho)', n: 2, mediana: 14, p90: 19.2 },
+      { chave: 'total', nome: 'Total: pedido → entregue', n: 2, mediana: 39, p90: 47.8 },
+    ],
+    gargalo: 'preparar',
+    pontualidade: { com_hora: 2, a_tempo: 1, atrasados: 1, atraso_mediano: 5 },
+    por_hora: [], estafetas: [{ nome: 'Zé', entregas: 2, entrega_mediana: 14, atrasados: 1 }],
+    mais_lentos: [{ pedido_id: 'abcdef123', criado_em: '2026-11-11T12:00:00Z', total: 50, etapa: 'preparar' }],
+  }),
   rentabilidadeCozinha: jest.fn().mockResolvedValue({
     vendas_comida: 6000, cmv: 3600, cobertura_pct: 100, cmv_pct: 60, margem_bruta: 2400, despesas: 1000,
     despesas_por_categoria: [{ categoria: 'Gás', valor: 1000 }], compras: 0, a_receber_cozinha: 5400, resultado: 800,
@@ -52,4 +66,9 @@ test('gera o relatório de hoje com o valor a receber e abre as secções', asyn
   expect(ecra.getByText(/acima da referência/)).toBeTruthy();
   fireEvent.press(ecra.getByText(/Doses: esgotados e sobras/));
   expect(ecra.getByText(/em média às 13:20/)).toBeTruthy();
+  fireEvent.press(ecra.getByText(/Tempo de cada etapa/));
+  expect(ecra.getByText('Preparar e esperar estafeta ⚠️')).toBeTruthy();
+  expect(ecra.getByText('15 min · piores 19 min')).toBeTruthy();
+  expect(ecra.getByText(/adianta as bases antes do pico/)).toBeTruthy();
+  expect(ecra.getByText(/1 de 2 · atraso normal 5 min/)).toBeTruthy();
 });

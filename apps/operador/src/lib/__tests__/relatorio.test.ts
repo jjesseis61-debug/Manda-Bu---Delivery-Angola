@@ -88,3 +88,34 @@ test('CSV e PDF levam a rentabilidade e as doses quando existem', () => {
   expect(html).toContain('Rentabilidade');
   expect(html).toContain('1 de 2 dias');
 });
+
+describe('tempos por etapa', () => {
+  const { duracao, conselhoEtapa, pesoEtapas, nomeEtapa } = jest.requireActual('../relatorio') as typeof import('../relatorio');
+  it('duracao em s, min e h', () => {
+    expect(duracao(null)).toBe('—');
+    expect(duracao(0.5)).toBe('30 s');
+    expect(duracao(14.4)).toBe('14 min');
+    expect(duracao(65)).toBe('1 h 05');
+  });
+  it('conselho e nome da etapa que mais pesa', () => {
+    expect(conselhoEtapa('confirmar')).toMatch(/confirmar logo/);
+    expect(conselhoEtapa(null)).toBeNull();
+    expect(nomeEtapa('entregar')).toBe('caminho da entrega');
+  });
+  it('peso de cada etapa sem contar o total', () => {
+    const t = {
+      pedidos: 1, agendados_fora: 0, gargalo: 'preparar' as const,
+      pontualidade: { com_hora: 0, a_tempo: 0, atrasados: 0, atraso_mediano: null }, por_hora: [], estafetas: [], mais_lentos: [],
+      etapas: [
+        { chave: 'confirmar' as const, nome: '', n: 1, mediana: 2, p90: 2 },
+        { chave: 'comecar' as const, nome: '', n: 1, mediana: 2, p90: 2 },
+        { chave: 'preparar' as const, nome: '', n: 1, mediana: 12, p90: 12 },
+        { chave: 'entregar' as const, nome: '', n: 1, mediana: 4, p90: 4 },
+        { chave: 'total' as const, nome: '', n: 1, mediana: 20, p90: 20 },
+      ],
+    };
+    expect(pesoEtapas(t)).toEqual([
+      { chave: 'confirmar', pct: 10 }, { chave: 'comecar', pct: 10 }, { chave: 'preparar', pct: 60 }, { chave: 'entregar', pct: 20 },
+    ]);
+  });
+});

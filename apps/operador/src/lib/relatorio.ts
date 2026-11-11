@@ -108,6 +108,59 @@ export function avaliarCmv(pct: number | null): 'bom' | 'atencao' | 'alto' | nul
   return 'alto';
 }
 
+/** Tempo de cada etapa do pedido (mediana = o normal; p90 = os 10% piores), em minutos */
+export type ChaveEtapa = 'confirmar' | 'comecar' | 'preparar' | 'entregar' | 'total';
+export type TemposEtapas = {
+  pedidos: number;
+  agendados_fora: number;
+  etapas: { chave: ChaveEtapa; nome: string; n: number; mediana: number | null; p90: number | null }[];
+  gargalo: Exclude<ChaveEtapa, 'total'> | null;
+  pontualidade: { com_hora: number; a_tempo: number; atrasados: number; atraso_mediano: number | null };
+  por_hora: { hora: string; pedidos: number; total_mediana: number | null; atrasados: number }[];
+  estafetas: { nome: string; entregas: number; entrega_mediana: number | null; atrasados: number }[];
+  mais_lentos: { pedido_id: string; criado_em: string; total: number; etapa: Exclude<ChaveEtapa, 'total'> | null }[];
+};
+
+/** "8 min", "1 h 05", "45 s" */
+export function duracao(min: number | null | undefined): string {
+  if (min === null || min === undefined) return '—';
+  if (min < 1) return `${Math.round(min * 60)} s`;
+  if (min < 60) return `${Math.round(min)} min`;
+  const h = Math.floor(min / 60);
+  return `${h} h ${String(Math.round(min - h * 60)).padStart(2, '0')}`;
+}
+
+const NOME_ETAPA: Record<Exclude<ChaveEtapa, 'total'>, string> = {
+  confirmar: 'confirmar o pedido',
+  comecar: 'começar a preparar',
+  preparar: 'preparar e esperar estafeta',
+  entregar: 'caminho da entrega',
+};
+export const nomeEtapa = (c: Exclude<ChaveEtapa, 'total'> | null) => (c ? NOME_ETAPA[c] : '—');
+
+/** O que fazer quando a etapa que mais pesa é esta */
+export function conselhoEtapa(c: Exclude<ChaveEtapa, 'total'> | null): string | null {
+  switch (c) {
+    case 'confirmar':
+      return 'Os pedidos ficam à espera de confirmação: alguém no balcão deve confirmar logo que o aviso toca.';
+    case 'comecar':
+      return 'Entre confirmar e começar há espera: começa a preparar logo após confirmar, ou adianta as bases antes do pico.';
+    case 'preparar':
+      return 'A preparação (com a espera pelo estafeta) é o que mais demora: adianta as bases antes do pico e reserva o estafeta mais cedo.';
+    case 'entregar':
+      return 'O caminho é o que mais demora: agrupa entregas da mesma zona ou revê as zonas mais longe.';
+    default:
+      return null;
+  }
+}
+
+/** Percentagem de cada etapa no tempo normal (para as barras) */
+export function pesoEtapas(t: TemposEtapas): { chave: ChaveEtapa; pct: number }[] {
+  const partes = t.etapas.filter((e) => e.chave !== 'total');
+  const soma = partes.reduce((s, e) => s + (e.mediana ?? 0), 0);
+  return partes.map((e) => ({ chave: e.chave, pct: soma > 0 ? Math.round(((e.mediana ?? 0) / soma) * 100) : 0 }));
+}
+
 export type PeriodoRel = 'hoje' | 'ontem' | '7' | 'mes' | 'mes_anterior' | 'datas';
 
 /** Datas (de, até) de cada atalho no dia de Luanda; "datas" valida as escritas (máx. 366 dias) */
@@ -178,8 +231,17 @@ export function indicadores(r: RelatorioDetalhado): { rotulo: string; valor: str
 type Celula = string | number | null;
 
 /** Linhas do CSV (Excel): resumo, por dia, por prato, pagamentos, zonas (+ rentabilidade e doses) */
-export function linhasCsvRelatorio(r: RelatorioDetalhado, rent?: Rentabilidade | null): Celula[][] {
+export function linhasCsvRelatorio(r: RelatorioDetalhado, rent?: Rentabilidade | null, tempos?: TemposEtapas | null): Celula[][] {
   const a = r.resumo;
+  const extraTempos: Celula[][] = tempos
+    ? [
+        [],
+        ['Etapa', 'Normal (min)', 'Os 10% piores (min)', 'Pedidos'],
+        ...tempos.etapas.map((e) => [e.nome, e.mediana, e.p90, e.n]),
+        ['Entregues a tempo', tempos.pontualidade.a_tempo, '', tempos.pontualidade.com_hora],
+        ['Atraso normal (min)', tempos.pontualidade.atraso_mediano],
+      ]
+    : [];
   const extra: Celula[][] = rent
     ? [
         [],
@@ -233,6 +295,7 @@ export function linhasCsvRelatorio(r: RelatorioDetalhado, rent?: Rentabilidade |
     ['Zona', 'Pedidos', 'Vendas (Kz)'],
     ...r.zonas.map((z) => [z.zona, z.pedidos, z.vendas]),
     ...extra,
+    ...extraTempos,
   ];
 }
 
@@ -244,7 +307,13 @@ function tabela(cab: string[], linhas: Celula[][]): string {
 }
 
 /** PDF pronto a imprimir ou enviar: só as secções com dados, sem telefones de clientes */
-export function htmlRelatorio(r: RelatorioDetalhado, geradoPor: string, agora: Date, rent?: Rentabilidade | null): string {
+export function htmlRelatorio(
+  r: RelatorioDetalhado,
+  geradoPor: string,
+  agora: Date,
+  rent?: Rentabilidade | null,
+  tempos?: TemposEtapas | null,
+): string {
   const ind = indicadores(r).map((i) => [i.rotulo, i.valor, i.variacao]);
   const sec = (titulo: string, corpo: string) => `<h2>${escaparHtml(titulo)}</h2>${corpo}`;
   const partes = [
@@ -254,6 +323,13 @@ export function htmlRelatorio(r: RelatorioDetalhado, geradoPor: string, agora: D
     r.pratos.length ? sec('Pratos', tabela(['Prato', 'Qtd', 'Receita', '%'], r.pratos.map((p) => [p.nome, p.qtd, formatarKz(p.receita), pct(p.pct)]))) : '',
     r.opcoes_montados.length ? sec('Opções mais escolhidas (montados)', tabela(['Opção', 'Qtd'], r.opcoes_montados.map((o) => [o.nome, o.qtd]))) : '',
     r.pagamentos.length ? sec('Pagamentos', tabela(['Forma', 'Pedidos', 'Valor'], r.pagamentos.map((p) => [p.metodo, p.pedidos, formatarKz(p.valor)]))) : '',
+    tempos && tempos.pedidos > 0
+      ? sec(
+          'Tempo de cada etapa',
+          tabela(['Etapa', 'Normal', 'Os 10% piores'], tempos.etapas.map((e) => [e.nome, duracao(e.mediana), duracao(e.p90)])) +
+            `<p class="suave">Onde se perde mais tempo: ${escaparHtml(nomeEtapa(tempos.gargalo))}. A tempo: ${tempos.pontualidade.a_tempo} de ${tempos.pontualidade.com_hora}.</p>`,
+        )
+      : '',
     r.cancelamentos_motivos.length ? sec('Cancelamentos', tabela(['Motivo', 'N.º'], r.cancelamentos_motivos.map((c) => [c.motivo, c.n]))) : '',
     r.estafetas.length ? sec('Estafetas', tabela(['Estafeta', 'Entregas', 'A horas'], r.estafetas.map((e) => [e.nome, e.entregas, pct(e.a_horas_pct)]))) : '',
     r.zonas.length ? sec('Zonas', tabela(['Zona', 'Pedidos', 'Vendas'], r.zonas.map((z) => [z.zona, z.pedidos, formatarKz(z.vendas)]))) : '',

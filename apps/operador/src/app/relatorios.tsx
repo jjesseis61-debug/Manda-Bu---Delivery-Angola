@@ -4,20 +4,25 @@ import { Pressable, Text, View } from 'react-native';
 
 import { Guarda } from '@/components/Guarda';
 import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Escolha, Linha, Paragrafo } from '@/components/ui';
-import { lerCozinhas, relatorioComparativo, relatorioCozinhaDetalhado, rentabilidadeCozinha } from '@/lib/api';
+import { lerCozinhas, relatorioComparativo, relatorioCozinhaDetalhado, rentabilidadeCozinha, temposEtapasCozinha } from '@/lib/api';
 import { escaparHtml, exportarCsv, exportarPdf } from '@/lib/exportar';
 import { formatarDia, formatarKz, mensagemErro, paraCsv } from '@/lib/formatar';
 import {
   avaliarCmv,
+  conselhoEtapa,
+  duracao,
   htmlRelatorio,
   indicadores,
   linhasCsvRelatorio,
   nomeDiaSemana,
+  nomeEtapa,
+  pesoEtapas,
   periodoRel,
   quemPagaConvida,
   type PeriodoRel,
   type RelatorioDetalhado,
   type Rentabilidade,
+  type TemposEtapas,
 } from '@/lib/relatorio';
 import { useRouter } from 'expo-router';
 import { useSessao } from '@/lib/sessao';
@@ -78,6 +83,7 @@ export default function Relatorios() {
   const [ate, setAte] = useState('');
   const [rel, setRel] = useState<RelatorioDetalhado | null>(null);
   const [rent, setRent] = useState<Rentabilidade | null>(null);
+  const [tempos, setTempos] = useState<TemposEtapas | null>(null);
   const router = useRouter();
   const [comp, setComp] = useState<LinhaComparativo[] | null>(null);
   const [erro, setErro] = useState<string | null>(null);
@@ -100,6 +106,7 @@ export default function Relatorios() {
 
   function limpar() {
     setRent(null);
+    setTempos(null);
     setRel(null);
     setComp(null);
   }
@@ -111,12 +118,14 @@ export default function Relatorios() {
     try {
       if (cozinhaId === COMPARAR) setComp(await relatorioComparativo(inicio, fim));
       else {
-        const [r, rt] = await Promise.all([
+        const [r, rt, tp] = await Promise.all([
           relatorioCozinhaDetalhado(cozinhaId, inicio, fim),
           rentabilidadeCozinha(cozinhaId, inicio, fim).catch(() => null),
+          temposEtapasCozinha(cozinhaId, inicio, fim).catch(() => null),
         ]);
         setRel(r);
         setRent(rt);
+        setTempos(tp);
       }
     } catch (e) {
       setErro(mensagemErro(e));
@@ -128,8 +137,8 @@ export default function Relatorios() {
   async function exportar(tipo: 'csv' | 'pdf') {
     if (!rel) return;
     try {
-      if (tipo === 'csv') await exportarCsv(`relatorio-${rel.inicio}-${rel.fim}.csv`, paraCsv(linhasCsvRelatorio(rel, rent)));
-      else await exportarPdf(htmlRelatorio(rel, funcionario?.nome ?? 'operador', new Date(), rent));
+      if (tipo === 'csv') await exportarCsv(`relatorio-${rel.inicio}-${rel.fim}.csv`, paraCsv(linhasCsvRelatorio(rel, rent, tempos)));
+      else await exportarPdf(htmlRelatorio(rel, funcionario?.nome ?? 'operador', new Date(), rent, tempos));
     } catch (e) {
       setErro(mensagemErro(e));
     }
@@ -329,6 +338,71 @@ export default function Relatorios() {
               ))}
               {rent && rent.doses.some((d) => d.dias_esgotou > 0) && (
                 <Paragrafo suave>Esgotar cedo pode ser venda perdida: considera lançar mais doses nesses pratos.</Paragrafo>
+              )}
+            </Seccao>
+
+            <Seccao titulo="Tempo de cada etapa">
+              {(!tempos || tempos.pedidos === 0) && (
+                <Paragrafo suave>Sem pedidos entregues no período (os agendados não contam: esperam de propósito).</Paragrafo>
+              )}
+              {tempos && tempos.pedidos > 0 && (
+                <>
+                  <Paragrafo suave>{`${tempos.pedidos} pedido(s) entregue(s). "Normal" é o tempo de metade dos pedidos; "piores" é o dos 10% mais lentos.`}</Paragrafo>
+                  {tempos.etapas.map((e) => {
+                    const peso = pesoEtapas(tempos).find((x) => x.chave === e.chave);
+                    const total = e.chave === 'total';
+                    return (
+                      <View key={e.chave} style={{ gap: 2 }}>
+                        <Linha
+                          esquerda={total ? e.nome : `${e.nome}${e.chave === tempos.gargalo ? ' ⚠️' : ''}`}
+                          direita={`${duracao(e.mediana)} · piores ${duracao(e.p90)}`}
+                        />
+                        {!total && peso && (
+                          <View style={{ height: 6, backgroundColor: cores.linha, borderRadius: 3, overflow: 'hidden' }}>
+                            <View
+                              style={{
+                                width: `${peso.pct}%`,
+                                height: 6,
+                                backgroundColor: e.chave === tempos.gargalo ? cores.marca : cores.textoSuave,
+                              }}
+                            />
+                          </View>
+                        )}
+                      </View>
+                    );
+                  })}
+                  {conselhoEtapa(tempos.gargalo) && <Aviso>{conselhoEtapa(tempos.gargalo)!}</Aviso>}
+                  <Linha
+                    esquerda="Entregues a tempo"
+                    direita={`${tempos.pontualidade.a_tempo} de ${tempos.pontualidade.com_hora}${
+                      tempos.pontualidade.atrasados > 0 ? ` · atraso normal ${duracao(tempos.pontualidade.atraso_mediano)}` : ''
+                    }`}
+                  />
+                  {tempos.por_hora.length > 1 && <Text style={{ fontWeight: '700', color: cores.texto }}>Por hora do pedido</Text>}
+                  {tempos.por_hora.length > 1 &&
+                    tempos.por_hora.map((h) => (
+                      <Linha
+                        key={h.hora}
+                        esquerda={`${h.hora}h · ${h.pedidos} pedido(s)`}
+                        direita={`${duracao(h.total_mediana)}${h.atrasados > 0 ? ` · ${h.atrasados} atrasado(s)` : ''}`}
+                      />
+                    ))}
+                  {tempos.estafetas.length > 0 && <Text style={{ fontWeight: '700', color: cores.texto }}>Caminho por estafeta</Text>}
+                  {tempos.estafetas.map((e) => (
+                    <Linha key={e.nome} esquerda={`${e.nome} · ${e.entregas}`} direita={duracao(e.entrega_mediana)} />
+                  ))}
+                  {tempos.mais_lentos.length > 0 && <Text style={{ fontWeight: '700', color: cores.texto }}>Pedidos mais lentos</Text>}
+                  {tempos.mais_lentos.map((l) => (
+                    <Linha
+                      key={l.pedido_id}
+                      esquerda={`${new Date(l.criado_em).toLocaleString('pt-PT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })} · #${l.pedido_id.slice(0, 6)}`}
+                      direita={`${duracao(l.total)} · ${nomeEtapa(l.etapa)}`}
+                    />
+                  ))}
+                  {tempos.agendados_fora > 0 && (
+                    <Paragrafo suave>{`${tempos.agendados_fora} agendado(s) fora das etapas (contam só na pontualidade).`}</Paragrafo>
+                  )}
+                </>
               )}
             </Seccao>
 

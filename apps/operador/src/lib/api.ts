@@ -1,6 +1,6 @@
 // Chamadas ao servidor da app do operador. Cada função do servidor verifica a
 // permissão do organograma; a app só esconde o que o funcionário não pode usar.
-import type { RelatorioDetalhado, Rentabilidade } from './relatorio';
+import type { RelatorioDetalhado, Rentabilidade, TemposEtapas } from './relatorio';
 import { supabase } from './supabase';
 import type {
   Aviso,
@@ -384,6 +384,11 @@ export async function apagarDespesa(id: string) {
 /** Rentabilidade (custo dos pratos, margem, despesas) e doses (esgotados/sobras) de um período */
 export async function rentabilidadeCozinha(cozinhaId: string, inicio: string, fim: string): Promise<Rentabilidade> {
   return verificar(await supabase.rpc('rentabilidade_cozinha', { p_cozinha: cozinhaId, p_inicio: inicio, p_fim: fim })) as Rentabilidade;
+}
+
+/** Tempo de cada etapa do pedido (confirmar, começar, preparar, entregar) num período */
+export async function temposEtapasCozinha(cozinhaId: string, inicio: string, fim: string): Promise<TemposEtapas> {
+  return verificar(await supabase.rpc('tempos_etapas_cozinha', { p_cozinha: cozinhaId, p_inicio: inicio, p_fim: fim })) as TemposEtapas;
 }
 
 /** Comissão da plataforma sobre as vendas de comida da cozinha (0–50 %), só o admin */

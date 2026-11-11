@@ -72,8 +72,10 @@ Embaixador partilha link do prato no WhatsApp
 
 ## Estado de implementação
 - **Fase 1 (app — primeira vitória):** ✅ implementada (`apps/cliente/.../convida.tsx`, commit d0abbd3).
-- **Fase 2 (backend — economia 2 níveis):** ✅ migração escrita e **validada localmente**
-  (`supabase/migrations/20261104000000_embaixador_niveis.sql`); **falta aplicar à produção com autorização**.
+- **Fase 2 (backend — economia 2 níveis):** ✅ **em produção**
+  (`supabase/migrations/20261104000000_embaixador_niveis.sql`). Valores actuais: Normal 390 Kz, Embaixador
+  585 Kz (≥ 5 activos), Ouro 780 Kz (≥ 30 activos); bónus de boas-vindas **300 Kz** (ligado a 11/11/2026).
+  O histórico abaixo descreve a versão inicial (valores de então).
   Validado: comissão por nível (100/150/200), bónus de boas-vindas +300 só na 1.ª vitória,
   promoção automática a embaixador aos 5 activos, isenção do limite semanal só para Ouro,
   comissão nunca abaixo do valor garantido. Sem funções novas chamáveis pelas apps → 12_privilegios intacto.
@@ -84,14 +86,12 @@ Embaixador partilha link do prato no WhatsApp
     - *Bónus de boas-vindas* = **uma vez por embaixador**, na 1.ª vitória confirmada (a "primeira vitória garantida").
       **Desligado por defeito (`bonus_boas_vindas=0`)** — o mecanismo está pronto e testado; liga-se com um valor
       confirmado (`update parametros set bonus_boas_vindas=300`). Quando ligado, soma-se ao valor do ganho (aparece no push N3).
-    - *Despromoção* automática **não** implementada (só sobe); fica para um cron posterior.
-    - *Push de parabéns pela promoção* não implementado nesta fase (a app mostra o novo nível via `meu_perfil`);
-      evita tocar no pipeline de texto/envio das notificações.
-- **Fase 2 — fecho (11/11/2026):** aviso **N43** de parabéns ao subir de nível; **descida suave** semanal
+    - *Despromoção* e *push de parabéns*: feitos no fecho da Fase 2 (abaixo).
+- **Fase 2 — fecho (11/11/2026, em produção):** aviso **N43** de parabéns ao subir de nível; **descida suave** semanal
   (job `mb_despromocao_embaixador`, segunda 05h Luanda): só quem está no nível há ≥ 30 dias
   (`despromocao_carencia_dias`) e tem menos de 80% do limiar (`despromocao_margem_pct`), **um degrau de cada
   vez**, com aviso **N44** a dizer quantos amigos faltam para voltar; desliga-se em `despromocao_activa`.
-  Bónus de boas-vindas: `bonus_boas_vindas` (0 = desligado) — falta o dono escolher o valor.
+  Bónus de boas-vindas: `bonus_boas_vindas` = 300 Kz.
 - **Fase 3 (link do prato + cartão WhatsApp) — implementada (11/11/2026):**
   - Link: `{site}/p/{cardapio_id}?r={CÓDIGO}` (site = `EXPO_PUBLIC_SITE_URL`, por defeito
     `https://manda-bue.netlify.app`; muda para `mandabue.ao` quando houver domínio).

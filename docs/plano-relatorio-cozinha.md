@@ -148,3 +148,14 @@ Ordenado do mais importante para o menos. Cada secção responde a uma pergunta 
 3. **IVA: não, por agora.**
 4. **Fecho do dia às 23h (Luanda): push (N42) aos gerentes da cozinha e ao administrador principal**,
    só às cozinhas com movimento no dia.
+
+## Tempo de cada etapa (11/11/2026)
+Secção "Tempo de cada etapa" no relatório (e no CSV/PDF), função `tempos_etapas_cozinha`:
+- Etapas dos pedidos entregues (sem agendados): **confirmar** (feito → confirmado), **começar** (→ em preparação),
+  **preparar e esperar estafeta** (→ saiu), **caminho** (→ entregue) e o **total**.
+- Para cada uma: o tempo **normal** (mediana) e o dos **10% piores** (p90); a etapa que mais pesa fica marcada,
+  com um conselho prático. Também: entregues a tempo vs hora prometida (inclui agendados) e atraso normal,
+  por hora do pedido, caminho por estafeta e os 5 pedidos mais lentos (com a etapa onde perderam tempo).
+- Horas: novas colunas `pedidos.confirmado_em` e `pedidos.saiu_em` (gravadas pelo servidor na transição);
+  para pedidos antigos usa-se a auditoria (`pedido_estado`), que tem o histórico desde o início.
+- Limitação: não há o estado "pronto", por isso a preparação inclui a espera pelo estafeta.
