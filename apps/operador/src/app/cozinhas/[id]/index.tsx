@@ -6,7 +6,7 @@ import { FotoEditavel } from '@/components/FotoEditavel';
 import { Guarda } from '@/components/Guarda';
 import { LocalizacaoCozinha } from '@/components/LocalizacaoCozinha';
 import { ACarregar, Aviso, Botao, Campo, Ecra, Escolha, Paragrafo, Subtitulo } from '@/components/ui';
-import { definirFotoCozinha, guardarCozinha, lerCozinhas } from '@/lib/api';
+import { definirComissaoCozinha, definirFotoCozinha, guardarCozinha, lerComissaoCozinha, lerCozinhas } from '@/lib/api';
 import { mensagemErro, telefoneValido } from '@/lib/formatar';
 import { useSessao } from '@/lib/sessao';
 import { cores, espaco } from '@/lib/tema';
@@ -30,6 +30,45 @@ function Interruptor({ rotulo, valor, aoMudar }: { rotulo: string; valor: boolea
       <Text style={{ flex: 1 }}>{rotulo}</Text>
       <Switch thumbColor="#FFFFFF" value={valor} onValueChange={aoMudar} trackColor={{ true: cores.marca, false: cores.contorno }} />
     </View>
+  );
+}
+
+/** Comissão da plataforma (só quem gere a plataforma): base do "a receber pela cozinha" no relatório */
+function ComissaoCozinha({ cozinhaId }: { cozinhaId: string }) {
+  const [valor, setValor] = useState('');
+  const [msg, setMsg] = useState<{ tipo: 'erro' | 'sucesso'; texto: string } | null>(null);
+  const [ocupado, setOcupado] = useState(false);
+  useEffect(() => {
+    lerComissaoCozinha(cozinhaId)
+      .then((v) => setValor(String(v).replace('.', ',')))
+      .catch(() => setValor(''));
+  }, [cozinhaId]);
+  const numero = Number(valor.replace(',', '.'));
+  const valido = valor.trim() !== '' && Number.isFinite(numero) && numero >= 0 && numero <= 50;
+  return (
+    <>
+      <Subtitulo>Comissão da plataforma</Subtitulo>
+      <Paragrafo suave>
+        Percentagem sobre as vendas de comida desta cozinha. O relatório mostra «a receber pela cozinha» = vendas − comissão. Os
+        descontos de convite e o saldo Convida são da plataforma.
+      </Paragrafo>
+      <Campo rotulo="Comissão (%)" value={valor} keyboardType="decimal-pad" maxLength={5} onChangeText={setValor} />
+      {msg && <Aviso tipo={msg.tipo}>{msg.texto}</Aviso>}
+      <Botao
+        titulo="Guardar comissão"
+        variante="secundario"
+        aCarregar={ocupado}
+        desactivado={!valido}
+        aoCarregar={() => {
+          setOcupado(true);
+          setMsg(null);
+          definirComissaoCozinha(cozinhaId, numero)
+            .then(() => setMsg({ tipo: 'sucesso', texto: 'Comissão guardada.' }))
+            .catch((e) => setMsg({ tipo: 'erro', texto: mensagemErro(e) }))
+            .finally(() => setOcupado(false));
+        }}
+      />
+    </>
   );
 }
 
@@ -135,6 +174,7 @@ export default function EditarCozinha() {
         />
 
         {!nova && <LocalizacaoCozinha cozinhaId={id} />}
+        {!nova && pode('plataforma.parametros') && <ComissaoCozinha cozinhaId={id} />}
 
         {!nova && (
           <>

@@ -1,5 +1,6 @@
 // Chamadas ao servidor da app do operador. Cada função do servidor verifica a
 // permissão do organograma; a app só esconde o que o funcionário não pode usar.
+import type { RelatorioDetalhado } from './relatorio';
 import { supabase } from './supabase';
 import type {
   Aviso,
@@ -322,6 +323,25 @@ export async function relatorioCozinha(cozinhaId: string, inicio: string, fim: s
   return verificar(
     await supabase.rpc('relatorio_cozinha', { p_cozinha: cozinhaId, p_inicio: inicio, p_fim: fim }),
   ) as Relatorio;
+}
+
+/** Relatório detalhado de uma cozinha (resumo com o período anterior, vendas, pratos, pagamentos...) */
+export async function relatorioCozinhaDetalhado(cozinhaId: string, inicio: string, fim: string): Promise<RelatorioDetalhado> {
+  return verificar(
+    await supabase.rpc('relatorio_cozinha_detalhado', { p_cozinha: cozinhaId, p_inicio: inicio, p_fim: fim }),
+  ) as RelatorioDetalhado;
+}
+
+export async function lerComissaoCozinha(cozinhaId: string): Promise<number> {
+  const r = verificar(await supabase.from('cozinhas').select('comissao_percent').eq('id', cozinhaId).single()) as {
+    comissao_percent: number | string | null;
+  };
+  return Number(r.comissao_percent ?? 0);
+}
+
+/** Comissão da plataforma sobre as vendas de comida da cozinha (0–50 %), só o admin */
+export async function definirComissaoCozinha(cozinhaId: string, percent: number) {
+  verificar(await supabase.rpc('definir_comissao_cozinha', { p_cozinha: cozinhaId, p_percent: percent }));
 }
 
 export async function relatorioComparativo(inicio: string, fim: string): Promise<LinhaComparativo[]> {

@@ -1,6 +1,10 @@
 # Plano — Relatório da cozinha (detalhado, diário ou por datas)
 
-> Estado: **planeado** (ainda não implementado). App do operador, ecrã **Relatórios**.
+> Estado: **implementado (11/11/2026)** — migração `20261112000000_relatorio_cozinha_detalhado.sql`,
+> ecrã **Relatórios** do operador. Falta aplicar a migração à produção e um APK do operador.
+> Feito: períodos (hoje/ontem/7 dias/mês/mês anterior/datas), A com comparação, B, C, D, F, G, H, I,
+> PDF e CSV, comissão por cozinha e fecho do dia automático (N42). Fica para depois: CMV/margem e
+> despesas (E), esgotados/sobras, tempos por etapa (confirmar → preparar → sair).
 > Objetivo: a responsável da cozinha (e a gestão) perceber, num só sítio, **quanto vendeu,
 > o que vendeu, quanto recebeu e de que forma, o que correu mal e onde melhorar** — num dia
 > ou num período à escolha.
@@ -128,3 +132,11 @@ Ordenado do mais importante para o menos. Cada secção responde a uma pergunta 
    (Muda o valor líquido da cozinha.)
 3. O relatório deve mostrar **IVA** separado?
 4. O fecho do dia automático deve ir para quem, e por que canal?
+
+## 9. Decisões (dono do produto, 11/11/2026)
+1. **Comissão da plataforma: sim, uma % por cozinha** (`cozinhas.comissao_percent`, 0–50 %, só o
+   admin da plataforma a muda). O relatório mostra **a receber pela cozinha = vendas de comida − comissão**.
+2. **Desconto de convite e saldo Convida: pagos pela plataforma** (não reduzem o valor da cozinha).
+3. **IVA: não, por agora.**
+4. **Fecho do dia às 23h (Luanda): push (N42) aos gerentes da cozinha e ao administrador principal**,
+   só às cozinhas com movimento no dia.

@@ -54,7 +54,7 @@ export async function desactivarPush(): Promise<void> {
 }
 
 /** Ecrã a abrir quando o funcionário toca numa notificação */
-export function rotaDaNotificacao(dados: unknown): '/equipa' | '/pacotes' | '/entregas' | '/reclamacoes' | '/conferencia' | '/analista' | '/vigilancia' | '/turno' | '/compras' | '/atendimento' | '/otp-codigos' | '/agendados' | null {
+export function rotaDaNotificacao(dados: unknown): '/equipa' | '/pacotes' | '/entregas' | '/reclamacoes' | '/conferencia' | '/analista' | '/vigilancia' | '/turno' | '/compras' | '/atendimento' | '/otp-codigos' | '/agendados' | '/relatorios' | null {
   const codigo = (dados as { codigo?: unknown } | null | undefined)?.codigo;
   if (codigo === 'N12') return '/equipa';
   if (codigo === 'N15') return '/pacotes';
@@ -68,6 +68,7 @@ export function rotaDaNotificacao(dados: unknown): '/equipa' | '/pacotes' | '/en
   if (codigo === 'N29') return '/atendimento';
   if (codigo === 'N40') return '/otp-codigos';
   if (codigo === 'N41') return '/agendados';
+  if (codigo === 'N42') return '/relatorios';
   return null;
 }
 
