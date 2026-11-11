@@ -78,7 +78,7 @@ declare
 begin
   if position('pronto_em' in v_def) > 0 then return; end if; -- já aplicado
   v_novo := replace(v_def, 'minha boolean)', 'minha boolean, pronto_em timestamp with time zone)');
-  v_novo := regexp_replace(v_novo, '(x\.entregador_id = v_me\), false\))(\s+from pedidos x)', E'\\1,\n         x.pronto_em\\2');
+  v_novo := regexp_replace(v_novo, '(x\.entregador_id\s*=\s*v_me\)\s*,\s*false\))(\s+from\s+pedidos\s+x)', E'\\1,\n         x.pronto_em\\2');
   if v_novo = v_def or position('x.pronto_em' in v_novo) = 0 or position('pronto_em timestamp' in v_novo) = 0 then
     raise exception 'pedidos_operador não tem o formato esperado';
   end if;
