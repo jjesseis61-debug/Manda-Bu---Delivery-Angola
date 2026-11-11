@@ -28,7 +28,7 @@ beforeEach(() => {
       ].map((k) => [k, 10]),
     ),
     contacto_telefone: null, contacto_whatsapp: null, contacto_email: null,
-    contacto_horario: null, contacto_morada: 'Rua Antiga',
+    contacto_horario: null, contacto_morada: 'Rua Antiga', convida_pago_por: 'plataforma',
   });
   (lerFuncionalidades as jest.Mock).mockResolvedValue([]);
 });
@@ -49,4 +49,17 @@ test('parâmetros: valida e guarda os contactos (em branco apaga)', async () => 
   expect(alterarParametros).toHaveBeenCalledWith({
     contacto_email: 'ola@mandabue.ao', contacto_telefone: '+244 923 000 000', contacto_morada: null,
   });
+});
+
+test('parâmetros: o interruptor do Convida passa o pagamento para a cozinha', async () => {
+  const ecra = renderRouter({ parametros: Parametros }, { initialUrl: '/parametros' });
+  await waitFor(() => expect(ecra.getByLabelText('Convida pago pela cozinha')).toBeTruthy());
+  expect(ecra.getByText(/Pago pela plataforma/)).toBeTruthy();
+  fireEvent(ecra.getByLabelText('Convida pago pela cozinha'), 'valueChange', true);
+  expect(ecra.getByText(/Pago pela cozinha/)).toBeTruthy();
+  fireEvent.press(ecra.getByText('Guardar parâmetros'));
+  await act(async () => {
+    fireEvent.press(ecra.getByText('Confirmar'));
+  });
+  expect(alterarParametros).toHaveBeenCalledWith({ convida_pago_por: 'cozinha' });
 });

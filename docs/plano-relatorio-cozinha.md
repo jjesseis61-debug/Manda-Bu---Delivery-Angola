@@ -136,7 +136,10 @@ Ordenado do mais importante para o menos. Cada secção responde a uma pergunta 
 ## 9. Decisões (dono do produto, 11/11/2026)
 1. **Comissão da plataforma: sim, uma % por cozinha** (`cozinhas.comissao_percent`, 0–50 %, só o
    admin da plataforma a muda). O relatório mostra **a receber pela cozinha = vendas de comida − comissão**.
-2. **Desconto de convite e saldo Convida: pagos pela plataforma** (não reduzem o valor da cozinha).
+2. **Desconto de convite e saldo Convida: opção da plataforma** (Parâmetros → interruptor
+   «Convida e Ganha: quem paga os descontos», `parametros.convida_pago_por`). **Plataforma** (por
+   defeito): não reduzem o valor da cozinha. **Cozinha**: saem do «a receber pela cozinha».
+   As comissões ganhas pelos convidantes continuam a cargo da plataforma.
 3. **IVA: não, por agora.**
 4. **Fecho do dia às 23h (Luanda): push (N42) aos gerentes da cozinha e ao administrador principal**,
    só às cozinhas com movimento no dia.

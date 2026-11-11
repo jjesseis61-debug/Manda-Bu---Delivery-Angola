@@ -2,7 +2,7 @@
 -- (o gerente só vê a sua cozinha) e o fecho do dia (N42).
 begin;
 \ir _helpers.psql
-select plan(21);
+select plan(23);
 
 -- Cozinha com 10% de comissão, um prato simples (2000) e um montável
 with k as (insert into cozinhas (nome, responsavel, comissao_percent) values ('Cozinha Relatório', 'Rita', 10) returning id)
@@ -72,6 +72,16 @@ select is((select (e ->> 'valor')::int from jsonb_array_elements(testes.v('r')::
             where e ->> 'metodo' = 'Dinheiro'), 6500, 'dinheiro recebido (comida + entrega − desconto)');
 select is((testes.v('r')::jsonb #>> '{cancelamentos_motivos,0,motivo}'), 'Acabou um ingrediente', 'motivo do cancelamento');
 select is((testes.v('r')::jsonb #>> '{anterior,pedidos}')::int, 0, 'o período anterior não tem pedidos');
+
+-- 1b) Opção: Convida pago pela cozinha -> o desconto (500) sai do valor a receber
+update parametros set convida_pago_por = 'cozinha' where unico;
+select is((resumo_cozinha(testes.u('k'), testes.hoje()::timestamp at time zone 'Africa/Luanda',
+                          (testes.hoje() + 1)::timestamp at time zone 'Africa/Luanda') ->> 'a_receber_cozinha')::int,
+          4900, 'Convida pago pela cozinha: 6000 − 600 − 500');
+select is((resumo_cozinha(testes.u('k'), testes.hoje()::timestamp at time zone 'Africa/Luanda',
+                          (testes.hoje() + 1)::timestamp at time zone 'Africa/Luanda') ->> 'convida_a_cargo_cozinha')::int,
+          500, 'mostra quanto do Convida ficou a cargo da cozinha');
+update parametros set convida_pago_por = 'plataforma' where unico;
 
 -- 2) Permissões: o gerente não vê outra cozinha; sem relatorios.exportar não vê nada
 select testes.entrar_funcionario(testes.u('gerente'));

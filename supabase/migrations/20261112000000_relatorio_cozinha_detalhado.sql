@@ -3,8 +3,9 @@
 -- -----------------------------------------------------------------------------
 -- Decisões do dono do produto (11/11/2026):
 --  * a plataforma fica com uma COMISSÃO (%) por cozinha -> "a receber pela cozinha";
---  * o desconto de convite e o saldo Convida são suportados pela PLATAFORMA
---    (não reduzem o que a cozinha recebe);
+--  * quem paga o desconto de convite e o saldo Convida é uma OPÇÃO da plataforma
+--    (parametros.convida_pago_por): 'plataforma' (por defeito, não reduz o que a cozinha
+--    recebe) ou 'cozinha' (sai do valor a receber pela cozinha);
 --  * sem IVA separado por agora;
 --  * fecho do dia automático às 23h (Luanda): push aos gerentes da cozinha e ao admin.
 -- Definições: venda = pedido "entregue_pago" com entregue_em no período; cancelado conta
@@ -17,6 +18,12 @@ alter table cozinhas
     check (comissao_percent between 0 and 50);
 comment on column cozinhas.comissao_percent is
   'Comissão da plataforma sobre as vendas de comida (subtotal) desta cozinha, em %';
+
+alter table parametros
+  add column if not exists convida_pago_por text not null default 'plataforma'
+    check (convida_pago_por in ('plataforma', 'cozinha'));
+comment on column parametros.convida_pago_por is
+  'Quem paga o desconto de convite e o saldo Convida usado: plataforma ou cozinha (relatório da cozinha)';
 
 -- A comissão só a muda quem gere a plataforma (o gerente edita a cozinha mas não a comissão)
 create or replace function cozinhas_proteger_comissao() returns trigger
@@ -59,6 +66,7 @@ returns jsonb language sql stable security definer set search_path = public as $
        and criado_em >= p_ini and criado_em < p_fim),
   k as (select coalesce(comissao_percent, 0) as pct from cozinhas where id = p_cozinha),
   tol as (select tolerancia_entrega_min as m from parametros where unico),
+  quem as (select convida_pago_por as q from parametros where unico),
   t as (
     select count(*)::int as pedidos,
            coalesce(sum(subtotal), 0)::int as brutas,
@@ -104,7 +112,13 @@ returns jsonb language sql stable security definer set search_path = public as $
     'a_horas_pct', case when t.com_hora > 0 then round(100.0 * t.a_horas / t.com_hora, 1) end,
     'comissao_percent', k.pct,
     'comissao', round(t.brutas * k.pct / 100)::int,
-    'a_receber_cozinha', (t.brutas - round(t.brutas * k.pct / 100))::int)
+    'convida_pago_por', (select q from quem),
+    -- Convida a cargo da cozinha: o desconto e o saldo usado saem do que ela recebe
+    'convida_a_cargo_cozinha', case when (select q from quem) = 'cozinha'
+                                    then t.desconto_convite + t.saldo_convida else 0 end,
+    'a_receber_cozinha', (t.brutas - round(t.brutas * k.pct / 100)
+                          - case when (select q from quem) = 'cozinha'
+                                 then t.desconto_convite + t.saldo_convida else 0 end)::int)
   from t cross join k;
 $$;
 revoke execute on function resumo_cozinha(uuid, timestamptz, timestamptz) from public, anon, authenticated;

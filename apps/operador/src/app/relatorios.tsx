@@ -13,6 +13,7 @@ import {
   linhasCsvRelatorio,
   nomeDiaSemana,
   periodoRel,
+  quemPagaConvida,
   type PeriodoRel,
   type RelatorioDetalhado,
 } from '@/lib/relatorio';
@@ -212,7 +213,7 @@ export default function Relatorios() {
                   direita={i.variacao ? `${i.valor}  ${i.variacao}` : i.valor}
                 />
               ))}
-              <Paragrafo suave>▲/▼ comparado com o período anterior da mesma duração. Descontos de convite e saldo Convida são pagos pela plataforma.</Paragrafo>
+              <Paragrafo suave>▲/▼ comparado com o período anterior da mesma duração. {quemPagaConvida(rel.resumo)}</Paragrafo>
             </Cartao>
 
             <Seccao titulo="Vendas no tempo">
@@ -280,7 +281,7 @@ export default function Relatorios() {
               <Linha esquerda="Pedidos com desconto de convite" direita={String(rel.convida.pedidos_com_desconto)} />
               <Linha esquerda="Desconto de convite · saldo usado" direita={`${formatarKz(rel.resumo.desconto_convite)} · ${formatarKz(rel.resumo.saldo_convida)}`} />
               <Linha esquerda="Comissões geradas aos convidantes" direita={formatarKz(rel.convida.comissoes_geradas)} />
-              <Paragrafo suave>Custos suportados pela plataforma (não saem do valor a receber pela cozinha).</Paragrafo>
+              <Paragrafo suave>{quemPagaConvida(rel.resumo)}</Paragrafo>
             </Seccao>
 
             <Botao titulo="Exportar CSV (Excel)" variante="secundario" aoCarregar={() => exportar('csv')} />

@@ -105,6 +105,9 @@ export default function Parametros() {
     const t = (valores[k] ?? '').trim();
     if (originais && t !== String(originais[k] ?? '')) alterados[k] = t || null;
   }
+  // Convida e Ganha: quem paga o desconto de convite e o saldo usado (relatório da cozinha)
+  if (originais && valores.convida_pago_por !== undefined && valores.convida_pago_por !== String(originais.convida_pago_por ?? 'plataforma'))
+    alterados.convida_pago_por = valores.convida_pago_por;
   const invalidos = numerosInvalidos || contactosInvalidos.length > 0;
 
   async function aplicar() {
@@ -160,6 +163,29 @@ export default function Parametros() {
               ))}
             </Cartao>
             {confirmar?.tipo === 'func' && caixaConfirmar}
+
+            {originais.convida_pago_por !== undefined && (
+              <View style={{ gap: espaco.s }}>
+                <Subtitulo>Convida e Ganha: quem paga os descontos</Subtitulo>
+                <Cartao>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: espaco.s }}>
+                    <Text style={{ flex: 1 }}>
+                      {valores.convida_pago_por === 'cozinha'
+                        ? 'Pago pela cozinha: o desconto de convite e o saldo Convida saem do valor a receber pela cozinha.'
+                        : 'Pago pela plataforma: o desconto de convite e o saldo Convida não reduzem o valor da cozinha.'}
+                    </Text>
+                    <Switch
+                      accessibilityLabel="Convida pago pela cozinha"
+                      thumbColor="#FFFFFF"
+                      value={valores.convida_pago_por === 'cozinha'}
+                      onValueChange={(v) => setValores((x) => ({ ...x, convida_pago_por: v ? 'cozinha' : 'plataforma' }))}
+                      trackColor={{ true: cores.marca, false: cores.contorno }}
+                    />
+                  </View>
+                  <Paragrafo suave>Ligado = cozinha · Desligado = plataforma. Guarda em «Guardar parâmetros».</Paragrafo>
+                </Cartao>
+              </View>
+            )}
 
             {CAMPOS.map((g) => (
               <View key={g.grupo} style={{ gap: espaco.s }}>

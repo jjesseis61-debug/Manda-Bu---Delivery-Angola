@@ -25,8 +25,19 @@ export type ResumoCozinha = {
   a_horas_pct: number | null;
   comissao_percent: number;
   comissao: number;
+  /** Opção da plataforma: quem paga o desconto de convite e o saldo Convida */
+  convida_pago_por?: 'plataforma' | 'cozinha';
+  /** Parte do Convida descontada à cozinha (0 quando paga a plataforma) */
+  convida_a_cargo_cozinha?: number;
   a_receber_cozinha: number;
 };
+
+/** Texto de quem paga o Convida, para o ecrã e o PDF */
+export function quemPagaConvida(r: ResumoCozinha): string {
+  return r.convida_pago_por === 'cozinha'
+    ? 'Descontos de convite e saldo Convida pagos pela cozinha (saem do valor a receber).'
+    : 'Descontos de convite e saldo Convida pagos pela plataforma (não saem do valor da cozinha).';
+}
 
 export type RelatorioDetalhado = {
   cozinha: string;
@@ -99,7 +110,11 @@ export function indicadores(r: RelatorioDetalhado): { rotulo: string; valor: str
     { rotulo: 'Vendas brutas (comida)', valor: formatarKz(a.vendas_brutas), variacao: variacao(a.vendas_brutas, b.vendas_brutas) },
     { rotulo: 'Pedidos entregues', valor: String(a.pedidos), variacao: variacao(a.pedidos, b.pedidos) },
     { rotulo: 'Ticket médio', valor: a.ticket_medio == null ? '—' : formatarKz(a.ticket_medio), variacao: variacao(a.ticket_medio, b.ticket_medio) },
-    { rotulo: 'Descontos (pagos pela plataforma)', valor: formatarKz(a.descontos), variacao: '' },
+    {
+      rotulo: a.convida_pago_por === 'cozinha' ? 'Descontos Convida (pagos pela cozinha)' : 'Descontos Convida (pagos pela plataforma)',
+      valor: formatarKz(a.descontos),
+      variacao: '',
+    },
     { rotulo: `Comissão da plataforma (${String(a.comissao_percent).replace('.', ',')}%)`, valor: formatarKz(a.comissao), variacao: '' },
     { rotulo: 'A receber pela cozinha', valor: formatarKz(a.a_receber_cozinha), variacao: variacao(a.a_receber_cozinha, b.a_receber_cozinha) },
     { rotulo: 'Taxas de entrega', valor: formatarKz(a.taxas_entrega), variacao: '' },
@@ -135,6 +150,8 @@ export function linhasCsvRelatorio(r: RelatorioDetalhado): Celula[][] {
     ['Ticket médio (Kz)', a.ticket_medio, r.anterior.ticket_medio],
     ['Comissão (%)', a.comissao_percent, r.anterior.comissao_percent],
     ['Comissão (Kz)', a.comissao, r.anterior.comissao],
+    ['Convida pago por', a.convida_pago_por ?? 'plataforma', r.anterior.convida_pago_por ?? 'plataforma'],
+    ['Convida a cargo da cozinha (Kz)', a.convida_a_cargo_cozinha ?? 0, r.anterior.convida_a_cargo_cozinha ?? 0],
     ['A receber pela cozinha (Kz)', a.a_receber_cozinha, r.anterior.a_receber_cozinha],
     ['Taxas de entrega (Kz)', a.taxas_entrega, r.anterior.taxas_entrega],
     ['Cancelados', a.cancelados, r.anterior.cancelados],
@@ -186,7 +203,7 @@ export function htmlRelatorio(r: RelatorioDetalhado, geradoPor: string, agora: D
   </style></head><body>
     <h1>Manda Bué · Relatório da cozinha</h1>
     <p><b>${escaparHtml(r.cozinha)}</b> · ${escaparHtml(formatarDia(r.inicio))} a ${escaparHtml(formatarDia(r.fim))}</p>
-    <p class="suave">Gerado por ${escaparHtml(geradoPor)} em ${escaparHtml(agora.toLocaleString('pt-PT'))}. Descontos de convite e saldo Convida pagos pela plataforma.</p>
+    <p class="suave">Gerado por ${escaparHtml(geradoPor)} em ${escaparHtml(agora.toLocaleString('pt-PT'))}. ${escaparHtml(quemPagaConvida(r.resumo))}</p>
     ${partes}
   </body></html>`;
 }
