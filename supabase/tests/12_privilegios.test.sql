@@ -102,6 +102,8 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 'permissoes_catalogo', 'definir_permissoes_funcionario', 'definir_cozinhas_funcionario',
                 -- pedidos agendados (fila do que vem)
                 'pedidos_agendados', 'agendados_operador',
+                -- aparelhos por conta (antifraude do Convida)
+                'registar_aparelho', 'aparelhos_partilhados',
                 -- prato montável a partir do modelo (cozinhas.gerir)
                 'criar_montavel_do_modelo',
                 -- sugestão de despacho por proximidade

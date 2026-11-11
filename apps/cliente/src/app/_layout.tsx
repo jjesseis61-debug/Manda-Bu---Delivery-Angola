@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 import { EcraCadeado } from '@/components/EcraCadeado';
 import { CadeadoProvider } from '@/lib/cadeadoContexto';
 import { CarrinhoProvider } from '@/lib/carrinho';
+import { registarEsteAparelho } from '@/lib/dispositivo';
 import { activarPush, desactivarPush, rotaDaNotificacao } from '@/lib/push';
 import { SessaoProvider, useSessao } from '@/lib/sessao';
 import { cores } from '@/lib/tema';
@@ -17,6 +18,7 @@ function EfeitosSessao() {
 
   useEffect(() => {
     if (perfil) void activarPush().catch(() => undefined);
+    if (perfil) void registarEsteAparelho();
   }, [perfil]);
 
   useEffect(() => {

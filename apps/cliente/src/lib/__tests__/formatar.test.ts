@@ -91,6 +91,9 @@ describe('textoRegras (4.13)', () => {
   it('preenche as frases com os parâmetros', () => {
     const regras = textoRegras(parametros);
     expect(regras[0]).toBe(
+      'Ganhas 100 Kz por cada pedido dos amigos que convidares, a partir do 2.º pedido deles, durante 60 dias a contar do primeiro. Não há limite de ganhos.',
+    );
+    expect(textoRegras({ ...parametros, comissao_primeiro_pedido: true })[0]).toBe(
       'Ganhas 100 Kz por cada pedido dos amigos que convidares, durante 60 dias a contar do primeiro pedido deles. Não há limite de ganhos.',
     );
     expect(regras[1]).toBe('O teu amigo ganha 500 Kz de desconto no primeiro pedido.');

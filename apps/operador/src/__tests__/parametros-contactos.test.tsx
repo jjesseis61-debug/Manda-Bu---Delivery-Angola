@@ -21,7 +21,7 @@ beforeEach(() => {
         'ganho_por_pedido', 'ganho_por_pedido_embaixador', 'ganho_por_pedido_ouro', 'bonus_boas_vindas',
         'duracao_dias', 'desconto_indicado', 'limite_verificacao_semanal',
         'levantamento_minimo', 'limite_parcelamento', 'limiar_embaixador', 'limiar_ouro', 'raio_mesmo_local_m',
-        'max_indicados_por_local', 'max_descontos_por_local', 'desconto_subtotal_minimo', 'tamanho_top',
+        'max_indicados_por_local', 'max_descontos_por_local', 'desconto_subtotal_minimo', 'alerta_contas_por_aparelho', 'tamanho_top',
         'limiar_intervalos', 'tamanho_intervalo', 'pessoas_como_tu_min', 'pessoas_como_tu_max',
         'contador_minimo', 'prazo_avaliacao_dias', 'avaliacoes_minimo', 'tempo_entrega_min',
         'tolerancia_entrega_min', 'alerta_agendado_horas', 'selos_necessarios',

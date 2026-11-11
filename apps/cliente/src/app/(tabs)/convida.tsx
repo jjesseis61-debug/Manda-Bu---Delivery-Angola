@@ -58,7 +58,7 @@ export default function Convida() {
             <Text style={{ color: cores.texto }}>
               2. O teu amigo pede e ganha{descInd ? ` ${formatarKz(descInd)}` : ''} de desconto.
             </Text>
-            <Text style={{ color: cores.texto }}>3. Ganhas{gpp ? ` ${formatarKz(gpp)}` : ''} por cada pedido dele.</Text>
+            <Text style={{ color: cores.texto }}>3. Ganhas{gpp ? ` ${formatarKz(gpp)}` : ''} por cada pedido dele{parametros?.comissao_primeiro_pedido ? '' : ', a partir do 2.º'}.</Text>
           </View>
           <PartilharCodigo />
           <Text style={{ color: cores.textoSuave, fontSize: 13 }}>Leva 10 segundos · a mensagem já vai pronta.</Text>

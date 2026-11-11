@@ -763,6 +763,20 @@ export async function pedirRelatorioAnalista(ano: number, mes: number): Promise<
 }
 
 // ---------------------------------------------------------------- vigilante do Convida e Ganha
+export type AparelhoPartilhado = {
+  chave: string;
+  plataforma: string;
+  modelo: string | null;
+  contas: number;
+  ultimo_em: string;
+  clientes: { cliente_id: string; nome: string; telefone: string | null; convidado_por: string | null; pedidos: number }[];
+};
+
+/** Telemóveis com muitas contas (só alerta; ninguém é bloqueado) */
+export async function aparelhosPartilhados(): Promise<AparelhoPartilhado[]> {
+  return (verificar(await supabase.rpc('aparelhos_partilhados')) as AparelhoPartilhado[]) ?? [];
+}
+
 export async function lerCasosConvida(): Promise<CasoConvida[]> {
   return verificar(await supabase.rpc('casos_convida_lista')) as CasoConvida[];
 }

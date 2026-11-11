@@ -23,6 +23,8 @@ export type Parametros = {
   limite_verificacao_semanal: number;
   levantamento_minimo: number;
   limite_parcelamento: number;
+  /** Comissão também no 1.º pedido do convidado (o do desconto)? Por defeito não: começa no 2.º */
+  comissao_primeiro_pedido?: boolean;
   /** Subtotal mínimo para aplicar o desconto de indicação (anti-fraude) */
   desconto_subtotal_minimo?: number;
   contador_minimo: number;

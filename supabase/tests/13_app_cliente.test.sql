@@ -181,7 +181,7 @@ select is((select activo from dispositivos_push where token = 'ExponentPushToken
 -- ---------------------------------------------------------------------------
 select is((select (texto_notificacao('N2', dados)).corpo from notificacoes_fila
             where codigo = 'N2' and cliente_id = testes.u('rui')),
-          'Ana entrou com o teu código! Ganhas 100 Kz em cada pedido durante 60 dias.',
+          'Ana entrou com o teu código! Ganhas 100 Kz em cada pedido a partir do 2.º, durante 60 dias.',
           'N2: nome do amigo e valores garantidos da ligação');
 select is((texto_notificacao('N3', '{"valor": 100, "indicado_nome": "João", "saldo_semana": 1300}')).corpo,
           '+100 Kz: o pedido de João foi entregue. Saldo desta semana: 1.300 Kz.', 'N3: texto da secção 11');

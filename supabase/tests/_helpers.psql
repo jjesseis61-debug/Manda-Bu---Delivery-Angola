@@ -6,6 +6,10 @@
 create extension if not exists pgtap with schema extensions;
 
 create schema testes;
+
+-- Os testes antigos do Convida foram escritos com comissão logo no 1.º pedido do convidado.
+-- Desde 11/2026 a regra (parâmetro) é não pagar no 1.º pedido; o teste 84 cobre a regra nova.
+update parametros set comissao_primeiro_pedido = true where unico;
 grant usage on schema testes to authenticated;
 
 -- Variáveis de teste (guardadas na transacção com set_config)

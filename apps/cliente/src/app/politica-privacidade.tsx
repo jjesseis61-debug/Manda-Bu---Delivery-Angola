@@ -33,6 +33,10 @@ export default function PoliticaPrivacidade() {
         código do telemóvel para te enviarmos notificações.
       </Paragrafo>
       <Paragrafo>
+        Um identificador do telemóvel (e o modelo) em que entras na conta, usado só para evitar fraude nos convites
+        (muitas contas no mesmo telemóvel). Não te impede de pedir.
+      </Paragrafo>
+      <Paragrafo>
         Enquanto o teu pedido está a caminho, mostramos-te no mapa a posição do estafeta. A posição dele só fica
         guardada durante a entrega e não guardamos o percurso.
       </Paragrafo>

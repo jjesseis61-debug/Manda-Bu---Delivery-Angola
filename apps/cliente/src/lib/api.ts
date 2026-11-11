@@ -48,6 +48,13 @@ function verificar<T>(resultado: { data: T | null; error: { message: string } | 
 }
 
 // ---------------------------------------------------------------- configuração
+/** Antifraude do Convida: aparelho em que a conta entrou (ver dispositivo.ts) */
+export async function registarAparelho(instalacao: string, aparelho: string | null, plataforma: string, modelo: string | null) {
+  verificar(
+    await supabase.rpc('registar_aparelho', { p_instalacao: instalacao, p_aparelho: aparelho, p_plataforma: plataforma, p_modelo: modelo }),
+  );
+}
+
 export async function lerConfiguracao(): Promise<{ parametros: Parametros; funcionalidades: Funcionalidades }> {
   const [p, f] = await Promise.all([
     supabase.from('parametros').select('*').eq('unico', true).single(),

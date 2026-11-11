@@ -9,6 +9,15 @@ jest.mock('@/lib/api', () => ({
   abrirVigilancia: jest.fn(),
   decidirCasoConvida: jest.fn(),
   vigiarDeNovo: jest.fn(),
+  aparelhosPartilhados: jest.fn().mockResolvedValue([
+    {
+      chave: 'android-xyz', plataforma: 'android', modelo: 'Tecno Spark', contas: 3, ultimo_em: '2026-11-10T10:00:00Z',
+      clientes: [
+        { cliente_id: 'a', nome: 'Rui', telefone: '923000111', convidado_por: null, pedidos: 2 },
+        { cliente_id: 'b', nome: 'Rita', telefone: null, convidado_por: 'Rui', pedidos: 1 },
+      ],
+    },
+  ]),
 }));
 const mockSessao = { carregado: true, sessao: {}, funcionario: { id: 'f1', cozinhas_equipa: [] }, pode: () => true };
 jest.mock('@/lib/sessao', () => ({ useSessao: () => mockSessao }));
@@ -41,4 +50,12 @@ test('vigilância: dossiê do agente, o que confirmar e decisão', async () => {
     fireEvent.press(ecra.getByText('Guardar decisão'));
   });
   expect(decidirCasoConvida).toHaveBeenCalledWith('v1', 'suspeita_confirmada', 'Contas da mesma pessoa. Ganhos anulados.');
+});
+
+test('mostra os telemóveis com várias contas (só alerta)', async () => {
+  (lerCasosConvida as jest.Mock).mockResolvedValue([]);
+  const ecra = renderRouter({ vigilancia: Vigilancia }, { initialUrl: '/vigilancia' });
+  await waitFor(() => expect(ecra.getByText('Telemóveis com várias contas (1)')).toBeTruthy());
+  expect(ecra.getByText(/3 contas · Tecno Spark/)).toBeTruthy();
+  expect(ecra.getByText(/convidado por Rui/)).toBeTruthy();
 });
