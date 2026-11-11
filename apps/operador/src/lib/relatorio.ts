@@ -25,18 +25,20 @@ export type ResumoCozinha = {
   a_horas_pct: number | null;
   comissao_percent: number;
   comissao: number;
-  /** Opção da plataforma: quem paga o desconto de convite e o saldo Convida */
-  convida_pago_por?: 'plataforma' | 'cozinha';
-  /** Parte do Convida descontada à cozinha (0 quando paga a plataforma) */
+  /** Parte (%) do desconto de convite e do saldo Convida paga por esta cozinha (0 = plataforma) */
+  convida_cozinha_percent?: number;
+  /** Valor do Convida descontado à cozinha */
   convida_a_cargo_cozinha?: number;
   a_receber_cozinha: number;
 };
 
 /** Texto de quem paga o Convida, para o ecrã e o PDF */
 export function quemPagaConvida(r: ResumoCozinha): string {
-  return r.convida_pago_por === 'cozinha'
-    ? 'Descontos de convite e saldo Convida pagos pela cozinha (saem do valor a receber).'
-    : 'Descontos de convite e saldo Convida pagos pela plataforma (não saem do valor da cozinha).';
+  const p = Number(r.convida_cozinha_percent ?? 0);
+  if (p <= 0) return 'Descontos de convite e saldo Convida pagos pela plataforma (não saem do valor da cozinha).';
+  if (p >= 100) return 'Descontos de convite e saldo Convida pagos pela cozinha (saem do valor a receber).';
+  const t = String(p).replace('.', ',');
+  return `Descontos de convite e saldo Convida: ${t}% pagos pela cozinha, o resto pela plataforma.`;
 }
 
 export type RelatorioDetalhado = {
@@ -111,7 +113,7 @@ export function indicadores(r: RelatorioDetalhado): { rotulo: string; valor: str
     { rotulo: 'Pedidos entregues', valor: String(a.pedidos), variacao: variacao(a.pedidos, b.pedidos) },
     { rotulo: 'Ticket médio', valor: a.ticket_medio == null ? '—' : formatarKz(a.ticket_medio), variacao: variacao(a.ticket_medio, b.ticket_medio) },
     {
-      rotulo: a.convida_pago_por === 'cozinha' ? 'Descontos Convida (pagos pela cozinha)' : 'Descontos Convida (pagos pela plataforma)',
+      rotulo: `Descontos Convida (${Number(a.convida_cozinha_percent ?? 0) > 0 ? `cozinha paga ${formatarKz(a.convida_a_cargo_cozinha ?? 0)}` : 'pagos pela plataforma'})`,
       valor: formatarKz(a.descontos),
       variacao: '',
     },
@@ -150,7 +152,7 @@ export function linhasCsvRelatorio(r: RelatorioDetalhado): Celula[][] {
     ['Ticket médio (Kz)', a.ticket_medio, r.anterior.ticket_medio],
     ['Comissão (%)', a.comissao_percent, r.anterior.comissao_percent],
     ['Comissão (Kz)', a.comissao, r.anterior.comissao],
-    ['Convida pago por', a.convida_pago_por ?? 'plataforma', r.anterior.convida_pago_por ?? 'plataforma'],
+    ['Convida pago pela cozinha (%)', a.convida_cozinha_percent ?? 0, r.anterior.convida_cozinha_percent ?? 0],
     ['Convida a cargo da cozinha (Kz)', a.convida_a_cargo_cozinha ?? 0, r.anterior.convida_a_cargo_cozinha ?? 0],
     ['A receber pela cozinha (Kz)', a.a_receber_cozinha, r.anterior.a_receber_cozinha],
     ['Taxas de entrega (Kz)', a.taxas_entrega, r.anterior.taxas_entrega],

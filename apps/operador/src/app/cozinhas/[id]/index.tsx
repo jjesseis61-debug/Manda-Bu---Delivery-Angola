@@ -6,7 +6,14 @@ import { FotoEditavel } from '@/components/FotoEditavel';
 import { Guarda } from '@/components/Guarda';
 import { LocalizacaoCozinha } from '@/components/LocalizacaoCozinha';
 import { ACarregar, Aviso, Botao, Campo, Ecra, Escolha, Paragrafo, Subtitulo } from '@/components/ui';
-import { definirComissaoCozinha, definirFotoCozinha, guardarCozinha, lerComissaoCozinha, lerCozinhas } from '@/lib/api';
+import {
+  definirComissaoCozinha,
+  definirConvidaCozinha,
+  definirFotoCozinha,
+  guardarCozinha,
+  lerComissaoCozinha,
+  lerCozinhas,
+} from '@/lib/api';
 import { mensagemErro, telefoneValido } from '@/lib/formatar';
 import { useSessao } from '@/lib/sessao';
 import { cores, espaco } from '@/lib/tema';
@@ -33,41 +40,57 @@ function Interruptor({ rotulo, valor, aoMudar }: { rotulo: string; valor: boolea
   );
 }
 
-/** Comissão da plataforma (só quem gere a plataforma): base do "a receber pela cozinha" no relatório */
+/** Comissão e Convida desta cozinha (só quem gere a plataforma): base do "a receber pela cozinha" */
 function ComissaoCozinha({ cozinhaId }: { cozinhaId: string }) {
-  const [valor, setValor] = useState('');
+  const [comissao, setComissao] = useState('');
+  const [convida, setConvida] = useState('');
   const [msg, setMsg] = useState<{ tipo: 'erro' | 'sucesso'; texto: string } | null>(null);
   const [ocupado, setOcupado] = useState(false);
   useEffect(() => {
     lerComissaoCozinha(cozinhaId)
-      .then((v) => setValor(String(v).replace('.', ',')))
-      .catch(() => setValor(''));
+      .then((v) => {
+        setComissao(String(v.comissao).replace('.', ','));
+        setConvida(String(v.convida).replace('.', ','));
+      })
+      .catch(() => undefined);
   }, [cozinhaId]);
-  const numero = Number(valor.replace(',', '.'));
-  const valido = valor.trim() !== '' && Number.isFinite(numero) && numero >= 0 && numero <= 50;
+  const num = (t: string) => Number(t.replace(',', '.'));
+  const nComissao = num(comissao);
+  const nConvida = num(convida);
+  const valido =
+    comissao.trim() !== '' && convida.trim() !== '' && nComissao >= 0 && nComissao <= 50 && nConvida >= 0 && nConvida <= 100;
+  const quem = nConvida <= 0 ? 'a plataforma paga tudo' : nConvida >= 100 ? 'a cozinha paga tudo' : `a cozinha paga ${convida}%, a plataforma o resto`;
+
+  function guardar() {
+    setOcupado(true);
+    setMsg(null);
+    Promise.all([definirComissaoCozinha(cozinhaId, nComissao), definirConvidaCozinha(cozinhaId, nConvida)])
+      .then(() => setMsg({ tipo: 'sucesso', texto: 'Comissão e Convida guardados.' }))
+      .catch((e) => setMsg({ tipo: 'erro', texto: mensagemErro(e) }))
+      .finally(() => setOcupado(false));
+  }
+
   return (
     <>
-      <Subtitulo>Comissão da plataforma</Subtitulo>
+      <Subtitulo>Comissão e Convida e Ganha</Subtitulo>
       <Paragrafo suave>
-        Percentagem sobre as vendas de comida desta cozinha. O relatório mostra «a receber pela cozinha» = vendas − comissão. Os
-        descontos de convite e o saldo Convida são da plataforma.
+        O relatório mostra «a receber pela cozinha» = vendas − comissão − a parte do Convida paga pela cozinha.
       </Paragrafo>
-      <Campo rotulo="Comissão (%)" value={valor} keyboardType="decimal-pad" maxLength={5} onChangeText={setValor} />
-      {msg && <Aviso tipo={msg.tipo}>{msg.texto}</Aviso>}
-      <Botao
-        titulo="Guardar comissão"
-        variante="secundario"
-        aCarregar={ocupado}
-        desactivado={!valido}
-        aoCarregar={() => {
-          setOcupado(true);
-          setMsg(null);
-          definirComissaoCozinha(cozinhaId, numero)
-            .then(() => setMsg({ tipo: 'sucesso', texto: 'Comissão guardada.' }))
-            .catch((e) => setMsg({ tipo: 'erro', texto: mensagemErro(e) }))
-            .finally(() => setOcupado(false));
-        }}
+      <Campo rotulo="Comissão da plataforma (%)" value={comissao} keyboardType="decimal-pad" maxLength={5} onChangeText={setComissao} />
+      <Text style={{ fontWeight: '700', color: cores.texto }}>Quem paga o desconto de convite e o saldo Convida?</Text>
+      <Escolha
+        opcoes={[
+          { valor: '0', rotulo: 'Plataforma' },
+          { valor: '100', rotulo: 'Cozinha' },
+          { valor: 'outra', rotulo: 'Dividir (%)' },
+        ]}
+        valor={nConvida === 0 && convida.trim() !== '' ? '0' : nConvida === 100 ? '100' : 'outra'}
+        aoMudar={(v) => setConvida(v === 'outra' ? '50' : v)}
       />
+      <Campo rotulo="Parte paga pela cozinha (%)" value={convida} keyboardType="decimal-pad" maxLength={6} onChangeText={setConvida} />
+      <Paragrafo suave>Agora: {quem}. Cozinhas com fluxo → plataforma; cozinhas sem fluxo → cozinha.</Paragrafo>
+      {msg && <Aviso tipo={msg.tipo}>{msg.texto}</Aviso>}
+      <Botao titulo="Guardar comissão e Convida" variante="secundario" aCarregar={ocupado} desactivado={!valido} aoCarregar={guardar} />
     </>
   );
 }

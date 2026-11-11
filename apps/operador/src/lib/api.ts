@@ -332,11 +332,16 @@ export async function relatorioCozinhaDetalhado(cozinhaId: string, inicio: strin
   ) as RelatorioDetalhado;
 }
 
-export async function lerComissaoCozinha(cozinhaId: string): Promise<number> {
-  const r = verificar(await supabase.from('cozinhas').select('comissao_percent').eq('id', cozinhaId).single()) as {
-    comissao_percent: number | string | null;
-  };
-  return Number(r.comissao_percent ?? 0);
+export async function lerComissaoCozinha(cozinhaId: string): Promise<{ comissao: number; convida: number }> {
+  const r = verificar(
+    await supabase.from('cozinhas').select('comissao_percent, convida_cozinha_percent').eq('id', cozinhaId).single(),
+  ) as { comissao_percent: number | string | null; convida_cozinha_percent: number | string | null };
+  return { comissao: Number(r.comissao_percent ?? 0), convida: Number(r.convida_cozinha_percent ?? 0) };
+}
+
+/** Parte (%) do desconto de convite e do saldo Convida paga pela cozinha: 0 = plataforma, 100 = cozinha */
+export async function definirConvidaCozinha(cozinhaId: string, percent: number) {
+  verificar(await supabase.rpc('definir_convida_cozinha', { p_cozinha: cozinhaId, p_percent: percent }));
 }
 
 /** Comissão da plataforma sobre as vendas de comida da cozinha (0–50 %), só o admin */

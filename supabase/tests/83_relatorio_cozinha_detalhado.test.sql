@@ -2,7 +2,7 @@
 -- (o gerente só vê a sua cozinha) e o fecho do dia (N42).
 begin;
 \ir _helpers.psql
-select plan(23);
+select plan(24);
 
 -- Cozinha com 10% de comissão, um prato simples (2000) e um montável
 with k as (insert into cozinhas (nome, responsavel, comissao_percent) values ('Cozinha Relatório', 'Rita', 10) returning id)
@@ -73,15 +73,16 @@ select is((select (e ->> 'valor')::int from jsonb_array_elements(testes.v('r')::
 select is((testes.v('r')::jsonb #>> '{cancelamentos_motivos,0,motivo}'), 'Acabou um ingrediente', 'motivo do cancelamento');
 select is((testes.v('r')::jsonb #>> '{anterior,pedidos}')::int, 0, 'o período anterior não tem pedidos');
 
--- 1b) Opção: Convida pago pela cozinha -> o desconto (500) sai do valor a receber
-update parametros set convida_pago_por = 'cozinha' where unico;
+-- 1b) Convida por cozinha: 100% cozinha -> os 500 saem do valor; 50% -> 250
+update cozinhas set convida_cozinha_percent = 100 where id = testes.u('k');
 select is((resumo_cozinha(testes.u('k'), testes.hoje()::timestamp at time zone 'Africa/Luanda',
                           (testes.hoje() + 1)::timestamp at time zone 'Africa/Luanda') ->> 'a_receber_cozinha')::int,
           4900, 'Convida pago pela cozinha: 6000 − 600 − 500');
+update cozinhas set convida_cozinha_percent = 50 where id = testes.u('k');
 select is((resumo_cozinha(testes.u('k'), testes.hoje()::timestamp at time zone 'Africa/Luanda',
                           (testes.hoje() + 1)::timestamp at time zone 'Africa/Luanda') ->> 'convida_a_cargo_cozinha')::int,
-          500, 'mostra quanto do Convida ficou a cargo da cozinha');
-update parametros set convida_pago_por = 'plataforma' where unico;
+          250, 'metade do Convida a cargo da cozinha');
+update cozinhas set convida_cozinha_percent = 0 where id = testes.u('k');
 
 -- 2) Permissões: o gerente não vê outra cozinha; sem relatorios.exportar não vê nada
 select testes.entrar_funcionario(testes.u('gerente'));
@@ -108,6 +109,11 @@ set local role authenticated;
 select definir_comissao_cozinha(testes.u('k'), 12.5);
 reset role; select testes.sair();
 select is((select comissao_percent from cozinhas where id = testes.u('k')), 12.50, 'o admin da plataforma define a comissão');
+select testes.entrar_funcionario(testes.u('gestor'));
+set local role authenticated;
+select throws_ok(format('update cozinhas set convida_cozinha_percent = 100 where id = %L', testes.u('k')),
+                 '42501', null, 'quem gere cozinhas não muda quem paga o Convida');
+reset role; select testes.sair();
 update cozinhas set comissao_percent = 10 where id = testes.u('k');
 
 -- 3) Fecho do dia: aviso N42 ao gerente da cozinha

@@ -1,4 +1,4 @@
-import { htmlRelatorio, indicadores, linhasCsvRelatorio, periodoRel, variacao, type RelatorioDetalhado, type ResumoCozinha } from '../relatorio';
+import { htmlRelatorio, indicadores, linhasCsvRelatorio, periodoRel, quemPagaConvida, variacao, type RelatorioDetalhado, type ResumoCozinha } from '../relatorio';
 
 const resumo = (over: Partial<ResumoCozinha> = {}): ResumoCozinha => ({
   pedidos: 2, vendas_brutas: 6000, desconto_convite: 500, saldo_convida: 0, descontos: 500, vendas_liquidas: 5500,
@@ -55,4 +55,12 @@ test('CSV e PDF: dados certos e texto escapado', () => {
   expect(html).toContain('Calulu &lt;b&gt;');
   expect(html).toContain('Acabou um ingrediente');
   expect(html).not.toContain('Estafetas'); // secções sem dados ficam de fora
+});
+
+test('quem paga o Convida, por cozinha', () => {
+  expect(quemPagaConvida(resumo({ convida_cozinha_percent: 0 }))).toMatch(/plataforma/);
+  expect(quemPagaConvida(resumo({ convida_cozinha_percent: 100 }))).toMatch(/pagos pela cozinha/);
+  expect(quemPagaConvida(resumo({ convida_cozinha_percent: 50 }))).toMatch(/50% pagos pela cozinha, o resto pela plataforma/);
+  const i = indicadores({ ...rel, resumo: resumo({ convida_cozinha_percent: 100, convida_a_cargo_cozinha: 500 }) });
+  expect(i.find((x) => x.rotulo.startsWith('Descontos Convida'))?.rotulo).toBe('Descontos Convida (cozinha paga 500 Kz)');
 });
