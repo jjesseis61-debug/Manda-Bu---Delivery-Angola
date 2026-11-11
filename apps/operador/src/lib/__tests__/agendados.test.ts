@@ -1,4 +1,4 @@
-import { agrupar, diaLuanda, estadoAlerta, faltam, horaMinLuanda, intervaloDo, linkWhatsapp, listaProducao, nomeDia, comoPedido } from '../agendados';
+import { agrupar, diaLuanda, estadoAlerta, faltam, horaMinLuanda, instanteLuanda, intervaloDo, linhasCsvAgendados, linkWhatsapp, listaProducao, nomeDia, comoPedido } from '../agendados';
 import type { AgendadoOperador } from '../tipos';
 
 function agendado(over: Partial<AgendadoOperador>): AgendadoOperador {
@@ -105,4 +105,17 @@ test('faltam, WhatsApp e talão', () => {
   expect(linkWhatsapp('923 000 111', 'olá')).toBe('https://wa.me/244923000111?text=ol%C3%A1');
   expect(linkWhatsapp(null, 'x')).toBeNull();
   expect(comoPedido(agendado({})).hora_prometida).toBe('2026-11-12T11:00:00Z');
+});
+
+describe('agendados fase 2', () => {
+  it('instanteLuanda converte dia e hora de Luanda (UTC+1)', () => {
+    expect(instanteLuanda('2026-11-12', '12:30')).toBe('2026-11-12T11:30:00.000Z');
+    expect(instanteLuanda('2026-11-12', '25:00')).toBeNull();
+    expect(instanteLuanda('12/11/2026', '12:30')).toBeNull();
+  });
+  it('CSV: cabeçalho e uma linha por pedido', () => {
+    const l = linhasCsvAgendados([agendado({ itens: [{ nome: 'Calulu', qtd: 2, preco_unitario: 2000 }] as never })]);
+    expect(l[0][0]).toBe('Dia');
+    expect(l[1]).toEqual(['2026-11-12', '12:00', 'A1B2C3', 'pendente', 'Viana', 'Ana Maria', '923000111', '2x Calulu', null, 'Rua 1', 'Viana', 2500]);
+  });
 });

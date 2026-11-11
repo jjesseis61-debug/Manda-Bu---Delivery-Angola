@@ -24,7 +24,7 @@ beforeEach(() => {
         'max_indicados_por_local', 'max_descontos_por_local', 'desconto_subtotal_minimo', 'alerta_contas_por_aparelho', 'tamanho_top',
         'limiar_intervalos', 'tamanho_intervalo', 'pessoas_como_tu_min', 'pessoas_como_tu_max',
         'contador_minimo', 'prazo_avaliacao_dias', 'avaliacoes_minimo', 'tempo_entrega_min',
-        'tolerancia_entrega_min', 'alerta_agendado_horas', 'selos_necessarios',
+        'tolerancia_entrega_min', 'alerta_agendado_horas', 'agendados_por_hora_max', 'selos_necessarios',
         'despromocao_carencia_dias', 'despromocao_margem_pct',
       ].map((k) => [k, 10]),
     ),

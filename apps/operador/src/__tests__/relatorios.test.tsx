@@ -8,6 +8,10 @@ jest.mock('@/lib/api', () => ({
   lerCozinhas: jest.fn(),
   relatorioComparativo: jest.fn(),
   relatorioCozinhaDetalhado: jest.fn(),
+  indicadoresAgendados: jest.fn().mockResolvedValue({
+    pedidos: 4, entregues: 3, valor: 9000, cancelados: 1, a_tempo: 2, antecedencia_horas: 20.5,
+    horas: [{ hora: '12', pedidos: 3 }, { hora: '19', pedidos: 1 }],
+  }),
   temposEtapasCozinha: jest.fn().mockResolvedValue({
     pedidos: 2, agendados_fora: 0,
     etapas: [
@@ -71,4 +75,8 @@ test('gera o relatório de hoje com o valor a receber e abre as secções', asyn
   expect(ecra.getByText('15 min · piores 19 min')).toBeTruthy();
   expect(ecra.getByText(/adianta as bases antes do pico/)).toBeTruthy();
   expect(ecra.getByText(/1 de 2 · atraso normal 5 min/)).toBeTruthy();
+  fireEvent.press(ecra.getByText('▸ Agendados'));
+  expect(ecra.getByText('4 · 3')).toBeTruthy();
+  expect(ecra.getByText('12h (3) · 19h (1)')).toBeTruthy();
+  expect(ecra.getByText('20,5 h')).toBeTruthy();
 });

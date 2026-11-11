@@ -4,7 +4,15 @@ import { Pressable, Text, View } from 'react-native';
 
 import { Guarda } from '@/components/Guarda';
 import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Escolha, Linha, Paragrafo } from '@/components/ui';
-import { lerCozinhas, relatorioComparativo, relatorioCozinhaDetalhado, rentabilidadeCozinha, temposEtapasCozinha } from '@/lib/api';
+import {
+  indicadoresAgendados,
+  lerCozinhas,
+  relatorioComparativo,
+  relatorioCozinhaDetalhado,
+  rentabilidadeCozinha,
+  temposEtapasCozinha,
+  type IndicadoresAgendados,
+} from '@/lib/api';
 import { escaparHtml, exportarCsv, exportarPdf } from '@/lib/exportar';
 import { formatarDia, formatarKz, mensagemErro, paraCsv } from '@/lib/formatar';
 import {
@@ -84,6 +92,7 @@ export default function Relatorios() {
   const [rel, setRel] = useState<RelatorioDetalhado | null>(null);
   const [rent, setRent] = useState<Rentabilidade | null>(null);
   const [tempos, setTempos] = useState<TemposEtapas | null>(null);
+  const [agend, setAgend] = useState<IndicadoresAgendados | null>(null);
   const router = useRouter();
   const [comp, setComp] = useState<LinhaComparativo[] | null>(null);
   const [erro, setErro] = useState<string | null>(null);
@@ -107,6 +116,7 @@ export default function Relatorios() {
   function limpar() {
     setRent(null);
     setTempos(null);
+    setAgend(null);
     setRel(null);
     setComp(null);
   }
@@ -118,14 +128,16 @@ export default function Relatorios() {
     try {
       if (cozinhaId === COMPARAR) setComp(await relatorioComparativo(inicio, fim));
       else {
-        const [r, rt, tp] = await Promise.all([
+        const [r, rt, tp, ag] = await Promise.all([
           relatorioCozinhaDetalhado(cozinhaId, inicio, fim),
           rentabilidadeCozinha(cozinhaId, inicio, fim).catch(() => null),
           temposEtapasCozinha(cozinhaId, inicio, fim).catch(() => null),
+          indicadoresAgendados(cozinhaId, inicio, fim).catch(() => null),
         ]);
         setRel(r);
         setRent(rt);
         setTempos(tp);
+        setAgend(ag);
       }
     } catch (e) {
       setErro(mensagemErro(e));
@@ -404,6 +416,31 @@ export default function Relatorios() {
                   )}
                   {tempos.agendados_fora > 0 && (
                     <Paragrafo suave>{`${tempos.agendados_fora} agendado(s) fora das etapas (contam só na pontualidade).`}</Paragrafo>
+                  )}
+                </>
+              )}
+            </Seccao>
+
+            <Seccao titulo="Agendados">
+              {(!agend || agend.pedidos === 0) && <Paragrafo suave>Sem pedidos agendados para o período.</Paragrafo>}
+              {agend && agend.pedidos > 0 && (
+                <>
+                  <Linha esquerda="Agendados · entregues" direita={`${agend.pedidos} · ${agend.entregues}`} />
+                  <Linha esquerda="Valor entregue" direita={formatarKz(agend.valor)} />
+                  <Linha
+                    esquerda="Cancelados"
+                    direita={`${agend.cancelados} (${percentagem(Math.round((agend.cancelados / agend.pedidos) * 100))})`}
+                  />
+                  <Linha
+                    esquerda="Entregues a horas (até 10 min)"
+                    direita={agend.entregues ? `${agend.a_tempo} de ${agend.entregues}` : '—'}
+                  />
+                  <Linha
+                    esquerda="Antecedência normal"
+                    direita={agend.antecedencia_horas == null ? '—' : `${String(agend.antecedencia_horas).replace('.', ',')} h`}
+                  />
+                  {agend.horas.length > 0 && (
+                    <Linha esquerda="Horas mais pedidas" direita={agend.horas.map((h) => `${h.hora}h (${h.pedidos})`).join(' · ')} />
                   )}
                 </>
               )}

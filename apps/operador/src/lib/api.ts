@@ -979,6 +979,37 @@ export async function agendadosOperador(inicio: string, fim: string, cozinha: st
   );
 }
 
+/** Alertas dos agendados: prato fora do horário, doses insuficientes, hora cheia */
+export type AlertaAgendado = { pedido_id: string; tipo: 'fora_de_horario' | 'doses' | 'hora_cheia'; detalhe: string };
+export async function alertasAgendados(inicio: string, fim: string, cozinha: string | null): Promise<AlertaAgendado[]> {
+  return (
+    (verificar(
+      await supabase.rpc('alertas_agendados', { p_inicio: inicio, p_fim: fim, p_cozinha: cozinha }),
+    ) as AlertaAgendado[]) ?? []
+  );
+}
+
+/** Reagendar a pedido do cliente (20 min a 14 dias); o cliente é avisado */
+export async function reagendarPedido(pedidoId: string, nova: string, motivo: string | null): Promise<void> {
+  verificar(await supabase.rpc('reagendar_pedido', { p_pedido: pedidoId, p_nova: nova, p_motivo: motivo }));
+}
+
+/** Indicadores dos agendados para o relatório da cozinha */
+export type IndicadoresAgendados = {
+  pedidos: number;
+  entregues: number;
+  valor: number;
+  cancelados: number;
+  a_tempo: number;
+  antecedencia_horas: number | null;
+  horas: { hora: string; pedidos: number }[];
+};
+export async function indicadoresAgendados(cozinhaId: string, inicio: string, fim: string): Promise<IndicadoresAgendados> {
+  return verificar(
+    await supabase.rpc('indicadores_agendados', { p_cozinha: cozinhaId, p_inicio: inicio, p_fim: fim }),
+  ) as IndicadoresAgendados;
+}
+
 /** Cria o prato montável na cozinha a partir do modelo (nasce desactivado) */
 export async function criarMontavelDoModelo(cozinhaId: string): Promise<string> {
   return verificar(await supabase.rpc('criar_montavel_do_modelo', { p_cozinha: cozinhaId })) as string;

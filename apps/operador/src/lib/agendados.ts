@@ -174,3 +174,40 @@ export function comoPedido(a: AgendadoOperador): PedidoOperador {
     minha: false,
   };
 }
+
+/** Dia (aaaa-mm-dd) + hora (HH:MM) de Luanda → instante ISO (Luanda é UTC+1, sem hora de verão); null se inválido */
+export function instanteLuanda(dia: string, hora: string): string | null {
+  const d = dia.trim();
+  const h = hora.trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(h)) return null;
+  const t = new Date(`${d}T${h}:00+01:00`);
+  return Number.isNaN(t.getTime()) ? null : t.toISOString();
+}
+
+/** Nome do alerta de um agendado */
+export const NOME_ALERTA: Record<string, string> = {
+  fora_de_horario: 'Fora do horário do prato',
+  doses: 'Doses insuficientes',
+  hora_cheia: 'Hora cheia',
+};
+
+/** Linhas do CSV (Excel) dos agendados do período */
+export function linhasCsvAgendados(lista: AgendadoOperador[]): (string | number | null)[][] {
+  return [
+    ['Dia', 'Hora', 'Pedido', 'Estado', 'Cozinha', 'Cliente', 'Telefone', 'Pratos', 'Observações', 'Morada', 'Zona', 'A receber (Kz)'],
+    ...lista.map((a) => [
+      diaLuanda(a.agendado_para),
+      horaMinLuanda(a.agendado_para),
+      a.pedido_id.slice(0, 6).toUpperCase(),
+      a.estado,
+      a.cozinha_nome,
+      a.cliente_nome,
+      a.cliente_telefone,
+      a.itens.map((i) => `${i.qtd}x ${i.nome}`).join('; '),
+      a.observacoes,
+      a.ponto_referencia,
+      a.zona_nome,
+      a.a_pagar,
+    ]),
+  ];
+}

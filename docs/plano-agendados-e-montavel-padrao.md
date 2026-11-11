@@ -4,8 +4,10 @@
 > ecrã `agendados.tsx` do operador. **Falta aplicar a migração à produção e criar o montável nas 9 cozinhas
 > existentes** (ambos só com autorização), e um APK novo do operador.
 >
-> Ficou de fora desta fase (ver 1.3): mapa do dia, alertas de doses/capacidade/cozinha fechada,
-> CSV, indicadores e reagendar. "Atribuir estafeta antecipadamente" não se faz: a reserva expira;
+> **Fase 2 (11/11/2026, `20261121000000_agendados_fase2.sql`):** alertas por pedido (prato fora do horário,
+> doses insuficientes para o dia, hora cheia — `parametros.agendados_por_hora_max`), **reagendar** com aviso
+> ao cliente, **exportar CSV** e indicadores no relatório (nº, valor, cancelados, a horas, antecedência,
+> horas mais pedidas). Fica para depois: mapa do dia (cada pedido já abre no Google Maps). "Atribuir estafeta antecipadamente" não se faz: a reserva expira;
 > atribui-se quando o pedido entra na fila.
 
 ---

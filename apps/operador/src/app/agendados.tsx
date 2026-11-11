@@ -7,21 +7,25 @@ import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Escolha, Paragrafo, Subti
 import {
   agrupar,
   comoPedido,
+  diaLuanda,
   estadoAlerta,
   faltam,
   horaMinLuanda,
+  instanteLuanda,
   intervaloDo,
   linkMapa,
   linkWhatsapp,
+  linhasCsvAgendados,
   listaProducao,
+  NOME_ALERTA,
   nomeDia,
   textoLembrete,
   type LinhaProducao,
   type Periodo,
 } from '@/lib/agendados';
-import { agendadosOperador, lerCozinhas, mudarEstado } from '@/lib/api';
-import { escaparHtml, imprimirHtml } from '@/lib/exportar';
-import { formatarKz, mensagemErro, nomeEstadoPedido } from '@/lib/formatar';
+import { agendadosOperador, alertasAgendados, lerCozinhas, mudarEstado, reagendarPedido, type AlertaAgendado } from '@/lib/api';
+import { escaparHtml, exportarCsv, imprimirHtml } from '@/lib/exportar';
+import { formatarKz, mensagemErro, nomeEstadoPedido, paraCsv } from '@/lib/formatar';
 import { useSessao } from '@/lib/sessao';
 import { detalharItem, htmlTalaoCozinha, htmlTalaoEntrega, numeroCurto } from '@/lib/talao';
 import { cores, espaco } from '@/lib/tema';
@@ -67,6 +71,8 @@ export default function Agendados() {
   const [aviso, setAviso] = useState<string | null>(null);
   const [aberto, setAberto] = useState<string | null>(null);
   const [cancelar, setCancelar] = useState<{ pedido: string; motivo: string; outro: string } | null>(null);
+  const [reagendar, setReagendar] = useState<{ pedido: string; dia: string; hora: string; motivo: string } | null>(null);
+  const [alertas, setAlertas] = useState<AlertaAgendado[]>([]);
   const [ocupado, setOcupado] = useState<string | null>(null);
   const [verProducao, setVerProducao] = useState(false);
   const [agora, setAgora] = useState(() => new Date());
@@ -80,10 +86,12 @@ export default function Agendados() {
     Promise.all([
       agendadosOperador(intervalo.inicio, intervalo.fim, cozinha === 'todas' ? null : cozinha),
       lerCozinhas().catch(() => [] as Cozinha[]),
+      alertasAgendados(intervalo.inicio, intervalo.fim, cozinha === 'todas' ? null : cozinha).catch(() => [] as AlertaAgendado[]),
     ])
-      .then(([a, c]) => {
+      .then(([a, c, al]) => {
         setLista(a);
         setCozinhas(c);
+        setAlertas(al);
       })
       .catch((e) => setErro(mensagemErro(e)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -115,6 +123,7 @@ export default function Agendados() {
       .then(() => {
         setAviso(ok);
         setCancelar(null);
+        setReagendar(null);
         carregar();
       })
       .catch((e) => setErro(mensagemErro(e)))
@@ -131,6 +140,9 @@ export default function Agendados() {
     const emCancelar = cancelar?.pedido === a.pedido_id ? cancelar : null;
     const motivo = emCancelar ? (emCancelar.motivo === 'outro' ? emCancelar.outro.trim() : emCancelar.motivo) : '';
     const descontos = a.desconto_indicacao + a.credito_indicacao_usado;
+    const meusAlertas = alertas.filter((x) => x.pedido_id === a.pedido_id);
+    const emReagendar = reagendar?.pedido === a.pedido_id ? reagendar : null;
+    const novaHora = emReagendar ? instanteLuanda(emReagendar.dia, emReagendar.hora) : null;
     return (
       <View
         key={a.pedido_id}
@@ -154,6 +166,9 @@ export default function Agendados() {
         </Text>
         {alerta === 'urgente' && <Aviso tipo="erro">URGENTE: já entrou na fila e ainda não foi confirmado.</Aviso>}
         {alerta === 'por_confirmar' && <Aviso>Por confirmar — liga ao cliente ou confirma.</Aviso>}
+        {meusAlertas.map((x) => (
+          <Aviso key={x.tipo + x.detalhe}>{`${NOME_ALERTA[x.tipo] ?? x.tipo}: ${x.detalhe}`}</Aviso>
+        ))}
         {a.itens.map((i, n) => {
           const d = detalharItem(i);
           return (
@@ -189,7 +204,37 @@ export default function Agendados() {
         {a.atribuido_a_nome && <Text style={{ color: cores.textoSuave }}>➤ {a.atribuido_a_nome}</Text>}
 
         {!expandido && <Botao titulo="Acções" variante="texto" aoCarregar={() => setAberto(a.pedido_id)} />}
-        {expandido && !emCancelar && (
+        {expandido && emReagendar && (
+          <View style={{ gap: espaco.s }}>
+            <Text style={{ fontWeight: '700' }}>Nova hora (a pedido do cliente)</Text>
+            <View style={{ flexDirection: 'row', gap: espaco.s }}>
+              <View style={{ flex: 1 }}>
+                <Campo rotulo="Dia (aaaa-mm-dd)" value={emReagendar.dia} maxLength={10}
+                  onChangeText={(t) => setReagendar({ ...emReagendar, dia: t })} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Campo rotulo="Hora (HH:MM)" value={emReagendar.hora} maxLength={5}
+                  onChangeText={(t) => setReagendar({ ...emReagendar, hora: t })} />
+              </View>
+            </View>
+            <Campo rotulo="Motivo (opcional)" value={emReagendar.motivo} maxLength={200}
+              onChangeText={(t) => setReagendar({ ...emReagendar, motivo: t })} />
+            {!novaHora && <Paragrafo suave>Escreve o dia e a hora (ex.: 2026-11-12 e 12:30).</Paragrafo>}
+            <Paragrafo suave>O cliente recebe um aviso com a nova hora.</Paragrafo>
+            <Botao
+              titulo="Reagendar"
+              desactivado={!novaHora}
+              aCarregar={ocupado === a.pedido_id}
+              aoCarregar={() =>
+                novaHora &&
+                correr(a.pedido_id, () => reagendarPedido(a.pedido_id, novaHora, emReagendar.motivo.trim() || null),
+                  'Pedido reagendado; o cliente foi avisado.')
+              }
+            />
+            <Botao titulo="Voltar" variante="texto" aoCarregar={() => setReagendar(null)} />
+          </View>
+        )}
+        {expandido && !emCancelar && !emReagendar && (
           <View style={{ gap: espaco.s }}>
             {gerir && a.estado === 'pendente' && (
               <Botao
@@ -214,6 +259,15 @@ export default function Agendados() {
             <Botao titulo="🖨 Talão da cozinha" variante="leve" aoCarregar={() => imprimir(htmlTalaoCozinha(comoPedido(a)))} />
             <Botao titulo="🖨 Talão de entrega" variante="leve" aoCarregar={() => imprimir(htmlTalaoEntrega(comoPedido(a)))} />
             <Paragrafo suave>O estafeta atribui-se quando o pedido entrar na fila (cerca de 90 min antes).</Paragrafo>
+            {gerir && !a.grupo && (a.estado === 'pendente' || a.estado === 'confirmado') && (
+              <Botao
+                titulo="📅 Reagendar…"
+                variante="leve"
+                aoCarregar={() =>
+                  setReagendar({ pedido: a.pedido_id, dia: diaLuanda(a.agendado_para), hora: horaMinLuanda(a.agendado_para), motivo: '' })
+                }
+              />
+            )}
             {gerir && (
               <Botao
                 titulo="Cancelar pedido…"
@@ -312,6 +366,9 @@ export default function Agendados() {
             <Subtitulo>
               {tituloPeriodo}: {lista.length} pedido{lista.length === 1 ? '' : 's'} · {formatarKz(lista.reduce((s, a) => s + a.a_pagar, 0))}
             </Subtitulo>
+            {alertas.length > 0 && (
+              <Aviso>{`${new Set(alertas.map((x) => x.pedido_id)).size} pedido(s) com alertas: horário, doses ou hora cheia.`}</Aviso>
+            )}
             <Botao
               titulo={verProducao ? 'Esconder lista de produção' : '🍳 Lista de produção (o que preparar)'}
               variante="secundario"
@@ -368,6 +425,17 @@ export default function Agendados() {
             ))}
           </Cartao>
         ))}
+        {lista && lista.length > 0 && intervalo && (
+          <Botao
+            titulo="⬇ Exportar lista (CSV)"
+            variante="texto"
+            aoCarregar={() =>
+              exportarCsv(`agendados-${intervalo.inicio}-${intervalo.fim}.csv`, paraCsv(linhasCsvAgendados(lista))).catch((e) =>
+                setErro(mensagemErro(e)),
+              )
+            }
+          />
+        )}
         <Botao titulo="Actualizar" variante="texto" aoCarregar={carregar} />
         <Paragrafo suave>
           Entram na fila de Pedidos e entregas cerca de 90 min antes. A cozinha recebe um aviso se o pedido ainda estiver por
