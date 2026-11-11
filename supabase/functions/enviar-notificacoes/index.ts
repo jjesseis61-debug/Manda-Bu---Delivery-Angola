@@ -11,11 +11,39 @@
 // segredo ENVIO_SEGREDO da função (se existir) ou ao segredo guardado na base de dados
 // (segredos_servidor, confirmado por segredo_envio_valido; é o que o cron de agendar_envio manda).
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import webpush from 'npm:web-push@3.6.7';
 
 const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
 const EXPO_RECIBOS_URL = 'https://exp.host/--/api/v2/push/getReceipts';
 const LOTE_EXPO = 100;
 const LOTE_RECIBOS = 1000;
+// Web Push (PWA): as assinaturas dos navegadores vêm com app = 'web' e o "token" é o JSON da
+// assinatura. Saem por Web Push com as chaves VAPID (segredos VAPID_PUBLICA e VAPID_PRIVADA da
+// função); sem as chaves, as assinaturas web são ignoradas e o resto funciona como antes.
+const VAPID_PUBLICA = Deno.env.get('VAPID_PUBLICA') ?? '';
+const VAPID_PRIVADA = Deno.env.get('VAPID_PRIVADA') ?? '';
+const WEB_PUSH_LIGADO = VAPID_PUBLICA !== '' && VAPID_PRIVADA !== '';
+if (WEB_PUSH_LIGADO) {
+  webpush.setVapidDetails(Deno.env.get('VAPID_CONTACTO') ?? 'https://manda-bue.netlify.app', VAPID_PUBLICA, VAPID_PRIVADA);
+}
+type EnvioWeb = { id: string; token: string; payload: string };
+
+/** Envia as notificações dos navegadores (PWA). Devolve os tokens que já não servem (404/410). */
+async function enviarWeb(envios: EnvioWeb[]): Promise<string[]> {
+  const mortos: string[] = [];
+  await Promise.all(
+    envios.map(async (e) => {
+      try {
+        await webpush.sendNotification(JSON.parse(e.token), e.payload, { TTL: 6 * 3600 });
+      } catch (erro) {
+        const codigo = (erro as { statusCode?: number }).statusCode;
+        if (codigo === 404 || codigo === 410) mortos.push(e.token); // o navegador desistiu da assinatura
+      }
+    }),
+  );
+  return mortos;
+}
+
 // Erros do Expo que significam "este token já não serve" (app desinstalada, projecto errado)
 const TOKEN_MORTO = new Set(['DeviceNotRegistered', 'MismatchSenderId', 'InvalidCredentials']);
 
@@ -121,6 +149,8 @@ Deno.serve(async (req) => {
   type NotifApp = { id: string; mensagens: Mensagem[] };
   const porApp = new Map<string, NotifApp[]>();
   const semTelemovel: string[] = [];
+  const envioWeb: EnvioWeb[] = [];
+  const soWeb: string[] = []; // notificações que só tinham navegadores: saem da fila depois do envio web
   const totalPorId = new Map<string, number>(); // nº de mensagens (tokens) por notificação
   for (const n of pendentes) {
     if (!n.tokens || n.tokens.length === 0) {
@@ -129,14 +159,27 @@ Deno.serve(async (req) => {
     }
     const data = dadosDe(n);
     const desta = new Map<string, Mensagem[]>(); // app -> mensagens desta notificação
+    let expo = 0;
     n.tokens.forEach((token, i) => {
       const app = appDoToken(n, i);
+      if (app === 'web') {
+        // O tag evita mostrar duas vezes o mesmo aviso se a notificação tiver de ser repetida
+        if (WEB_PUSH_LIGADO) {
+          envioWeb.push({ id: n.id, token, payload: JSON.stringify({ title: n.titulo, body: n.corpo, data, tag: n.id }) });
+        }
+        return;
+      }
+      expo++;
       const msg: Mensagem = { to: token, title: n.titulo, body: n.corpo, sound: 'default', data };
       const arr = desta.get(app);
       if (arr) arr.push(msg);
       else desta.set(app, [msg]);
     });
-    totalPorId.set(n.id, n.tokens.length);
+    if (expo === 0) {
+      soWeb.push(n.id);
+      continue;
+    }
+    totalPorId.set(n.id, expo);
     for (const [app, msgs] of desta) {
       const arr = porApp.get(app);
       if (arr) arr.push({ id: n.id, mensagens: msgs });
@@ -187,6 +230,16 @@ Deno.serve(async (req) => {
   try {
     // Notificações sem nenhum telemóvel registado também saem da fila (não há a quem entregar)
     enviadas += await marcar(semTelemovel);
+    // Navegadores (PWA): Web Push; as que só tinham navegadores saem logo da fila
+    if (envioWeb.length > 0) {
+      const mortos = await enviarWeb(envioWeb);
+      mensagens += envioWeb.length;
+      if (mortos.length > 0) {
+        const r = await supabase.rpc('desactivar_tokens_push', { p_tokens: [...new Set(mortos)] });
+        desactivados += (r.data as number | null) ?? 0;
+      }
+    }
+    enviadas += await marcar(soWeb);
     for (const lote of lotes) {
       const resposta = await fetch(EXPO_PUSH_URL, {
         method: 'POST',

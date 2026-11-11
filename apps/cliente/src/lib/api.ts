@@ -48,6 +48,39 @@ function verificar<T>(resultado: { data: T | null; error: { message: string } | 
 }
 
 // ---------------------------------------------------------------- configuração
+export type Aviso = {
+  id: string;
+  codigo: string;
+  titulo: string;
+  corpo: string;
+  dados: Record<string, unknown>;
+  criado_em: string;
+  vista_em: string | null;
+};
+
+/** Os meus avisos (sino): os mesmos que chegam por push, guardados para ler dentro da app */
+export async function meusAvisos(limite = 50): Promise<Aviso[]> {
+  return (verificar(await supabase.rpc('meus_avisos', { p_limite: limite })) as Aviso[]) ?? [];
+}
+
+export async function contarAvisosNovos(): Promise<number> {
+  return (verificar(await supabase.rpc('contar_avisos_novos')) as number) ?? 0;
+}
+
+/** Marca como vistos (sem ids = todos) */
+export async function marcarAvisosVistos(ids?: string[]): Promise<number> {
+  return (verificar(await supabase.rpc('marcar_avisos_vistos', { p_ids: ids ?? null })) as number) ?? 0;
+}
+
+/** PWA: assinatura Web Push deste navegador */
+export async function registarPushWeb(endpoint: string, p256dh: string, auth: string) {
+  verificar(await supabase.rpc('registar_push_web', { p_endpoint: endpoint, p_p256dh: p256dh, p_auth: auth }));
+}
+
+export async function removerPushWeb(endpoint: string) {
+  verificar(await supabase.rpc('remover_push_web', { p_endpoint: endpoint }));
+}
+
 /** Antifraude do Convida: aparelho em que a conta entrou (ver dispositivo.ts) */
 export async function registarAparelho(instalacao: string, aparelho: string | null, plataforma: string, modelo: string | null) {
   verificar(

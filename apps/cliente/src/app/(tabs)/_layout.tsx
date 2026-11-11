@@ -4,6 +4,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import type { ComponentProps } from 'react';
 import type { ColorValue } from 'react-native';
 
+import { Sino } from '@/components/Sino';
 import { ACarregar } from '@/components/ui';
 import { useSessao } from '@/lib/sessao';
 import { cores } from '@/lib/tema';
@@ -29,6 +30,7 @@ export default function LayoutSeparadores() {
         tabBarActiveTintColor: cores.marca,
         tabBarInactiveTintColor: cores.textoSuave,
         headerTitleStyle: { color: cores.texto },
+        headerRight: () => <Sino />,
       }}>
       <Tabs.Screen name="inicio" options={{ title: 'Início', headerTitle: 'Cozinha da Alexandra', tabBarIcon: icone('restaurant-outline', 'restaurant') }} />
       <Tabs.Screen name="pedidos" options={{ title: 'Pedidos', tabBarIcon: icone('receipt-outline', 'receipt') }} />

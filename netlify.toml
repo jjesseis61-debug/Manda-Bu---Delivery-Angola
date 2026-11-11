@@ -18,6 +18,8 @@
   EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_VoD7AGU0YCNyTJjiNmwJ-Q_FaRL1-aM"
   EXPO_PUBLIC_CONTACTO_TELEFONE = "958077592"
   EXPO_PUBLIC_CONTACTO_WHATSAPP = "958077592"
+  # Chave PÚBLICA das notificações push da web (a privada fica só nos segredos da função enviar-notificacoes)
+  EXPO_PUBLIC_VAPID_PUBLICA = "BAD66DhB2sT_x9jMn3QbqawnSNKpDtjBWbfydGKA3jNgX3lnQDGt0jmm7dc7HAofT39GAQOjqIgxJLJ2lv4W6xU"
 
 # App de página única: qualquer endereço (ex.: /convite/ABC, /pedido/123) abre a app,
 # que trata da rota. Ficheiros que existem (JS, ícones, sw.js) são servidos antes desta regra.

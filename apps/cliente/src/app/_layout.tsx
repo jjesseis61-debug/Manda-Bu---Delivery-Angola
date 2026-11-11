@@ -7,6 +7,7 @@ import { EcraCadeado } from '@/components/EcraCadeado';
 import { CadeadoProvider } from '@/lib/cadeadoContexto';
 import { CarrinhoProvider } from '@/lib/carrinho';
 import { registarEsteAparelho } from '@/lib/dispositivo';
+import { desligarPushWeb, renovarPushWeb } from '@/lib/pushWeb';
 import { activarPush, desactivarPush, rotaDaNotificacao } from '@/lib/push';
 import { SessaoProvider, useSessao } from '@/lib/sessao';
 import { cores } from '@/lib/tema';
@@ -19,6 +20,7 @@ function EfeitosSessao() {
   useEffect(() => {
     if (perfil) void activarPush().catch(() => undefined);
     if (perfil) void registarEsteAparelho();
+    if (perfil) void renovarPushWeb();
   }, [perfil]);
 
   useEffect(() => {
@@ -32,9 +34,14 @@ function EfeitosSessao() {
   return null;
 }
 
+/** Ao sair da conta: este telemóvel/navegador deixa de receber os avisos dela */
+async function sairDosAvisos() {
+  await Promise.all([desactivarPush(), desligarPushWeb()]);
+}
+
 export default function LayoutRaiz() {
   return (
-    <SessaoProvider aoSair={desactivarPush}>
+    <SessaoProvider aoSair={sairDosAvisos}>
       {/* Cadeado opcional (código / biometria) por cima de tudo: ver docs/plano-cadeado-conta.md */}
       <CadeadoProvider>
       <CarrinhoProvider>
@@ -58,6 +65,7 @@ export default function LayoutRaiz() {
           <Stack.Screen name="destaques" options={{ title: 'Destaques do mês' }} />
           <Stack.Screen name="privacidade" options={{ title: 'Privacidade na lista' }} />
           <Stack.Screen name="notificacoes" options={{ title: 'Notificações' }} />
+          <Stack.Screen name="avisos" options={{ title: 'Avisos' }} />
           <Stack.Screen name="avaliar/[id]" options={{ title: 'Avaliar pedido' }} />
           <Stack.Screen name="avaliacoes" options={{ title: 'Avaliações' }} />
           <Stack.Screen name="grupos" options={{ title: 'Pedidos de grupo' }} />

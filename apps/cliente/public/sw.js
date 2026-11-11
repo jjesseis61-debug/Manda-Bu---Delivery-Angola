@@ -44,3 +44,54 @@ self.addEventListener('fetch', (e) => {
     );
   }
 });
+
+// ---------------------------------------------------------------- Notificações (Web Push)
+// O servidor manda { title, body, data, tag }. O tag evita mostrar o mesmo aviso duas vezes.
+self.addEventListener('push', (e) => {
+  let aviso = {};
+  try {
+    aviso = e.data ? e.data.json() : {};
+  } catch (_) {
+    aviso = { body: e.data ? e.data.text() : '' };
+  }
+  e.waitUntil(
+    self.registration.showNotification(aviso.title || 'Manda Bué', {
+      body: aviso.body || '',
+      icon: '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
+      tag: aviso.tag,
+      data: aviso.data || {},
+    }),
+  );
+});
+
+// Ecrã a abrir ao tocar (igual a rotaDaNotificacao em src/lib/push.ts)
+function rotaDoAviso(d) {
+  const c = d && d.codigo;
+  if (c === 'N31' && typeof d.link === 'string' && d.link.startsWith('/')) return d.link;
+  if (['N2', 'N3', 'N4', 'N5', 'N6'].includes(c)) return '/convida';
+  if (c === 'N7') return '/destaques';
+  if (c === 'N8') return '/levantar';
+  if (c === 'N13' || c === 'N14') return '/pacotes';
+  if (c === 'N9' && d.pedido_id) return `/avaliar/${d.pedido_id}`;
+  if (['N16', 'N20', 'N22'].includes(c) && d.pedido_id) return `/pedido/${d.pedido_id}`;
+  if (c === 'N30') return '/ajuda';
+  if ((c === 'N10' || c === 'N11') && d.codigo_grupo) return `/grupo/${d.codigo_grupo}`;
+  return '/avisos';
+}
+
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  const url = new URL(rotaDoAviso(e.notification.data || {}), self.location.origin).href;
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((janelas) => {
+      for (const j of janelas) {
+        if (j.url.startsWith(self.location.origin) && 'focus' in j) {
+          j.navigate(url);
+          return j.focus();
+        }
+      }
+      return self.clients.openWindow(url);
+    }),
+  );
+});
