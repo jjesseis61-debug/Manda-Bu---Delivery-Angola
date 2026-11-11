@@ -824,6 +824,25 @@ export type AparelhoPartilhado = {
   clientes: { cliente_id: string; nome: string; telefone: string | null; convidado_por: string | null; pedidos: number }[];
 };
 
+/** Painel de vigilância (#9): números do Convida num período, para apanhar abusos cedo */
+export type PainelVigilancia = {
+  dias: number;
+  em_verificacao: { n: number; valor: number; mais_antigo: string | null };
+  anulados: { n: number; valor: number; por_motivo: { motivo: string; n: number; valor: number }[] };
+  levantamentos: { n: number; valor: number; pedidos: number; aprovados: number; mais_antigo: string | null };
+  serie: { dia: string; contas: number; ligacoes: number; ganhos: number; pico: boolean }[];
+  medias: { contas: number; ligacoes: number; ganhos: number };
+  topo: {
+    cliente_id: string; nome: string; codigo: string | null; nivel: string | null;
+    ganhos: number; valor: number; indicados: number; anulados: number; so_um_pedido: number;
+  }[];
+  aparelhos_partilhados: number;
+};
+
+export async function painelVigilancia(dias = 14): Promise<PainelVigilancia> {
+  return verificar(await supabase.rpc('painel_vigilancia', { p_dias: dias })) as PainelVigilancia;
+}
+
 /** Telemóveis com muitas contas (só alerta; ninguém é bloqueado) */
 export async function aparelhosPartilhados(): Promise<AparelhoPartilhado[]> {
   return (verificar(await supabase.rpc('aparelhos_partilhados')) as AparelhoPartilhado[]) ?? [];

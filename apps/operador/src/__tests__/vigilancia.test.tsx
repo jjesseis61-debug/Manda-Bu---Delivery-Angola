@@ -9,6 +9,19 @@ jest.mock('@/lib/api', () => ({
   abrirVigilancia: jest.fn(),
   decidirCasoConvida: jest.fn(),
   vigiarDeNovo: jest.fn(),
+  painelVigilancia: jest.fn().mockResolvedValue({
+    dias: 14,
+    em_verificacao: { n: 2, valor: 780, mais_antigo: '2026-11-09T10:00:00Z' },
+    anulados: { n: 3, valor: 1170, por_motivo: [{ motivo: 'mesmo_dispositivo', n: 3, valor: 1170 }] },
+    levantamentos: { n: 1, valor: 2500, pedidos: 1, aprovados: 0, mais_antigo: '2026-11-10T10:00:00Z' },
+    serie: [
+      { dia: '2026-11-10', contas: 1, ligacoes: 0, ganhos: 1, pico: false },
+      { dia: '2026-11-11', contas: 8, ligacoes: 6, ganhos: 0, pico: true },
+    ],
+    medias: { contas: 0.6, ligacoes: 0.4, ganhos: 0.1 },
+    topo: [{ cliente_id: 'a', nome: 'Carla', codigo: 'MB-1234', nivel: 'embaixador', ganhos: 4, valor: 2340, indicados: 4, anulados: 0, so_um_pedido: 3 }],
+    aparelhos_partilhados: 1,
+  }),
   aparelhosPartilhados: jest.fn().mockResolvedValue([
     {
       chave: 'android-xyz', plataforma: 'android', modelo: 'Tecno Spark', contas: 3, ultimo_em: '2026-11-10T10:00:00Z',
@@ -58,4 +71,15 @@ test('mostra os telemóveis com várias contas (só alerta)', async () => {
   await waitFor(() => expect(ecra.getByText('Telemóveis com várias contas (1)')).toBeTruthy());
   expect(ecra.getByText(/3 contas · Tecno Spark/)).toBeTruthy();
   expect(ecra.getByText(/convidado por Rui/)).toBeTruthy();
+});
+
+test('painel de vigilância: espera, anulados por motivo, levantamentos e picos', async () => {
+  (lerCasosConvida as jest.Mock).mockResolvedValue([]);
+  const ecra = renderRouter({ vigilancia: Vigilancia }, { initialUrl: '/vigilancia' });
+  await waitFor(() => expect(ecra.getByText('Painel de vigilância')).toBeTruthy());
+  expect(ecra.getByText('2 · 780 Kz')).toBeTruthy();
+  expect(ecra.getByText(/Mesmo telemóvel/)).toBeTruthy();
+  expect(ecra.getByText('1 · 2.500 Kz')).toBeTruthy();
+  expect(ecra.getByText(/1 dia\(s\) com pico/)).toBeTruthy();
+  expect(ecra.getByText(/3 só com 1 pedido/)).toBeTruthy();
 });
