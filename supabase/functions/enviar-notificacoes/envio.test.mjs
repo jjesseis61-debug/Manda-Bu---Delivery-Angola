@@ -14,6 +14,7 @@ globalThis.Deno = { env: { get: (k) => ({ ENVIO_SEGREDO: 's', SUPABASE_URL: 'x',
 let webEnviados = [];
 globalThis.__webPush = {
   setVapidDetails: () => {},
+  generateVAPIDKeys: () => ({ publicKey: 'P'.repeat(87), privateKey: 'p'.repeat(43) }),
   sendNotification: async (sub, payload) => {
     if (sub.endpoint.includes('morta')) throw Object.assign(new Error('gone'), { statusCode: 410 });
     webEnviados.push({ endpoint: sub.endpoint, payload: JSON.parse(payload) });
@@ -24,6 +25,8 @@ globalThis.__criarCliente = () => ({
     if (nome === 'notificacoes_por_enviar') return { data: pendentes.filter((p) => !marcadas.includes(p.id)), error: null };
     if (nome === 'marcar_notificacoes_enviadas') { marcadas.push(...args.p_ids); return { data: args.p_ids.length, error: null }; }
     if (nome === 'desactivar_tokens_push') return { data: args.p_tokens.length, error: null };
+    if (nome === 'chaves_push_web') return { data: [{ publica: null, privada: null }], error: null };
+    if (nome === 'guardar_chaves_push_web') return { data: null, error: null };
     if (nome === 'segredo_envio_valido') return { data: args.p_segredo === 'segredo-da-bd', error: null };
     if (nome === 'registar_recibos_push') { recibosRegistados.push(...args.p_recibos); return { data: args.p_recibos.length, error: null }; }
     if (nome === 'recibos_por_verificar') return { data: recibosAntigos, error: null };

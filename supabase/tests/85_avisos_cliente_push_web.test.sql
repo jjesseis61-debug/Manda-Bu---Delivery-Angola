@@ -1,7 +1,7 @@
 -- Avisos do cliente: sino (só os seus) e assinatura Web Push da PWA.
 begin;
 \ir _helpers.psql
-select plan(11);
+select plan(15);
 
 select testes.def('ana', testes.cliente('Ana Avisos'));
 select testes.def('rui', testes.cliente('Rui Avisos'));
@@ -39,6 +39,17 @@ select throws_ok($$select registar_push_web('http://inseguro', 'x', 'y')$$, 'P00
 select remover_push_web('https://fcm.googleapis.com/fcm/send/abc123');
 reset role; select testes.sair();
 select is((select count(*)::int from dispositivos_push where cliente_id = testes.u('ana') and activo), 0, 'desligar remove a assinatura');
+
+-- Chaves VAPID: só o servidor (service_role) lê a privada; a app só vê a pública
+select is(chave_publica_push_web(), null, 'sem chaves geradas, não há chave pública');
+select guardar_chaves_push_web(repeat('A', 87), repeat('b', 43));
+select guardar_chaves_push_web(repeat('C', 87), repeat('d', 43)); -- a 2.ª não substitui a 1.ª
+select is((select publica from chaves_push_web()), repeat('A', 87), 'fica o primeiro par guardado');
+select testes.entrar(testes.u('ana'));
+set local role authenticated;
+select is(chave_publica_push_web(), repeat('A', 87), 'a app recebe a chave pública');
+select throws_ok('select * from chaves_push_web()', '42501', null, 'a app não lê a chave privada');
+reset role; select testes.sair();
 
 select * from finish();
 rollback;

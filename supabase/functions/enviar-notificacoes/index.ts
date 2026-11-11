@@ -18,13 +18,37 @@ const EXPO_RECIBOS_URL = 'https://exp.host/--/api/v2/push/getReceipts';
 const LOTE_EXPO = 100;
 const LOTE_RECIBOS = 1000;
 // Web Push (PWA): as assinaturas dos navegadores vêm com app = 'web' e o "token" é o JSON da
-// assinatura. Saem por Web Push com as chaves VAPID (segredos VAPID_PUBLICA e VAPID_PRIVADA da
-// função); sem as chaves, as assinaturas web são ignoradas e o resto funciona como antes.
-const VAPID_PUBLICA = Deno.env.get('VAPID_PUBLICA') ?? '';
-const VAPID_PRIVADA = Deno.env.get('VAPID_PRIVADA') ?? '';
-const WEB_PUSH_LIGADO = VAPID_PUBLICA !== '' && VAPID_PRIVADA !== '';
-if (WEB_PUSH_LIGADO) {
-  webpush.setVapidDetails(Deno.env.get('VAPID_CONTACTO') ?? 'https://manda-bue.netlify.app', VAPID_PUBLICA, VAPID_PRIVADA);
+// assinatura. Saem por Web Push com as chaves VAPID. As chaves geram-se AQUI na 1.ª vez e ficam em
+// segredos_servidor (só o servidor lê): a privada nunca passa por pessoas nem pelo repositório.
+// Os segredos VAPID_PUBLICA / VAPID_PRIVADA da função, se existirem, têm prioridade.
+let webPushLigado = false;
+async function prepararWebPush(supabase: ReturnType<typeof createClient>): Promise<boolean> {
+  if (webPushLigado) return true;
+  try {
+    let publica = Deno.env.get('VAPID_PUBLICA') ?? '';
+    let privada = Deno.env.get('VAPID_PRIVADA') ?? '';
+    if (!publica || !privada) {
+      const lidas = await supabase.rpc('chaves_push_web');
+      const linha = ((lidas.data ?? []) as { publica: string | null; privada: string | null }[])[0];
+      if (linha?.publica && linha?.privada) {
+        publica = linha.publica;
+        privada = linha.privada;
+      } else {
+        const novas = webpush.generateVAPIDKeys();
+        await supabase.rpc('guardar_chaves_push_web', { p_publica: novas.publicKey, p_privada: novas.privateKey });
+        // Em caso de corrida fica o par que foi guardado primeiro: volta a ler
+        const outra = ((await supabase.rpc('chaves_push_web')).data ?? []) as { publica: string | null; privada: string | null }[];
+        if (!outra[0]?.publica || !outra[0]?.privada) return false;
+        publica = outra[0].publica;
+        privada = outra[0].privada;
+      }
+    }
+    webpush.setVapidDetails(Deno.env.get('VAPID_CONTACTO') ?? 'https://manda-bue.netlify.app', publica, privada);
+    webPushLigado = true;
+  } catch {
+    webPushLigado = false; // sem as funções da base de dados (migração por aplicar): só Expo
+  }
+  return webPushLigado;
 }
 type EnvioWeb = { id: string; token: string; payload: string };
 
@@ -120,6 +144,8 @@ Deno.serve(async (req) => {
     return Response.json({ erro: error.message }, { status: 500 });
   }
   const pendentes = (data ?? []) as Pendente[];
+  // Chaves do Web Push: geradas e guardadas na 1.ª execução, mesmo sem avisos pendentes
+  const WEB_PUSH_LIGADO = await prepararWebPush(supabase);
   if (pendentes.length === 0) {
     // Mesmo sem envios novos, há receipts de envios anteriores para confirmar
     let d = 0;

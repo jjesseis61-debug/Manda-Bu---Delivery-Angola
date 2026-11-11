@@ -4,9 +4,14 @@
 // ecrã principal (iOS 16.4+). Na app instalada (APK) não se usa: aí é o push da Expo.
 import { Platform } from 'react-native';
 
-import { registarPushWeb, removerPushWeb } from './api';
+import { chavePublicaPushWeb, registarPushWeb, removerPushWeb } from './api';
 
-const VAPID = process.env.EXPO_PUBLIC_VAPID_PUBLICA ?? '';
+// A chave pública vem do servidor (que guarda o par); pede-se uma vez por sessão
+let chaveEmCache: string | null = null;
+async function chaveVapid(): Promise<string | null> {
+  if (!chaveEmCache) chaveEmCache = await chavePublicaPushWeb().catch(() => null);
+  return chaveEmCache;
+}
 
 export type EstadoPushWeb = 'nao_suportado' | 'instalar_no_iphone' | 'bloqueado' | 'desligado' | 'ligado';
 
@@ -46,7 +51,7 @@ async function assinaturaActual(): Promise<PushSubscription | null> {
 export async function estadoPushWeb(): Promise<EstadoPushWeb> {
   if (Platform.OS !== 'web') return 'nao_suportado';
   if (iphoneSemInstalar()) return 'instalar_no_iphone';
-  if (!temApis() || !VAPID) return 'nao_suportado';
+  if (!temApis() || !(await chaveVapid())) return 'nao_suportado';
   if (Notification.permission === 'denied') return 'bloqueado';
   if (Notification.permission !== 'granted') return 'desligado';
   return (await assinaturaActual()) ? 'ligado' : 'desligado';
@@ -60,7 +65,8 @@ async function enviarAssinatura(sub: PushSubscription) {
 
 /** Pede autorização (tem de ser num toque do cliente) e liga os avisos neste navegador */
 export async function ligarPushWeb(): Promise<EstadoPushWeb> {
-  if (!temApis() || !VAPID) return 'nao_suportado';
+  const VAPID = temApis() ? await chaveVapid() : null;
+  if (!VAPID) return 'nao_suportado';
   const permissao = await Notification.requestPermission();
   if (permissao !== 'granted') return permissao === 'denied' ? 'bloqueado' : 'desligado';
   const reg = await navigator.serviceWorker.ready;
@@ -83,7 +89,7 @@ export async function desligarPushWeb(): Promise<void> {
 /** Ao abrir a PWA com sessão: se já tinha autorizado, volta a enviar a assinatura (pode ter mudado) */
 export async function renovarPushWeb(): Promise<void> {
   try {
-    if (!temApis() || !VAPID || Notification.permission !== 'granted') return;
+    if (!temApis() || Notification.permission !== 'granted') return;
     const sub = await assinaturaActual();
     if (sub) await enviarAssinatura(sub);
   } catch {

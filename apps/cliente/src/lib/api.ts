@@ -72,6 +72,11 @@ export async function marcarAvisosVistos(ids?: string[]): Promise<number> {
   return (verificar(await supabase.rpc('marcar_avisos_vistos', { p_ids: ids ?? null })) as number) ?? 0;
 }
 
+/** PWA: chave pública VAPID (gerada e guardada pelo servidor; null enquanto não existir) */
+export async function chavePublicaPushWeb(): Promise<string | null> {
+  return (verificar(await supabase.rpc('chave_publica_push_web')) as string | null) ?? null;
+}
+
 /** PWA: assinatura Web Push deste navegador */
 export async function registarPushWeb(endpoint: string, p256dh: string, auth: string) {
   verificar(await supabase.rpc('registar_push_web', { p_endpoint: endpoint, p_p256dh: p256dh, p_auth: auth }));

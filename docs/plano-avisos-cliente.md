@@ -17,8 +17,9 @@
   `enviar-notificacoes` envia-as por Web Push (chaves VAPID) e as da app pela Expo, como antes.
 - Assinaturas que o navegador abandona (404/410) são desactivadas sozinhas. Sair da conta desliga.
 
-## Configuração (uma vez)
-- Chave **pública** VAPID: `EXPO_PUBLIC_VAPID_PUBLICA` em `netlify.toml` (pública por natureza).
-- Chave **privada** VAPID: só nos segredos da função `enviar-notificacoes` no Supabase
-  (`VAPID_PUBLICA`, `VAPID_PRIVADA`). **Nunca no repositório.** Sem ela, o envio web fica
-  desligado e o resto funciona igual.
+## Chaves VAPID (sem intervenção humana)
+- A função `enviar-notificacoes` **gera o par de chaves na 1.ª execução** e guarda-o em
+  `segredos_servidor` (só o servidor lê). A chave privada **nunca passa por pessoas, pela
+  conversa nem pelo repositório**.
+- A app pede só a **chave pública** (`chave_publica_push_web`, com sessão).
+- Os segredos `VAPID_PUBLICA` / `VAPID_PRIVADA` da função, se um dia forem definidos, têm prioridade.

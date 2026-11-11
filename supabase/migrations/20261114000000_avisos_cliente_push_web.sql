@@ -6,6 +6,9 @@
 -- B) Na PWA o navegador regista uma "assinatura" Web Push (endpoint + chaves). Guarda-se em
 --    dispositivos_push com app = 'web'; a função de envio (enviar-notificacoes) manda estas
 --    pelo protocolo Web Push (chaves VAPID) e as outras pela Expo, como até aqui.
+--    As chaves VAPID são geradas pela PRÓPRIA função de envio na 1.ª vez e guardadas em
+--    segredos_servidor (só o servidor lê): a chave privada nunca passa por pessoas nem pelo
+--    repositório. A app pede só a chave pública (chave_publica_push_web).
 -- =============================================================================
 
 -- ---------------------------------------------------------------- A. Sino do cliente
@@ -94,3 +97,36 @@ returns void language sql security definer set search_path = public as $$
 $$;
 revoke execute on function remover_push_web(text) from public, anon;
 grant  execute on function remover_push_web(text) to authenticated;
+
+-- Chaves VAPID (Web Push), guardadas só no servidor
+create or replace function chaves_push_web()
+returns table (publica text, privada text)
+language sql stable security definer set search_path = public as $$
+  select (select valor from segredos_servidor where chave = 'vapid_publica'),
+         (select valor from segredos_servidor where chave = 'vapid_privada');
+$$;
+revoke execute on function chaves_push_web() from public, anon, authenticated;
+grant  execute on function chaves_push_web() to service_role;
+
+-- A função de envio grava o par que gerou; se já existir um (corrida), fica o primeiro
+create or replace function guardar_chaves_push_web(p_publica text, p_privada text)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if p_publica !~ '^[A-Za-z0-9_-]{80,100}$' or p_privada !~ '^[A-Za-z0-9_-]{40,50}$' then
+    raise exception 'chave_invalida' using errcode = 'P0001';
+  end if;
+  if exists (select 1 from segredos_servidor where chave in ('vapid_publica', 'vapid_privada')) then
+    return;
+  end if;
+  insert into segredos_servidor (chave, valor) values ('vapid_publica', p_publica), ('vapid_privada', p_privada);
+end $$;
+revoke execute on function guardar_chaves_push_web(text, text) from public, anon, authenticated;
+grant  execute on function guardar_chaves_push_web(text, text) to service_role;
+
+-- A chave PÚBLICA (é pública por natureza: o navegador precisa dela para se inscrever)
+create or replace function chave_publica_push_web()
+returns text language sql stable security definer set search_path = public as $$
+  select valor from segredos_servidor where chave = 'vapid_publica';
+$$;
+revoke execute on function chave_publica_push_web() from public, anon;
+grant  execute on function chave_publica_push_web() to authenticated;

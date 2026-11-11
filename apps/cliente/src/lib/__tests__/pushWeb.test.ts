@@ -1,6 +1,6 @@
 import { chaveParaBytes, estadoPushWeb } from '../pushWeb';
 
-jest.mock('../api', () => ({ registarPushWeb: jest.fn(), removerPushWeb: jest.fn() }));
+jest.mock('../api', () => ({ registarPushWeb: jest.fn(), removerPushWeb: jest.fn(), chavePublicaPushWeb: jest.fn() }));
 
 test('a chave VAPID (base64url) converte-se para os 65 bytes que o navegador pede', () => {
   const b = chaveParaBytes('BAD66DhB2sT_x9jMn3QbqawnSNKpDtjBWbfydGKA3jNgX3lnQDGt0jmm7dc7HAofT39GAQOjqIgxJLJ2lv4W6xU');
