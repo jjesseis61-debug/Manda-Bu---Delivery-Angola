@@ -9,6 +9,8 @@ import { rotaDaNotificacao } from '../push';
 describe('rotaDaNotificacao', () => {
   it('abre o ecrã de cada notificação', () => {
     expect(rotaDaNotificacao({ codigo: 'N3' })).toBe('/convida');
+    expect(rotaDaNotificacao({ codigo: 'N43' })).toBe('/convida');
+    expect(rotaDaNotificacao({ codigo: 'N44' })).toBe('/convida');
     expect(rotaDaNotificacao({ codigo: 'N7' })).toBe('/destaques');
     expect(rotaDaNotificacao({ codigo: 'N8' })).toBe('/levantar');
     expect(rotaDaNotificacao({ codigo: 'N9', pedido_id: 'abc' })).toBe('/avaliar/abc');

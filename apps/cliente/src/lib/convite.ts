@@ -46,12 +46,17 @@ export function linkApp(): string {
   return `https://play.google.com/store/apps/details?id=${PACOTE_ANDROID}`;
 }
 
+/** Endereço do site da app (PWA). Muda para o domínio próprio quando existir. */
+export function siteApp(): string {
+  return (process.env.EXPO_PUBLIC_SITE_URL || 'https://manda-bue.netlify.app').replace(/\/+$/, '');
+}
+
 /**
- * Link de partilha de um prato: aponta para a função edge `prato`, que gera a página com a
- * pré-visualização (foto + nome + preço, via Open Graph) e reencaminha para a Play Store.
- * É o que faz a foto do prato aparecer no cartão do WhatsApp.
+ * Link de partilha de um prato: `{site}/p/{prato}?r={código}`. O site devolve a página com a
+ * pré-visualização (foto + nome + preço + desconto do amigo, via Open Graph) — é o que faz o
+ * cartão aparecer no WhatsApp — e, para quem toca, abre a app web no prato com o código guardado.
  */
-export function linkPartilhaPrato(cardapioId: string): string {
-  const base = (process.env.EXPO_PUBLIC_SUPABASE_URL ?? '').replace(/\/+$/, '');
-  return `${base}/functions/v1/prato?id=${encodeURIComponent(cardapioId)}`;
+export function linkPartilhaPrato(cardapioId: string, codigo?: string | null): string {
+  const r = codigo ? normalizarCodigo(codigo) : null;
+  return `${siteApp()}/p/${encodeURIComponent(cardapioId)}${r ? `?r=${encodeURIComponent(r)}` : ''}`;
 }

@@ -59,6 +59,7 @@ export function rotaDaNotificacao(dados: unknown): string | null {
   // Avisos personalizados (N31) podem trazer um link para um ecrã da app (ex.: uma receita)
   if (codigo === 'N31' && typeof d.link === 'string' && d.link.startsWith('/')) return d.link;
   if (codigo === 'N2' || codigo === 'N3' || codigo === 'N4' || codigo === 'N5' || codigo === 'N6') return '/convida';
+  if (codigo === 'N43' || codigo === 'N44') return '/convida'; // subiu / desceu de nível
   if (codigo === 'N7') return '/destaques';
   if (codigo === 'N8') return '/levantar';
   if (codigo === 'N13' || codigo === 'N14') return '/pacotes';

@@ -57,6 +57,7 @@ export default function LayoutRaiz() {
           <Stack.Screen name="registo" options={{ title: 'Criar conta', headerBackVisible: false }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="convite/[codigo]" options={{ headerShown: false }} />
+          <Stack.Screen name="p/[id]" options={{ headerShown: false }} />
           <Stack.Screen name="carrinho" options={{ title: 'O teu pedido' }} />
           <Stack.Screen name="pedido/[id]" options={{ title: 'Pedido' }} />
           <Stack.Screen name="levantar" options={{ title: 'Levantar saldo' }} />

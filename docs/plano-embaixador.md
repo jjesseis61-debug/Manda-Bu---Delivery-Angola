@@ -87,7 +87,22 @@ Embaixador partilha link do prato no WhatsApp
     - *Despromoção* automática **não** implementada (só sobe); fica para um cron posterior.
     - *Push de parabéns pela promoção* não implementado nesta fase (a app mostra o novo nível via `meu_perfil`);
       evita tocar no pipeline de texto/envio das notificações.
-- **Fase 3 (deep-link do prato + OG + PWA/domínio):** planeada (secção abaixo).
+- **Fase 2 — fecho (11/11/2026):** aviso **N43** de parabéns ao subir de nível; **descida suave** semanal
+  (job `mb_despromocao_embaixador`, segunda 05h Luanda): só quem está no nível há ≥ 30 dias
+  (`despromocao_carencia_dias`) e tem menos de 80% do limiar (`despromocao_margem_pct`), **um degrau de cada
+  vez**, com aviso **N44** a dizer quantos amigos faltam para voltar; desliga-se em `despromocao_activa`.
+  Bónus de boas-vindas: `bonus_boas_vindas` (0 = desligado) — falta o dono escolher o valor.
+- **Fase 3 (link do prato + cartão WhatsApp) — implementada (11/11/2026):**
+  - Link: `{site}/p/{cardapio_id}?r={CÓDIGO}` (site = `EXPO_PUBLIC_SITE_URL`, por defeito
+    `https://manda-bue.netlify.app`; muda para `mandabue.ao` quando houver domínio).
+  - Cartão OG: função edge do **Netlify** (`apps/cliente/netlify/edge-functions/prato.ts`) junta à página da
+    app as etiquetas `og:*` com a foto, nome, preço e — com código válido — o desconto do 1.º pedido. Os dados
+    vêm da função `prato` do Supabase em modo JSON. (O Supabase serve HTML como `text/plain`, por isso o
+    cartão não pode ser feito lá; os links antigos `…/functions/v1/prato?id=` passam a reencaminhar para o site.)
+  - Ao tocar: rota `p/[id]` guarda o código (registo), liga a indicação em silêncio se a conta ainda pode ser
+    convidada, e abre o prato (`montar/[id]`). Antifraude de `ligar_indicacao` igual.
+  - Mensagem pronta com o código e o desconto do amigo em negrito; a partilha conta em `registar_partilha`.
+  - Falta (infra): domínio próprio + Android App Links (abrir a app nativa directamente pelo link https).
 
 ## Onde mexer (implementação futura)
 - **Backend (Fase 2 — 2 níveis):**

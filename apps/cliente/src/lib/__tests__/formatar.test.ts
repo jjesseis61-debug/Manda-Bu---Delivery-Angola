@@ -211,6 +211,24 @@ describe('mensagemPartilhaPrato', () => {
     expect(msg).toContain('https://x/prato?id=1');
     expect(msg).not.toContain('Kz');
   });
+
+  it('com código de convite: diz o desconto do amigo e o código, em negrito do WhatsApp', () => {
+    const msg = mensagemPartilhaPrato('Choco frito', 'Cozinha da Alexandra', 'https://x/p/1?r=MB-4812', {
+      codigo: 'MB-4812',
+      desconto: 1000,
+      minimo: 5000,
+    });
+    expect(msg).toContain('*Choco frito*');
+    expect(msg).toContain('*MB-4812*');
+    expect(msg).toContain('*1.000 Kz de desconto*');
+    expect(msg).toContain('a partir de 5.000 Kz');
+    expect(msg.endsWith('https://x/p/1?r=MB-4812')).toBe(true);
+  });
+
+  it('com desconto 0 volta à mensagem simples', () => {
+    const msg = mensagemPartilhaPrato('Choco frito', 'M', 'L', { codigo: 'MB-4812', desconto: 0 });
+    expect(msg).toContain('Instala a app');
+  });
 });
 
 describe('textoPediram', () => {

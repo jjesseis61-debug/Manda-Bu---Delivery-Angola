@@ -8,6 +8,10 @@
       ]
     }
   },
+  "exclude": [
+    "node_modules",
+    "netlify"
+  ],
   "include": [
     "**/*.ts",
     "**/*.tsx",

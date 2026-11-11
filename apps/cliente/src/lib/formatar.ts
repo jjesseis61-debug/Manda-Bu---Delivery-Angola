@@ -269,9 +269,22 @@ export function beneficiosPacote(p: {
  * Mensagem para partilhar um prato no WhatsApp (I-partilha). Nome + preço + marca + link para
  * instalar/abrir a app. O precoLabel já vem formatado ("2.500 Kz" ou "desde 2.500 Kz").
  */
-export function mensagemPartilhaPrato(nome: string, marca: string, link: string): string {
+export function mensagemPartilhaPrato(
+  nome: string,
+  marca: string,
+  link: string,
+  convite?: { codigo: string; desconto: number; minimo?: number } | null,
+): string {
   // Enxuta: o cartão de pré-visualização do link já mostra foto + nome + preço. O texto fica com
-  // o nome (rede de segurança, se a pré-visualização não aparecer) e a chamada à acção.
+  // o nome (rede de segurança, se a pré-visualização não aparecer) e a chamada à acção; com
+  // código de convite, o benefício do amigo vem primeiro (negrito do WhatsApp).
+  if (convite && convite.desconto > 0) {
+    const cond = convite.minimo && convite.minimo > 0 ? ` (pedidos a partir de ${formatarKz(convite.minimo)})` : '';
+    return (
+      `🍲 Experimenta o *${nome}* da ${marca}! ` +
+      `Com o meu código *${convite.codigo}* ganhas *${formatarKz(convite.desconto)} de desconto* no teu 1.º pedido${cond} 👇\n${link}`
+    );
+  }
   return `🍲 ${nome} — ${marca}\nInstala a app e faz o teu pedido 👇\n${link}`;
 }
 

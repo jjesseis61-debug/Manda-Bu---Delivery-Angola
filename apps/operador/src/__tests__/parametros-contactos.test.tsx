@@ -25,10 +25,12 @@ beforeEach(() => {
         'limiar_intervalos', 'tamanho_intervalo', 'pessoas_como_tu_min', 'pessoas_como_tu_max',
         'contador_minimo', 'prazo_avaliacao_dias', 'avaliacoes_minimo', 'tempo_entrega_min',
         'tolerancia_entrega_min', 'alerta_agendado_horas', 'selos_necessarios',
+        'despromocao_carencia_dias', 'despromocao_margem_pct',
       ].map((k) => [k, 10]),
     ),
     contacto_telefone: null, contacto_whatsapp: null, contacto_email: null,
     contacto_horario: null, contacto_morada: 'Rua Antiga',
+    despromocao_activa: true,
   });
   (lerFuncionalidades as jest.Mock).mockResolvedValue([]);
 });
@@ -49,4 +51,16 @@ test('parâmetros: valida e guarda os contactos (em branco apaga)', async () => 
   expect(alterarParametros).toHaveBeenCalledWith({
     contacto_email: 'ola@mandabue.ao', contacto_telefone: '+244 923 000 000', contacto_morada: null,
   });
+});
+
+test('parâmetros: desligar a descida de nível envia um booleano', async () => {
+  const ecra = renderRouter({ parametros: Parametros }, { initialUrl: '/parametros' });
+  const rotulo = 'Descida suave de nível do embaixador (semanal, um degrau de cada vez)';
+  await waitFor(() => expect(ecra.getByLabelText(rotulo)).toBeTruthy());
+  fireEvent(ecra.getByLabelText(rotulo), 'valueChange', false);
+  fireEvent.press(ecra.getByText('Guardar parâmetros'));
+  await act(async () => {
+    fireEvent.press(ecra.getByText('Confirmar'));
+  });
+  expect(alterarParametros).toHaveBeenCalledWith({ despromocao_activa: false });
 });

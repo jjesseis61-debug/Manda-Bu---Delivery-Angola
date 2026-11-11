@@ -24,6 +24,8 @@ const CAMPOS: { grupo: string; chaves: [string, string][] }[] = [
       ['limite_parcelamento', 'Parcelar acima de (Kz)'],
       ['limiar_embaixador', 'Indicados activos para Embaixador'],
       ['limiar_ouro', 'Indicados activos para Embaixador Ouro'],
+      ['despromocao_carencia_dias', 'Descida de nível: dias mínimos no nível'],
+      ['despromocao_margem_pct', 'Descida de nível: só abaixo de % do limiar (50–100)'],
     ],
   },
   {
@@ -63,6 +65,11 @@ const CAMPOS: { grupo: string; chaves: [string, string][] }[] = [
   },
 ];
 
+/** Parâmetros sim/não */
+const INTERRUPTORES: [string, string][] = [
+  ['despromocao_activa', 'Descida suave de nível do embaixador (semanal, um degrau de cada vez)'],
+];
+
 /** Contactos gerais mostrados aos clientes (Contactos e Política de privacidade); texto, em branco = não mostrar */
 const CONTACTOS: [string, string, 'telefone' | 'email' | 'texto', number][] = [
   ['contacto_telefone', 'Telefone', 'telefone', 20],
@@ -93,11 +100,13 @@ export default function Parametros() {
   }, []);
   useFocusEffect(carregar);
 
-  const alterados: Record<string, number | string | null> = {};
+  const alterados: Record<string, number | string | boolean | null> = {};
   for (const g of CAMPOS)
     for (const [k] of g.chaves)
       if (originais && valores[k] !== String(originais[k])) alterados[k] = Number(valores[k]);
-  const numerosInvalidos = Object.values(alterados).some((v) => !Number.isInteger(v) || (v as number) < 0);
+  for (const [k] of INTERRUPTORES)
+    if (originais && valores[k] !== String(originais[k])) alterados[k] = valores[k] === 'true';
+  const numerosInvalidos = Object.values(alterados).some((v) => typeof v !== 'boolean' && (!Number.isInteger(v) || (v as number) < 0));
   const contactosInvalidos = CONTACTOS.filter(([k, , tipo]) => {
     const t = (valores[k] ?? '').trim();
     return t !== '' && ((tipo === 'telefone' && !telefoneValido(t)) || (tipo === 'email' && !emailValido(t)));
@@ -174,6 +183,18 @@ export default function Parametros() {
                     onChangeText={(t) => setValores((v) => ({ ...v, [k]: t.replace(/\D/g, '') }))}
                   />
                 ))}
+                {g.grupo === 'Indicação' &&
+                  INTERRUPTORES.map(([k, rotulo]) => (
+                    <View key={k} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: espaco.s }}>
+                      <Text style={{ flex: 1 }}>{rotulo}</Text>
+                      <Switch thumbColor="#FFFFFF"
+                        accessibilityLabel={rotulo}
+                        value={valores[k] === 'true'}
+                        onValueChange={(v) => setValores((x) => ({ ...x, [k]: String(v) }))}
+                        trackColor={{ true: cores.marca, false: cores.contorno }}
+                      />
+                    </View>
+                  ))}
               </View>
             ))}
             <View style={{ gap: espaco.s }}>

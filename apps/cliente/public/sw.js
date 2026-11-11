@@ -69,7 +69,7 @@ self.addEventListener('push', (e) => {
 function rotaDoAviso(d) {
   const c = d && d.codigo;
   if (c === 'N31' && typeof d.link === 'string' && d.link.startsWith('/')) return d.link;
-  if (['N2', 'N3', 'N4', 'N5', 'N6'].includes(c)) return '/convida';
+  if (['N2', 'N3', 'N4', 'N5', 'N6', 'N43', 'N44'].includes(c)) return '/convida';
   if (c === 'N7') return '/destaques';
   if (c === 'N8') return '/levantar';
   if (c === 'N13' || c === 'N14') return '/pacotes';

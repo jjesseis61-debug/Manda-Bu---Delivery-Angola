@@ -38,6 +38,11 @@ export default function Inicio() {
   const router = useRouter();
   const { ligada, perfil, parametros } = useSessao();
   const carrinho = useCarrinho();
+  // Quem tem código de convite partilha o prato com ele: o amigo ganha o desconto e conta para o embaixador
+  const convitePartilha =
+    ligada('indicacao') && perfil?.codigo && parametros
+      ? { codigo: perfil.codigo, desconto: parametros.desconto_indicado, minimo: parametros.desconto_subtotal_minimo ?? 0 }
+      : null;
   const pedirDeNovoNoCarrinho = usePedirDeNovo();
   const [cardapio, setCardapio] = useState<ItemCardapio[] | null>(null);
   const [enderecos, setEnderecos] = useState<Endereco[]>([]);
@@ -273,7 +278,7 @@ export default function Inicio() {
                         accessibilityRole="button"
                         accessibilityLabel={`Partilhar ${item.nome} no WhatsApp`}
                         hitSlop={8}
-                        onPress={() => void partilharPrato(item.nome, item.id)}
+                        onPress={() => void partilharPrato(item.nome, item.id, convitePartilha)}
                         style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginRight: 'auto' }}>
                         <Ionicons name="share-social-outline" size={18} color={cores.marca} />
                         <Text style={{ color: cores.marca, fontWeight: '600' }}>Partilhar</Text>
@@ -408,9 +413,7 @@ export default function Inicio() {
                     <Pressable
                       accessibilityRole="button"
                       accessibilityLabel={`Partilhar ${item.nome} no WhatsApp`}
-                      onPress={() =>
-                        void partilharPrato(item.nome, item.id)
-                      }
+                      onPress={() => void partilharPrato(item.nome, item.id, convitePartilha)}
                       hitSlop={8}
                       style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginRight: 'auto' }}>
                       <Ionicons name="share-social-outline" size={18} color={cores.marca} />

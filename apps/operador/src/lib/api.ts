@@ -149,7 +149,7 @@ export async function lerFuncionalidades(): Promise<{ chave: string; activa: boo
   }[];
 }
 
-export async function alterarParametros(valores: Record<string, number | string | null>) {
+export async function alterarParametros(valores: Record<string, number | string | boolean | null>) {
   verificar(await supabase.rpc('alterar_parametros', { p_valores: valores }));
 }
 
