@@ -31,18 +31,11 @@ declare
   v_novo text;
 begin
   if position('comissao_primeiro_pedido' in v_def) > 0 then return; end if; -- já aplicado
-  v_novo := replace(v_def,
-    $s$  if exists (select 1 from ganhos_indicacao where pedido_id = new.id) then
-    return new;
-  end if;$s$,
-    $s$  if exists (select 1 from ganhos_indicacao where pedido_id = new.id) then
-    return new;
-  end if;
-
-  -- 1.º pedido do convidado (o do desconto de boas-vindas): sem comissão, salvo parâmetro
-  if lig.primeiro_pedido_id = new.id and not p.comissao_primeiro_pedido then
-    return new;
-  end if;$s$);
+  -- Procura-se o bloco sem depender de espaços/quebras de linha (o texto colado no SQL Editor
+  -- pelo telemóvel pode alterá-los); insere-se a regra numa só linha logo a seguir.
+  v_novo := regexp_replace(v_def,
+    '(if exists \(select 1 from ganhos_indicacao where pedido_id = new\.id\) then\s+return new;\s+end if;)',
+    E'\\1\n  if lig.primeiro_pedido_id = new.id and not p.comissao_primeiro_pedido then return new; end if; -- 1.º pedido: sem comissão');
   if v_novo = v_def then
     raise exception 'processar_ganho_indicacao não tem o formato esperado';
   end if;
@@ -53,10 +46,10 @@ begin
   v_novo := replace(v_def,
     $s$'%s entrou com o teu código! Ganhas %s em cada pedido durante %s dias.'$s$,
     $s$'%s entrou com o teu código! Ganhas %s em cada pedido a partir do 2.º, durante %s dias.'$s$);
-  if v_novo = v_def then
+  if v_novo = v_def and position('a partir do 2.º' in v_def) = 0 then
     raise exception 'texto_notificacao (N2) não tem o formato esperado';
   end if;
-  execute v_novo;
+  if v_novo <> v_def then execute v_novo; end if;
 end $$;
 
 -- -----------------------------------------------------------------------------
