@@ -3,6 +3,7 @@ import { useState } from 'react';
 
 import { Aviso, Botao, Ecra, Paragrafo, Subtitulo } from '@/components/ui';
 import { apagarConta } from '@/lib/api';
+import { useCadeado } from '@/lib/cadeadoContexto';
 import { useCarrinho } from '@/lib/carrinho';
 import { mensagemErro } from '@/lib/formatar';
 import { useSessao } from '@/lib/sessao';
@@ -13,11 +14,13 @@ export default function ApagarConta() {
   const { sair } = useSessao();
   const carrinho = useCarrinho();
   const [confirmar, setConfirmar] = useState(false);
+  const { confirmar: confirmarCadeado } = useCadeado();
   const [aApagar, setAApagar] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
   async function apagar() {
     setErro(null);
+    if (!(await confirmarCadeado('Confirma com o teu código para apagar a conta'))) return;
     setAApagar(true);
     try {
       await apagarConta();

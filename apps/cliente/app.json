@@ -50,7 +50,14 @@
           "cameraPermission": false
         }
       ],
-      "@maplibre/maplibre-react-native"
+      "@maplibre/maplibre-react-native",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "O Manda Bué usa o Face ID para abrir a app quando ligas o cadeado."
+        }
+      ],
+      "expo-secure-store"
     ],
     "scheme": "mandabue",
     "experiments": {

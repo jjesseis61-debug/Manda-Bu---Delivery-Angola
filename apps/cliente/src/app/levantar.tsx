@@ -4,6 +4,7 @@ import { Text, View } from 'react-native';
 
 import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Escolha, Linha, Paragrafo, Subtitulo } from '@/components/ui';
 import { lerLevantamentos, lerSaldo, pedirLevantamento } from '@/lib/api';
+import { useCadeado } from '@/lib/cadeadoContexto';
 import { formatarKz, mensagemErro, nomeMetodo } from '@/lib/formatar';
 import { useSessao } from '@/lib/sessao';
 import { cores } from '@/lib/tema';
@@ -19,6 +20,7 @@ const nomeEstado: Record<Levantamento['estado'], string> = {
 /** C4. Levantar saldo */
 export default function Levantar() {
   const { carregado, perfil, parametros, ligada } = useSessao();
+  const { confirmar } = useCadeado();
   const [saldo, setSaldo] = useState<number | null>(null);
   const [historico, setHistorico] = useState<Levantamento[]>([]);
   const [modo, setModo] = useState<'refeicoes' | 'dinheiro'>('dinheiro');
@@ -52,6 +54,8 @@ export default function Levantar() {
 
   async function pedir() {
     setErro(null);
+    // Com o cadeado ligado, o levantamento pede o código (ou a biometria) mesmo com a app aberta
+    if (!(await confirmar('Confirma o levantamento com o teu código'))) return;
     setAEnviar(true);
     try {
       await pedirLevantamento(pedido, metodo, numero);

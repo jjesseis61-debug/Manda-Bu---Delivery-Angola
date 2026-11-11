@@ -3,6 +3,8 @@ import { type Href, Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 
+import { EcraCadeado } from '@/components/EcraCadeado';
+import { CadeadoProvider } from '@/lib/cadeadoContexto';
 import { CarrinhoProvider } from '@/lib/carrinho';
 import { activarPush, desactivarPush, rotaDaNotificacao } from '@/lib/push';
 import { SessaoProvider, useSessao } from '@/lib/sessao';
@@ -31,6 +33,8 @@ function EfeitosSessao() {
 export default function LayoutRaiz() {
   return (
     <SessaoProvider aoSair={desactivarPush}>
+      {/* Cadeado opcional (código / biometria) por cima de tudo: ver docs/plano-cadeado-conta.md */}
+      <CadeadoProvider>
       <CarrinhoProvider>
         <EfeitosSessao />
         <Stack
@@ -65,12 +69,15 @@ export default function LayoutRaiz() {
           <Stack.Screen name="receitas" options={{ title: 'Cozinha de casa' }} />
           <Stack.Screen name="receita/[id]" options={{ title: 'Receita' }} />
           <Stack.Screen name="apagar-conta" options={{ title: 'Apagar a conta' }} />
+          <Stack.Screen name="conta/cadeado" options={{ title: 'Cadeado da app' }} />
           <Stack.Screen name="recuperar-conta" options={{ title: 'Recuperar a conta' }} />
           <Stack.Screen name="politica-privacidade" options={{ title: 'Política de privacidade' }} />
           <Stack.Screen name="enderecos/novo" options={{ title: 'Novo endereço' }} />
         </Stack>
         <StatusBar style="dark" />
+        <EcraCadeado />
       </CarrinhoProvider>
+      </CadeadoProvider>
     </SessaoProvider>
   );
 }

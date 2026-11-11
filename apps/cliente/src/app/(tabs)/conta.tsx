@@ -3,6 +3,8 @@ import { useState } from 'react';
 
 import { Aviso, Botao, Cartao, Ecra, Linha, Paragrafo } from '@/components/ui';
 import { sairDeTodosOsDispositivos } from '@/lib/api';
+import { cadeadoSuportado } from '@/lib/cadeado';
+import { useCadeado } from '@/lib/cadeadoContexto';
 import { useCarrinho } from '@/lib/carrinho';
 import { mensagemErro } from '@/lib/formatar';
 import { useSessao } from '@/lib/sessao';
@@ -10,6 +12,7 @@ import { useSessao } from '@/lib/sessao';
 export default function Conta() {
   const router = useRouter();
   const { perfil, sair, ligada } = useSessao();
+  const { activo } = useCadeado();
   const carrinho = useCarrinho();
   const [protegerConfirmar, setProtegerConfirmar] = useState(false);
   const [ocupado, setOcupado] = useState(false);
@@ -38,6 +41,13 @@ export default function Conta() {
       {ligada('agente_atendimento') && <Botao titulo="Ajuda" variante="secundario" aoCarregar={() => router.push('/ajuda')} />}
       <Botao titulo="Contactos" variante="secundario" aoCarregar={() => router.push('/contactos')} />
       <Botao titulo="Endereços" variante="secundario" aoCarregar={() => router.push('/enderecos')} />
+      {cadeadoSuportado() && (
+        <Botao
+          titulo={activo ? '🔒 Cadeado da app (ligado)' : 'Proteger com código / biometria'}
+          variante="secundario"
+          aoCarregar={() => router.push('/conta/cadeado')}
+        />
+      )}
       {ligada('pacotes') && <Botao titulo="Pacote do mês" variante="secundario" aoCarregar={() => router.push('/pacotes')} />}
       {(ligada('indicacao') || ligada('destaques')) && (
         <Botao titulo="Notificações" variante="secundario" aoCarregar={() => router.push('/notificacoes')} />

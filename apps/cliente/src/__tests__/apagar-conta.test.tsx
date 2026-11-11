@@ -7,6 +7,8 @@ import { apagarConta } from '@/lib/api';
 
 jest.mock('@/lib/api', () => ({ apagarConta: jest.fn() }));
 jest.mock('@/lib/sessao', () => ({ useSessao: () => ({ sair: async () => undefined }) }));
+jest.mock('@/lib/cadeadoContexto', () => ({ useCadeado: () => ({ confirmar: mockConfirmarCadeado }) }));
+const mockConfirmarCadeado = jest.fn().mockResolvedValue(true);
 jest.mock('@/lib/carrinho', () => ({ useCarrinho: () => ({ limpar: () => undefined }) }));
 const mockApagar = apagarConta as jest.Mock;
 

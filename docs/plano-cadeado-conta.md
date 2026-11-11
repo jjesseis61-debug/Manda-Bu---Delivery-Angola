@@ -2,7 +2,8 @@
 
 > Reforço de segurança **opcional** na app do cliente. O login continua a ser por
 > telemóvel + OTP (SMS); este cadeado protege a app **já aberta** neste aparelho.
-> Decidido com o dono do produto. Estado: **planeado** (ainda não implementado).
+> Decidido com o dono do produto. Estado: **implementado (11/11/2026)** na app cliente
+> (`src/lib/cadeado.ts`, `cadeadoContexto.tsx`, `EcraCadeado.tsx`, `app/conta/cadeado.tsx`); falta APK.
 
 ## 1. Objetivo
 Dar ao utilizador a hipótese de **proteger a app com um código (PIN) e/ou biometria**.
