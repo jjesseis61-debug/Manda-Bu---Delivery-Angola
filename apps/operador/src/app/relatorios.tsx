@@ -4,10 +4,11 @@ import { Pressable, Text, View } from 'react-native';
 
 import { Guarda } from '@/components/Guarda';
 import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Escolha, Linha, Paragrafo } from '@/components/ui';
-import { lerCozinhas, relatorioComparativo, relatorioCozinhaDetalhado } from '@/lib/api';
+import { lerCozinhas, relatorioComparativo, relatorioCozinhaDetalhado, rentabilidadeCozinha } from '@/lib/api';
 import { escaparHtml, exportarCsv, exportarPdf } from '@/lib/exportar';
 import { formatarDia, formatarKz, mensagemErro, paraCsv } from '@/lib/formatar';
 import {
+  avaliarCmv,
   htmlRelatorio,
   indicadores,
   linhasCsvRelatorio,
@@ -16,7 +17,9 @@ import {
   quemPagaConvida,
   type PeriodoRel,
   type RelatorioDetalhado,
+  type Rentabilidade,
 } from '@/lib/relatorio';
+import { useRouter } from 'expo-router';
 import { useSessao } from '@/lib/sessao';
 import { cores, espaco } from '@/lib/tema';
 import type { Cozinha, LinhaComparativo } from '@/lib/tipos';
@@ -74,6 +77,8 @@ export default function Relatorios() {
   const [de, setDe] = useState('');
   const [ate, setAte] = useState('');
   const [rel, setRel] = useState<RelatorioDetalhado | null>(null);
+  const [rent, setRent] = useState<Rentabilidade | null>(null);
+  const router = useRouter();
   const [comp, setComp] = useState<LinhaComparativo[] | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [aCarregar, setACarregar] = useState(false);
@@ -94,6 +99,7 @@ export default function Relatorios() {
   const nomeCozinha = cozinhas?.find((c) => c.id === cozinhaId)?.nome ?? '';
 
   function limpar() {
+    setRent(null);
     setRel(null);
     setComp(null);
   }
@@ -104,7 +110,14 @@ export default function Relatorios() {
     setACarregar(true);
     try {
       if (cozinhaId === COMPARAR) setComp(await relatorioComparativo(inicio, fim));
-      else setRel(await relatorioCozinhaDetalhado(cozinhaId, inicio, fim));
+      else {
+        const [r, rt] = await Promise.all([
+          relatorioCozinhaDetalhado(cozinhaId, inicio, fim),
+          rentabilidadeCozinha(cozinhaId, inicio, fim).catch(() => null),
+        ]);
+        setRel(r);
+        setRent(rt);
+      }
     } catch (e) {
       setErro(mensagemErro(e));
     } finally {
@@ -115,8 +128,8 @@ export default function Relatorios() {
   async function exportar(tipo: 'csv' | 'pdf') {
     if (!rel) return;
     try {
-      if (tipo === 'csv') await exportarCsv(`relatorio-${rel.inicio}-${rel.fim}.csv`, paraCsv(linhasCsvRelatorio(rel)));
-      else await exportarPdf(htmlRelatorio(rel, funcionario?.nome ?? 'operador', new Date()));
+      if (tipo === 'csv') await exportarCsv(`relatorio-${rel.inicio}-${rel.fim}.csv`, paraCsv(linhasCsvRelatorio(rel, rent)));
+      else await exportarPdf(htmlRelatorio(rel, funcionario?.nome ?? 'operador', new Date(), rent));
     } catch (e) {
       setErro(mensagemErro(e));
     }
@@ -250,6 +263,73 @@ export default function Relatorios() {
               ))}
               <Linha esquerda="Vendas líquidas (após descontos)" direita={formatarKz(rel.resumo.vendas_liquidas)} />
               <Paragrafo suave>Diferenças de caixa e comprovativos: ver Caixa e Conferência.</Paragrafo>
+            </Seccao>
+
+            <Seccao titulo="Rentabilidade (custos e despesas)">
+              {!rent && <Paragrafo suave>Sem dados de custos para este período.</Paragrafo>}
+              {rent && (
+                <>
+                  <Linha esquerda="Vendas de comida" direita={formatarKz(rent.vendas_comida)} />
+                  <Linha
+                    esquerda="Custo dos pratos"
+                    direita={`${formatarKz(rent.cmv)}${rent.cmv_pct != null ? ` · ${percentagem(rent.cmv_pct)}` : ''}`}
+                  />
+                  {avaliarCmv(rent.cmv_pct) && (
+                    <Text style={{ color: avaliarCmv(rent.cmv_pct) === 'bom' ? cores.sucesso : cores.aviso }}>
+                      {avaliarCmv(rent.cmv_pct) === 'bom'
+                        ? 'Custo da comida dentro da referência (28–35% das vendas).'
+                        : 'Custo da comida acima da referência (28–35%): rever preços, doses ou compras.'}
+                    </Text>
+                  )}
+                  <Linha esquerda="Margem bruta" direita={rent.margem_bruta == null ? '—' : formatarKz(rent.margem_bruta)} forte />
+                  <Linha esquerda="Despesas da cozinha" direita={formatarKz(rent.despesas)} />
+                  {rent.despesas_por_categoria.map((d) => (
+                    <Linha key={d.categoria} esquerda={`  · ${d.categoria}`} direita={formatarKz(d.valor)} />
+                  ))}
+                  {rent.compras > 0 && <Linha esquerda="Compras registadas (informação)" direita={formatarKz(rent.compras)} />}
+                  <Linha
+                    esquerda="Resultado aproximado"
+                    direita={rent.resultado == null ? '— (faltam custos)' : formatarKz(rent.resultado)}
+                    forte
+                  />
+                  <Paragrafo suave>
+                    Resultado = a receber pela cozinha − custo dos pratos − despesas. Vendas com custo definido:{' '}
+                    {percentagem(rent.cobertura_pct)}.
+                  </Paragrafo>
+                  {rent.pratos.map((p) => (
+                    <Linha
+                      key={p.nome}
+                      esquerda={`${p.qtd}× ${p.nome}`}
+                      direita={p.completo ? `margem ${formatarKz(p.margem)} · ${percentagem(p.margem_pct)}` : 'sem custo'}
+                    />
+                  ))}
+                </>
+              )}
+              {cozinhaId && cozinhaId !== COMPARAR && (
+                <View style={{ gap: espaco.xs }}>
+                  <Botao titulo="💰 Definir custos dos pratos" variante="leve"
+                    aoCarregar={() => router.push({ pathname: '/cozinhas/[id]/custos', params: { id: cozinhaId } })} />
+                  <Botao titulo="🧾 Lançar despesas" variante="leve"
+                    aoCarregar={() => router.push({ pathname: '/cozinhas/[id]/despesas', params: { id: cozinhaId } })} />
+                </View>
+              )}
+            </Seccao>
+
+            <Seccao titulo="Doses: esgotados e sobras">
+              {(!rent || rent.doses.length === 0) && (
+                <Paragrafo suave>Sem histórico de doses no período (guarda-se todas as noites, para os pratos com doses lançadas).</Paragrafo>
+              )}
+              {rent?.doses.map((d) => (
+                <View key={d.nome} style={{ gap: 2 }}>
+                  <Text style={{ fontWeight: '700', color: cores.texto }}>{d.nome}</Text>
+                  <Linha esquerda="Esgotou" direita={`${d.dias_esgotou} de ${d.dias} dia(s)${d.hora_media_esgotou ? ` · em média às ${d.hora_media_esgotou}` : ''}`} />
+                  <Linha esquerda="Lançadas · vendidas · sobras" direita={`${d.lancadas} · ${d.vendidas} · ${d.sobras}`} />
+                  {d.desperdicio > 0 && <Linha esquerda="Desperdício estimado" direita={formatarKz(d.desperdicio)} />}
+                </View>
+              ))}
+              {rent && rent.doses.some((d) => d.dias_esgotou > 0) && (
+                <Paragrafo suave>Esgotar cedo pode ser venda perdida: considera lançar mais doses nesses pratos.</Paragrafo>
+              )}
             </Seccao>
 
             <Seccao titulo="Operação e serviço">

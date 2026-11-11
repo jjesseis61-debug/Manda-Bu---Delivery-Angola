@@ -1,6 +1,6 @@
 // Chamadas ao servidor da app do operador. Cada função do servidor verifica a
 // permissão do organograma; a app só esconde o que o funcionário não pode usar.
-import type { RelatorioDetalhado } from './relatorio';
+import type { RelatorioDetalhado, Rentabilidade } from './relatorio';
 import { supabase } from './supabase';
 import type {
   Aviso,
@@ -342,6 +342,48 @@ export async function lerComissaoCozinha(cozinhaId: string): Promise<{ comissao:
 /** Parte (%) do desconto de convite e do saldo Convida paga pela cozinha: 0 = plataforma, 100 = cozinha */
 export async function definirConvidaCozinha(cozinhaId: string, percent: number) {
   verificar(await supabase.rpc('definir_convida_cozinha', { p_cozinha: cozinhaId, p_percent: percent }));
+}
+
+export type CustoItem = {
+  item_id: string;
+  tipo: 'prato' | 'opcao';
+  prato_id: string;
+  nome: string;
+  grupo: string | null;
+  preco: number;
+  custo: number | null;
+  disponivel: boolean;
+};
+
+/** Pratos e opções da cozinha com o preço e o custo de uma dose (só equipa) */
+export async function custosDaCozinha(cozinhaId: string): Promise<CustoItem[]> {
+  return (verificar(await supabase.rpc('custos_da_cozinha', { p_cozinha: cozinhaId })) as CustoItem[]) ?? [];
+}
+
+/** Custo de uma dose de um prato ou opção (null apaga) */
+export async function definirCustoItem(itemId: string, custo: number | null) {
+  verificar(await supabase.rpc('definir_custo_item', { p_item: itemId, p_custo: custo }));
+}
+
+export type Despesa = { id: string; data: string; categoria: string; descricao: string | null; valor: number };
+
+export async function despesasCozinha(cozinhaId: string, inicio: string, fim: string): Promise<Despesa[]> {
+  return (verificar(await supabase.rpc('despesas_cozinha', { p_cozinha: cozinhaId, p_inicio: inicio, p_fim: fim })) as Despesa[]) ?? [];
+}
+
+export async function lancarDespesa(cozinhaId: string, data: string, categoria: string, descricao: string, valor: number) {
+  return verificar(
+    await supabase.rpc('lancar_despesa', { p_cozinha: cozinhaId, p_data: data, p_categoria: categoria, p_descricao: descricao, p_valor: valor }),
+  ) as string;
+}
+
+export async function apagarDespesa(id: string) {
+  verificar(await supabase.rpc('apagar_despesa', { p_id: id }));
+}
+
+/** Rentabilidade (custo dos pratos, margem, despesas) e doses (esgotados/sobras) de um período */
+export async function rentabilidadeCozinha(cozinhaId: string, inicio: string, fim: string): Promise<Rentabilidade> {
+  return verificar(await supabase.rpc('rentabilidade_cozinha', { p_cozinha: cozinhaId, p_inicio: inicio, p_fim: fim })) as Rentabilidade;
 }
 
 /** Comissão da plataforma sobre as vendas de comida da cozinha (0–50 %), só o admin */

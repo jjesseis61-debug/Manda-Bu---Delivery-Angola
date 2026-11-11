@@ -4,7 +4,17 @@ import { act, fireEvent, renderRouter, waitFor } from 'expo-router/testing-libra
 import Relatorios from '@/app/relatorios';
 import { lerCozinhas, relatorioCozinhaDetalhado } from '@/lib/api';
 
-jest.mock('@/lib/api', () => ({ lerCozinhas: jest.fn(), relatorioComparativo: jest.fn(), relatorioCozinhaDetalhado: jest.fn() }));
+jest.mock('@/lib/api', () => ({
+  lerCozinhas: jest.fn(),
+  relatorioComparativo: jest.fn(),
+  relatorioCozinhaDetalhado: jest.fn(),
+  rentabilidadeCozinha: jest.fn().mockResolvedValue({
+    vendas_comida: 6000, cmv: 3600, cobertura_pct: 100, cmv_pct: 60, margem_bruta: 2400, despesas: 1000,
+    despesas_por_categoria: [{ categoria: 'Gás', valor: 1000 }], compras: 0, a_receber_cozinha: 5400, resultado: 800,
+    pratos: [{ nome: 'Calulu', qtd: 3, receita: 6000, custo: 3600, completo: true, margem: 2400, margem_pct: 40 }],
+    doses: [{ nome: 'Calulu', dias: 1, lancadas: 3, vendidas: 3, sobras: 0, dias_esgotou: 1, hora_media_esgotou: '13:20', desperdicio: 0 }],
+  }),
+}));
 jest.mock('@/lib/exportar', () => ({ escaparHtml: (t: string) => t, exportarCsv: jest.fn(), exportarPdf: jest.fn() }));
 jest.mock('@/lib/sessao', () => ({
   useSessao: () => ({ carregado: true, sessao: {}, funcionario: { id: 'f', nome: 'Rita', cozinhas_equipa: [] }, pode: () => true }),
@@ -36,5 +46,10 @@ test('gera o relatório de hoje com o valor a receber e abre as secções', asyn
   expect(ecra.getByText('5.400 Kz')).toBeTruthy();
   expect(ecra.queryByText('3× Calulu')).toBeNull();
   fireEvent.press(ecra.getByText(/Cardápio \(o que vendemos\)/));
-  expect(ecra.getByText('3× Calulu')).toBeTruthy();
+  expect(ecra.getAllByText('3× Calulu').length).toBeGreaterThan(0);
+  fireEvent.press(ecra.getByText(/Rentabilidade \(custos e despesas\)/));
+  expect(ecra.getByText('Resultado aproximado')).toBeTruthy();
+  expect(ecra.getByText(/acima da referência/)).toBeTruthy();
+  fireEvent.press(ecra.getByText(/Doses: esgotados e sobras/));
+  expect(ecra.getByText(/em média às 13:20/)).toBeTruthy();
 });

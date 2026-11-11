@@ -3,8 +3,13 @@
 > Estado: **implementado (11/11/2026)** — migração `20261112000000_relatorio_cozinha_detalhado.sql`,
 > ecrã **Relatórios** do operador. Falta aplicar a migração à produção e um APK do operador.
 > Feito: períodos (hoje/ontem/7 dias/mês/mês anterior/datas), A com comparação, B, C, D, F, G, H, I,
-> PDF e CSV, comissão por cozinha e fecho do dia automático (N42). Fica para depois: CMV/margem e
-> despesas (E), esgotados/sobras, tempos por etapa (confirmar → preparar → sair).
+> PDF e CSV, comissão por cozinha e fecho do dia automático (N42).
+> **Fase 3 (11/11/2026, migração `20261115000000_relatorio_rentabilidade.sql`):** custo de uma dose por
+> prato/opção (ecrã «Custos e margens»), despesas por cozinha (ecrã «Despesas»), secção
+> **Rentabilidade** (custo dos pratos, % das vendas, margem bruta, despesas, resultado aproximado,
+> margem por prato) e **Doses** (esgotou em quantos dias e a que horas, sobras, desperdício), com
+> histórico das doses guardado às 23:55. Falta: tempos por etapa (confirmar → preparar → sair).
+> Nota: sem fichas técnicas na produção, o custo é escrito pela cozinha (estimativa com os custos actuais).
 > Objetivo: a responsável da cozinha (e a gestão) perceber, num só sítio, **quanto vendeu,
 > o que vendeu, quanto recebeu e de que forma, o que correu mal e onde melhorar** — num dia
 > ou num período à escolha.

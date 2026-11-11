@@ -68,6 +68,46 @@ export type RelatorioDetalhado = {
   convida: { pedidos_com_desconto: number; comissoes_geradas: number };
 };
 
+export type Rentabilidade = {
+  vendas_comida: number;
+  cmv: number;
+  /** % das vendas com custo definido (o custo dos pratos só é fiável perto de 100%) */
+  cobertura_pct: number | null;
+  cmv_pct: number | null;
+  margem_bruta: number | null;
+  despesas: number;
+  despesas_por_categoria: { categoria: string; valor: number }[];
+  compras: number;
+  a_receber_cozinha: number;
+  /** a receber − custo dos pratos − despesas; null se faltar custo nalgum prato vendido */
+  resultado: number | null;
+  pratos: { nome: string; qtd: number; receita: number; custo: number | null; completo: boolean; margem: number | null; margem_pct: number | null }[];
+  doses: {
+    nome: string;
+    dias: number;
+    lancadas: number;
+    vendidas: number;
+    sobras: number;
+    dias_esgotou: number;
+    hora_media_esgotou: string | null;
+    desperdicio: number;
+  }[];
+};
+
+/** Margem de uma dose em % do preço (null sem custo ou preço) */
+export function margemPct(preco: number, custo: number | null): number | null {
+  if (custo == null || !preco) return null;
+  return Math.round((1000 * (preco - custo)) / preco) / 10;
+}
+
+/** Referência do sector: custo da comida entre 28% e 35% das vendas */
+export function avaliarCmv(pct: number | null): 'bom' | 'atencao' | 'alto' | null {
+  if (pct == null) return null;
+  if (pct <= 35) return 'bom';
+  if (pct <= 45) return 'atencao';
+  return 'alto';
+}
+
 export type PeriodoRel = 'hoje' | 'ontem' | '7' | 'mes' | 'mes_anterior' | 'datas';
 
 /** Datas (de, até) de cada atalho no dia de Luanda; "datas" valida as escritas (máx. 366 dias) */
@@ -137,9 +177,28 @@ export function indicadores(r: RelatorioDetalhado): { rotulo: string; valor: str
 
 type Celula = string | number | null;
 
-/** Linhas do CSV (Excel): resumo, por dia, por prato, pagamentos, zonas */
-export function linhasCsvRelatorio(r: RelatorioDetalhado): Celula[][] {
+/** Linhas do CSV (Excel): resumo, por dia, por prato, pagamentos, zonas (+ rentabilidade e doses) */
+export function linhasCsvRelatorio(r: RelatorioDetalhado, rent?: Rentabilidade | null): Celula[][] {
   const a = r.resumo;
+  const extra: Celula[][] = rent
+    ? [
+        [],
+        ['Rentabilidade', 'Valor'],
+        ['Custo dos pratos (Kz)', rent.cmv],
+        ['Custo em % das vendas', rent.cmv_pct],
+        ['Vendas com custo definido (%)', rent.cobertura_pct],
+        ['Margem bruta (Kz)', rent.margem_bruta],
+        ['Despesas (Kz)', rent.despesas],
+        ['Compras registadas (Kz)', rent.compras],
+        ['Resultado aproximado (Kz)', rent.resultado],
+        [],
+        ['Prato', 'Qtd', 'Receita (Kz)', 'Custo (Kz)', 'Margem (Kz)', 'Margem (%)'],
+        ...rent.pratos.map((p) => [p.nome, p.qtd, p.receita, p.custo, p.margem, p.margem_pct]),
+        [],
+        ['Doses: prato', 'Dias', 'Lançadas', 'Vendidas', 'Sobras', 'Dias esgotado', 'Esgota em média às', 'Desperdício (Kz)'],
+        ...rent.doses.map((d) => [d.nome, d.dias, d.lancadas, d.vendidas, d.sobras, d.dias_esgotou, d.hora_media_esgotou, d.desperdicio]),
+      ]
+    : [];
   return [
     ['Cozinha', r.cozinha],
     ['Período', `${r.inicio} a ${r.fim}`],
@@ -173,6 +232,7 @@ export function linhasCsvRelatorio(r: RelatorioDetalhado): Celula[][] {
     [],
     ['Zona', 'Pedidos', 'Vendas (Kz)'],
     ...r.zonas.map((z) => [z.zona, z.pedidos, z.vendas]),
+    ...extra,
   ];
 }
 
@@ -184,7 +244,7 @@ function tabela(cab: string[], linhas: Celula[][]): string {
 }
 
 /** PDF pronto a imprimir ou enviar: só as secções com dados, sem telefones de clientes */
-export function htmlRelatorio(r: RelatorioDetalhado, geradoPor: string, agora: Date): string {
+export function htmlRelatorio(r: RelatorioDetalhado, geradoPor: string, agora: Date, rent?: Rentabilidade | null): string {
   const ind = indicadores(r).map((i) => [i.rotulo, i.valor, i.variacao]);
   const sec = (titulo: string, corpo: string) => `<h2>${escaparHtml(titulo)}</h2>${corpo}`;
   const partes = [
@@ -197,6 +257,22 @@ export function htmlRelatorio(r: RelatorioDetalhado, geradoPor: string, agora: D
     r.cancelamentos_motivos.length ? sec('Cancelamentos', tabela(['Motivo', 'N.º'], r.cancelamentos_motivos.map((c) => [c.motivo, c.n]))) : '',
     r.estafetas.length ? sec('Estafetas', tabela(['Estafeta', 'Entregas', 'A horas'], r.estafetas.map((e) => [e.nome, e.entregas, pct(e.a_horas_pct)]))) : '',
     r.zonas.length ? sec('Zonas', tabela(['Zona', 'Pedidos', 'Vendas'], r.zonas.map((z) => [z.zona, z.pedidos, formatarKz(z.vendas)]))) : '',
+    rent && rent.vendas_comida > 0
+      ? sec(
+          'Rentabilidade',
+          tabela(['Indicador', 'Valor'], [
+            ['Custo dos pratos', `${formatarKz(rent.cmv)} (${pct(rent.cmv_pct)} das vendas)`],
+            ['Vendas com custo definido', pct(rent.cobertura_pct)],
+            ['Margem bruta', rent.margem_bruta == null ? '—' : formatarKz(rent.margem_bruta)],
+            ['Despesas', formatarKz(rent.despesas)],
+            ['Resultado aproximado', rent.resultado == null ? '— (faltam custos)' : formatarKz(rent.resultado)],
+          ]),
+        )
+      : '',
+    rent?.doses.length
+      ? sec('Doses: esgotados e sobras', tabela(['Prato', 'Esgotou', 'Às (média)', 'Sobras', 'Desperdício'],
+          rent.doses.map((d) => [d.nome, `${d.dias_esgotou} de ${d.dias} dias`, d.hora_media_esgotou ?? '—', d.sobras, formatarKz(d.desperdicio)])))
+      : '',
   ].join('');
   return `<html><head><meta charset="utf-8"><style>
     body{font-family:sans-serif;padding:20px;color:#1A1A1A} h1{color:#B5121B;margin:0} h2{font-size:15px;margin:18px 0 6px;color:#B5121B}

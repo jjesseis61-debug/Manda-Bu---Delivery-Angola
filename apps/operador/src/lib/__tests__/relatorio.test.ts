@@ -1,4 +1,4 @@
-import { htmlRelatorio, indicadores, linhasCsvRelatorio, periodoRel, quemPagaConvida, variacao, type RelatorioDetalhado, type ResumoCozinha } from '../relatorio';
+import { avaliarCmv, margemPct, htmlRelatorio, indicadores, linhasCsvRelatorio, periodoRel, quemPagaConvida, variacao, type RelatorioDetalhado, type ResumoCozinha } from '../relatorio';
 
 const resumo = (over: Partial<ResumoCozinha> = {}): ResumoCozinha => ({
   pedidos: 2, vendas_brutas: 6000, desconto_convite: 500, saldo_convida: 0, descontos: 500, vendas_liquidas: 5500,
@@ -63,4 +63,28 @@ test('quem paga o Convida, por cozinha', () => {
   expect(quemPagaConvida(resumo({ convida_cozinha_percent: 50 }))).toMatch(/50% pagos pela cozinha, o resto pela plataforma/);
   const i = indicadores({ ...rel, resumo: resumo({ convida_cozinha_percent: 100, convida_a_cargo_cozinha: 500 }) });
   expect(i.find((x) => x.rotulo.startsWith('Descontos Convida'))?.rotulo).toBe('Descontos Convida (cozinha paga 500 Kz)');
+});
+
+test('margem de uma dose e avaliação do custo da comida', () => {
+  expect(margemPct(5000, 3500)).toBe(30);
+  expect(margemPct(2000, null)).toBeNull();
+  expect(avaliarCmv(30)).toBe('bom');
+  expect(avaliarCmv(40)).toBe('atencao');
+  expect(avaliarCmv(60)).toBe('alto');
+  expect(avaliarCmv(null)).toBeNull();
+});
+
+test('CSV e PDF levam a rentabilidade e as doses quando existem', () => {
+  const rent = {
+    vendas_comida: 6000, cmv: 3600, cobertura_pct: 100, cmv_pct: 60, margem_bruta: 2400, despesas: 1000,
+    despesas_por_categoria: [], compras: 0, a_receber_cozinha: 5400, resultado: 800,
+    pratos: [{ nome: 'Calulu', qtd: 3, receita: 6000, custo: 3600, completo: true, margem: 2400, margem_pct: 40 }],
+    doses: [{ nome: 'Calulu', dias: 2, lancadas: 6, vendidas: 5, sobras: 1, dias_esgotou: 1, hora_media_esgotou: '13:20', desperdicio: 1200 }],
+  };
+  const csv = linhasCsvRelatorio(rel, rent);
+  expect(csv).toContainEqual(['Resultado aproximado (Kz)', 800]);
+  expect(csv).toContainEqual(['Calulu', 2, 6, 5, 1, 1, '13:20', 1200]);
+  const html = htmlRelatorio(rel, 'Rita', new Date('2026-11-11T20:00:00Z'), rent);
+  expect(html).toContain('Rentabilidade');
+  expect(html).toContain('1 de 2 dias');
 });

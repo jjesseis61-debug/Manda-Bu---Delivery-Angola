@@ -159,6 +159,7 @@ export type Permissao =
   | 'pacotes.gerir'
   | 'vendas.registar'
   | 'financas.conferir'
+  | 'financas.gerir'
   | 'clientes.gerir'
   | 'equipa.gerir'
   | 'analista.usar'

@@ -107,6 +107,8 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 -- avisos do cliente (sino) e push na web (PWA)
                 'meus_avisos', 'contar_avisos_novos', 'marcar_avisos_vistos', 'registar_push_web', 'remover_push_web',
                 'chave_publica_push_web',
+                -- relatório: custos dos pratos, despesas e rentabilidade
+                'custos_da_cozinha', 'definir_custo_item', 'despesas_cozinha', 'lancar_despesa', 'apagar_despesa', 'rentabilidade_cozinha',
                 -- prato montável a partir do modelo (cozinhas.gerir)
                 'criar_montavel_do_modelo',
                 -- sugestão de despacho por proximidade

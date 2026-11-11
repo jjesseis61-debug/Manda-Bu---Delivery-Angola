@@ -56,6 +56,8 @@ export default function LayoutRaiz() {
         <Stack.Screen name="cozinhas/index" options={{ title: 'Cozinhas' }} />
         <Stack.Screen name="cozinhas/[id]/index" options={{ title: 'Cozinha' }} />
         <Stack.Screen name="cozinhas/[id]/cardapio" options={{ title: 'Cardápio' }} />
+        <Stack.Screen name="cozinhas/[id]/custos" options={{ title: 'Custos e margens' }} />
+        <Stack.Screen name="cozinhas/[id]/despesas" options={{ title: 'Despesas da cozinha' }} />
         <Stack.Screen name="cozinhas/opcoes/[prato]" options={{ title: 'Opções do prato', presentation: 'modal' }} />
         <Stack.Screen name="cozinhas/horarios/[prato]" options={{ title: 'Horários do prato', presentation: 'modal' }} />
         <Stack.Screen name="cozinhas/historico" options={{ title: 'Histórico do cardápio' }} />

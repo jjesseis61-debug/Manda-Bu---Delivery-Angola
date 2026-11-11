@@ -109,6 +109,16 @@ export default function Cardapio() {
         ))}
 
         {pratos && <Botao titulo="Novo prato" variante="secundario" aoCarregar={() => setEditar('novo')} />}
+        {pratos && pratos.length > 0 && (
+          <Botao
+            titulo="💰 Custos e margens"
+            variante="leve"
+            aoCarregar={() => router.push({ pathname: '/cozinhas/[id]/custos', params: { id } })}
+          />
+        )}
+        {pratos && (
+          <Botao titulo="🧾 Despesas da cozinha" variante="leve" aoCarregar={() => router.push({ pathname: '/cozinhas/[id]/despesas', params: { id } })} />
+        )}
 
         <Modal visible={editar !== null} animationType="slide" onRequestClose={() => setEditar(null)}>
           <View style={{ flex: 1, backgroundColor: cores.fundo }}>
