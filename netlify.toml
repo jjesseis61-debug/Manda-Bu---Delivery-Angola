@@ -5,6 +5,9 @@
   base = "apps/cliente"
   command = "npm run build:web"
   publish = "dist"
+  # Créditos: só compila quando muda a app do cliente ou esta configuração
+  # (o branch recebe muitos commits de docs/operador/testes que não mexem no site).
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- . ../../netlify.toml"
 
 # Valores PÚBLICOS da app (os mesmos dos APKs, em .github/workflows/apk.yml):
 # a chave publicável do Supabase vai sempre no código do cliente; a segurança está no RLS
