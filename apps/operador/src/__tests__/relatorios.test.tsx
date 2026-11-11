@@ -13,7 +13,7 @@ jest.mock('@/lib/api', () => ({
     etapas: [
       { chave: 'confirmar', nome: 'Confirmar o pedido', n: 2, mediana: 3, p90: 4 },
       { chave: 'comecar', nome: 'Começar a preparar', n: 2, mediana: 7, p90: 8 },
-      { chave: 'preparar', nome: 'Preparar e esperar estafeta', n: 2, mediana: 15, p90: 19 },
+      { chave: 'preparar', nome: 'Preparar', n: 2, mediana: 15, p90: 19 },
       { chave: 'entregar', nome: 'Entrega (caminho)', n: 2, mediana: 14, p90: 19.2 },
       { chave: 'total', nome: 'Total: pedido → entregue', n: 2, mediana: 39, p90: 47.8 },
     ],
@@ -67,7 +67,7 @@ test('gera o relatório de hoje com o valor a receber e abre as secções', asyn
   fireEvent.press(ecra.getByText(/Doses: esgotados e sobras/));
   expect(ecra.getByText(/em média às 13:20/)).toBeTruthy();
   fireEvent.press(ecra.getByText(/Tempo de cada etapa/));
-  expect(ecra.getByText('Preparar e esperar estafeta ⚠️')).toBeTruthy();
+  expect(ecra.getByText('Preparar ⚠️')).toBeTruthy();
   expect(ecra.getByText('15 min · piores 19 min')).toBeTruthy();
   expect(ecra.getByText(/adianta as bases antes do pico/)).toBeTruthy();
   expect(ecra.getByText(/1 de 2 · atraso normal 5 min/)).toBeTruthy();

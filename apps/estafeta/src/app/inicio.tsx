@@ -230,6 +230,9 @@ export default function Inicio() {
                     </Text>
                   )}
                 </View>
+                {p.pronto_em && p.estado !== 'em_entrega' && (
+                  <Text style={{ color: cores.sucesso, fontWeight: '700' }}>✅ Pronto — podes ir buscar</Text>
+                )}
                 <Text style={{ color: cores.textoSuave }}>{local}{p.zona_nome && p.ponto_referencia ? ` · ${p.zona_nome}` : ''}</Text>
                 {hp && (
                   <Text style={{ fontSize: 13, fontWeight: '700', color: hp.atrasado ? cores.erro : cores.textoSuave }}>

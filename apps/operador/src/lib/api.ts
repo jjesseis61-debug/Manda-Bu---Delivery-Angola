@@ -526,6 +526,11 @@ export async function conferirComprovativo(id: string, conferido: boolean, nota:
   verificar(await supabase.rpc('conferir_comprovativo', { p_comprovativo: id, p_conferido: conferido, p_nota: nota }));
 }
 
+/** A cozinha marca (ou desmarca) o pedido em preparação como pronto; avisa o estafeta reservado */
+export async function marcarPronto(pedidoId: string, pronto = true): Promise<void> {
+  verificar(await supabase.rpc('marcar_pedido_pronto', { p_pedido: pedidoId, p_pronto: pronto }));
+}
+
 export async function mudarEstado(
   pedidoId: string,
   estado: string,

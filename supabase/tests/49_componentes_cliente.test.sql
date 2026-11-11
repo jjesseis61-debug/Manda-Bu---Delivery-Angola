@@ -3,7 +3,7 @@
 -- quantidade vindos da app; prato a 0 Kz só com opções; o stock não desconta o que foi tirado
 begin;
 \ir _helpers.psql
-select plan(12);
+select plan(14);
 
 select testes.funcionalidade('pratos_montaveis', true);
 with z as (insert into zonas (nome, tipo, taxa) values ('Talatona', 'Própria', 300) returning id) select testes.def('zona', id) from z;
@@ -91,6 +91,16 @@ select ok(testes.v('r_monta')::jsonb -> 'itens' -> 0 ->> 'nome' = 'Monta o teu p
           'prato a 0 Kz: o preço vem das opções (0 + 1000 do arroz − 25 da cebola)');
 select ok(testes.v('r_monta_sem') = 'P0001:opcoes_em_falta' and testes.v('r_zero') like 'P0001:item_sem_preco%',
           'sem opções que lhe dêem preço, um prato a 0 Kz é recusado');
+
+-- #7: o valor mínimo do montável conta sobre o preço FINAL (depois de tirar ingredientes), como na app
+update cardapio set minimo_montavel = 1000 where id = testes.u('monta');
+set local role authenticated;
+select testes.def('r_min_ok', testes.orc(jsonb_build_array(pg_temp.item('monta', 1, null, jsonb_build_array(testes.v('arroz'))))));
+select testes.def('r_min_tirou', testes.orc(jsonb_build_array(pg_temp.item('monta', 1, jsonb_build_array(testes.v('cebola')), jsonb_build_array(testes.v('arroz'))))));
+reset role;
+select is((testes.v('r_min_ok')::jsonb -> 'itens' -> 0 ->> 'preco_unitario')::int, 1000, 'no mínimo exacto (1000) passa');
+select is(testes.v('r_min_tirou'), 'P0001:abaixo_do_minimo', 'tirar a cebola deixa-o em 975, abaixo do mínimo: recusado');
+update cardapio set minimo_montavel = null where id = testes.u('monta');
 
 -- Interruptor desligado: não se tira nada e paga-se o prato inteiro
 select testes.funcionalidade('pratos_montaveis', false);

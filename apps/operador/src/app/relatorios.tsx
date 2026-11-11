@@ -399,6 +399,9 @@ export default function Relatorios() {
                       direita={`${duracao(l.total)} · ${nomeEtapa(l.etapa)}`}
                     />
                   ))}
+                  {(tempos.com_pronto ?? 0) === 0 && (
+                    <Paragrafo suave>Marca "✅ Pronto" nos pedidos (em Pedidos e entregas) para separar a preparação da espera pelo estafeta.</Paragrafo>
+                  )}
                   {tempos.agendados_fora > 0 && (
                     <Paragrafo suave>{`${tempos.agendados_fora} agendado(s) fora das etapas (contam só na pontualidade).`}</Paragrafo>
                   )}

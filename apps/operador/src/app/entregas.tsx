@@ -5,7 +5,7 @@ import { Dimensions, Image, Linking, Modal, Switch, Text, View } from 'react-nat
 import { AcompanharPedido } from '@/components/AcompanharPedido';
 import { Guarda } from '@/components/Guarda';
 import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Escolha, Paragrafo, Subtitulo } from '@/components/ui';
-import { alertasAbertos, atribuirEntrega, caixasAbertas, estafetasParaAtribuir, informarAtraso, lerCozinhas, marcarPagadorDistinto, mudarEstado, pedidosAgendados, pedidosOperador, recusarEntrega } from '@/lib/api';
+import { alertasAbertos, atribuirEntrega, caixasAbertas, estafetasParaAtribuir, informarAtraso, lerCozinhas, marcarPagadorDistinto, mudarEstado, pedidosAgendados, pedidosOperador, recusarEntrega, marcarPronto } from '@/lib/api';
 import { formatarData, formatarDia, formatarKz, mensagemErro, nomeEstadoPedido } from '@/lib/formatar';
 import { imprimirHtml } from '@/lib/exportar';
 import { enviarComprovativo, escolherFoto } from '@/lib/fotos';
@@ -409,6 +409,11 @@ export default function Entregas() {
             {p.atribuido_a_mim ? '➤ Reservado a ti' : `➤ Reservado a ${p.atribuido_a_nome}`}
           </Text>
         )}
+        {p.pronto_em && p.estado === 'em_preparacao' && (
+          <Text style={{ color: cores.sucesso, fontWeight: '700' }}>
+            ✅ Pronto às {new Date(p.pronto_em).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}
+          </Text>
+        )}
         {avisos(p)}
         {aberto && accao?.tipo === 'entregar' && painelEntrega(p)}
         {aberto && accao?.tipo === 'atribuir' && painelAtribuir(p)}
@@ -442,6 +447,14 @@ export default function Entregas() {
                 titulo={rotuloSeguinte ?? seguinte.rotulo}
                 aCarregar={ocupado === p.pedido_id}
                 aoCarregar={() => correr(p.pedido_id, () => mudarEstado(p.pedido_id, seguinte.estado))}
+              />
+            )}
+            {gerir && !modoEstafeta && p.estado === 'em_preparacao' && (
+              <Botao
+                titulo={p.pronto_em ? 'Afinal ainda não está pronto' : '✅ Pronto (avisa o estafeta)'}
+                variante={p.pronto_em ? 'texto' : 'leve'}
+                aCarregar={ocupado === `${p.pedido_id}pronto`}
+                aoCarregar={() => correr(`${p.pedido_id}pronto`, () => marcarPronto(p.pedido_id, !p.pronto_em))}
               />
             )}
             {aceitarEntrega && (

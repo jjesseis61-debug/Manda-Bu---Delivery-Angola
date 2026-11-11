@@ -109,10 +109,12 @@ export function avaliarCmv(pct: number | null): 'bom' | 'atencao' | 'alto' | nul
 }
 
 /** Tempo de cada etapa do pedido (mediana = o normal; p90 = os 10% piores), em minutos */
-export type ChaveEtapa = 'confirmar' | 'comecar' | 'preparar' | 'entregar' | 'total';
+export type ChaveEtapa = 'confirmar' | 'comecar' | 'preparar' | 'esperar' | 'entregar' | 'total';
 export type TemposEtapas = {
   pedidos: number;
   agendados_fora: number;
+  /** Pedidos com "Pronto" marcado (só esses separam preparar de esperar o estafeta) */
+  com_pronto?: number;
   etapas: { chave: ChaveEtapa; nome: string; n: number; mediana: number | null; p90: number | null }[];
   gargalo: Exclude<ChaveEtapa, 'total'> | null;
   pontualidade: { com_hora: number; a_tempo: number; atrasados: number; atraso_mediano: number | null };
@@ -133,7 +135,8 @@ export function duracao(min: number | null | undefined): string {
 const NOME_ETAPA: Record<Exclude<ChaveEtapa, 'total'>, string> = {
   confirmar: 'confirmar o pedido',
   comecar: 'começar a preparar',
-  preparar: 'preparar e esperar estafeta',
+  preparar: 'preparar',
+  esperar: 'esperar o estafeta',
   entregar: 'caminho da entrega',
 };
 export const nomeEtapa = (c: Exclude<ChaveEtapa, 'total'> | null) => (c ? NOME_ETAPA[c] : '—');
@@ -146,7 +149,9 @@ export function conselhoEtapa(c: Exclude<ChaveEtapa, 'total'> | null): string | 
     case 'comecar':
       return 'Entre confirmar e começar há espera: começa a preparar logo após confirmar, ou adianta as bases antes do pico.';
     case 'preparar':
-      return 'A preparação (com a espera pelo estafeta) é o que mais demora: adianta as bases antes do pico e reserva o estafeta mais cedo.';
+      return 'A preparação é o que mais demora: adianta as bases antes do pico e reserva o estafeta mais cedo.';
+    case 'esperar':
+      return 'Os pedidos ficam prontos à espera do estafeta: reserva o estafeta mais cedo (ele é avisado quando marcas Pronto).';
     case 'entregar':
       return 'O caminho é o que mais demora: agrupa entregas da mesma zona ou revê as zonas mais longe.';
     default:

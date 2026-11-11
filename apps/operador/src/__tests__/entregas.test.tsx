@@ -2,7 +2,7 @@
 import { act, fireEvent, renderRouter, waitFor } from 'expo-router/testing-library';
 
 import Entregas from '@/app/entregas';
-import { alertasAbertos, caixasAbertas, informarAtraso, lerCozinhas, mudarEstado, pedidosOperador } from '@/lib/api';
+import { alertasAbertos, caixasAbertas, informarAtraso, lerCozinhas, marcarPronto, mudarEstado, pedidosOperador } from '@/lib/api';
 
 jest.mock('@/lib/api', () => ({
   pedidosOperador: jest.fn(),
@@ -12,6 +12,7 @@ jest.mock('@/lib/api', () => ({
   informarAtraso: jest.fn(),
   mudarEstado: jest.fn(),
   marcarPagadorDistinto: jest.fn(),
+  marcarPronto: jest.fn(),
   pedidosAgendados: jest.fn().mockResolvedValue([]),
 }));
 jest.mock('@/lib/fotos', () => ({ enviarComprovativo: jest.fn(), escolherFoto: jest.fn() }));
@@ -66,4 +67,31 @@ test('cancelar: a cozinha escolhe o motivo da lista ou escreve outro', async () 
     fireEvent.press(ecra.getByText('Cancelar pedido'));
   });
   expect(mudarEstado).toHaveBeenCalledWith('p1', 'cancelado', { motivo: 'Avaria na cozinha (gás, luz ou equipamento)' });
+});
+
+test('pronto: a cozinha marca o pedido em preparação como pronto', async () => {
+  (pedidosOperador as jest.Mock).mockResolvedValue([pedido('p2', 'em_preparacao', 'Bruno')]);
+  (caixasAbertas as jest.Mock).mockResolvedValue([]);
+  (lerCozinhas as jest.Mock).mockResolvedValue([]);
+  (alertasAbertos as jest.Mock).mockResolvedValue([]);
+  (marcarPronto as jest.Mock).mockResolvedValue(undefined);
+  const ecra = renderRouter({ entregas: Entregas }, { initialUrl: '/entregas' });
+  await waitFor(() => expect(ecra.getByText('✅ Pronto (avisa o estafeta)')).toBeTruthy());
+  await act(async () => {
+    fireEvent.press(ecra.getByText('✅ Pronto (avisa o estafeta)'));
+  });
+  expect(marcarPronto).toHaveBeenCalledWith('p2', true);
+});
+
+test('pronto: mostra a hora e deixa desfazer', async () => {
+  (pedidosOperador as jest.Mock).mockResolvedValue([{ ...pedido('p2', 'em_preparacao', 'Bruno'), pronto_em: '2026-10-03T11:20:00Z' }]);
+  (caixasAbertas as jest.Mock).mockResolvedValue([]);
+  (lerCozinhas as jest.Mock).mockResolvedValue([]);
+  (alertasAbertos as jest.Mock).mockResolvedValue([]);
+  const ecra = renderRouter({ entregas: Entregas }, { initialUrl: '/entregas' });
+  await waitFor(() => expect(ecra.getByText(/✅ Pronto às/)).toBeTruthy());
+  await act(async () => {
+    fireEvent.press(ecra.getByText('Afinal ainda não está pronto'));
+  });
+  expect(marcarPronto).toHaveBeenCalledWith('p2', false);
 });

@@ -44,6 +44,8 @@ export default function Convida() {
   const jaGanhou = (amigos ?? []).some((a) => a.ganho_total > 0);
   const gpp = parametros?.ganho_por_pedido ?? 0;
   const descInd = parametros?.desconto_indicado ?? 0;
+  // Bónus de boas-vindas: soma-se à 1.ª comissão (uma vez por pessoa); 0 = desligado
+  const bonus = parametros?.bonus_boas_vindas ?? 0;
 
   return (
     <Ecra>
@@ -51,7 +53,7 @@ export default function Convida() {
         <Cartao>
           <Subtitulo>A tua primeira vitória</Subtitulo>
           <Text style={{ fontSize: 20, fontWeight: '800', color: cores.marca, lineHeight: 26 }}>
-            Partilha e ganha os teus primeiros{gpp ? ` ${formatarKz(gpp)}` : ''} 🎉
+            Partilha e ganha os teus primeiros{gpp ? ` ${formatarKz(gpp + bonus)}` : ''} 🎉
           </Text>
           <View style={{ gap: 6, marginVertical: 4 }}>
             <Text style={{ color: cores.texto }}>1. Partilha o teu código no WhatsApp.</Text>
@@ -60,6 +62,13 @@ export default function Convida() {
             </Text>
             <Text style={{ color: cores.texto }}>3. Ganhas{gpp ? ` ${formatarKz(gpp)}` : ''} por cada pedido dele{parametros?.comissao_primeiro_pedido ? '' : ', a partir do 2.º'}.</Text>
           </View>
+          {bonus > 0 && (
+            <View style={{ backgroundColor: cores.marcaClara, borderRadius: 8, padding: 10 }}>
+              <Text style={{ color: cores.marca, fontWeight: '700' }}>
+                🎁 Bónus de boas-vindas: +{formatarKz(bonus)} extra na tua primeira comissão.
+              </Text>
+            </View>
+          )}
           <PartilharCodigo />
           <Text style={{ color: cores.textoSuave, fontSize: 13 }}>Leva 10 segundos · a mensagem já vai pronta.</Text>
         </Cartao>
