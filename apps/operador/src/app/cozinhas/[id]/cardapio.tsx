@@ -6,7 +6,7 @@ import { CartaoPrato } from '@/components/CartaoPrato';
 import { EditorPrato } from '@/components/EditorPrato';
 import { Guarda } from '@/components/Guarda';
 import { ACarregar, Aviso, Botao, Ecra, Paragrafo, Subtitulo } from '@/components/ui';
-import { guardarPrato, lerCardapio, lerCozinhas, lerDosesCardapio } from '@/lib/api';
+import { criarMontavelDoModelo, guardarPrato, idsMontaveis, lerCardapio, lerCozinhas, lerDosesCardapio } from '@/lib/api';
 import { mensagemErro } from '@/lib/formatar';
 import { useSessao } from '@/lib/sessao';
 import { cores, espaco } from '@/lib/tema';
@@ -25,10 +25,14 @@ export default function Cardapio() {
   const [erro, setErro] = useState<string | null>(null);
   // null = fechado; 'novo' = criar; PratoCardapio = editar
   const [editar, setEditar] = useState<PratoCardapio | 'novo' | null>(null);
+  const [montaveis, setMontaveis] = useState<Set<string>>(new Set());
+  const [aCriar, setACriar] = useState(false);
+  const podeCriarMontavel = pode('cozinhas.gerir');
 
   const carregar = useCallback(() => {
     Promise.all([lerCardapio(id), lerDosesCardapio(id).catch(() => [] as DosesPrato[]), lerCozinhas()])
-      .then(([ps, ds, cs]) => {
+      .then(async ([ps, ds, cs]) => {
+        setMontaveis(await idsMontaveis(ps.map((p) => p.id)).catch(() => new Set<string>()));
         setPratos(ps);
         setDoses(new Map(ds.map((d) => [d.cardapio_id, d])));
         setNomeCozinha(cs.find((c) => c.id === id)?.nome ?? null);
@@ -38,6 +42,21 @@ export default function Cardapio() {
   useEffect(carregar, [carregar]);
 
   const categorias = [...new Set((pratos ?? []).map((p) => p.categoria).filter((c): c is string => !!c))];
+
+  // Prato montável a partir do modelo (nasce desactivado, para a cozinha rever e activar)
+  async function criarMontavel() {
+    setErro(null);
+    setACriar(true);
+    try {
+      await criarMontavelDoModelo(id);
+      carregar();
+    } catch (e) {
+      setErro(mensagemErro(e));
+    } finally {
+      setACriar(false);
+    }
+  }
+  const montavelPorRever = (pratos ?? []).find((p) => montaveis.has(p.id) && !p.disponivel);
 
   // Grava um campo rápido (doses ou disponível) de um prato, reaproveitando guardarPrato.
   async function gravarCampo(p: PratoCardapio, campos: Partial<PratoCardapio>) {
@@ -58,6 +77,20 @@ export default function Cardapio() {
         {erro && <Aviso tipo="erro">{erro}</Aviso>}
         {!pratos && !erro && <ACarregar />}
         {pratos?.length === 0 && <Paragrafo suave>Sem pratos. Toca em "Novo prato" para começar.</Paragrafo>}
+        {montavelPorRever && (
+          <Aviso>
+            O prato montável «{montavelPorRever.nome}» está desactivado (criado a partir do modelo). Revê as opções e os preços
+            e activa-o.
+          </Aviso>
+        )}
+        {pratos && podeCriarMontavel && !pratos.some((p) => montaveis.has(p.id)) && (
+          <Botao
+            titulo="🍽 Criar prato montável a partir do modelo"
+            variante="secundario"
+            aCarregar={aCriar}
+            aoCarregar={criarMontavel}
+          />
+        )}
 
         {pratos?.map((p) => (
           <CartaoPrato

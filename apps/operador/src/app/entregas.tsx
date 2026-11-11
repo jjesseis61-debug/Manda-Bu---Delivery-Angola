@@ -538,6 +538,9 @@ export default function Entregas() {
             aoMudar={setFiltroCozinha}
           />
         )}
+        {!modoEstafeta && (
+          <Botao titulo="📅 Ver todos os agendados" variante="secundario" aoCarregar={() => router.push('/agendados')} />
+        )}
         {!modoEstafeta && (() => {
           const vis = agendados.filter((a) => filtroCozinha === 'todas' || a.cozinha_id === filtroCozinha);
           if (vis.length === 0) return null;

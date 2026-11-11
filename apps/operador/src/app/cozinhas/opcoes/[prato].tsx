@@ -5,8 +5,9 @@ import { Switch, Text, View } from 'react-native';
 import { FotoEditavel } from '@/components/FotoEditavel';
 import { Guarda } from '@/components/Guarda';
 import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Paragrafo, Subtitulo } from '@/components/ui';
-import { apagarGrupoOpcoes, apagarOpcao, definirFotoOpcao, guardarGrupoOpcoes, guardarOpcao, lerGruposOpcoes, lerProdutos } from '@/lib/api';
+import { alterarParametros, apagarGrupoOpcoes, apagarOpcao, definirFotoOpcao, guardarGrupoOpcoes, guardarOpcao, lerGruposOpcoes, lerModeloMontavel, lerProdutos } from '@/lib/api';
 import { componentesParaGuardar, formatarKz, mensagemErro, unidadePorDefeito } from '@/lib/formatar';
+import { useSessao } from '@/lib/sessao';
 import { cores, espaco } from '@/lib/tema';
 import type { GrupoOpcoesPrato, ProdutoStock } from '@/lib/tipos';
 
@@ -35,12 +36,17 @@ export default function OpcoesPrato() {
   const [produtos, setProdutos] = useState<ProdutoStock[] | null>(null);
   const [procura, setProcura] = useState('');
   const [ocupado, setOcupado] = useState(false);
+  // Administrador (parâmetros): este prato passa a ser o modelo copiado para as cozinhas novas
+  const { pode } = useSessao();
+  const podeModelo = pode('plataforma.parametros');
+  const [modelo, setModelo] = useState<string | null | undefined>(undefined);
 
   const carregar = useCallback(() => {
     lerGruposOpcoes(String(prato))
       .then(setGrupos)
       .catch((e) => setErro(mensagemErro(e)));
-  }, [prato]);
+    if (podeModelo) lerModeloMontavel().then(setModelo).catch(() => setModelo(undefined));
+  }, [prato, podeModelo]);
   useEffect(carregar, [carregar]);
 
   // Produtos do stock: só quando se edita uma opção (para os ingredientes)
@@ -77,6 +83,18 @@ export default function OpcoesPrato() {
     <Guarda permissoes={['cozinhas.gerir', 'cardapio.gerir']}>
       <Ecra>
         {nome && <Subtitulo>{nome}</Subtitulo>}
+        {podeModelo && modelo !== undefined && (grupos?.length ?? 0) > 0 && (
+          modelo === String(prato) ? (
+            <Aviso tipo="sucesso">Este é o prato modelo: é copiado (desactivado) para cada cozinha nova.</Aviso>
+          ) : (
+            <Botao
+              titulo="⭐ Usar como modelo para as cozinhas novas"
+              variante="leve"
+              aCarregar={ocupado}
+              aoCarregar={() => correr(() => alterarParametros({ cardapio_modelo_montavel: String(prato) }))}
+            />
+          )
+        )}
         <Paragrafo suave>
           O cliente monta o prato escolhendo opções em cada grupo. Com mínimo 1 o grupo é obrigatório; o preço extra soma ao
           preço do prato. Só aparece aos clientes com o interruptor &quot;pratos_montaveis&quot; ligado.

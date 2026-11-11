@@ -101,7 +101,9 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 -- gestão de permissões e cozinhas do pessoal (só administrador principal)
                 'permissoes_catalogo', 'definir_permissoes_funcionario', 'definir_cozinhas_funcionario',
                 -- pedidos agendados (fila do que vem)
-                'pedidos_agendados',
+                'pedidos_agendados', 'agendados_operador',
+                -- prato montável a partir do modelo (cozinhas.gerir)
+                'criar_montavel_do_modelo',
                 -- sugestão de despacho por proximidade
                 'sugestao_despacho',
                 -- conta de empresa (B2B)

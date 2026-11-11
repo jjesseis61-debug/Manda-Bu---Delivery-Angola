@@ -56,6 +56,7 @@ import type {
   Painel,
   PalavraFiltrada,
   PedidoAgendado,
+  AgendadoOperador,
   PedidoOperador,
   EstafetaAtribuir,
   Periodo,
@@ -217,6 +218,19 @@ export async function movimentoPrecoPrato(cardapioId: string, preco?: number): P
 }
 
 // ---------------------------------------------------------------- I9: opções dos pratos
+/** Ids dos pratos (desta lista) que são montáveis: têm grupos de opções */
+export async function idsMontaveis(cardapioIds: string[]): Promise<Set<string>> {
+  if (cardapioIds.length === 0) return new Set();
+  const r = await supabase.from('opcoes_grupos').select('cardapio_id').in('cardapio_id', cardapioIds).is('deletado_em', null);
+  return new Set((verificar(r) as { cardapio_id: string }[]).map((g) => g.cardapio_id));
+}
+
+/** O prato modelo das cozinhas novas (null = o "Serve o teu próprio prato" mais antigo) */
+export async function lerModeloMontavel(): Promise<string | null> {
+  const p = await lerParametros();
+  return (p.cardapio_modelo_montavel as string | null) ?? null;
+}
+
 export async function lerGruposOpcoes(cardapioId: string): Promise<GrupoOpcoesPrato[]> {
   const r = await supabase
     .from('opcoes_grupos')
@@ -844,6 +858,20 @@ export async function definirCozinhas(funcionarioId: string, cozinhas: string[])
 // ---------------------------------------------------------------- Pedidos agendados
 export async function pedidosAgendados(): Promise<PedidoAgendado[]> {
   return (verificar(await supabase.rpc('pedidos_agendados')) as PedidoAgendado[]) ?? [];
+}
+
+/** Todos os agendados de um período (dias de Luanda, aaaa-mm-dd), com tudo para preparar e entregar */
+export async function agendadosOperador(inicio: string, fim: string, cozinha: string | null): Promise<AgendadoOperador[]> {
+  return (
+    (verificar(
+      await supabase.rpc('agendados_operador', { p_inicio: inicio, p_fim: fim, p_cozinha: cozinha }),
+    ) as AgendadoOperador[]) ?? []
+  );
+}
+
+/** Cria o prato montável na cozinha a partir do modelo (nasce desactivado) */
+export async function criarMontavelDoModelo(cozinhaId: string): Promise<string> {
+  return verificar(await supabase.rpc('criar_montavel_do_modelo', { p_cozinha: cozinhaId })) as string;
 }
 
 // ---------------------------------------------------------------- Mapa de estafetas (despacho)

@@ -186,6 +186,9 @@ export function paraCsv(linhas: (string | number | null | undefined)[][]): strin
 
 const mensagens: Record<string, string> = {
   sem_permissao: 'Não tens permissão para esta acção.',
+  sem_modelo: 'Ainda não há um prato montável modelo. Cria um "Serve o teu próprio prato" com grupos e opções.',
+  montavel_ja_existe: 'Esta cozinha já tem o prato montável.',
+  modelo_invalido: 'Esse prato não serve de modelo: precisa de grupos de opções.',
   permissao_fotos: 'Autoriza o acesso à câmara ou às fotos nas definições do telemóvel.',
   sem_sessao: 'Entra na tua conta para continuar.',
   motivo_obrigatorio: 'Escreve o motivo.',

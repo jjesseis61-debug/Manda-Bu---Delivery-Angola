@@ -53,6 +53,7 @@ const CAMPOS: { grupo: string; chaves: [string, string][] }[] = [
       ['avaliacoes_minimo', 'Avaliações mínimas para mostrar média'],
       ['tempo_entrega_min', 'Tempo de entrega prometido ao cliente (min)'],
       ['tolerancia_entrega_min', 'Tolerância de entrega (min)'],
+      ['alerta_agendado_horas', 'Avisar agendado por confirmar (horas antes da entrega)'],
     ],
   },
   {

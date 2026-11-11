@@ -2,12 +2,14 @@
 import { act, fireEvent, renderRouter, waitFor } from 'expo-router/testing-library';
 
 import Cardapio from '@/app/cozinhas/[id]/cardapio';
-import { guardarPrato, lerCardapio, lerCozinhas, lerDosesCardapio } from '@/lib/api';
+import { criarMontavelDoModelo, guardarPrato, idsMontaveis, lerCardapio, lerCozinhas, lerDosesCardapio } from '@/lib/api';
 
 jest.mock('@/lib/api', () => ({
   definirFotoPrato: jest.fn(),
   guardarPrato: jest.fn().mockResolvedValue(undefined),
   lerCardapio: jest.fn(),
+  idsMontaveis: jest.fn().mockResolvedValue(new Set()),
+  criarMontavelDoModelo: jest.fn(),
   lerCozinhas: jest.fn(),
   lerDosesCardapio: jest.fn(),
 }));
@@ -71,4 +73,19 @@ test('operador normal: só pode acrescentar doses (soma ao total)', async () => 
   });
   // Muamba tinha 5 lançadas -> 5 + 2 = 7
   expect(guardarPrato).toHaveBeenCalledWith(expect.objectContaining({ id: 'm', doses_dia: 7 }));
+});
+
+test('cozinha sem prato montável: cria a partir do modelo; com montável desactivado, avisa para rever', async () => {
+  (criarMontavelDoModelo as jest.Mock).mockResolvedValue('novo');
+  const ecra = renderRouter({ 'cozinhas/[id]/cardapio': Cardapio }, { initialUrl: '/cozinhas/k1/cardapio' });
+  await waitFor(() => expect(ecra.getByText(/Criar prato montável a partir do modelo/)).toBeTruthy());
+  (lerCardapio as jest.Mock).mockResolvedValue([{ ...prato('n', 'Serve o teu próprio prato', null), disponivel: false }]);
+  (idsMontaveis as jest.Mock).mockResolvedValue(new Set(['n']));
+  await act(async () => {
+    fireEvent.press(ecra.getByText(/Criar prato montável a partir do modelo/));
+  });
+  expect(criarMontavelDoModelo).toHaveBeenCalledWith('k1');
+  await waitFor(() => expect(ecra.getByText(/está desactivado \(criado a partir do modelo\)/)).toBeTruthy());
+  expect(ecra.queryByText(/Criar prato montável a partir do modelo/)).toBeNull();
+  (idsMontaveis as jest.Mock).mockResolvedValue(new Set());
 });

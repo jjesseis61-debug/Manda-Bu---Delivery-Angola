@@ -38,6 +38,39 @@ export type PedidoAgendado = {
   zona_nome: string | null;
 };
 
+/** Agendado completo (ecrã "Pedidos agendados"): servidor agendados_operador */
+export type AgendadoOperador = {
+  pedido_id: string;
+  criado_em: string;
+  agendado_para: string;
+  estado: string;
+  cozinha_id: string;
+  cozinha_nome: string | null;
+  cliente_nome: string;
+  cliente_telefone: string | null;
+  itens: PedidoOperador['itens'];
+  subtotal: number;
+  taxa_entrega: number;
+  desconto_indicacao: number;
+  credito_indicacao_usado: number;
+  pago_pacote: number;
+  valor_empresa: number;
+  a_pagar: number;
+  observacoes: string | null;
+  ponto_tipo: string | null;
+  ponto_lat: number | null;
+  ponto_lng: number | null;
+  ponto_referencia: string | null;
+  zona_nome: string | null;
+  empresa: boolean;
+  grupo: boolean;
+  atribuido_a_nome: string | null;
+  /** Já entrou na fila normal (faltam menos de 90 min) */
+  na_fila: boolean;
+  /** A partir de quando se avisa que está por confirmar (regra do turno, no servidor) */
+  alerta_em: string | null;
+};
+
 /** Conta de empresa (B2B) */
 export type Empresa = { id: string; nome: string; limite_refeicao: number; activa: boolean; membros: number };
 export type EmpresaMembro = { cliente_id: string; nome: string; codigo: string | null };

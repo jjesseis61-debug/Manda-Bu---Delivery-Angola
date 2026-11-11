@@ -1,6 +1,12 @@
 # Agenda — Pedidos agendados (ecrã próprio) e prato montável padrão nas cozinhas novas
 
-> Estado: **planeado / na agenda** (análise; ainda não implementado). App do operador + backend.
+> Estado: **implementado (11/11/2026)** no código — migração `20261111000000_montavel_padrao_agendados.sql`,
+> ecrã `agendados.tsx` do operador. **Falta aplicar a migração à produção e criar o montável nas 9 cozinhas
+> existentes** (ambos só com autorização), e um APK novo do operador.
+>
+> Ficou de fora desta fase (ver 1.3): mapa do dia, alertas de doses/capacidade/cozinha fechada,
+> CSV, indicadores e reagendar. "Atribuir estafeta antecipadamente" não se faz: a reserva expira;
+> atribui-se quando o pedido entra na fila.
 
 ---
 
