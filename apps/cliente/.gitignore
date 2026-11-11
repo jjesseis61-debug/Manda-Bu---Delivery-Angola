@@ -42,3 +42,6 @@ yarn-error.*
 
 # variáveis de ambiente locais
 .env
+
+# Pacote da PWA para publicar por .zip na Netlify (gerado, não versionar)
+*.zip
