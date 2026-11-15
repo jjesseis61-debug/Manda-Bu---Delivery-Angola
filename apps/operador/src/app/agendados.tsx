@@ -3,6 +3,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { Linking, Text, View } from 'react-native';
 
 import { Guarda } from '@/components/Guarda';
+import { MapaAgendados } from '@/components/MapaAgendados';
 import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Escolha, Paragrafo, Subtitulo } from '@/components/ui';
 import {
   agrupar,
@@ -16,9 +17,12 @@ import {
   linkMapa,
   linkWhatsapp,
   linhasCsvAgendados,
+  linkRota,
   listaProducao,
   NOME_ALERTA,
   nomeDia,
+  paragensDoMapa,
+  resumoPorZona,
   textoLembrete,
   type LinhaProducao,
   type Periodo,
@@ -75,6 +79,7 @@ export default function Agendados() {
   const [alertas, setAlertas] = useState<AlertaAgendado[]>([]);
   const [ocupado, setOcupado] = useState<string | null>(null);
   const [verProducao, setVerProducao] = useState(false);
+  const [verMapa, setVerMapa] = useState(false);
   const [agora, setAgora] = useState(() => new Date());
 
   const intervalo = useMemo(() => intervaloDo(periodo, agora, de, ate), [periodo, agora, de, ate]);
@@ -107,6 +112,8 @@ export default function Agendados() {
 
   const dias = useMemo(() => agrupar(lista ?? []), [lista]);
   const producao = useMemo(() => listaProducao(lista ?? []), [lista]);
+  const paragens = useMemo(() => paragensDoMapa(lista ?? [], new Set(alertas.map((x) => x.pedido_id))), [lista, alertas]);
+  const zonas = useMemo(() => resumoPorZona(lista ?? []), [lista]);
   const porConfirmar = (lista ?? []).filter((a) => estadoAlerta(a, agora) !== null);
   const urgentes = porConfirmar.filter((a) => estadoAlerta(a, agora) === 'urgente');
 
@@ -368,6 +375,38 @@ export default function Agendados() {
             </Subtitulo>
             {alertas.length > 0 && (
               <Aviso>{`${new Set(alertas.map((x) => x.pedido_id)).size} pedido(s) com alertas: horário, doses ou hora cheia.`}</Aviso>
+            )}
+            <Botao
+              titulo={verMapa ? 'Esconder mapa do dia' : '🗺 Mapa do dia (agrupar entregas)'}
+              variante="secundario"
+              aoCarregar={() => setVerMapa(!verMapa)}
+            />
+            {verMapa && (
+              <View style={{ gap: espaco.s }}>
+                {paragens.length > 0 ? (
+                  <MapaAgendados paragens={paragens} />
+                ) : (
+                  <Paragrafo suave>Nenhum pedido do período tem localização no mapa.</Paragrafo>
+                )}
+                {paragens.length < lista.filter((a) => a.estado !== 'cancelado').length && (
+                  <Paragrafo suave>
+                    {`${lista.filter((a) => a.estado !== 'cancelado').length - paragens.length} pedido(s) sem localização não aparecem no mapa.`}
+                  </Paragrafo>
+                )}
+                {zonas.length > 0 && <Text style={{ fontWeight: '700', color: cores.texto }}>Por zona</Text>}
+                {zonas.map((z) => (
+                  <Text key={z.zona} style={{ color: cores.texto }}>
+                    {`${z.zona}: ${z.pedidos} pedido${z.pedidos === 1 ? '' : 's'} · ${z.de === z.ate ? z.de : `${z.de}–${z.ate}`}`}
+                  </Text>
+                ))}
+                {paragens.length > 0 && (
+                  <Botao
+                    titulo={paragens.length > 10 ? '🧭 Rota no Google Maps (10 primeiras)' : '🧭 Rota no Google Maps (por hora)'}
+                    variante="leve"
+                    aoCarregar={() => abrir(linkRota(paragens))}
+                  />
+                )}
+              </View>
             )}
             <Botao
               titulo={verProducao ? 'Esconder lista de produção' : '🍳 Lista de produção (o que preparar)'}

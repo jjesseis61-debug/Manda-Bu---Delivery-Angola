@@ -211,3 +211,53 @@ export function linhasCsvAgendados(lista: AgendadoOperador[]): (string | number 
     ]),
   ];
 }
+
+/** Um ponto no mapa do dia: pedido agendado com coordenadas */
+export type ParagemMapa = { id: string; lat: number; lng: number; hora: string; rotulo: string; zona: string | null; alerta: boolean };
+
+/** Pedidos com coordenadas, por hora de entrega (os sem coordenadas ficam de fora do mapa) */
+export function paragensDoMapa(lista: AgendadoOperador[], comAlerta: Set<string> = new Set()): ParagemMapa[] {
+  return lista
+    .filter((a) => a.ponto_lat != null && a.ponto_lng != null && a.estado !== 'cancelado')
+    .sort((x, y) => x.agendado_para.localeCompare(y.agendado_para))
+    .map((a) => ({
+      id: a.pedido_id,
+      lat: a.ponto_lat as number,
+      lng: a.ponto_lng as number,
+      hora: horaMinLuanda(a.agendado_para),
+      rotulo: `${horaMinLuanda(a.agendado_para)} · ${a.cliente_nome.split(' ')[0]}`,
+      zona: a.zona_nome,
+      alerta: comAlerta.has(a.pedido_id),
+    }));
+}
+
+/** Resumo por zona (para agrupar entregas): nº de pedidos e a 1.ª e a última hora */
+export function resumoPorZona(lista: AgendadoOperador[]): { zona: string; pedidos: number; de: string; ate: string }[] {
+  const m = new Map<string, AgendadoOperador[]>();
+  for (const a of lista) {
+    if (a.estado === 'cancelado') continue;
+    const z = a.zona_nome ?? 'Sem zona';
+    m.set(z, [...(m.get(z) ?? []), a]);
+  }
+  return [...m.entries()]
+    .map(([zona, ps]) => {
+      const horas = ps.map((p) => horaMinLuanda(p.agendado_para)).sort();
+      return { zona, pedidos: ps.length, de: horas[0], ate: horas[horas.length - 1] };
+    })
+    .sort((a, b) => b.pedidos - a.pedidos || a.zona.localeCompare(b.zona));
+}
+
+/**
+ * Rota no Google Maps pelas paragens, por ordem de hora (a partir da posição actual de quem abre).
+ * O Google aceita até 9 paragens intermédias; com mais, a rota leva as 10 primeiras.
+ */
+export function linkRota(paragens: ParagemMapa[]): string | null {
+  const ps = paragens.slice(0, 10);
+  if (ps.length === 0) return null;
+  const c = (p: ParagemMapa) => `${p.lat},${p.lng}`;
+  const destino = ps[ps.length - 1];
+  const meio = ps.slice(0, -1).map(c).join('|');
+  return `https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=${encodeURIComponent(c(destino))}${
+    meio ? `&waypoints=${encodeURIComponent(meio)}` : ''
+  }`;
+}

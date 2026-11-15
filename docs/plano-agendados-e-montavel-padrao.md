@@ -7,7 +7,8 @@
 > **Fase 2 (11/11/2026, `20261121000000_agendados_fase2.sql`):** alertas por pedido (prato fora do horário,
 > doses insuficientes para o dia, hora cheia — `parametros.agendados_por_hora_max`), **reagendar** com aviso
 > ao cliente, **exportar CSV** e indicadores no relatório (nº, valor, cancelados, a horas, antecedência,
-> horas mais pedidas). Fica para depois: mapa do dia (cada pedido já abre no Google Maps). "Atribuir estafeta antecipadamente" não se faz: a reserva expira;
+> horas mais pedidas). **Mapa do dia** (15/11/2026): no ecrã de Agendados, os pedidos do período no mapa
+> (hora + cliente; vermelho = com alerta), resumo por zona e rota no Google Maps pelas paragens, por hora. "Atribuir estafeta antecipadamente" não se faz: a reserva expira;
 > atribui-se quando o pedido entra na fila.
 
 ---

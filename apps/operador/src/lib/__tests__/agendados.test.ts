@@ -1,4 +1,4 @@
-import { agrupar, diaLuanda, estadoAlerta, faltam, horaMinLuanda, instanteLuanda, intervaloDo, linhasCsvAgendados, linkWhatsapp, listaProducao, nomeDia, comoPedido } from '../agendados';
+import { agrupar, diaLuanda, estadoAlerta, faltam, horaMinLuanda, instanteLuanda, intervaloDo, linhasCsvAgendados, linkRota, paragensDoMapa, resumoPorZona, linkWhatsapp, listaProducao, nomeDia, comoPedido } from '../agendados';
 import type { AgendadoOperador } from '../tipos';
 
 function agendado(over: Partial<AgendadoOperador>): AgendadoOperador {
@@ -117,5 +117,30 @@ describe('agendados fase 2', () => {
     const l = linhasCsvAgendados([agendado({ itens: [{ nome: 'Calulu', qtd: 2, preco_unitario: 2000 }] as never })]);
     expect(l[0][0]).toBe('Dia');
     expect(l[1]).toEqual(['2026-11-12', '12:00', 'A1B2C3', 'pendente', 'Viana', 'Ana Maria', '923000111', '2x Calulu', null, 'Rua 1', 'Viana', 2500]);
+  });
+});
+
+describe('mapa do dia', () => {
+  const a1 = agendado({ pedido_id: 'p1', agendado_para: '2026-11-12T12:00:00Z', cliente_nome: 'Ana Maria', zona_nome: 'Viana', ponto_lat: -8.9, ponto_lng: 13.3 });
+  const a2 = agendado({ pedido_id: 'p2', agendado_para: '2026-11-12T11:00:00Z', cliente_nome: 'Rui', zona_nome: 'Viana', ponto_lat: -8.8, ponto_lng: 13.2 });
+  const semGeo = agendado({ pedido_id: 'p3', ponto_lat: null, ponto_lng: null, zona_nome: 'Talatona' });
+  const cancelado = agendado({ pedido_id: 'p4', estado: 'cancelado' });
+  it('paragens por hora, só com coordenadas e sem cancelados', () => {
+    const p = paragensDoMapa([a1, a2, semGeo, cancelado], new Set(['p1']));
+    expect(p.map((x) => x.id)).toEqual(['p2', 'p1']);
+    expect(p[0].rotulo).toBe('12:00 · Rui');
+    expect(p[1].alerta).toBe(true);
+  });
+  it('resumo por zona com a primeira e a última hora', () => {
+    expect(resumoPorZona([a1, a2, semGeo, cancelado])).toEqual([
+      { zona: 'Viana', pedidos: 2, de: '12:00', ate: '13:00' },
+      { zona: 'Talatona', pedidos: 1, de: '12:00', ate: '12:00' },
+    ]);
+  });
+  it('rota no Google Maps: paragens por ordem, a última é o destino', () => {
+    const url = linkRota(paragensDoMapa([a1, a2]))!;
+    expect(url).toContain('destination=-8.9%2C13.3');
+    expect(url).toContain('waypoints=-8.8%2C13.2');
+    expect(linkRota([])).toBeNull();
   });
 });
