@@ -22,6 +22,8 @@ import {
   mediasAvaliacoes,
   meusSelos,
   posicaoEntrega,
+  maisPedidosNaZona,
+  type MaisPedidoZona,
 } from '@/lib/api';
 import { useCarrinho } from '@/lib/carrinho';
 import { corEstadoPedido, formatarKz, mensagemErro, nomeEstadoPedido, textoPediram } from '@/lib/formatar';
@@ -46,6 +48,7 @@ export default function Inicio() {
   const pedirDeNovoNoCarrinho = usePedirDeNovo();
   const [cardapio, setCardapio] = useState<ItemCardapio[] | null>(null);
   const [enderecos, setEnderecos] = useState<Endereco[]>([]);
+  const [maisZona, setMaisZona] = useState<MaisPedidoZona[]>([]);
   const [contador, setContador] = useState<number | null>(null);
   const [medias, setMedias] = useState<MediasAvaliacoes | null>(null);
   const [cozinhas, setCozinhas] = useState<CozinhaParaPedir[]>([]);
@@ -102,6 +105,8 @@ export default function Inicio() {
       setCardapio(itens);
       setDoses(new Map(itens[0] ? (await lerDoses(itens[0].cozinha_id).catch(() => [])).map((d) => [d.cardapio_id, d.restantes]) : []));
       setEnderecos(ends);
+      // Prova social local: o que mais se pede na zona da morada (falha em silêncio)
+      setMaisZona(ponto ? await maisPedidosNaZona(ponto).catch(() => []) : []);
       // I9: pratos com opções abrem o ecrã de montar; um grupo obrigatório sem opções disponíveis esgota o prato
       const [grupos, componentes] = ligada('pratos_montaveis')
         ? await Promise.all([lerOpcoes(itens.map((i) => i.id)), lerComponentes(itens.map((i) => i.id)).catch(() => [])])
@@ -245,6 +250,25 @@ export default function Inicio() {
               <Text style={{ color: cores.textoSuave }}>Toca para acompanhar o teu pedido.</Text>
             </View>
           </Pressable>
+        )}
+        {maisZona.length > 0 && (
+          <Cartao estilo={{ gap: espaco.xs }}>
+            <Text style={{ fontWeight: '700', color: cores.texto }}>🔥 O mais pedido na tua zona</Text>
+            {maisZona.map((m) => {
+              const daqui = m.cozinha_id === cozinhaId;
+              return (
+                <Pressable
+                  key={m.cardapio_id}
+                  accessibilityRole={daqui ? 'button' : undefined}
+                  disabled={!daqui}
+                  onPress={() => router.push({ pathname: '/montar/[id]', params: { id: m.cardapio_id } })}>
+                  <Text style={{ color: daqui ? cores.marca : cores.texto, fontWeight: daqui ? '700' : '400' }}>
+                    {`${m.nome}${daqui ? '' : ` · ${m.cozinha}`} — ${m.pedidos} pedidos nos últimos 30 dias`}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </Cartao>
         )}
         {/* Herói: "Serve o teu próprio prato" em destaque no topo (rompe o padrão da lista) */}
         {ligada('pratos_montaveis') && herois.length > 0 && (

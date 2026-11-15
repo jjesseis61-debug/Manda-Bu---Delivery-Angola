@@ -843,6 +843,26 @@ export async function painelVigilancia(dias = 14): Promise<PainelVigilancia> {
   return verificar(await supabase.rpc('painel_vigilancia', { p_dias: dias })) as PainelVigilancia;
 }
 
+/** O que mais sai em cada zona (zona onde o cliente recebe): por cozinha e na visão de todas */
+export type PratoZona = { nome: string; qtd: number; receita: number; qtd_anterior: number; cozinha_top?: string | null };
+export type ZonaVendas = {
+  zona: string;
+  pedidos: number;
+  vendas: number;
+  cozinhas?: number;
+  pratos: PratoZona[];
+  opcoes: { nome: string; qtd: number }[];
+  a_crescer?: { nome: string; qtd: number; qtd_anterior: number }[];
+};
+export async function pratosPorZonaCozinha(cozinhaId: string, inicio: string, fim: string): Promise<ZonaVendas[]> {
+  return (verificar(
+    await supabase.rpc('pratos_por_zona_cozinha', { p_cozinha: cozinhaId, p_inicio: inicio, p_fim: fim }),
+  ) as ZonaVendas[]) ?? [];
+}
+export async function vendasPorZona(inicio: string, fim: string): Promise<{ zonas: ZonaVendas[] }> {
+  return verificar(await supabase.rpc('vendas_por_zona', { p_inicio: inicio, p_fim: fim })) as { zonas: ZonaVendas[] };
+}
+
 /** Relatório dos saldos do Convida que expiraram (validade de 12 meses) e do que vai expirar */
 export type RelatorioExpirados = {
   periodo: { inicio: string; fim: string };

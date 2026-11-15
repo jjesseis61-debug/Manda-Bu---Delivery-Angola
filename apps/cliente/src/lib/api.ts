@@ -600,6 +600,12 @@ export async function contadorZona(zonaId: string): Promise<number | null> {
   return verificar(await supabase.rpc('contador_zona', { p_zona: zonaId })) as number | null;
 }
 
+/** "O mais pedido na tua zona" (últimos 30 dias; só contagens, a partir do limiar da prova social) */
+export type MaisPedidoZona = { cardapio_id: string; nome: string; cozinha_id: string; cozinha: string; pedidos: number };
+export async function maisPedidosNaZona(ponto: string): Promise<MaisPedidoZona[]> {
+  return (verificar(await supabase.rpc('mais_pedidos_na_zona', { p_ponto: ponto })) as MaisPedidoZona[]) ?? [];
+}
+
 export async function registarPartilha(): Promise<void> {
   verificar(await supabase.rpc('registar_partilha'));
 }

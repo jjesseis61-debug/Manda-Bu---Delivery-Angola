@@ -236,7 +236,12 @@ export function indicadores(r: RelatorioDetalhado): { rotulo: string; valor: str
 type Celula = string | number | null;
 
 /** Linhas do CSV (Excel): resumo, por dia, por prato, pagamentos, zonas (+ rentabilidade e doses) */
-export function linhasCsvRelatorio(r: RelatorioDetalhado, rent?: Rentabilidade | null, tempos?: TemposEtapas | null): Celula[][] {
+export function linhasCsvRelatorio(
+  r: RelatorioDetalhado,
+  rent?: Rentabilidade | null,
+  tempos?: TemposEtapas | null,
+  zonas?: import('./api').ZonaVendas[] | null,
+): Celula[][] {
   const a = r.resumo;
   const extraTempos: Celula[][] = tempos
     ? [
@@ -301,6 +306,7 @@ export function linhasCsvRelatorio(r: RelatorioDetalhado, rent?: Rentabilidade |
     ...r.zonas.map((z) => [z.zona, z.pedidos, z.vendas]),
     ...extra,
     ...extraTempos,
+    ...(zonas && zonas.length ? [[], ...linhasCsvZonas(zonas)] : []),
   ];
 }
 
@@ -318,6 +324,7 @@ export function htmlRelatorio(
   agora: Date,
   rent?: Rentabilidade | null,
   tempos?: TemposEtapas | null,
+  zonas?: import('./api').ZonaVendas[] | null,
 ): string {
   const ind = indicadores(r).map((i) => [i.rotulo, i.valor, i.variacao]);
   const sec = (titulo: string, corpo: string) => `<h2>${escaparHtml(titulo)}</h2>${corpo}`;
@@ -338,6 +345,10 @@ export function htmlRelatorio(
     r.cancelamentos_motivos.length ? sec('Cancelamentos', tabela(['Motivo', 'N.º'], r.cancelamentos_motivos.map((c) => [c.motivo, c.n]))) : '',
     r.estafetas.length ? sec('Estafetas', tabela(['Estafeta', 'Entregas', 'A horas'], r.estafetas.map((e) => [e.nome, e.entregas, pct(e.a_horas_pct)]))) : '',
     r.zonas.length ? sec('Zonas', tabela(['Zona', 'Pedidos', 'Vendas'], r.zonas.map((z) => [z.zona, z.pedidos, formatarKz(z.vendas)]))) : '',
+    zonas && zonas.length
+      ? sec('O que mais sai em cada zona', tabela(['Zona', 'Prato', 'Qtd', 'vs anterior'],
+          zonas.flatMap((z) => z.pratos.map((p) => [z.zona, p.nome, p.qtd, tendencia(p.qtd, p.qtd_anterior)]))))
+      : '',
     rent && rent.vendas_comida > 0
       ? sec(
           'Rentabilidade',
@@ -389,5 +400,24 @@ export function linhasCsvExpirados(r: import('./api').RelatorioExpirados): (stri
     [],
     ['A expirar: cliente', 'Telefone', 'Em 30 dias (Kz)', 'Em 90 dias (Kz)', 'Expira a partir de', 'Saldo actual (Kz)'],
     ...r.a_expirar_lista.map((a) => [a.nome, a.telefone, a.em_30_dias, a.valor, a.expira_em ? a.expira_em.slice(0, 10) : null, a.saldo]),
+  ];
+}
+
+/** Variação de um prato face ao período anterior: "novo", "▲ 150%", "▼ 20%", "=" */
+export function tendencia(qtd: number, anterior: number): string {
+  if (anterior <= 0) return qtd > 0 ? 'novo' : '';
+  if (qtd === anterior) return '=';
+  const pct = Math.round(((qtd - anterior) / anterior) * 100);
+  return pct > 0 ? `▲ ${pct}%` : `▼ ${Math.abs(pct)}%`;
+}
+
+/** Linhas do CSV: o que mais sai em cada zona */
+export function linhasCsvZonas(zonas: import('./api').ZonaVendas[]): (string | number | null)[][] {
+  return [
+    ['Zona', 'Prato', 'Quantidade', 'Valor (Kz)', 'Período anterior', 'Cozinha que mais vende'],
+    ...zonas.flatMap((z) => z.pratos.map((p) => [z.zona, p.nome, p.qtd, p.receita, p.qtd_anterior, p.cozinha_top ?? null])),
+    [],
+    ['Zona', 'Opção (montados)', 'Quantidade'],
+    ...zonas.flatMap((z) => z.opcoes.map((o) => [z.zona, o.nome, o.qtd])),
   ];
 }

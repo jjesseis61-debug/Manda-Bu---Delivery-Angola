@@ -159,3 +159,12 @@ Secção "Tempo de cada etapa" no relatório (e no CSV/PDF), função `tempos_et
 - Horas: novas colunas `pedidos.confirmado_em` e `pedidos.saiu_em` (gravadas pelo servidor na transição);
   para pedidos antigos usa-se a auditoria (`pedido_estado`), que tem o histórico desde o início.
 - Limitação: não há o estado "pronto", por isso a preparação inclui a espera pelo estafeta.
+
+## O que se compra em cada zona (15/11/2026)
+"Zona" = onde o cliente recebe (ponto de entrega), não onde fica a cozinha.
+- **Relatório de cada cozinha** (`pratos_por_zona_cozinha`): em "Clientes e zonas", cada zona com pedidos, vendas,
+  top 5 pratos (com ▲/▼ face ao período anterior da mesma duração) e as opções mais escolhidas nos montáveis; no CSV/PDF.
+- **Administrador** (`vendas_por_zona`, ecrã "O que se compra em cada zona"): todas as cozinhas somadas, top 10 por
+  zona com a cozinha que mais vende cada prato, opções dos montáveis e "a crescer" (≥ 3 e +50%); CSV.
+- **App do cliente** (`mais_pedidos_na_zona`): "🔥 O mais pedido na tua zona" no início — últimos 30 dias, só contagens,
+  só a partir de `limiar_pediram` pedidos e só para moradas do próprio cliente.

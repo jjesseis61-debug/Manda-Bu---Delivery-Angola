@@ -6,12 +6,14 @@ import { Guarda } from '@/components/Guarda';
 import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Escolha, Linha, Paragrafo } from '@/components/ui';
 import {
   indicadoresAgendados,
+  pratosPorZonaCozinha,
   lerCozinhas,
   relatorioComparativo,
   relatorioCozinhaDetalhado,
   rentabilidadeCozinha,
   temposEtapasCozinha,
   type IndicadoresAgendados,
+  type ZonaVendas,
 } from '@/lib/api';
 import { escaparHtml, exportarCsv, exportarPdf } from '@/lib/exportar';
 import { formatarDia, formatarKz, mensagemErro, paraCsv } from '@/lib/formatar';
@@ -25,6 +27,7 @@ import {
   nomeDiaSemana,
   nomeEtapa,
   pesoEtapas,
+  tendencia,
   periodoRel,
   quemPagaConvida,
   type PeriodoRel,
@@ -93,6 +96,7 @@ export default function Relatorios() {
   const [rent, setRent] = useState<Rentabilidade | null>(null);
   const [tempos, setTempos] = useState<TemposEtapas | null>(null);
   const [agend, setAgend] = useState<IndicadoresAgendados | null>(null);
+  const [zonasP, setZonasP] = useState<ZonaVendas[] | null>(null);
   const router = useRouter();
   const [comp, setComp] = useState<LinhaComparativo[] | null>(null);
   const [erro, setErro] = useState<string | null>(null);
@@ -117,6 +121,7 @@ export default function Relatorios() {
     setRent(null);
     setTempos(null);
     setAgend(null);
+    setZonasP(null);
     setRel(null);
     setComp(null);
   }
@@ -128,16 +133,18 @@ export default function Relatorios() {
     try {
       if (cozinhaId === COMPARAR) setComp(await relatorioComparativo(inicio, fim));
       else {
-        const [r, rt, tp, ag] = await Promise.all([
+        const [r, rt, tp, ag, zp] = await Promise.all([
           relatorioCozinhaDetalhado(cozinhaId, inicio, fim),
           rentabilidadeCozinha(cozinhaId, inicio, fim).catch(() => null),
           temposEtapasCozinha(cozinhaId, inicio, fim).catch(() => null),
           indicadoresAgendados(cozinhaId, inicio, fim).catch(() => null),
+          pratosPorZonaCozinha(cozinhaId, inicio, fim).catch(() => null),
         ]);
         setRel(r);
         setRent(rt);
         setTempos(tp);
         setAgend(ag);
+        setZonasP(zp);
       }
     } catch (e) {
       setErro(mensagemErro(e));
@@ -149,8 +156,8 @@ export default function Relatorios() {
   async function exportar(tipo: 'csv' | 'pdf') {
     if (!rel) return;
     try {
-      if (tipo === 'csv') await exportarCsv(`relatorio-${rel.inicio}-${rel.fim}.csv`, paraCsv(linhasCsvRelatorio(rel, rent, tempos)));
-      else await exportarPdf(htmlRelatorio(rel, funcionario?.nome ?? 'operador', new Date(), rent, tempos));
+      if (tipo === 'csv') await exportarCsv(`relatorio-${rel.inicio}-${rel.fim}.csv`, paraCsv(linhasCsvRelatorio(rel, rent, tempos, zonasP)));
+      else await exportarPdf(htmlRelatorio(rel, funcionario?.nome ?? 'operador', new Date(), rent, tempos, zonasP));
     } catch (e) {
       setErro(mensagemErro(e));
     }
@@ -459,9 +466,27 @@ export default function Relatorios() {
               {rel.preparadores.map((p) => <Linha key={p.nome} esquerda={p.nome} direita={String(p.pedidos)} />)}
             </Seccao>
 
-            <Seccao titulo="Clientes e zonas">
+            <Seccao titulo="Clientes e zonas (o que mais sai em cada zona)">
               {rel.zonas.length === 0 && nada}
-              {rel.zonas.map((z) => <Linha key={z.zona} esquerda={z.zona} direita={`${z.pedidos} · ${formatarKz(z.vendas)}`} />)}
+              {!zonasP && rel.zonas.map((z) => <Linha key={z.zona} esquerda={z.zona} direita={`${z.pedidos} · ${formatarKz(z.vendas)}`} />)}
+              {zonasP?.map((z) => (
+                <View key={z.zona} style={{ gap: 2, borderTopWidth: 1, borderTopColor: cores.linha, paddingTop: espaco.xs }}>
+                  <Linha esquerda={z.zona} direita={`${z.pedidos} pedidos · ${formatarKz(z.vendas)}`} forte />
+                  {z.pratos.map((p) => (
+                    <Linha
+                      key={p.nome}
+                      esquerda={`  ${p.qtd}× ${p.nome}`}
+                      direita={`${formatarKz(p.receita)}${tendencia(p.qtd, p.qtd_anterior) ? ` · ${tendencia(p.qtd, p.qtd_anterior)}` : ''}`}
+                    />
+                  ))}
+                  {z.opcoes.length > 0 && (
+                    <Paragrafo suave>{`Montados: ${z.opcoes.map((o) => `${o.nome} (${o.qtd})`).join(', ')}`}</Paragrafo>
+                  )}
+                </View>
+              ))}
+              {zonasP && zonasP.length > 0 && (
+                <Paragrafo suave>Zona = onde o cliente recebe. "▲/▼" compara com o período anterior da mesma duração.</Paragrafo>
+              )}
             </Seccao>
 
             <Seccao titulo="Qualidade">
