@@ -121,6 +121,15 @@ jobs:
             # aos 6 GB do Gradle, ao CMake/ninja do código nativo e ao lint em paralelo.
             echo "kotlin.daemon.jvmargs=-Xmx2048m"
           } >> gradle.properties
+      - name: Sem o lint de release (era onde o runner morria)
+        working-directory: apps/${{ matrix.app }}/android
+        # Todas as builds que morreram com "The runner has received a shutdown signal" estavam no
+        # lintVitalAnalyzeRelease/lintVitalReport (o passo que mais memória gasta), mesmo com disco
+        # livre. Para APKs de teste o lint de release não é preciso: desliga-se no app/build.gradle
+        # gerado pelo prebuild (checkReleaseBuilds false), o que também tira o lint dos módulos.
+        run: |
+          printf '\nandroid { lint { checkReleaseBuilds false; abortOnError false } }\n' >> app/build.gradle
+          tail -n 3 app/build.gradle
       - name: Cache da distribuição do Gradle (não voltar a descarregá-la a cada build)
         # A cache do setup-gradle só grava no branch principal ("Cache is read-only"), por isso
         # nos outros branches cada build descarregava ~130 MB de services.gradle.org — e quando o
