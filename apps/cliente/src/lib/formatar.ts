@@ -83,16 +83,20 @@ export function mensagemConvite(codigo: string, descontoIndicado: number, link: 
   );
 }
 
-/** Texto das regras (secção 4.13), com os valores de `parametros` */
+/** Texto das regras (secção 4.13, "Como funciona"), com os valores de `parametros` */
 export function textoRegras(p: Parametros): string[] {
+  const minimo = p.desconto_subtotal_minimo ?? 0;
   return [
     p.comissao_primeiro_pedido
-      ? `Ganhas ${formatarKz(p.ganho_por_pedido)} por cada pedido dos amigos que convidares, durante ${p.duracao_dias} dias a contar do primeiro pedido deles. Não há limite de ganhos.`
-      : `Ganhas ${formatarKz(p.ganho_por_pedido)} por cada pedido dos amigos que convidares, a partir do 2.º pedido deles, durante ${p.duracao_dias} dias a contar do primeiro. Não há limite de ganhos.`,
-    `O teu amigo ganha ${formatarKz(p.desconto_indicado)} de desconto no primeiro pedido.`,
-    `Levantas o saldo a partir de ${formatarKz(p.levantamento_minimo)} ou usas em refeições. Acima de ${formatarKz(p.limite_verificacao_semanal)} por semana, confirmamos os pedidos antes de pagar.`,
-    'Os teus ganhos podem aparecer na lista de destaques com um nome fictício. Podes sair da lista quando quiseres.',
-    'Para ser justo para todos, os ganhos de contas falsas ou de pedidos não pagos não contam.',
+      ? `Ganhas ${formatarKz(p.ganho_por_pedido)} por cada pedido entregue e pago dos amigos que convidares, durante ${p.duracao_dias} dias a contar do primeiro pedido deles. Não há limite de ganhos.`
+      : `Ganhas ${formatarKz(p.ganho_por_pedido)} por cada pedido entregue e pago dos amigos que convidares, a partir do 2.º pedido deles, durante ${p.duracao_dias} dias a contar do primeiro. Não há limite de ganhos.`,
+    `O teu amigo também ganha: ${formatarKz(p.desconto_indicado)} de desconto no primeiro pedido, válido apenas para contas novas${
+      minimo > 0 ? ` e pedidos a partir de ${formatarKz(minimo)}` : ''
+    }.`,
+    `Usa ou levanta. Podes usar o saldo em refeições a qualquer momento, ou levantá-lo por Multicaixa Express ou Unitel Money a partir de ${formatarKz(p.levantamento_minimo)}, sem taxas.`,
+    `Verificação. Se ganhares mais de ${formatarKz(p.limite_verificacao_semanal)} numa semana, confirmamos os pedidos antes de pagar. Isto demora até 6 horas.`,
+    'Lista de destaques. Se aceitares, os teus ganhos reais podem aparecer na lista com um pseudónimo. Podes sair quando quiseres.',
+    'Para ser justo para todos, não contam os ganhos de contas falsas nem de pedidos cancelados, reembolsados ou não pagos. Se um pedido for reembolsado depois, o valor correspondente é retirado do saldo.',
   ];
 }
 

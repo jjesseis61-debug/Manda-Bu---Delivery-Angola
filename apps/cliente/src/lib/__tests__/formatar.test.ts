@@ -89,18 +89,21 @@ describe('mensagemConvite (N1)', () => {
 
 describe('textoRegras (4.13)', () => {
   it('preenche as frases com os parâmetros', () => {
-    const regras = textoRegras(parametros);
+    const regras = textoRegras({ ...parametros, desconto_subtotal_minimo: 5000 });
     expect(regras[0]).toBe(
-      'Ganhas 100 Kz por cada pedido dos amigos que convidares, a partir do 2.º pedido deles, durante 60 dias a contar do primeiro. Não há limite de ganhos.',
+      'Ganhas 100 Kz por cada pedido entregue e pago dos amigos que convidares, a partir do 2.º pedido deles, durante 60 dias a contar do primeiro. Não há limite de ganhos.',
     );
     expect(textoRegras({ ...parametros, comissao_primeiro_pedido: true })[0]).toBe(
-      'Ganhas 100 Kz por cada pedido dos amigos que convidares, durante 60 dias a contar do primeiro pedido deles. Não há limite de ganhos.',
+      'Ganhas 100 Kz por cada pedido entregue e pago dos amigos que convidares, durante 60 dias a contar do primeiro pedido deles. Não há limite de ganhos.',
     );
-    expect(regras[1]).toBe('O teu amigo ganha 500 Kz de desconto no primeiro pedido.');
-    expect(regras[2]).toContain('a partir de 2.000 Kz');
-    expect(regras[2]).toContain('Acima de 10.000 Kz por semana');
+    expect(regras[1]).toBe(
+      'O teu amigo também ganha: 500 Kz de desconto no primeiro pedido, válido apenas para contas novas e pedidos a partir de 5.000 Kz.',
+    );
+    expect(textoRegras(parametros)[1]).toBe('O teu amigo também ganha: 500 Kz de desconto no primeiro pedido, válido apenas para contas novas.');
+    expect(regras[2]).toContain('a partir de 2.000 Kz, sem taxas');
+    expect(regras[3]).toContain('mais de 10.000 Kz numa semana');
     // A regra das contas falsas fica no fim, dita como garantia de justiça e não como ameaça
-    expect(regras.at(-1)).toBe('Para ser justo para todos, os ganhos de contas falsas ou de pedidos não pagos não contam.');
+    expect(regras.at(-1)).toMatch(/^Para ser justo para todos/);
   });
 });
 
