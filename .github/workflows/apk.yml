@@ -105,7 +105,21 @@ jobs:
             echo ""
             echo "org.gradle.jvmargs=-Xmx6144m -XX:MaxMetaspaceSize=1024m -Dfile.encoding=UTF-8"
             echo "org.gradle.workers.max=2"
+            # O daemon do Kotlin herda um heap grande por defeito; com o Gradle (6 GB), o CMake/ninja
+            # do código nativo e o lint em paralelo, o runner de 16 GB esgotava a memória e era
+            # desligado ("The runner has received a shutdown signal"). Limita-se o Kotlin a 2 GB.
+            echo "kotlin.daemon.jvmargs=-Xmx2048m"
           } >> gradle.properties
+      - name: Memória extra em disco (swap de 8 GB) para os picos da compilação nativa
+        # Rede de segurança contra o mesmo problema: em vez de o runner ser desligado por falta de
+        # RAM, usa swap nos picos (mais lento, mas acaba).
+        run: |
+          sudo swapoff -a || true
+          sudo fallocate -l 8G /mnt/swapfile
+          sudo chmod 600 /mnt/swapfile
+          sudo mkswap /mnt/swapfile
+          sudo swapon /mnt/swapfile
+          free -h
       - name: Cache da distribuição do Gradle (não voltar a descarregá-la a cada build)
         # A cache do setup-gradle só grava no branch principal ("Cache is read-only"), por isso
         # nos outros branches cada build descarregava ~130 MB de services.gradle.org — e quando o
