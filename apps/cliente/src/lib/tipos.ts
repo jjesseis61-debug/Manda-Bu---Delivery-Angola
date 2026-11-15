@@ -37,6 +37,8 @@ export type Parametros = {
   ganho_por_pedido_embaixador?: number;
   /** Comissão por pedido para embaixadores Ouro (≥ limiar_ouro) */
   ganho_por_pedido_ouro?: number;
+  /** Meses de validade de cada ganho do Convida */
+  validade_saldo_meses?: number;
   /** Bónus de boas-vindas na 1.ª vitória do embaixador */
   bonus_boas_vindas?: number;
   /** Indicados activos para subir a Embaixador */
@@ -227,6 +229,12 @@ export type Saldo = {
   ganho_hoje: number;
   ganho_semana: number;
   total_recebido: number;
+  /** Saldo que expira nos próximos dias (ganhos com quase 12 meses ainda por usar) */
+  a_expirar_em_breve?: number;
+  /** Quando expira o próximo ganho ainda por usar */
+  proxima_expiracao?: string | null;
+  /** Total que já expirou */
+  total_expirado?: number;
 };
 
 export type Amigo = {

@@ -366,3 +366,28 @@ export function htmlRelatorio(
     ${partes}
   </body></html>`;
 }
+
+/** Linhas do CSV (Excel) do relatório de saldos expirados */
+export function linhasCsvExpirados(r: import('./api').RelatorioExpirados): (string | number | null)[][] {
+  return [
+    ['Saldos expirados do Convida', `${r.periodo.inicio} a ${r.periodo.fim}`],
+    ['Validade (meses)', r.validade_meses],
+    ['Total expirado (Kz)', r.resumo.total],
+    ['Clientes', r.resumo.clientes],
+    ['Expirações', r.resumo.expiracoes],
+    ['Avisados antes', r.resumo.avisados],
+    ['Saldo activo de todos (Kz)', r.saldo_activo_total],
+    ['A expirar em 30 / 60 / 90 dias (Kz)', `${r.a_expirar.d30} / ${r.a_expirar.d60} / ${r.a_expirar.d90}`],
+    [],
+    ['Mês', 'Valor (Kz)', 'Clientes'],
+    ...r.por_mes.map((m) => [m.mes, m.valor, m.clientes]),
+    [],
+    ['Data', 'Cliente', 'Telefone', 'Código', 'Nível', 'Expirou (Kz)', 'Ganhos antigos (Kz)', 'Já usado (Kz)', 'Saldo antes (Kz)', 'Avisado'],
+    ...r.lista.map((l) => [
+      l.data.slice(0, 10), l.nome, l.telefone, l.codigo, l.nivel, l.valor, l.ganhos_antigos, l.usado, l.saldo_antes, l.avisado ? 'sim' : 'não',
+    ]),
+    [],
+    ['A expirar: cliente', 'Telefone', 'Em 30 dias (Kz)', 'Em 90 dias (Kz)', 'Expira a partir de', 'Saldo actual (Kz)'],
+    ...r.a_expirar_lista.map((a) => [a.nome, a.telefone, a.em_30_dias, a.valor, a.expira_em ? a.expira_em.slice(0, 10) : null, a.saldo]),
+  ];
+}

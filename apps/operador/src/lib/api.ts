@@ -843,6 +843,32 @@ export async function painelVigilancia(dias = 14): Promise<PainelVigilancia> {
   return verificar(await supabase.rpc('painel_vigilancia', { p_dias: dias })) as PainelVigilancia;
 }
 
+/** Relatório dos saldos do Convida que expiraram (validade de 12 meses) e do que vai expirar */
+export type RelatorioExpirados = {
+  periodo: { inicio: string; fim: string };
+  validade_meses: number;
+  resumo: { total: number; expiracoes: number; clientes: number; media: number; maior: number; avisados: number };
+  por_mes: { mes: string; valor: number; clientes: number }[];
+  lista: {
+    id: string; data: string; cliente_id: string; nome: string; telefone: string | null; codigo: string | null;
+    nivel: string | null; valor: number; ganhos_ate: string; ganhos_antigos: number; usado: number;
+    saldo_antes: number; avisado: boolean;
+  }[];
+  a_expirar: { d30: number; clientes_30: number; d60: number; clientes_60: number; d90: number; clientes_90: number };
+  a_expirar_lista: {
+    cliente_id: string; nome: string; telefone: string | null; valor: number; em_30_dias: number;
+    expira_em: string | null; saldo: number;
+  }[];
+  saldo_activo_total: number;
+  expirado_sempre: number;
+};
+
+export async function relatorioSaldosExpirados(inicio: string, fim: string): Promise<RelatorioExpirados> {
+  return verificar(
+    await supabase.rpc('relatorio_saldos_expirados', { p_inicio: inicio, p_fim: fim }),
+  ) as RelatorioExpirados;
+}
+
 /** Telemóveis com muitas contas (só alerta; ninguém é bloqueado) */
 export async function aparelhosPartilhados(): Promise<AparelhoPartilhado[]> {
   return (verificar(await supabase.rpc('aparelhos_partilhados')) as AparelhoPartilhado[]) ?? [];

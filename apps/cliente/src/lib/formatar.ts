@@ -93,7 +93,9 @@ export function textoRegras(p: Parametros): string[] {
     `O teu amigo também ganha: ${formatarKz(p.desconto_indicado)} de desconto no primeiro pedido, válido apenas para contas novas${
       minimo > 0 ? ` e pedidos a partir de ${formatarKz(minimo)}` : ''
     }.`,
-    `Usa ou levanta. Podes usar o saldo em refeições a qualquer momento, ou levantá-lo por Multicaixa Express ou Unitel Money a partir de ${formatarKz(p.levantamento_minimo)}, sem taxas.`,
+    `Usa ou levanta. Podes usar o saldo em refeições a qualquer momento, ou levantá-lo por Multicaixa Express ou Unitel Money a partir de ${formatarKz(p.levantamento_minimo)}, sem taxas.${
+      p.validade_saldo_meses ? ` O saldo é válido durante ${p.validade_saldo_meses} meses.` : ''
+    }`,
     `Verificação. Se ganhares mais de ${formatarKz(p.limite_verificacao_semanal)} numa semana, confirmamos os pedidos antes de pagar. Isto demora até 6 horas.`,
     'Lista de destaques. Se aceitares, os teus ganhos reais podem aparecer na lista com um pseudónimo. Podes sair quando quiseres.',
     'Para ser justo para todos, não contam os ganhos de contas falsas nem de pedidos cancelados, reembolsados ou não pagos. Se um pedido for reembolsado depois, o valor correspondente é retirado do saldo.',

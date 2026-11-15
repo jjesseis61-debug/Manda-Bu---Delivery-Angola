@@ -36,3 +36,14 @@ test('sem bónus: não fala dele', async () => {
   await waitFor(() => expect(ecra.getByText(/os teus primeiros 390 Kz/)).toBeTruthy());
   expect(ecra.queryByText(/Bónus de boas-vindas/)).toBeNull();
 });
+
+test('saldo a expirar: avisa quanto e quando', async () => {
+  const { lerSaldo } = jest.requireMock('@/lib/api') as { lerSaldo: jest.Mock };
+  lerSaldo.mockResolvedValueOnce({
+    ganho_hoje: 0, ganho_semana: 0, saldo_disponivel: 1600, em_verificacao: 0,
+    a_expirar_em_breve: 700, proxima_expiracao: '2026-12-01T10:00:00Z', total_expirado: 0,
+  });
+  (useSessao as jest.Mock).mockReturnValue(sessao(0));
+  const ecra = renderRouter({ convida: Convida }, { initialUrl: '/convida' });
+  await waitFor(() => expect(ecra.getByText(/700 Kz expiram a partir de/)).toBeTruthy());
+});

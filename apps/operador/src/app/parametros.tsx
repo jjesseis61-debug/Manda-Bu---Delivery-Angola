@@ -26,6 +26,8 @@ const CAMPOS: { grupo: string; chaves: [string, string][] }[] = [
       ['limiar_ouro', 'Indicados activos para Embaixador Ouro'],
       ['despromocao_carencia_dias', 'Descida de nível: dias mínimos no nível'],
       ['despromocao_margem_pct', 'Descida de nível: só abaixo de % do limiar (50–100)'],
+      ['validade_saldo_meses', 'Validade do saldo (meses, 1–60)'],
+      ['aviso_expiracao_dias', 'Avisar o cliente N dias antes de expirar (0 = não avisa)'],
     ],
   },
   {

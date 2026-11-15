@@ -7,7 +7,7 @@ import { PartilharCodigo } from '@/components/PartilharCodigo';
 import { PessoasComoTu } from '@/components/PessoasComoTu';
 import { ACarregar, Aviso, Botao, Cartao, Ecra, Linha, Paragrafo, Subtitulo } from '@/components/ui';
 import { lerSaldo, meusAmigos } from '@/lib/api';
-import { formatarKz, mensagemErro, textoAmigo } from '@/lib/formatar';
+import { formatarData, formatarKz, mensagemErro, textoAmigo } from '@/lib/formatar';
 import { useSessao } from '@/lib/sessao';
 import { cores } from '@/lib/tema';
 import type { Amigo, Saldo } from '@/lib/tipos';
@@ -86,6 +86,13 @@ export default function Convida() {
           <Linha esquerda="Ganho hoje" direita={formatarKz(saldo.ganho_hoje)} />
           <Linha esquerda="Ganho esta semana" direita={formatarKz(saldo.ganho_semana)} />
           <Linha esquerda="Saldo disponível" direita={formatarKz(saldo.saldo_disponivel)} forte />
+          {(saldo.a_expirar_em_breve ?? 0) > 0 && (
+            <Aviso>
+              {`${formatarKz(saldo.a_expirar_em_breve ?? 0)} expiram${
+                saldo.proxima_expiracao ? ` a partir de ${formatarData(saldo.proxima_expiracao)}` : ' em breve'
+              }. Usa em refeições ou levanta antes disso.`}
+            </Aviso>
+          )}
           {saldo.em_verificacao > 0 && (
             <>
               <Linha esquerda="Em verificação" direita={formatarKz(saldo.em_verificacao)} />

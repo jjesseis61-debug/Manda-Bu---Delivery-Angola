@@ -44,6 +44,7 @@ export default function LayoutRaiz() {
         <Stack.Screen name="reclamacoes" options={{ title: 'Reclamações' }} />
         <Stack.Screen name="analista" options={{ title: 'Analista' }} />
         <Stack.Screen name="vigilancia" options={{ title: 'Vigilância do Convida' }} />
+        <Stack.Screen name="saldos-expirados" options={{ title: 'Saldos expirados' }} />
         <Stack.Screen name="turno" options={{ title: 'Gerente de turno' }} />
         <Stack.Screen name="compras" options={{ title: 'Stock e compras' }} />
         <Stack.Screen name="atendimento" options={{ title: 'Atendimento' }} />

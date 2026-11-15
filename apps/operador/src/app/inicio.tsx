@@ -46,6 +46,7 @@ const ecras: {
   { rota: '/painel', titulo: 'Painel do programa', descricao: 'Custo, vendas por indicação, retenção (O1)', permissoes: ['indicacoes.ver'] },
   { rota: '/verificacao', titulo: 'Verificação', descricao: 'Ganhos em verificação (O2)', permissoes: ['indicacoes.verificar'] },
   { rota: '/vigilancia', titulo: 'Vigilância do Convida', descricao: 'Redes de contas e abusos, investigados pelo agente', permissoes: ['indicacoes.verificar'] },
+  { rota: '/saldos-expirados', titulo: 'Saldos expirados', descricao: 'Saldo do Convida que expirou (12 meses) e o que vai expirar', permissoes: ['indicacoes.verificar'] },
   { rota: '/levantamentos', titulo: 'Levantamentos', descricao: 'Aprovar e pagar (O3)', permissoes: ['indicacoes.aprovar_pagamentos'] },
   { rota: '/pacotes', titulo: 'Pacotes do mês', descricao: 'Confirmar pagamentos, reembolsos e catálogo (I12)', permissoes: ['pacotes.gerir'] },
   { rota: '/embaixadores', titulo: 'Embaixadores', descricao: 'Elegíveis e actuais (O4)', permissoes: ['plataforma.parametros'] },

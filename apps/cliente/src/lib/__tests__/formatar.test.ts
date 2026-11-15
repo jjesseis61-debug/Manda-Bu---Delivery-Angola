@@ -101,6 +101,8 @@ describe('textoRegras (4.13)', () => {
     );
     expect(textoRegras(parametros)[1]).toBe('O teu amigo também ganha: 500 Kz de desconto no primeiro pedido, válido apenas para contas novas.');
     expect(regras[2]).toContain('a partir de 2.000 Kz, sem taxas');
+    expect(regras[2]).not.toContain('válido durante');
+    expect(textoRegras({ ...parametros, validade_saldo_meses: 12 })[2]).toContain('O saldo é válido durante 12 meses.');
     expect(regras[3]).toContain('mais de 10.000 Kz numa semana');
     // A regra das contas falsas fica no fim, dita como garantia de justiça e não como ameaça
     expect(regras.at(-1)).toMatch(/^Para ser justo para todos/);
