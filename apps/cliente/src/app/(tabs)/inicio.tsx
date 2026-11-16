@@ -30,10 +30,12 @@ import {
   condominioAqui,
   cozinhasComCondominio,
   posicaoParaCondominio,
+  promocoesParaMim,
   textoCondominioFechado,
   type CondominioAqui,
+  type Promocao,
 } from '@/lib/condominio';
-import { corEstadoPedido, formatarKz, horaLuanda, mensagemErro, nomeEstadoPedido, textoPediram } from '@/lib/formatar';
+import { corEstadoPedido, formatarData, formatarKz, horaLuanda, mensagemErro, nomeEstadoPedido, textoPediram, textoPromocao } from '@/lib/formatar';
 import { gruposEsgotados, precoMinimo } from '@/lib/opcoes';
 import { partilharPrato } from '@/lib/partilha';
 import { usePedirDeNovo } from '@/lib/pedirDeNovo';
@@ -61,6 +63,8 @@ export default function Inicio() {
   const [cozinhas, setCozinhas] = useState<CozinhaParaPedir[]>([]);
   // Cozinha de condomínio (pelo GPS, só para membros): aberta substitui a lista; fechada mostra um cartão
   const [condominio, setCondominio] = useState<CondominioAqui | null>(null);
+  // Promoções (campanhas) que valem agora para a morada principal
+  const [promocoes, setPromocoes] = useState<Promocao[]>([]);
   // Troca de cozinha com carrinho cheio: confirma antes de esvaziar
   const [trocaPendente, setTrocaPendente] = useState<CozinhaParaPedir | null>(null);
   // Banner no topo: pedido ainda em andamento ("a tua entrega está a caminho, toca para acompanhar")
@@ -123,6 +127,7 @@ export default function Inicio() {
       setEnderecos(ends);
       // Prova social local: o que mais se pede na zona da morada (falha em silêncio)
       setMaisZona(ponto ? await maisPedidosNaZona(ponto).catch(() => []) : []);
+      setPromocoes(ponto && ligada('condominios') ? await promocoesParaMim(ponto).catch(() => []) : []);
       // I9: pratos com opções abrem o ecrã de montar; um grupo obrigatório sem opções disponíveis esgota o prato
       const [grupos, componentes] = ligada('pratos_montaveis')
         ? await Promise.all([lerOpcoes(itens.map((i) => i.id)), lerComponentes(itens.map((i) => i.id)).catch(() => [])])
@@ -374,6 +379,13 @@ export default function Inicio() {
           </Cartao>
         )}
         {condominio && !condominio.aberta && <Aviso>{textoCondominioFechado(condominio, horaLuanda)}</Aviso>}
+        {promocoes.map((p) => (
+          <Cartao key={p.nome}>
+            <Text style={{ fontSize: 15, fontWeight: '700', color: cores.marca }}>🏷️ {p.nome}</Text>
+            <Text style={{ color: cores.texto }}>{textoPromocao(p)}</Text>
+            {p.fim && <Text style={{ color: cores.textoSuave, fontSize: 12 }}>Até {formatarData(p.fim)}</Text>}
+          </Cartao>
+        ))}
         {ligada('multi_cozinha') && !carrinho.grupo && cozinhas.length > 1 && (
           <View style={{ gap: espaco.s }}>
             <Text style={{ fontSize: 15, fontWeight: '700', color: cores.texto }}>📍 De onde queres pedir?</Text>

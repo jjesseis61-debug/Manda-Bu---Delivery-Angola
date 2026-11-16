@@ -150,6 +150,8 @@ export type Orcamento = {
   entrega_gratis_acima?: number | null;
   /** Quanto falta (depois dos descontos) para a entrega grátis; null = não se aplica */
   falta_entrega_gratis?: number | null;
+  /** Promoção aplicada (o desconto já está no preço dos pratos e no subtotal) */
+  campanha?: { nome: string; poupanca: number } | null;
 };
 
 export type EstadoGrupo = 'aberto' | 'fechado' | 'em_preparacao' | 'entregue' | 'cancelado';

@@ -16,7 +16,7 @@ export default function EntrarCondominio() {
   const [info, setInfo] = useState<CondominioLink | null | undefined>(undefined);
   const [bloco, setBloco] = useState('');
   const [casa, setCasa] = useState('');
-  const [resultado, setResultado] = useState<'activo' | 'pendente' | null>(null);
+  const [resultado, setResultado] = useState<'activo' | 'pendente' | 'espera' | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
 
@@ -34,7 +34,10 @@ export default function EntrarCondominio() {
     setErro(null);
     setOcupado(true);
     try {
-      setResultado(await pedirEntradaCondominio(String(codigo ?? ''), bloco, casa));
+      const r = await pedirEntradaCondominio(String(codigo ?? ''), bloco, casa);
+      setResultado(r);
+      // Em espera: volta a ler para mostrar a posição
+      if (r === 'espera') setInfo(await condominioPeloCodigo(String(codigo ?? '')));
     } catch (e) {
       setErro(mensagemErro(e));
     } finally {
@@ -68,18 +71,27 @@ export default function EntrarCondominio() {
           </Paragrafo>
           {estado === 'activo' && <Aviso tipo="sucesso">Já estás na lista. Abre a app no condomínio e pede à vontade.</Aviso>}
           {estado === 'pendente' && <Aviso>O teu pedido está à espera de aprovação da cozinha. Avisamos-te quando entrares.</Aviso>}
-          {!estado && !info.lista_aberta && <Aviso>A lista está fechada (completa ou fora do prazo).</Aviso>}
-          {!estado && info.lista_aberta && (
+          {estado === 'espera' && (
+            <Aviso>
+              Estás na lista de espera{info.minha_posicao ? ` (posição ${info.minha_posicao})` : ''}. Quando abrir uma vaga, entras
+              sozinho e avisamos-te.
+            </Aviso>
+          )}
+          {!estado && !info.lista_aberta && !info.lista_espera && <Aviso>A lista está fechada (completa ou fora do prazo).</Aviso>}
+          {!estado && !info.lista_aberta && info.lista_espera && (
+            <Aviso>A lista está completa, mas podes entrar na lista de espera{info.em_espera ? ` (${info.em_espera} à frente)` : ''}.</Aviso>
+          )}
+          {!estado && (info.lista_aberta || info.lista_espera) && (
             <View style={{ gap: espaco.s }}>
               <Paragrafo suave>
-                {info.vagas_livres} {info.vagas_livres === 1 ? 'vaga livre' : 'vagas livres'}
+                {info.lista_aberta ? `${info.vagas_livres} ${info.vagas_livres === 1 ? 'vaga livre' : 'vagas livres'}` : 'Sem vagas agora'}
                 {info.inscricoes_ate ? ` · inscrições até ${formatarData(info.inscricoes_ate)}` : ''}
                 {info.aprovacao_manual ? ' · a cozinha aprova cada morador' : ''}
               </Paragrafo>
               <Campo rotulo="Bloco / prédio" value={bloco} onChangeText={setBloco} maxLength={40} />
               <Campo rotulo="Casa / apartamento" value={casa} onChangeText={setCasa} maxLength={40} />
               <Botao
-                titulo="Pedir para entrar"
+                titulo={info.lista_aberta ? 'Pedir para entrar' : 'Entrar na lista de espera'}
                 desactivado={(bloco + casa).trim().length === 0}
                 aCarregar={ocupado}
                 aoCarregar={pedir}

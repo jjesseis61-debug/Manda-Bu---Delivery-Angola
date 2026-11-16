@@ -277,3 +277,16 @@ describe('textoEntregaGratis', () => {
     expect(textoEntregaGratis({})).toBeNull();
   });
 });
+
+describe('promoções', () => {
+  const { textoCampanha, textoPromocao } = jest.requireActual('../formatar');
+  it('carrinho: poupança e convite guardado', () => {
+    expect(textoCampanha({ nome: 'Sexta no Jardim', poupanca: 1400 })).toBe('🏷️ Promoção «Sexta no Jardim»: já poupas 1.400 Kz neste pedido.');
+    expect(textoCampanha({ nome: 'X', poupanca: 1400 }, 'campanha')).toContain('desconto de convite fica guardado');
+  });
+  it('cartaz no início', () => {
+    expect(textoPromocao({ nome: 'S', descricao: null, tipo: 'percentagem', valor: 20, cozinha: 'Viana', minimo_pedido: 5000 })).toBe(
+      '20% de desconto nos pratos · Viana · a partir de 5.000 Kz',
+    );
+  });
+});

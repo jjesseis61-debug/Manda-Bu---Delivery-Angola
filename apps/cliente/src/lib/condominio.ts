@@ -25,10 +25,29 @@ export type CondominioLink = {
   vagas_livres: number;
   inscricoes_ate: string | null;
   aprovacao_manual: boolean;
-  meu_estado: 'activo' | 'pendente' | null;
+  meu_estado: 'activo' | 'pendente' | 'espera' | null;
+  /** A lista está cheia mas aceita lista de espera */
+  lista_espera?: boolean;
+  em_espera?: number;
+  minha_posicao?: number | null;
 };
 
-export type MeuCondominio = { nome: string; estado: 'activo' | 'pendente'; bloco: string | null; casa: string | null };
+export type Promocao = {
+  nome: string;
+  descricao: string | null;
+  tipo: 'percentagem' | 'preco';
+  valor: number;
+  cozinha_id: string | null;
+  cozinha: string | null;
+  minimo_pedido: number;
+  fim: string | null;
+};
+
+export async function promocoesParaMim(ponto: string): Promise<Promocao[]> {
+  return (verificar(await supabase.rpc('campanhas_para_mim', { p_ponto: ponto })) as Promocao[]) ?? [];
+}
+
+export type MeuCondominio = { nome: string; estado: 'activo' | 'pendente' | 'espera'; bloco: string | null; casa: string | null };
 
 function verificar<T>(r: { data: T; error: { message: string } | null }): T {
   if (r.error) throw r.error;
@@ -43,10 +62,11 @@ export async function condominioPeloCodigo(codigo: string): Promise<CondominioLi
   return (verificar(await supabase.rpc('condominio_pelo_codigo', { p_codigo: codigo })) as CondominioLink | null) ?? null;
 }
 
-export async function pedirEntradaCondominio(codigo: string, bloco: string, casa: string): Promise<'activo' | 'pendente'> {
+export async function pedirEntradaCondominio(codigo: string, bloco: string, casa: string): Promise<'activo' | 'pendente' | 'espera'> {
   return verificar(await supabase.rpc('condominio_pedir_entrada', { p_codigo: codigo, p_bloco: bloco, p_casa: casa })) as
     | 'activo'
-    | 'pendente';
+    | 'pendente'
+    | 'espera';
 }
 
 export async function meusCondominios(): Promise<MeuCondominio[]> {

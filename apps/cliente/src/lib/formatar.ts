@@ -326,3 +326,17 @@ export function textoEntregaGratis(o: {
     return `Junta mais ${formatarKz(o.falta_entrega_gratis)} e a entrega fica grátis (pedidos a partir de ${formatarKz(o.entrega_gratis_acima)}, depois dos descontos).`;
   return null;
 }
+
+/** Promoção no carrinho: o desconto já está nos preços; com convite, explica que este fica guardado */
+export function textoCampanha(c: { nome: string; poupanca: number }, motivoDesconto?: string | null): string {
+  return (
+    `🏷️ Promoção «${c.nome}»: já poupas ${formatarKz(c.poupanca)} neste pedido.` +
+    (motivoDesconto === 'campanha' ? ' O teu desconto de convite fica guardado para outro pedido (a promoção vale mais).' : '')
+  );
+}
+
+/** Cartaz de promoção no início */
+export function textoPromocao(p: { nome: string; descricao: string | null; tipo: string; valor: number; cozinha: string | null; minimo_pedido: number }): string {
+  const oferta = p.descricao ?? (p.tipo === 'percentagem' ? `${p.valor}% de desconto nos pratos` : `Preço especial: ${formatarKz(p.valor)}`);
+  return `${oferta}${p.cozinha ? ` · ${p.cozinha}` : ''}${p.minimo_pedido > 0 ? ` · a partir de ${formatarKz(p.minimo_pedido)}` : ''}`;
+}

@@ -8,7 +8,7 @@ import { faixasAgendamento } from '@/lib/agendar';
 import { criarPedido, lerEnderecos, lerSaldo, meuPacote, minhaEmpresa, orcamento as pedirOrcamento, usarCredito, usarPacote } from '@/lib/api';
 import { type LinhaCarrinho, useCarrinho } from '@/lib/carrinho';
 import { novoId } from '@/lib/dispositivo';
-import { formatarKz, mensagemCodigo, mensagemErro, textoEntregaGratis } from '@/lib/formatar';
+import { formatarKz, mensagemCodigo, mensagemErro, textoCampanha, textoEntregaGratis } from '@/lib/formatar';
 import { useSessao } from '@/lib/sessao';
 import { cores, espaco } from '@/lib/tema';
 import type { Endereco, MeuPacote, MinhaEmpresa, Orcamento } from '@/lib/tipos';
@@ -239,6 +239,9 @@ export default function Carrinho() {
             <Paragrafo suave>O valor a pagar na entrega fica no pedido, depois de confirmares.</Paragrafo>
           ) : (
             <Linha esquerda="A pagar na entrega" direita={formatarKz(orc.total - valorSaldo)} forte />
+          )}
+          {orc.campanha && (
+            <Text style={{ color: cores.marca, fontSize: 13, fontWeight: '600' }}>{textoCampanha(orc.campanha, orc.motivo_desconto)}</Text>
           )}
           {orc.motivo_desconto === 'limite_local' && (
             <Text style={{ color: cores.aviso, fontSize: 13 }}>{mensagemCodigo('limite_local')}</Text>
