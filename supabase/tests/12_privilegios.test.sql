@@ -109,6 +109,10 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 'chave_publica_push_web',
                 -- relatório: custos dos pratos, despesas e rentabilidade
                 'custos_da_cozinha', 'definir_custo_item', 'despesas_cozinha', 'lancar_despesa', 'apagar_despesa', 'rentabilidade_cozinha', 'tempos_etapas_cozinha', 'marcar_pedido_pronto', 'painel_vigilancia', 'alertas_agendados', 'reagendar_pedido', 'indicadores_agendados', 'saldo_a_expirar', 'proxima_expiracao_saldo', 'relatorio_saldos_expirados', 'pratos_por_zona_cozinha', 'vendas_por_zona', 'mais_pedidos_na_zona',
+                -- cozinha de condomínio e abrir/fechar cozinha
+                'abrir_fechar_cozinha', 'guardar_condominio', 'apagar_condominio', 'condominios_lista', 'condominio_membros_lista',
+                'condominio_adicionar_membro', 'condominio_decidir_membro', 'condominio_pelo_codigo', 'condominio_pedir_entrada',
+                'condominio_aqui', 'meus_condominios',
                 -- prato montável a partir do modelo (cozinhas.gerir)
                 'criar_montavel_do_modelo',
                 -- sugestão de despacho por proximidade
