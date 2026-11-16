@@ -113,6 +113,8 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 'abrir_fechar_cozinha', 'guardar_condominio', 'apagar_condominio', 'condominios_lista', 'condominio_membros_lista',
                 'condominio_adicionar_membro', 'condominio_decidir_membro', 'condominio_pelo_codigo', 'condominio_pedir_entrada',
                 'condominio_aqui', 'meus_condominios',
+                -- condomínios fase 2: campanhas e relatório
+                'guardar_campanha', 'apagar_campanha', 'campanhas_lista', 'campanha_avisar', 'campanhas_para_mim', 'relatorio_condominio',
                 -- prato montável a partir do modelo (cozinhas.gerir)
                 'criar_montavel_do_modelo',
                 -- sugestão de despacho por proximidade

@@ -38,7 +38,8 @@ select testes.entrar_funcionario(testes.u('admin'));
 set local role authenticated;
 select testes.def('cond', guardar_condominio(jsonb_build_object(
   'nome', 'Jardim do Éden', 'cozinha_id', testes.u('k'), 'zona_id', testes.u('zcond'),
-  'centro_lat', -8.9000, 'centro_lng', 13.2000, 'raio_m', 300, 'vagas', 2, 'modo_entrega', 'parceiro', 'parceiro_nome', 'Motos Já')));
+  'centro_lat', -8.9000, 'centro_lng', 13.2000, 'raio_m', 300, 'vagas', 2, 'modo_entrega', 'parceiro', 'parceiro_nome', 'Motos Já',
+  'lista_espera', false)));
 select testes.def('e_padrao', testes.erro($$select guardar_condominio(jsonb_build_object('nome','P','cozinha_id',cozinha_padrao(),'centro_lat',-8.9,'centro_lng',13.2))$$));
 select testes.def('e_dupla', testes.erro(format($$select guardar_condominio(jsonb_build_object('nome','Outro','cozinha_id',%L,'centro_lat',-8.9,'centro_lng',13.2))$$, testes.u('k'))));
 reset role; select testes.sair();
