@@ -57,9 +57,12 @@ beforeEach(() => {
   mockSessao.sessao = { user: { id: 'u' } };
 });
 
+// O runner do GitHub é mais lento: dá margem às esperas (o hash do código e o cofre são assíncronos)
+const ESPERA = 5000;
+
 test('sem cadeado: abre logo e as acções não pedem código', async () => {
   const ecra = abrir();
-  await waitFor(() => expect(ecra.getByText('Estado: aberto')).toBeTruthy());
+  await waitFor(() => expect(ecra.getByText('Estado: aberto')).toBeTruthy(), { timeout: ESPERA });
   await act(async () => {
     fireEvent.press(ecra.getByText('Levantar'));
   });
@@ -69,29 +72,29 @@ test('sem cadeado: abre logo e as acções não pedem código', async () => {
 test('com cadeado: abre bloqueado, código errado avisa, o certo desbloqueia', async () => {
   await definirPin('2580', false);
   const ecra = abrir();
-  await waitFor(() => expect(ecra.getByText('Introduz o teu código')).toBeTruthy());
+  await waitFor(() => expect(ecra.getByText('Introduz o teu código')).toBeTruthy(), { timeout: ESPERA });
   await act(async () => {
     fireEvent.changeText(ecra.getByLabelText('Código'), '1357');
   });
-  await waitFor(() => expect(ecra.getByText(/Código errado \(1 de 10/)).toBeTruthy());
+  await waitFor(() => expect(ecra.getByText(/Código errado \(1 de 10/)).toBeTruthy(), { timeout: ESPERA });
   await act(async () => {
     fireEvent.changeText(ecra.getByLabelText('Código'), '2580');
   });
-  await waitFor(() => expect(ecra.getByText('Estado: aberto')).toBeTruthy());
+  await waitFor(() => expect(ecra.getByText('Estado: aberto')).toBeTruthy(), { timeout: ESPERA });
 });
 
 test('acção sensível pede o código; cancelar não executa', async () => {
   await definirPin('2580', false);
   const ecra = abrir();
-  await waitFor(() => expect(ecra.getByText('Introduz o teu código')).toBeTruthy());
+  await waitFor(() => expect(ecra.getByText('Introduz o teu código')).toBeTruthy(), { timeout: ESPERA });
   await act(async () => {
     fireEvent.changeText(ecra.getByLabelText('Código'), '2580');
   });
-  await waitFor(() => expect(ecra.getByText('Estado: aberto')).toBeTruthy());
+  await waitFor(() => expect(ecra.getByText('Estado: aberto')).toBeTruthy(), { timeout: ESPERA });
   await act(async () => {
     fireEvent.press(ecra.getByText('Levantar'));
   });
-  await waitFor(() => expect(ecra.getByText('Confirma o levantamento')).toBeTruthy());
+  await waitFor(() => expect(ecra.getByText('Confirma o levantamento')).toBeTruthy(), { timeout: ESPERA });
   await act(async () => {
     fireEvent.press(ecra.getByText('Cancelar'));
   });
@@ -102,6 +105,6 @@ test('sem sessão (saiu da conta): o cadeado é apagado', async () => {
   await definirPin('2580', false);
   mockSessao.sessao = null;
   const ecra = abrir();
-  await waitFor(() => expect(ecra.getByText('Estado: aberto')).toBeTruthy());
+  await waitFor(() => expect(ecra.getByText('Estado: aberto')).toBeTruthy(), { timeout: ESPERA });
   expect(mockCofre.size).toBe(0);
 });
