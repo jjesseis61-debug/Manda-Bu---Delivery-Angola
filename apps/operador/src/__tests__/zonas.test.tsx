@@ -26,5 +26,28 @@ test('sem zonas avisa e cria a primeira com o bairro e a taxa', async () => {
     tipo: 'Própria',
     centro_lat: null,
     centro_lng: null,
+    entrega_gratis_acima: null,
   });
+});
+
+test('zona com entrega grátis própria grava o valor; "Nunca" grava 0', async () => {
+  (lerZonasEntrega as jest.Mock).mockResolvedValue([
+    { id: 'z1', nome: 'Kilamba', taxa: 700, tipo: 'Própria', centro_lat: null, centro_lng: null, entrega_gratis_acima: null },
+  ]);
+  const ecra = renderRouter({ zonas: Zonas }, { initialUrl: '/zonas' });
+  await waitFor(() => expect(ecra.getByText('Entrega grátis: valor geral (Parâmetros)')).toBeTruthy());
+  fireEvent.press(ecra.getByText('Editar'));
+  fireEvent.press(ecra.getByText('Valor próprio'));
+  fireEvent.changeText(ecra.getByLabelText('Entrega grátis a partir de (Kz)'), '8000');
+  await act(async () => {
+    fireEvent.press(ecra.getByText('Guardar zona'));
+  });
+  expect(guardarZonaEntrega).toHaveBeenLastCalledWith(expect.objectContaining({ id: 'z1', entrega_gratis_acima: 8000 }));
+  await waitFor(() => expect(ecra.getByText('Editar')).toBeTruthy());
+  fireEvent.press(ecra.getByText('Editar'));
+  fireEvent.press(ecra.getByText('Nunca'));
+  await act(async () => {
+    fireEvent.press(ecra.getByText('Guardar zona'));
+  });
+  expect(guardarZonaEntrega).toHaveBeenLastCalledWith(expect.objectContaining({ id: 'z1', entrega_gratis_acima: 0 }));
 });

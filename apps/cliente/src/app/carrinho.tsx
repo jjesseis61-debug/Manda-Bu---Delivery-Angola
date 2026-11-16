@@ -8,7 +8,7 @@ import { faixasAgendamento } from '@/lib/agendar';
 import { criarPedido, lerEnderecos, lerSaldo, meuPacote, minhaEmpresa, orcamento as pedirOrcamento, usarCredito, usarPacote } from '@/lib/api';
 import { type LinhaCarrinho, useCarrinho } from '@/lib/carrinho';
 import { novoId } from '@/lib/dispositivo';
-import { formatarKz, mensagemCodigo, mensagemErro } from '@/lib/formatar';
+import { formatarKz, mensagemCodigo, mensagemErro, textoEntregaGratis } from '@/lib/formatar';
 import { useSessao } from '@/lib/sessao';
 import { cores, espaco } from '@/lib/tema';
 import type { Endereco, MeuPacote, MinhaEmpresa, Orcamento } from '@/lib/tipos';
@@ -219,7 +219,13 @@ export default function Carrinho() {
               direita={orc.taxa_grupo_estimada ? `cerca de ${formatarKz(orc.taxa_grupo_estimada)}` : formatarKz(0)}
             />
           ) : (
-            <Linha esquerda={`Entrega${orc.zona_nome ? ` (${orc.zona_nome})` : ''}`} direita={formatarKz(orc.taxa_entrega)} />
+            <Linha
+              esquerda={`Entrega${orc.zona_nome ? ` (${orc.zona_nome})` : ''}`}
+              direita={orc.entrega_gratis ? 'Grátis' : formatarKz(orc.taxa_entrega)}
+            />
+          )}
+          {!grupo && textoEntregaGratis(orc) && (
+            <Text style={{ color: orc.entrega_gratis ? cores.marca : cores.aviso, fontSize: 13 }}>{textoEntregaGratis(orc)}</Text>
           )}
           {orc.desconto > 0 && (
             <Linha esquerda="Desconto de convite" direita={`−${formatarKz(orc.desconto)}`} />

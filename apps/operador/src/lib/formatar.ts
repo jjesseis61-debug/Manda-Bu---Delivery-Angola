@@ -5,6 +5,13 @@ export function formatarKz(valor: number | null | undefined): string {
   return `${sinal}${Math.abs(inteiro).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')} Kz`;
 }
 
+/** Texto da entrega grátis de uma zona (vazio = valor geral; 0 = nunca; > 0 = valor próprio) */
+export function textoGratisZona(v: number | null): string {
+  if (v === null) return 'Entrega grátis: valor geral (Parâmetros)';
+  if (v === 0) return 'Sem entrega grátis nesta zona';
+  return `Entrega grátis a partir de ${formatarKz(v)}`;
+}
+
 /** 12.345 -> "12,3 %" */
 export function formatarPercentagem(parte: number, total: number): string {
   if (!total) return '—';

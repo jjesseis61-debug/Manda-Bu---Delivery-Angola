@@ -712,12 +712,13 @@ export async function definirFotoOpcao(id: string, fotoUrl: string | null) {
 
 // ---------------------------------------------------------------- Zonas de entrega
 export async function lerZonasEntrega(): Promise<ZonaEntrega[]> {
-  const r = await supabase.from('zonas').select('id, nome, taxa, tipo, centro_lat, centro_lng').is('deletado_em', null).order('nome');
+  const r = await supabase.from('zonas').select('id, nome, taxa, tipo, centro_lat, centro_lng, entrega_gratis_acima').is('deletado_em', null).order('nome');
   return (verificar(r) as ZonaEntrega[]).map((z) => ({
     ...z,
     taxa: Number(z.taxa ?? 0),
     centro_lat: z.centro_lat != null ? Number(z.centro_lat) : null,
     centro_lng: z.centro_lng != null ? Number(z.centro_lng) : null,
+    entrega_gratis_acima: z.entrega_gratis_acima != null ? Number(z.entrega_gratis_acima) : null,
   }));
 }
 

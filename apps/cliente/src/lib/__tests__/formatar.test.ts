@@ -2,6 +2,7 @@
 
 import {
   formatarKz,
+  textoEntregaGratis,
   formatarMedia,
   formatarTelefone,
   horaLuanda,
@@ -252,5 +253,22 @@ describe('formatarTelefone', () => {
   });
   it('deixa como está o que não encaixa', () => {
     expect(formatarTelefone('12345')).toBe('12345');
+  });
+});
+
+describe('textoEntregaGratis', () => {
+  it('entrega já grátis', () => {
+    expect(textoEntregaGratis({ entrega_gratis: true, entrega_gratis_acima: 10000, falta_entrega_gratis: null })).toBe(
+      '🎉 Entrega grátis neste pedido!',
+    );
+  });
+  it('diz quanto falta', () => {
+    const t = textoEntregaGratis({ entrega_gratis: false, entrega_gratis_acima: 10000, falta_entrega_gratis: 750 });
+    expect(t).toContain('Junta mais');
+    expect(t).toContain('depois dos descontos');
+  });
+  it('sem entrega grátis na zona: nada', () => {
+    expect(textoEntregaGratis({ entrega_gratis: false, entrega_gratis_acima: null, falta_entrega_gratis: null })).toBeNull();
+    expect(textoEntregaGratis({})).toBeNull();
   });
 });

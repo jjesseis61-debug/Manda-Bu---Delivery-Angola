@@ -63,6 +63,10 @@ const CAMPOS: { grupo: string; chaves: [string, string][] }[] = [
     ],
   },
   {
+    grupo: 'Entrega',
+    chaves: [['entrega_gratis_acima', 'Entrega grátis a partir de (Kz, depois dos descontos; 0 = desligado). Cada zona pode ter o seu valor em Zonas de entrega']],
+  },
+  {
     grupo: 'Cartão de selos',
     chaves: [['selos_necessarios', 'Pedidos para ganhar frete grátis (liga o interruptor «selos»)']],
   },

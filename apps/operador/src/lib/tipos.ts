@@ -876,6 +876,8 @@ export type ZonaEntrega = {
   /** Centro de referência (opcional): centra o mapa do cliente neste bairro; não é a fronteira */
   centro_lat: number | null;
   centro_lng: number | null;
+  /** Entrega grátis nesta zona: null = usa o valor geral; 0 = nunca; > 0 = a partir deste valor (Kz) */
+  entrega_gratis_acima: number | null;
 };
 
 export type FactosReclamacao = {

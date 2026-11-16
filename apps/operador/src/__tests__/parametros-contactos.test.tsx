@@ -26,6 +26,7 @@ beforeEach(() => {
         'contador_minimo', 'prazo_avaliacao_dias', 'avaliacoes_minimo', 'tempo_entrega_min',
         'tolerancia_entrega_min', 'alerta_agendado_horas', 'agendados_por_hora_max', 'selos_necessarios',
         'despromocao_carencia_dias', 'despromocao_margem_pct', 'validade_saldo_meses', 'aviso_expiracao_dias',
+        'entrega_gratis_acima',
       ].map((k) => [k, 10]),
     ),
     contacto_telefone: null, contacto_whatsapp: null, contacto_email: null,

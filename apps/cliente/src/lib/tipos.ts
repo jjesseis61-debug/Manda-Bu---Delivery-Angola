@@ -143,6 +143,12 @@ export type Orcamento = {
   total: number;
   /** Pedido de grupo: taxa por pessoa se o grupo fechasse agora (a taxa real é repartida no fecho) */
   taxa_grupo_estimada?: number | null;
+  /** A entrega ficou grátis por o pedido (depois dos descontos) chegar ao valor da zona */
+  entrega_gratis?: boolean;
+  /** Valor a partir do qual a entrega é grátis nesta zona (null = sem entrega grátis) */
+  entrega_gratis_acima?: number | null;
+  /** Quanto falta (depois dos descontos) para a entrega grátis; null = não se aplica */
+  falta_entrega_gratis?: number | null;
 };
 
 export type EstadoGrupo = 'aberto' | 'fechado' | 'em_preparacao' | 'entregue' | 'cancelado';

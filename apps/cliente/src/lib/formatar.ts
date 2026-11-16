@@ -306,3 +306,15 @@ export function formatarTelefone(t: string): string {
   if (n.length === 9) return `+244 ${n.slice(0, 3)} ${n.slice(3, 6)} ${n.slice(6)}`;
   return t;
 }
+
+/** Aviso no carrinho sobre a entrega grátis (null = não mostrar nada) */
+export function textoEntregaGratis(o: {
+  entrega_gratis?: boolean;
+  entrega_gratis_acima?: number | null;
+  falta_entrega_gratis?: number | null;
+}): string | null {
+  if (o.entrega_gratis) return '🎉 Entrega grátis neste pedido!';
+  if (o.falta_entrega_gratis && o.falta_entrega_gratis > 0 && o.entrega_gratis_acima)
+    return `Junta mais ${formatarKz(o.falta_entrega_gratis)} e a entrega fica grátis (pedidos a partir de ${formatarKz(o.entrega_gratis_acima)}, depois dos descontos).`;
+  return null;
+}
