@@ -26,7 +26,14 @@ import {
   type MaisPedidoZona,
 } from '@/lib/api';
 import { useCarrinho } from '@/lib/carrinho';
-import { corEstadoPedido, formatarKz, mensagemErro, nomeEstadoPedido, textoPediram } from '@/lib/formatar';
+import {
+  condominioAqui,
+  cozinhasComCondominio,
+  posicaoParaCondominio,
+  textoCondominioFechado,
+  type CondominioAqui,
+} from '@/lib/condominio';
+import { corEstadoPedido, formatarKz, horaLuanda, mensagemErro, nomeEstadoPedido, textoPediram } from '@/lib/formatar';
 import { gruposEsgotados, precoMinimo } from '@/lib/opcoes';
 import { partilharPrato } from '@/lib/partilha';
 import { usePedirDeNovo } from '@/lib/pedirDeNovo';
@@ -52,6 +59,8 @@ export default function Inicio() {
   const [contador, setContador] = useState<number | null>(null);
   const [medias, setMedias] = useState<MediasAvaliacoes | null>(null);
   const [cozinhas, setCozinhas] = useState<CozinhaParaPedir[]>([]);
+  // Cozinha de condomínio (pelo GPS, só para membros): aberta substitui a lista; fechada mostra um cartão
+  const [condominio, setCondominio] = useState<CondominioAqui | null>(null);
   // Troca de cozinha com carrinho cheio: confirma antes de esvaziar
   const [trocaPendente, setTrocaPendente] = useState<CozinhaParaPedir | null>(null);
   // Banner no topo: pedido ainda em andamento ("a tua entrega está a caminho, toca para acompanhar")
@@ -90,7 +99,14 @@ export default function Inicio() {
       // I8: com multi_cozinha, o cliente escolhe a cozinha; por defeito a primeira da lista (a mais perto)
       let escolhida = cozinhaId;
       if (ligada('multi_cozinha')) {
-        const lista = ponto ? await cozinhasPertoParaPedir(ponto) : await cozinhasParaPedir();
+        const gerais = ponto ? await cozinhasPertoParaPedir(ponto) : await cozinhasParaPedir();
+        let cond: CondominioAqui | null = null;
+        if (ligada('condominios')) {
+          const pos = await posicaoParaCondominio();
+          cond = pos ? await condominioAqui(pos.lat, pos.lng).catch(() => null) : null;
+        }
+        setCondominio(cond?.visivel ? cond : null);
+        const lista = cozinhasComCondominio(cond, gerais);
         setCozinhas(lista);
         if (!emGrupo && (!escolhida || !lista.some((c) => c.cozinha_id === escolhida)) && lista[0]) {
           escolhida = lista[0].cozinha_id;
@@ -351,6 +367,13 @@ export default function Inicio() {
         {/* I8: selector de cozinha por zona (só com multi_cozinha e mais de uma cozinha a aceitar pedidos).
             A marca é a mesma; cada opção é um balcão/zona. O título dá a afordância de lugar e o ✓
             reforça qual está escolhido. */}
+        {condominio && condominio.aberta && !carrinho.grupo && (
+          <Cartao>
+            <Text style={{ fontSize: 15, fontWeight: '700', color: cores.texto }}>🏘️ {condominio.cozinha}</Text>
+            <Text style={{ color: cores.textoSuave }}>A cozinha do {condominio.nome}, só para os moradores.</Text>
+          </Cartao>
+        )}
+        {condominio && !condominio.aberta && <Aviso>{textoCondominioFechado(condominio, horaLuanda)}</Aviso>}
         {ligada('multi_cozinha') && !carrinho.grupo && cozinhas.length > 1 && (
           <View style={{ gap: espaco.s }}>
             <Text style={{ fontSize: 15, fontWeight: '700', color: cores.texto }}>📍 De onde queres pedir?</Text>

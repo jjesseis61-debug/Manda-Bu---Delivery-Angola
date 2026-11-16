@@ -48,6 +48,7 @@ export type Parametros = {
 };
 
 export type ChaveFuncionalidade =
+  | 'condominios'
   | 'indicacao'
   | 'destaques'
   | 'pessoas_como_tu'
