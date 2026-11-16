@@ -152,6 +152,26 @@ jobs:
             printf '\nnetworkTimeout=120000\n' >> "$props"
           fi
           echo "gradle-wrapper.properties:"; cat "$props"
+      - name: Instalar o NDK com limite de tempo (o download às vezes fica pendurado)
+        # Em 16/11 o Gradle ficou 55 min em "Preparing Install NDK" (download parado) até o job
+        # chegar aos 60 min. Aqui instala-se antes, com 10 min por tentativa e 3 tentativas;
+        # se o NDK já existir no runner, não faz nada. Versão: a que o Expo pede no build.
+        run: |
+          NDK=27.1.12297006
+          SDK="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          if [ -f "$SDK/ndk/$NDK/source.properties" ]; then echo "NDK $NDK já instalado"; exit 0; fi
+          for tentativa in 1 2 3; do
+            echo "== NDK $NDK, tentativa $tentativa =="
+            if yes | timeout 600 "$SDK/cmdline-tools/latest/bin/sdkmanager" --install "ndk;$NDK" > /tmp/ndk.log 2>&1 \
+               && [ -f "$SDK/ndk/$NDK/source.properties" ]; then
+              tail -n 2 /tmp/ndk.log; exit 0
+            fi
+            tail -n 5 /tmp/ndk.log
+            echo "::warning::Download do NDK falhou ou passou de 10 min (tentativa $tentativa)."
+            sleep 30
+          done
+          echo "::error::Não foi possível instalar o NDK $NDK em 3 tentativas."
+          exit 1
       - name: Compilar o APK
         working-directory: apps/${{ matrix.app }}/android
         # Só as CPUs de telemóveis reais (arm64 e arm 32-bit); deixa de fora x86/x86_64 (só
