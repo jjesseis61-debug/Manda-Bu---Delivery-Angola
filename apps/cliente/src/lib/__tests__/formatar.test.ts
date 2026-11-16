@@ -209,6 +209,11 @@ test('I12: benefícios do pacote', () => {
 });
 
 describe('mensagemPartilhaPrato', () => {
+  it('tira os espaços das pontas do nome (senão o negrito do WhatsApp parte)', () => {
+    const msg = mensagemPartilhaPrato('Bitoque ', 'Cozinha da Alexandra', 'https://x/p/1', { codigo: 'MB-4812', desconto: 1000, minimo: 5000 });
+    expect(msg).toContain('*Bitoque* da Cozinha da Alexandra');
+    expect(msg).not.toContain('Bitoque *');
+  });
   it('inclui nome, marca, chamada à ação e link (sem repetir o preço — vem no cartão)', () => {
     const msg = mensagemPartilhaPrato('Choco frito', 'Cozinha da Alexandra', 'https://x/prato?id=1');
     expect(msg).toContain('Choco frito');

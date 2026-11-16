@@ -187,7 +187,9 @@ export async function lerCardapio(cozinhaId: string): Promise<PratoCardapio[]> {
 
 /** Grava o prato e devolve o id (o existente, ou o novo no caso de criação). */
 export async function guardarPrato(p: Omit<PratoCardapio, 'id'> & { id?: string }): Promise<string> {
-  const { id, ...dados } = p;
+  const { id, ...resto } = p;
+  // Sem espaços nas pontas do nome: "Bitoque " partia o negrito da partilha no WhatsApp
+  const dados = { ...resto, nome: resto.nome.trim() };
   if (id) {
     verificar(await supabase.from('cardapio').update({ ...dados, atualizado_em: new Date().toISOString() }).eq('id', id));
     return id;

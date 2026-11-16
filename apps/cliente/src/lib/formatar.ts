@@ -290,6 +290,8 @@ export function mensagemPartilhaPrato(
   // Enxuta: o cartão de pré-visualização do link já mostra foto + nome + preço. O texto fica com
   // o nome (rede de segurança, se a pré-visualização não aparecer) e a chamada à acção; com
   // código de convite, o benefício do amigo vem primeiro (negrito do WhatsApp).
+  // Sem espaços nas pontas: "*Bitoque *" não é negrito no WhatsApp e estraga o resto da frase.
+  nome = nome.trim();
   if (convite && convite.desconto > 0) {
     const cond = convite.minimo && convite.minimo > 0 ? ` (pedidos a partir de ${formatarKz(convite.minimo)})` : '';
     return (

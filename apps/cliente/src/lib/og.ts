@@ -35,7 +35,7 @@ export function idDoCaminho(caminho: string): string | null {
 
 /** Título e descrição do cartão: o benefício do amigo primeiro, quando há código */
 export function textosCartao(p: PratoPartilhado): { titulo: string; descricao: string } {
-  const titulo = `${p.nome} — ${p.marca}`;
+  const titulo = `${p.nome.trim()} — ${p.marca}`;
   if (p.convite && p.convite.desconto > 0) {
     const cond = p.convite.minimo > 0 ? ` (pedidos a partir de ${kz(p.convite.minimo)})` : '';
     return {

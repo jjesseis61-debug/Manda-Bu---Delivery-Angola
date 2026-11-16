@@ -3,11 +3,13 @@ import { useEffect, useRef, useState } from 'react';
 import { Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Confirmar } from '@/components/Confirmar';
 import { ACarregar, Aviso, Botao, Ecra, Paragrafo, Subtitulo } from '@/components/ui';
 import { lerComponentes, lerDoses, lerItemCardapio, lerOpcoes } from '@/lib/api';
 import { type PendenteMontar, useCarrinho } from '@/lib/carrinho';
 import { formatarKz, mensagemErro } from '@/lib/formatar';
 import { alternar, emojiOpcao, gruposEmFalta, gruposEsgotados, opcoesEscolhidas, precoMontado, regraGrupo } from '@/lib/opcoes';
+import { cozinhasDisponiveis, decidirCozinha, pratoSimples, TEXTO_INDISPONIVEL } from '@/lib/pratoPartilhado';
 import { useSessao } from '@/lib/sessao';
 import { cores, espaco, raio } from '@/lib/tema';
 import type { ComponentePrato, GrupoOpcoes, ItemCardapio } from '@/lib/tipos';
@@ -37,6 +39,12 @@ export default function MontarPrato() {
   const [pendente, setPendente] = useState<PendenteMontar | null>(null);
   const repeticaoRef = useRef(carrinho.repeticao);
   repeticaoRef.current = carrinho.repeticao;
+  // Cozinhas a que o cliente pode pedir (o prato pode ser de outra cozinha, aberto por link)
+  const [disponiveis, setDisponiveis] = useState<{ id: string; nome: string }[] | null>(null);
+  const [trocaPendente, setTrocaPendente] = useState<(() => void) | null>(null);
+  const [avisoCozinha, setAvisoCozinha] = useState<string | null>(null);
+  const multi = ligada('multi_cozinha');
+  const comCondominios = ligada('condominios');
 
   useEffect(() => {
     Promise.all([lerItemCardapio(String(id)), lerOpcoes([String(id)]), lerComponentes([String(id)]).catch(() => [])])
@@ -63,6 +71,15 @@ export default function MontarPrato() {
       });
   }, [id, rever]);
 
+  useEffect(() => {
+    if (!carregado) return;
+    let vivo = true;
+    cozinhasDisponiveis(multi, comCondominios).then((d) => vivo && setDisponiveis(d));
+    return () => {
+      vivo = false;
+    };
+  }, [carregado, multi, comCondominios]);
+
   // Aberto por link: espera pelos interruptores antes de decidir
   if (!carregado) return <ACarregar />;
   if (!ligada('pratos_montaveis')) return <Redirect href="/inicio" />;
@@ -78,6 +95,85 @@ export default function MontarPrato() {
   const minimo = item.minimo_montavel ?? 0;
   const abaixoMinimo = minimo > 0 && total < minimo;
 
+  /**
+   * Põe o prato no carrinho na cozinha certa. Prato de outra cozinha (aberto por link): com o
+   * carrinho vazio muda de cozinha; com pratos no carrinho pergunta antes de o esvaziar.
+   */
+  function adicionarNaCozinha(depois: () => void) {
+    if (!item) return;
+    setAvisoCozinha(null);
+    const actual = carrinho.cozinhaActual?.id ?? null;
+    const decisao = decidirCozinha({
+      cozinhaPrato: item.cozinha_id,
+      // Sem multi_cozinha só há a cozinha principal: o carrinho não guarda cozinha
+      actual: multi ? actual : item.cozinha_id,
+      quantidade: carrinho.quantidade,
+      emGrupo: carrinho.grupo !== null,
+      disponiveis: disponiveis?.map((c) => c.id) ?? null,
+    });
+    const nomeCozinha = disponiveis?.find((c) => c.id === item.cozinha_id)?.nome ?? '';
+    const colocar = () => {
+      carrinho.adicionar(item, opcoes, semEstes);
+      depois();
+    };
+    if (decisao === 'indisponivel') setAvisoCozinha(TEXTO_INDISPONIVEL);
+    else if (decisao === 'grupo')
+      setAvisoCozinha(`Estás num pedido de grupo da ${carrinho.cozinhaActual?.nome ?? 'outra cozinha'}: este prato é de outra cozinha.`);
+    else if (decisao === 'adicionar') colocar();
+    else if (decisao === 'trocar') {
+      carrinho.definirCozinha({ id: item.cozinha_id, nome: nomeCozinha });
+      colocar();
+    } else
+      setTrocaPendente(() => () => {
+        carrinho.definirCozinha({ id: item.cozinha_id, nome: nomeCozinha });
+        colocar();
+      });
+  }
+
+  const voltar = () => {
+    // Aberto por link não há ecrã anterior: segue para o início
+    if (router.canGoBack()) router.back();
+    else router.replace('/inicio');
+  };
+
+  const caixaTroca = (
+    <Confirmar
+      visivel={trocaPendente !== null}
+      titulo="Trocar de cozinha?"
+      mensagem={`Este prato é de ${disponiveis?.find((c) => c.id === item.cozinha_id)?.nome || 'outra cozinha'}. O teu carrinho tem pratos de ${carrinho.cozinhaActual?.nome || 'outra cozinha'} e vai ficar vazio.`}
+      textoConfirmar="Trocar e adicionar"
+      aoConfirmar={() => {
+        const f = trocaPendente;
+        setTrocaPendente(null);
+        f?.();
+      }}
+      aoCancelar={() => setTrocaPendente(null)}
+    />
+  );
+
+  // Prato sem opções nem ingredientes para tirar: página simples (não há nada para montar)
+  if (pratoSimples(grupos, componentes) && !pendente) {
+    return (
+      <Ecra>
+        {caixaTroca}
+        {item.foto_url ? (
+          <Image source={{ uri: item.foto_url }} style={{ width: '100%', aspectRatio: 4 / 3, borderRadius: raio }} accessibilityLabel={item.nome} />
+        ) : null}
+        <Text style={{ fontSize: 22, fontWeight: '700', color: cores.texto }}>{item.nome.trim()}</Text>
+        {item.descricao && <Paragrafo suave>{item.descricao}</Paragrafo>}
+        <Text style={{ fontSize: 18, fontWeight: '800', color: cores.texto }}>{formatarKz(item.preco)}</Text>
+        {semDoses && <Aviso>Esgotado: acabaram as doses de hoje.</Aviso>}
+        {avisoCozinha && <Aviso>{avisoCozinha}</Aviso>}
+        <Botao
+          titulo={semDoses ? 'Esgotado' : `Adicionar ao carrinho · ${formatarKz(item.preco)}`}
+          desactivado={semDoses}
+          aoCarregar={() => adicionarNaCozinha(voltar)}
+        />
+        <Botao titulo="Ver o cardápio" variante="texto" aoCarregar={() => router.replace('/inicio')} />
+      </Ecra>
+    );
+  }
+
   /** Fila do "Pedir de novo": passa ao prato seguinte a rever, ou ao carrinho quando acaba */
   function seguirFila() {
     const faltamRepeticao = carrinho.repeticao?.faltam ?? [];
@@ -88,6 +184,7 @@ export default function MontarPrato() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: cores.fundo }} edges={['bottom', 'left', 'right']}>
+      {caixaTroca}
       <View style={{ flex: 1, flexDirection: 'row' }}>
         {/* ---------------- ESQUERDA: escolhas em rolagem ---------------- */}
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: espaco.l, paddingBottom: espaco.xl, gap: espaco.m }}>
@@ -97,7 +194,7 @@ export default function MontarPrato() {
           <Text style={{ color: cores.marca, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.4 }}>
             À tua maneira
           </Text>
-          <Text style={{ fontSize: 22, fontWeight: '700', color: cores.texto }}>{item.nome}</Text>
+          <Text style={{ fontSize: 22, fontWeight: '700', color: cores.texto }}>{item.nome.trim()}</Text>
           {item.descricao && <Paragrafo suave>{item.descricao}</Paragrafo>}
           {minimo > 0 && (
             <Text style={{ color: cores.marca, fontSize: 13, fontWeight: '600' }}>
@@ -207,6 +304,7 @@ export default function MontarPrato() {
             </View>
           )}
 
+          {avisoCozinha && <Aviso>{avisoCozinha}</Aviso>}
           {esgotados.length > 0 && (
             <Aviso>{semDoses ? 'Esgotado: acabaram as doses de hoje.' : `Esgotado de momento: não há nenhuma opção disponível em ${esgotados.join(', ')}.`}</Aviso>
           )}
@@ -273,10 +371,7 @@ export default function MontarPrato() {
                   seguirFila();
                   return;
                 }
-                carrinho.adicionar(item, opcoes, semEstes);
-                // Aberto por link não há ecrã anterior: segue para o início
-                if (router.canGoBack()) router.back();
-                else router.replace('/inicio');
+                adicionarNaCozinha(voltar);
               }}
             />
             {pendente && <Botao titulo="Tirar este prato do pedido" variante="texto" aoCarregar={seguirFila} />}

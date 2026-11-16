@@ -11,16 +11,26 @@ const mockDoses: { valor: unknown[] } = { valor: [] };
 jest.mock('@/lib/sessao', () => ({ useSessao: () => ({ carregado: true, ligada: () => true }) }));
 const mockAvancarFila = jest.fn(() => null);
 const mockRepeticao: { valor: unknown } = { valor: null };
+const mockDefinirCozinha = jest.fn();
+const mockCarrinho = { cozinha: { id: 'k', nome: 'Maianga' } as { id: string; nome: string } | null, quantidade: 0 };
 jest.mock('@/lib/carrinho', () => ({
-  useCarrinho: () => ({ adicionar: mockAdicionar, repeticao: mockRepeticao.valor, avancarFila: mockAvancarFila, definirRepeticao: jest.fn() }),
+  useCarrinho: () => ({
+    adicionar: mockAdicionar, repeticao: mockRepeticao.valor, avancarFila: mockAvancarFila, definirRepeticao: jest.fn(),
+    cozinhaActual: mockCarrinho.cozinha, quantidade: mockCarrinho.quantidade, grupo: null, definirCozinha: mockDefinirCozinha,
+  }),
 }));
+jest.mock('@/lib/condominio', () => ({ posicaoParaCondominio: async () => null, condominioAqui: async () => null }));
+const mockItem = { cozinha: 'k', semOpcoes: false };
+const mockCozinhas: { valor: { cozinha_id: string; nome: string }[] } = { valor: [{ cozinha_id: 'k', nome: 'Maianga' }, { cozinha_id: 'v', nome: 'Viana' }] };
 jest.mock('@/lib/api', () => ({
+  cozinhasParaPedir: async () => mockCozinhas.valor,
+  cozinhaPadrao: async () => 'k',
   lerItemCardapio: async () => ({
-    id: 'm', nome: 'Muamba', descricao: null, categoria: null, preco: 2500, foto_url: null, do_dia: false, cozinha_id: 'k', prato_base_id: null,
+    id: 'm', nome: 'Muamba ', descricao: null, categoria: null, preco: 2500, foto_url: null, do_dia: false, cozinha_id: mockItem.cozinha, prato_base_id: null,
   }),
   lerComponentes: async () => mockComponentes.valor,
   lerDoses: async () => mockDoses.valor,
-  lerOpcoes: async () => [
+  lerOpcoes: async () => mockItem.semOpcoes ? [] : [
     { id: 'g1', cardapio_id: 'm', nome: 'Base', minimo: 1, maximo: 1, ordem: 1,
       opcoes: mockBaseEsgotada.valor ? [] : [{ id: 'funge', nome: 'Funge', preco_extra: 0, ordem: 1 }, { id: 'arroz', nome: 'Arroz', preco_extra: 0, ordem: 2 }] },
     { id: 'g2', cardapio_id: 'm', nome: 'Extras', minimo: 0, maximo: 2, ordem: 2,
@@ -130,5 +140,61 @@ describe('"Pedir de novo" de um prato que mudou', () => {
     await act(async () => undefined);
     expect(ecra.queryByText(/Do teu pedido anterior/)).toBeNull();
     expect(ecra.getByText('Falta escolher: Base.')).toBeTruthy();
+  });
+});
+
+describe('prato aberto por link', () => {
+  const rotas = { 'montar/[id]': MontarPrato, inicio: () => <Text>Início</Text> };
+  beforeEach(() => {
+    mockAdicionar.mockClear();
+    mockDefinirCozinha.mockClear();
+    mockItem.semOpcoes = true;
+  });
+  afterEach(() => {
+    mockItem.semOpcoes = false;
+    mockItem.cozinha = 'k';
+    mockCarrinho.cozinha = { id: 'k', nome: 'Maianga' };
+    mockCarrinho.quantidade = 0;
+  });
+
+  test('prato sem opções: página simples com "Adicionar ao carrinho" (nome sem espaços)', async () => {
+    const ecra = renderRouter(rotas, { initialUrl: '/montar/m' });
+    await act(async () => undefined);
+    expect(ecra.getByText('Muamba')).toBeTruthy();
+    expect(ecra.queryByText(/Escolhe à esquerda/)).toBeNull();
+    fireEvent.press(ecra.getByText('Adicionar ao carrinho · 2.500 Kz'));
+    expect(mockAdicionar).toHaveBeenCalledWith(expect.objectContaining({ id: 'm' }), [], []);
+    expect(mockDefinirCozinha).not.toHaveBeenCalled();
+  });
+
+  test('de outra cozinha com o carrinho vazio: muda de cozinha e adiciona', async () => {
+    mockItem.cozinha = 'v';
+    const ecra = renderRouter(rotas, { initialUrl: '/montar/m' });
+    await act(async () => undefined);
+    fireEvent.press(ecra.getByText('Adicionar ao carrinho · 2.500 Kz'));
+    expect(mockDefinirCozinha).toHaveBeenCalledWith({ id: 'v', nome: 'Viana' });
+    expect(mockAdicionar).toHaveBeenCalled();
+  });
+
+  test('de outra cozinha com pratos no carrinho: pergunta antes de trocar', async () => {
+    mockItem.cozinha = 'v';
+    mockCarrinho.quantidade = 2;
+    const ecra = renderRouter(rotas, { initialUrl: '/montar/m' });
+    await act(async () => undefined);
+    fireEvent.press(ecra.getByText('Adicionar ao carrinho · 2.500 Kz'));
+    expect(mockAdicionar).not.toHaveBeenCalled();
+    expect(ecra.getByText('Trocar de cozinha?')).toBeTruthy();
+    fireEvent.press(ecra.getByText('Trocar e adicionar'));
+    expect(mockDefinirCozinha).toHaveBeenCalledWith({ id: 'v', nome: 'Viana' });
+    expect(mockAdicionar).toHaveBeenCalled();
+  });
+
+  test('cozinha indisponível (fechada ou de condomínio): não adiciona e explica', async () => {
+    mockItem.cozinha = 'cond';
+    const ecra = renderRouter(rotas, { initialUrl: '/montar/m' });
+    await act(async () => undefined);
+    fireEvent.press(ecra.getByText('Adicionar ao carrinho · 2.500 Kz'));
+    expect(mockAdicionar).not.toHaveBeenCalled();
+    expect(ecra.getByText(/só para os moradores de um condomínio/)).toBeTruthy();
   });
 });
