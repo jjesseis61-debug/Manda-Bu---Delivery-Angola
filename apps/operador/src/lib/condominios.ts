@@ -20,6 +20,9 @@ export type Condominio = {
   parceiro_nome: string | null;
   codigo: string;
   lista_aberta: boolean;
+  /** Com as vagas cheias, quem pede fica em lista de espera */
+  lista_espera: boolean;
+  espera: number;
   cozinha_aberta: boolean;
   fechada_desde: string | null;
   reabre_em: string | null;
@@ -34,7 +37,7 @@ export type MembroCondominio = {
   telefone: string | null;
   bloco: string | null;
   casa: string | null;
-  estado: 'pendente' | 'activo';
+  estado: 'pendente' | 'activo' | 'espera';
   origem: 'link' | 'cozinha';
   criado_em: string;
   ultimo_pedido: string | null;
@@ -52,8 +55,55 @@ export type CondominioGuardar = {
   inscricoes_ate: string | null;
   inscricoes_abertas: boolean;
   aprovacao_manual: boolean;
+  lista_espera: boolean;
   modo_entrega: 'cozinha' | 'parceiro';
   parceiro_nome: string | null;
+};
+
+export type RelatorioCondominio = {
+  membros: { activos: number; pendentes: number; espera: number; novos: number; sairam: number; vagas: number };
+  pedidos: number;
+  entregues: number;
+  cancelados: number;
+  vendas: number;
+  ticket_medio: number | null;
+  clientes: number;
+  membros_que_pediram: number;
+  com_campanha: number;
+  pratos: { nome: string; qtd: number }[];
+  horas: { hora: string; pedidos: number }[];
+};
+
+export type Campanha = {
+  id: string;
+  nome: string;
+  descricao: string | null;
+  condominio_id: string | null;
+  condominio: string | null;
+  zona_id: string | null;
+  zona: string | null;
+  cozinha_id: string | null;
+  cozinha: string | null;
+  tipo: 'percentagem' | 'preco';
+  valor: number;
+  cardapio_ids: string[] | null;
+  minimo_pedido: number;
+  inicio: string;
+  fim: string | null;
+  dias_semana: number[] | null;
+  hora_inicio: string | null;
+  hora_fim: string | null;
+  so_membros: boolean;
+  limite_por_cliente: number | null;
+  limite_total: number | null;
+  activa: boolean;
+  avisado_em: string | null;
+  em_curso: boolean;
+  resultado: { pedidos: number; entregues: number; clientes: number; vendas: number; desconto: number };
+};
+
+export type CampanhaGuardar = Omit<Campanha, 'id' | 'condominio' | 'zona' | 'cozinha' | 'avisado_em' | 'em_curso' | 'resultado'> & {
+  id?: string;
 };
 
 function verificar<T>(r: { data: T; error: { message: string } | null }): T {
@@ -89,6 +139,46 @@ export async function abrirFecharCozinha(cozinha: string, aberta: boolean, reabr
   verificar(await supabase.rpc('abrir_fechar_cozinha', { p_cozinha: cozinha, p_aberta: aberta, p_reabre_em: reabreEm }));
 }
 
+export async function relatorioCondominio(id: string, inicio: string, fim: string): Promise<RelatorioCondominio> {
+  return verificar(await supabase.rpc('relatorio_condominio', { p_cond: id, p_inicio: inicio, p_fim: fim })) as RelatorioCondominio;
+}
+
+export async function lerCampanhas(): Promise<Campanha[]> {
+  return (verificar(await supabase.rpc('campanhas_lista')) as Campanha[]) ?? [];
+}
+
+export async function guardarCampanha(c: CampanhaGuardar): Promise<string> {
+  return verificar(await supabase.rpc('guardar_campanha', { p: c })) as string;
+}
+
+export async function apagarCampanha(id: string) {
+  verificar(await supabase.rpc('apagar_campanha', { p_id: id }));
+}
+
+/** Avisa os clientes da campanha (uma vez); devolve quantos */
+export async function avisarCampanha(id: string): Promise<number> {
+  return verificar(await supabase.rpc('campanha_avisar', { p_id: id })) as number;
+}
+
+/** "20% nos pratos" / "Preço especial: 1.500 Kz" */
+export function textoOferta(c: Pick<Campanha, 'tipo' | 'valor'>): string {
+  return c.tipo === 'percentagem' ? `${c.valor}% de desconto nos pratos` : `Preço especial: ${formatarKzSimples(c.valor)}`;
+}
+
+const DIAS = ['', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb', 'dom'];
+
+/** "sex e sáb · 12:00–15:00" (vazio = todos os dias, todo o dia) */
+export function textoQuando(c: Pick<Campanha, 'dias_semana' | 'hora_inicio' | 'hora_fim'>): string {
+  const dias = c.dias_semana && c.dias_semana.length > 0 && c.dias_semana.length < 7
+    ? [...c.dias_semana].sort().map((d) => DIAS[d]).join(', ')
+    : 'todos os dias';
+  return c.hora_inicio && c.hora_fim ? `${dias} · ${c.hora_inicio}–${c.hora_fim}` : dias;
+}
+
+function formatarKzSimples(v: number): string {
+  return `${Math.round(v).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')} Kz`;
+}
+
 /** Link para os moradores pedirem para entrar (abre a app do cliente) */
 export function linkCondominio(codigo: string): string {
   const site = (process.env.EXPO_PUBLIC_SITE_URL || 'https://manda-bue.netlify.app').replace(/\/+$/, '');
@@ -100,10 +190,14 @@ export function mensagemConviteCondominio(nome: string, link: string): string {
 }
 
 /** "32/50 membros · lista aberta" */
-export function textoVagas(c: Pick<Condominio, 'activos' | 'pendentes' | 'vagas' | 'lista_aberta'>): string {
+export function textoVagas(
+  c: Pick<Condominio, 'activos' | 'pendentes' | 'vagas' | 'lista_aberta'> & { espera?: number },
+): string {
   const ocupadas = c.activos + c.pendentes;
   const estado = c.lista_aberta ? 'lista aberta' : ocupadas >= c.vagas ? 'lista completa' : 'lista fechada';
-  return `${c.activos}/${c.vagas} membros${c.pendentes ? ` · ${c.pendentes} à espera de aprovação` : ''} · ${estado}`;
+  return `${c.activos}/${c.vagas} membros${c.pendentes ? ` · ${c.pendentes} à espera de aprovação` : ''}${
+    c.espera ? ` · ${c.espera} em lista de espera` : ''
+  } · ${estado}`;
 }
 
 /** Hora prevista de reabertura: daqui a N horas (1–24), em ISO */
@@ -145,6 +239,8 @@ const ERROS: Record<string, string> = {
   cliente_nao_encontrado: 'Não há conta com esse número. O morador tem de criar conta na app primeiro.',
   lista_cheia: 'A lista está completa. Aumenta as vagas para acrescentar mais moradores.',
   hora_invalida: 'Hora de reabertura inválida.',
+  ja_avisado: 'Os clientes desta campanha já foram avisados.',
+  sem_publico: 'Só se avisa uma campanha de um condomínio ou de uma zona.',
 };
 
 /** Mensagem amiga para os erros do servidor dos condomínios (null = usar a mensagem geral) */

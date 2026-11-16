@@ -47,6 +47,7 @@ export default function LayoutRaiz() {
         <Stack.Screen name="saldos-expirados" options={{ title: 'Saldos expirados' }} />
         <Stack.Screen name="zonas-vendas" options={{ title: 'O que se compra em cada zona' }} />
         <Stack.Screen name="condominios" options={{ title: 'Condomínios' }} />
+        <Stack.Screen name="campanhas" options={{ title: 'Campanhas' }} />
         <Stack.Screen name="turno" options={{ title: 'Gerente de turno' }} />
         <Stack.Screen name="compras" options={{ title: 'Stock e compras' }} />
         <Stack.Screen name="atendimento" options={{ title: 'Atendimento' }} />

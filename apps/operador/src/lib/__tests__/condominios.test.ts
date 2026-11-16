@@ -50,3 +50,19 @@ describe('condomínios', () => {
     expect(erroCondominio(new Error('outra coisa'))).toBeNull();
   });
 });
+
+describe('campanhas', () => {
+  it('oferta e quando', () => {
+    const { textoOferta, textoQuando } = jest.requireActual('../condominios');
+    expect(textoOferta({ tipo: 'percentagem', valor: 20 })).toBe('20% de desconto nos pratos');
+    expect(textoOferta({ tipo: 'preco', valor: 1500 })).toBe('Preço especial: 1.500 Kz');
+    expect(textoQuando({ dias_semana: [6, 5], hora_inicio: '12:00', hora_fim: '15:00' })).toBe('sex, sáb · 12:00–15:00');
+    expect(textoQuando({ dias_semana: null, hora_inicio: null, hora_fim: null })).toBe('todos os dias');
+  });
+  it('vagas com lista de espera', () => {
+    const { textoVagas } = jest.requireActual('../condominios');
+    expect(textoVagas({ activos: 50, pendentes: 0, vagas: 50, lista_aberta: false, espera: 4 })).toBe(
+      '50/50 membros · 4 em lista de espera · lista completa',
+    );
+  });
+});

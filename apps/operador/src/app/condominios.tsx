@@ -24,8 +24,10 @@ import {
   textoVagas,
   type Condominio,
   type MembroCondominio,
+  relatorioCondominio,
+  type RelatorioCondominio,
 } from '@/lib/condominios';
-import { formatarData, mensagemErro } from '@/lib/formatar';
+import { formatarData, formatarKz, mensagemErro } from '@/lib/formatar';
 import { useSessao } from '@/lib/sessao';
 import { cores, espaco } from '@/lib/tema';
 import type { Cozinha, ZonaEntrega } from '@/lib/tipos';
@@ -42,13 +44,14 @@ type Edicao = {
   ate: string;
   abertas: boolean;
   aprovacao: boolean;
+  espera: boolean;
   modo: 'cozinha' | 'parceiro';
   parceiro: string;
 };
 
 const NOVO: Edicao = {
   nome: '', cozinha_id: '', zona_id: '', lat: '', lng: '', raio: '300', vagas: '50', ate: '',
-  abertas: true, aprovacao: false, modo: 'cozinha', parceiro: '',
+  abertas: true, aprovacao: false, espera: true, modo: 'cozinha', parceiro: '',
 };
 
 const msg = (e: unknown) => erroCondominio(e) ?? mensagemErro(e);
@@ -79,6 +82,7 @@ export default function Condominios() {
   const [aberto, setAberto] = useState<string | null>(null);
   const [membros, setMembros] = useState<MembroCondominio[] | null>(null);
   const [novoMembro, setNovoMembro] = useState({ telefone: '', bloco: '', casa: '' });
+  const [relatorio, setRelatorio] = useState<{ id: string; r: RelatorioCondominio | null } | null>(null);
   const [fechar, setFechar] = useState<{ id: string; horas: string } | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [sucesso, setSucesso] = useState<string | null>(null);
@@ -137,7 +141,7 @@ export default function Condominios() {
     setEdicao({
       id: c.id, nome: c.nome, cozinha_id: c.cozinha_id, zona_id: c.zona_id ?? '',
       lat: String(c.centro_lat), lng: String(c.centro_lng), raio: String(c.raio_m), vagas: String(c.vagas),
-      ate: dataLimiteTexto(c.inscricoes_ate), abertas: c.inscricoes_abertas, aprovacao: c.aprovacao_manual,
+      ate: dataLimiteTexto(c.inscricoes_ate), abertas: c.inscricoes_abertas, aprovacao: c.aprovacao_manual, espera: c.lista_espera,
       modo: c.modo_entrega, parceiro: c.parceiro_nome ?? '',
     });
   }
@@ -158,6 +162,7 @@ export default function Condominios() {
           inscricoes_ate: ate ?? null,
           inscricoes_abertas: edicao.abertas,
           aprovacao_manual: edicao.aprovacao,
+          lista_espera: edicao.espera,
           modo_entrega: edicao.modo,
           parceiro_nome: edicao.modo === 'parceiro' ? edicao.parceiro.trim() || null : null,
         }),
@@ -211,6 +216,11 @@ export default function Condominios() {
         rotulo="A cozinha aprova cada morador (senão entra logo até encher)"
         valor={edicao.aprovacao}
         aoMudar={(v) => setEdicao({ ...edicao, aprovacao: v })}
+      />
+      <Interruptor
+        rotulo="Lista de espera quando as vagas enchem (entram por ordem quando abrir vaga)"
+        valor={edicao.espera}
+        aoMudar={(v) => setEdicao({ ...edicao, espera: v })}
       />
       <Subtitulo>Entregas</Subtitulo>
       <Escolha
@@ -315,6 +325,51 @@ export default function Condominios() {
                 }
               }}
             />
+            <Botao
+              titulo={relatorio?.id === c.id ? 'Esconder relatório' : 'Relatório (últimos 30 dias)'}
+              variante="texto"
+              aoCarregar={() => {
+                if (relatorio?.id === c.id) return setRelatorio(null);
+                setRelatorio({ id: c.id, r: null });
+                const fim = new Date();
+                const ini = new Date(fim.getTime() - 29 * 86400_000);
+                const dia = (d: Date) => new Date(d.getTime() + 3600_000).toISOString().slice(0, 10);
+                relatorioCondominio(c.id, dia(ini), dia(fim))
+                  .then((r) => setRelatorio({ id: c.id, r }))
+                  .catch((e) => {
+                    setRelatorio(null);
+                    setErro(msg(e));
+                  });
+              }}
+            />
+            {relatorio?.id === c.id && (
+              <View style={{ gap: 2 }}>
+                {relatorio.r === null ? (
+                  <ACarregar />
+                ) : (
+                  <>
+                    <Text>
+                      {relatorio.r.entregues} pedidos entregues · {formatarKz(relatorio.r.vendas)}
+                      {relatorio.r.ticket_medio ? ` · ticket médio ${formatarKz(relatorio.r.ticket_medio)}` : ''}
+                    </Text>
+                    <Text style={{ color: cores.textoSuave }}>
+                      {relatorio.r.membros_que_pediram} de {relatorio.r.membros.activos} membros pediram · {relatorio.r.membros.novos} novos ·{' '}
+                      {relatorio.r.membros.sairam} saíram · {relatorio.r.cancelados} cancelados · {relatorio.r.com_campanha} com promoção
+                    </Text>
+                    {relatorio.r.pratos.length > 0 && (
+                      <Text style={{ color: cores.textoSuave }}>
+                        Mais pedidos: {relatorio.r.pratos.map((p) => `${p.nome} (${p.qtd})`).join(', ')}
+                      </Text>
+                    )}
+                    {relatorio.r.horas.length > 0 && (
+                      <Text style={{ color: cores.textoSuave }}>
+                        Horas com mais pedidos: {relatorio.r.horas.map((h) => `${h.hora}h (${h.pedidos})`).join(', ')}
+                      </Text>
+                    )}
+                  </>
+                )}
+              </View>
+            )}
             {gestor && <Botao titulo="Editar" variante="texto" aoCarregar={() => editar(c)} />}
 
             {aberto === c.id && (
@@ -325,7 +380,7 @@ export default function Condominios() {
                   <View key={m.id} style={{ borderTopWidth: 1, borderColor: cores.contorno, paddingTop: espaco.s }}>
                     <Text style={{ fontWeight: '700' }}>
                       {m.cliente_nome}
-                      {m.estado === 'pendente' ? ' · à espera de aprovação' : ''}
+                      {m.estado === 'pendente' ? ' · à espera de aprovação' : m.estado === 'espera' ? ' · em lista de espera' : ''}
                     </Text>
                     <Text style={{ color: cores.textoSuave }}>
                       {[m.bloco && `Bloco ${m.bloco}`, m.casa && `Casa ${m.casa}`].filter(Boolean).join(' · ') || 'Sem casa indicada'}
@@ -351,9 +406,9 @@ export default function Condominios() {
                         />
                       </View>
                     )}
-                    {m.estado === 'activo' && (
+                    {m.estado !== 'pendente' && (
                       <Botao
-                        titulo="Remover da lista"
+                        titulo={m.estado === 'espera' ? 'Tirar da lista de espera' : 'Remover da lista'}
                         variante="texto"
                         aoCarregar={() => correr(() => decidirMembroCondominio(m.id, 'remover'), 'Morador removido; a vaga ficou livre.', () => carregarMembros(c.id))}
                       />

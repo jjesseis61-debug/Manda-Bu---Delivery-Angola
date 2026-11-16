@@ -44,6 +44,7 @@ const ecras: {
   { rota: '/conferencia', titulo: 'Conferência', descricao: 'Fecho do dia e do mês, extratos e comprovativos', permissoes: ['financas.conferir'] },
   { rota: '/grupos', titulo: 'Grupos do dia', descricao: 'Pedidos de grupo juntos para preparar e expedir (O10)', permissoes: ['pedidos.gerir', 'entregas.registar'] },
   { rota: '/condominios', titulo: 'Condomínios', descricao: 'Cozinha só para moradores: área no mapa, lista com vagas, abrir/fechar', permissoes: ['cozinhas.gerir', 'pedidos.gerir'] },
+  { rota: '/campanhas', titulo: 'Campanhas', descricao: 'Promoções por condomínio, zona ou para todos, com resultados', permissoes: ['cozinhas.gerir', 'pedidos.gerir'] },
   { rota: '/zonas-vendas', titulo: 'O que se compra em cada zona', descricao: 'Pratos mais pedidos por zona, em todas as cozinhas, e o que está a crescer', permissoes: ['relatorios.exportar'] },
   { rota: '/painel', titulo: 'Painel do programa', descricao: 'Custo, vendas por indicação, retenção (O1)', permissoes: ['indicacoes.ver'] },
   { rota: '/verificacao', titulo: 'Verificação', descricao: 'Ganhos em verificação (O2)', permissoes: ['indicacoes.verificar'] },
