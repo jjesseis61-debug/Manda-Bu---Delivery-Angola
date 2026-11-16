@@ -7,8 +7,13 @@ import { definirPin } from '@/lib/cadeado';
 import { CadeadoProvider, useCadeado } from '@/lib/cadeadoContexto';
 
 const mockCofre = new Map<string, string>();
+// Para simular um telemóvel lento: a leitura do tamanho do código só acaba quando o teste quiser
+const mockTravarTamanho: { p: Promise<void> | null } = { p: null };
 jest.mock('expo-secure-store', () => ({
-  getItemAsync: async (k: string) => mockCofre.get(k) ?? null,
+  getItemAsync: async (k: string) => {
+    if (k === 'cadeado.tamanho' && mockTravarTamanho.p) await mockTravarTamanho.p;
+    return mockCofre.get(k) ?? null;
+  },
   setItemAsync: async (k: string, v: string) => void mockCofre.set(k, v),
   deleteItemAsync: async (k: string) => void mockCofre.delete(k),
 }));
@@ -107,4 +112,23 @@ test('sem sessão (saiu da conta): o cadeado é apagado', async () => {
   const ecra = abrir();
   await waitFor(() => expect(ecra.getByText('Estado: aberto')).toBeTruthy(), { timeout: ESPERA });
   expect(mockCofre.size).toBe(0);
+});
+
+test('código escrito antes de o ecrã saber o tamanho: é verificado quando o tamanho chega', async () => {
+  await definirPin('2580', false);
+  let soltar: () => void = () => undefined;
+  mockTravarTamanho.p = new Promise<void>((r) => {
+    soltar = r;
+  });
+  const ecra = abrir();
+  await waitFor(() => expect(ecra.getByText('Introduz o teu código')).toBeTruthy(), { timeout: ESPERA });
+  await act(async () => {
+    fireEvent.changeText(ecra.getByLabelText('Código'), '2580');
+  });
+  expect(ecra.queryByText('Estado: aberto')).toBeNull();
+  await act(async () => {
+    soltar();
+  });
+  mockTravarTamanho.p = null;
+  await waitFor(() => expect(ecra.getByText('Estado: aberto')).toBeTruthy(), { timeout: ESPERA });
 });

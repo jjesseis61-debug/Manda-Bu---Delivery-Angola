@@ -59,6 +59,14 @@ function Verificador({ titulo, aoPassar, aoCancelar }: { titulo: string; aoPassa
     if (tamanho && so.length === tamanho) void verificar(so);
   }
 
+  // O tamanho do código chega depois de o ecrã abrir: quem escreveu o código todo antes disso
+  // (telemóvel lento ou dedos rápidos) é verificado assim que o tamanho se sabe.
+  useEffect(() => {
+    if (tamanho && pin.length === tamanho) void verificar(pin);
+    // só quando o tamanho chega; a escrita normal é tratada em mudar()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tamanho]);
+
   async function esqueci() {
     setEsquecer(false);
     await removerCadeado();
