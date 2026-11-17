@@ -39,7 +39,7 @@ export default function Ganhar() {
     return (
       <Ecra>
         <Paragrafo>O programa Convida e Ganha não está disponível de momento.</Paragrafo>
-        <Botao titulo="Ver o cardápio" variante="secundario" aoCarregar={() => router.replace('/explorar')} />
+        <Botao titulo="Ver o cardápio" variante="secundario" aoCarregar={() => router.replace('/inicio')} />
       </Ecra>
     );
 
@@ -101,7 +101,7 @@ export default function Ganhar() {
           {frase}
         </Paragrafo>
       ))}
-      <Botao titulo="Ver o cardápio" variante="texto" aoCarregar={() => router.push('/explorar')} />
+      <Botao titulo="Ver o cardápio" variante="texto" aoCarregar={() => router.replace('/inicio')} />
     </Ecra>
   );
 }

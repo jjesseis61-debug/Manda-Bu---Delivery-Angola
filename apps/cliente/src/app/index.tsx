@@ -6,7 +6,7 @@ import { useSessao } from '@/lib/sessao';
 import { lerDestino } from '@/lib/visitante';
 
 /**
- * Porta de entrada: sem sessão → entrar; sem cliente registado → registo; senão → início.
+ * Porta de entrada: sem sessão → início do visitante; sem cliente registado → registo; senão → início.
  * Quem montou o carrinho como visitante e entrou agora volta ao carrinho.
  */
 export default function Entrada() {
@@ -24,7 +24,8 @@ export default function Entrada() {
   }, [pronto]);
 
   if (!carregado) return <ACarregar />;
-  if (!sessao) return <Redirect href="/entrar" />;
+  // Sem conta: a app abre no Início, como para quem já entrou (o número só é pedido no «Pedir»)
+  if (!sessao) return <Redirect href="/inicio" />;
   if (!perfil) return <Redirect href="/registo" />;
   if (perfil.suspensa) return <Redirect href="/recuperar-conta" />;
   if (destino === undefined) return <ACarregar />;

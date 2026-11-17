@@ -41,6 +41,16 @@ import { gruposEsgotados, precoMinimo } from '@/lib/opcoes';
 import { partilharPrato } from '@/lib/partilha';
 import { usePedirDeNovo } from '@/lib/pedirDeNovo';
 import { useSessao } from '@/lib/sessao';
+import {
+  guardarZonaVisitante,
+  lerCardapioVisitante,
+  lerCozinhasVisitante,
+  lerZonasVisitante,
+  lerZonaVisitante,
+  ordenarCozinhasVisitante,
+  rotuloZona,
+  type ZonaVisitante,
+} from '@/lib/visitante';
 import { cores, espaco, raio } from '@/lib/tema';
 import type { CozinhaParaPedir, Endereco, ItemCardapio, MediasAvaliacoes, MeusSelos, Pedido } from '@/lib/tipos';
 
@@ -48,7 +58,11 @@ const EM_ANDAMENTO = ['pendente', 'confirmado', 'em_preparacao', 'em_entrega'];
 
 export default function Inicio() {
   const router = useRouter();
-  const { ligada, perfil, parametros } = useSessao();
+  const { ligada, perfil, parametros, sessao } = useSessao();
+  // Sem conta (a app abre no Início para todos): lê o que é público e pede o número só no «Pedir»
+  const visitante = !sessao || !perfil;
+  const [zonas, setZonas] = useState<ZonaVisitante[]>([]);
+  const [zona, setZona] = useState<ZonaVisitante | null>(null);
   const carrinho = useCarrinho();
   // Quem tem código de convite partilha o prato com ele: o amigo ganha o desconto e conta para o embaixador
   const convitePartilha =
@@ -98,6 +112,46 @@ export default function Inicio() {
   const carregar = useCallback(async () => {
     setErro(null);
     try {
+      if (visitante) {
+        // Visitante: bairro escolhido (taxa de entrega), cozinhas desse bairro e o cardápio público
+        const [zs, guardada] = await Promise.all([lerZonasVisitante().catch(() => [] as ZonaVisitante[]), lerZonaVisitante()]);
+        const z = guardada ? (zs.find((x) => x.id === guardada.id) ?? null) : null;
+        setZonas(zs);
+        setZona(z);
+        const lista: CozinhaParaPedir[] = ordenarCozinhasVisitante(await lerCozinhasVisitante(z?.id ?? null)).map((c) => ({
+          cozinha_id: c.id,
+          nome: c.nome,
+          publica: !!c.foto_url,
+          foto_url: c.foto_url,
+          historia: null,
+          pratos: c.pratos,
+          distancia_km: c.distancia_km,
+        }));
+        let escolhida = cozinhaId;
+        if (!emGrupo && (!escolhida || !lista.some((c) => c.cozinha_id === escolhida)) && lista[0]) {
+          escolhida = lista[0].cozinha_id;
+          carrinhoRef.current.definirCozinha({ id: lista[0].cozinha_id, nome: lista[0].nome });
+        }
+        setCozinhas(ligada('multi_cozinha') ? lista : []);
+        const dados = escolhida ? await lerCardapioVisitante(escolhida) : null;
+        const itens = dados?.pratos ?? [];
+        setCardapio(itens);
+        setMontaveis(new Set(itens.filter((i) => i.montar).map((i) => i.id)));
+        setEsgotados(new Set(itens.filter((i) => i.esgotado).map((i) => i.id)));
+        setDoses(new Map());
+        setDesde(new Map());
+        setEnderecos([]);
+        setMaisZona([]);
+        setPromocoes([]);
+        setCondominio(null);
+        setContador(null);
+        setMedias(null);
+        setPedidoActivo(null);
+        setUltimoTerminado(null);
+        setSelos(null);
+        setMinutosEstafeta(null);
+        return;
+      }
       // Endereços primeiro: o ponto de entrega serve para ordenar os balcões por proximidade
       const ends = await lerEnderecos(perfil?.cliente_id);
       const ponto = ends[0]?.ponto_entrega_id ?? null;
@@ -167,7 +221,15 @@ export default function Inicio() {
     } catch (e) {
       setErro(mensagemErro(e));
     }
-  }, [ligada, cozinhaId, emGrupo]);
+  }, [ligada, cozinhaId, emGrupo, visitante]);
+
+  /** Visitante escolhe o bairro: guarda-o (24 h) e volta a ordenar as cozinhas e a mostrar a entrega */
+  async function escolherZona(id: string) {
+    const z = zonas.find((x) => x.id === id) ?? null;
+    setZona(z);
+    await guardarZonaVisitante(z);
+    await carregar();
+  }
 
   useFocusEffect(
     useCallback(() => {
@@ -389,6 +451,20 @@ export default function Inicio() {
             {p.fim && <Text style={{ color: cores.textoSuave, fontSize: 12 }}>Até {formatarData(p.fim)}</Text>}
           </Cartao>
         ))}
+        {visitante && zonas.length > 0 && (
+          <View style={{ gap: espaco.s }}>
+            <Text style={{ fontSize: 15, fontWeight: '700', color: cores.texto }}>🛵 Onde entregamos?</Text>
+            <Text style={{ fontSize: 12, color: cores.textoSuave, marginTop: -espaco.xs }}>
+              {zona ? 'A taxa de entrega do teu bairro' : 'Escolhe o teu bairro para veres a entrega e as cozinhas mais perto'}
+            </Text>
+            <Escolha
+              opcoes={zonas.map((z) => ({ valor: z.id, rotulo: (z.id === zona?.id ? '✓ ' : '') + rotuloZona(z, formatarKz) }))}
+              valor={zona?.id ?? ''}
+              aoMudar={(id) => void escolherZona(id)}
+              horizontal
+            />
+          </View>
+        )}
         {ligada('multi_cozinha') && !carrinho.grupo && cozinhas.length > 1 && (
           <View style={{ gap: espaco.s }}>
             <Text style={{ fontSize: 15, fontWeight: '700', color: cores.texto }}>📍 De onde queres pedir?</Text>
@@ -403,7 +479,7 @@ export default function Inicio() {
             />
           </View>
         )}
-        {enderecos.length === 0 && cardapio !== null && (
+        {!visitante && enderecos.length === 0 && cardapio !== null && (
           <Aviso>
             Antes do primeiro pedido, adiciona o endereço de entrega.{' '}
             <Text style={{ fontWeight: '700' }} onPress={() => router.push('/enderecos/novo')}>
@@ -501,18 +577,18 @@ export default function Inicio() {
           </View>
         ))}
         {/* Promos e extras ficam DEPOIS do cardápio (comida primeiro): pacote, grupo, como chegar. */}
-        {ligada('pacotes') && !carrinho.grupo && (
+        {!visitante && ligada('pacotes') && !carrinho.grupo && (
           <Botao titulo="Pacote do mês: paga uma vez, almoça o mês todo" variante="secundario" aoCarregar={() => router.push('/pacotes')} />
         )}
-        {ligada('pedidos_grupo') && !carrinho.grupo && (
+        {!visitante && ligada('pedidos_grupo') && !carrinho.grupo && (
           <Botao titulo="Pedido de grupo com os colegas" variante="secundario" aoCarregar={() => router.push('/grupos')} />
         )}
-        {ligada('como_chegar') && (cozinhaId ?? cardapio?.[0]?.cozinha_id) && (
+        {!visitante && ligada('como_chegar') && (cozinhaId ?? cardapio?.[0]?.cozinha_id) && (
           <ComoChegar cozinhaId={(cozinhaId ?? cardapio?.[0]?.cozinha_id) as string} />
         )}
         {/* No fim do cardápio: convite às receitas — "comida primeiro, conteúdo depois".
             Cartão (não botão de rodapé solto) para ser discreto mas descoberto. */}
-        {ligada('receitas') && !carrinho.grupo && cardapio !== null && cardapio.length > 0 && (
+        {!visitante && ligada('receitas') && !carrinho.grupo && cardapio !== null && cardapio.length > 0 && (
           <Cartao>
             <Text style={{ fontSize: 16, fontWeight: '700', color: cores.texto }}>🍲 Cozinha de casa</Text>
             <Text style={{ color: cores.textoSuave }}>Não decidiste? Inspira-te nas receitas da terra.</Text>

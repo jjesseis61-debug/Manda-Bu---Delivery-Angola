@@ -31,7 +31,13 @@ export function SessaoProvider({ children, aoSair }: { children: ReactNode; aoSa
     if (!s) {
       setPerfil(null);
       setParametros(null);
-      setFuncionalidades({});
+      // Sem conta a app abre na mesma (Início do visitante): os interruptores vêm da leitura pública
+      try {
+        const r = await supabase.rpc('funcionalidades_publicas');
+        setFuncionalidades(r.error ? {} : ((r.data as Funcionalidades | null) ?? {}));
+      } catch {
+        setFuncionalidades({});
+      }
       return;
     }
     try {

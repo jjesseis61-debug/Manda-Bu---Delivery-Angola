@@ -13,6 +13,8 @@ import { useSessao } from '@/lib/sessao';
 import { limparDestino } from '@/lib/visitante';
 import { cores, espaco } from '@/lib/tema';
 import type { Endereco, MeuPacote, MinhaEmpresa, Orcamento } from '@/lib/tipos';
+import { CarrinhoVisitante } from '@/components/CarrinhoVisitante';
+import { ACarregar as ACarregarVisitante } from '@/components/ui';
 
 /** I12: quantas refeições o pacote vai pagar (o valor exacto é calculado no servidor) */
 function textoPacoteCarrinho(pacote: MeuPacote | null, linhas: LinhaCarrinho[], emGrupo: boolean): string {
@@ -34,7 +36,7 @@ function itemDoPedido(l: LinhaCarrinho) {
 }
 
 /** Checkout: endereço, orçamento do servidor, código de convite (C2) e saldo do programa */
-export default function Carrinho() {
+function CarrinhoConta() {
   const router = useRouter();
   const { perfil, ligada, parametros } = useSessao();
   const carrinho = useCarrinho();
@@ -334,4 +336,12 @@ export default function Carrinho() {
       <Paragrafo suave>Preços com IVA incluído, quando aplicável. A fatura é emitida na cozinha, na entrega.</Paragrafo>
     </Ecra>
   );
+}
+
+/** Sem conta: o carrinho do visitante (o número só é pedido no «Pedir»); com conta: o checkout */
+export default function Carrinho() {
+  const { carregado, sessao, perfil } = useSessao();
+  if (!carregado) return <ACarregarVisitante />;
+  if (!sessao || !perfil) return <CarrinhoVisitante />;
+  return <CarrinhoConta />;
 }

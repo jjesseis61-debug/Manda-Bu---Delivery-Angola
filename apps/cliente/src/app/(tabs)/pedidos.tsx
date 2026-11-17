@@ -10,10 +10,11 @@ import { usePedirDeNovo } from '@/lib/pedirDeNovo';
 import { useSessao } from '@/lib/sessao';
 import { cores } from '@/lib/tema';
 import type { Pedido } from '@/lib/tipos';
+import { ConvidarEntrar } from '@/components/ConvidarEntrar';
 
 const TERMINADO = ['entregue_pago', 'cancelado', 'estornado'];
 
-export default function Pedidos() {
+function PedidosConta() {
   const router = useRouter();
   const pedirDeNovoNoCarrinho = usePedirDeNovo();
   const { perfil } = useSessao();
@@ -80,4 +81,17 @@ export default function Pedidos() {
       ))}
     </Ecra>
   );
+}
+
+/** Sem conta: convite a entrar (não há pedidos para mostrar) */
+export default function Pedidos() {
+  const { sessao, perfil } = useSessao();
+  if (!sessao || !perfil)
+    return (
+      <ConvidarEntrar
+        titulo="Os teus pedidos"
+        texto="Entra para acompanhares os teus pedidos e a entrega, e repetires o teu habitual num toque."
+      />
+    );
+  return <PedidosConta />;
 }

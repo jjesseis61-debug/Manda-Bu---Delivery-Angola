@@ -216,7 +216,7 @@ describe('prato aberto por link', () => {
 });
 
 describe('visitante (sem conta) pelo link', () => {
-  const rotas = { 'montar/[id]': MontarPrato, 'visita/[cozinha]': () => <Text>Cardápio da cozinha</Text> };
+  const rotas = { 'montar/[id]': MontarPrato, inicio: () => <Text>Cardápio da cozinha</Text> };
   beforeEach(() => {
     mockSessao.visitante = true;
     mockAdicionar.mockClear();
@@ -244,7 +244,7 @@ describe('visitante (sem conta) pelo link', () => {
     expect(ecra.getByText('🎁 Convite aplicado: −500 Kz no teu 1.º pedido (pedido a partir de 2.000 Kz).')).toBeTruthy();
   });
 
-  test('adiciona na cozinha do prato e segue para o cardápio dessa cozinha', async () => {
+  test('adiciona na cozinha do prato e volta ao Início (nessa cozinha)', async () => {
     const ecra = renderRouter(rotas, { initialUrl: '/montar/m' });
     await act(async () => undefined);
     fireEvent.press(ecra.getByText('Adicionar ao carrinho · 3.000 Kz'));

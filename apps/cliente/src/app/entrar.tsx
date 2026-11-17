@@ -134,7 +134,7 @@ export default function Entrar() {
             {/* Quem ainda só quer ver: o cardápio do bairro sem conta (o número só em «Pedir») */}
             {ganhar === '1' && <Paragrafo suave>Cria a tua conta e o teu código de convite fica logo pronto a partilhar.</Paragrafo>}
             {pedir !== '1' && ganhar !== '1' && (
-              <Botao titulo="Ver o cardápio primeiro" variante="secundario" aoCarregar={() => router.push('/explorar')} />
+              <Botao titulo="Ver o cardápio primeiro" variante="secundario" aoCarregar={() => router.replace('/inicio')} />
             )}
             {temContacto(CONTACTO_AJUDA) && (
               <View style={{ marginTop: 'auto' }}>

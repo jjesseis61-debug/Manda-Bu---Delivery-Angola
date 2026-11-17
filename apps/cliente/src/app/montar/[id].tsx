@@ -162,7 +162,11 @@ export default function MontarPrato() {
       });
   }
 
-  const cardapioVisitante = () => router.replace({ pathname: '/visita/[cozinha]', params: { cozinha: item.cozinha_id } });
+  // Visitante: volta ao Início (aberto para todos) na cozinha deste prato
+  const cardapioVisitante = () => {
+    if (carrinho.quantidade === 0) carrinho.definirCozinha({ id: item.cozinha_id, nome: disponiveis?.[0]?.nome ?? '' });
+    router.replace('/inicio');
+  };
   const voltar = () => {
     // Aberto por link não há ecrã anterior: segue para o início (o visitante, para o cardápio da cozinha)
     if (router.canGoBack()) router.back();

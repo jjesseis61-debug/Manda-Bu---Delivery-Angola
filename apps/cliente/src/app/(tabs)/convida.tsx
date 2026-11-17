@@ -12,9 +12,10 @@ import { useSessao } from '@/lib/sessao';
 import { cores } from '@/lib/tema';
 import type { Amigo, Saldo } from '@/lib/tipos';
 import { limparDestino } from '@/lib/visitante';
+import Ganhar from '@/app/ganhar';
 
 /** C1. Convida e Ganha */
-export default function Convida() {
+function ConvidaCliente() {
   const router = useRouter();
   const { carregado, perfil, parametros, ligada } = useSessao();
   const [saldo, setSaldo] = useState<Saldo | null>(null);
@@ -145,4 +146,11 @@ export default function Convida() {
       <Botao titulo="Como funciona" variante="texto" aoCarregar={() => router.push('/como-funciona')} />
     </Ecra>
   );
+}
+
+/** Sem conta: a montra do programa (regras e níveis); o código e os ganhos só depois de criar conta */
+export default function Convida() {
+  const { sessao, perfil } = useSessao();
+  if (!sessao || !perfil) return <Ganhar />;
+  return <ConvidaCliente />;
 }

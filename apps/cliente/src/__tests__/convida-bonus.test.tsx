@@ -11,6 +11,7 @@ jest.mock('@/lib/api', () => ({
   meusAmigos: jest.fn().mockResolvedValue([]),
   registarPartilha: jest.fn(),
 }));
+jest.mock('@/app/ganhar', () => ({ __esModule: true, default: () => null }));
 jest.mock('@/components/PainelNivel', () => ({ PainelNivel: () => null }));
 jest.mock('@/components/PessoasComoTu', () => ({ PessoasComoTu: () => null }));
 jest.mock('@/components/PartilharCodigo', () => ({ PartilharCodigo: () => null }));
@@ -18,6 +19,7 @@ jest.mock('@/components/PartilharCodigo', () => ({ PartilharCodigo: () => null }
 function sessao(bonus: number) {
   return {
     carregado: true,
+    sessao: {},
     perfil: { cliente_id: 'c1', codigo: 'MB-1234' },
     parametros: { ganho_por_pedido: 390, desconto_indicado: 1000, bonus_boas_vindas: bonus },
     ligada: (c: string) => c === 'indicacao',

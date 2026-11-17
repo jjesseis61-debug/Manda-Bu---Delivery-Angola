@@ -1,10 +1,12 @@
-import { Redirect } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import { Tabs } from 'expo-router/js-tabs';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import type { ComponentProps } from 'react';
 import type { ColorValue } from 'react-native';
 
 import { Sino } from '@/components/Sino';
+import { Pressable, Text } from 'react-native';
+
 import { ACarregar } from '@/components/ui';
 import { useSessao } from '@/lib/sessao';
 import { cores } from '@/lib/tema';
@@ -18,11 +20,23 @@ function icone(nome: NomeIcone, nomeActivo: NomeIcone) {
   };
 }
 
+/** No cabeçalho do visitante, em vez do sino: quem já tem conta encontra logo onde entrar */
+function BotaoEntrar() {
+  const router = useRouter();
+  return (
+    <Pressable accessibilityRole="button" onPress={() => router.push('/entrar')} hitSlop={8} style={{ marginRight: 16 }}>
+      <Text style={{ color: cores.marca, fontWeight: '800', fontSize: 16 }}>Entrar</Text>
+    </Pressable>
+  );
+}
+
 export default function LayoutSeparadores() {
   const { carregado, sessao, perfil, ligada } = useSessao();
   if (!carregado) return <ACarregar />;
-  if (!sessao) return <Redirect href="/entrar" />;
-  if (!perfil) return <Redirect href="/registo" />;
+  // Sem conta a app abre na mesma (visitante): o número só é pedido no «Pedir».
+  // Com sessão mas sem registo (a meio de criar conta): acaba o registo.
+  if (sessao && !perfil) return <Redirect href="/registo" />;
+  const visitante = !sessao;
 
   return (
     <Tabs
@@ -30,7 +44,7 @@ export default function LayoutSeparadores() {
         tabBarActiveTintColor: cores.marca,
         tabBarInactiveTintColor: cores.textoSuave,
         headerTitleStyle: { color: cores.texto },
-        headerRight: () => <Sino />,
+        headerRight: () => (visitante ? <BotaoEntrar /> : <Sino />),
       }}>
       <Tabs.Screen name="inicio" options={{ title: 'Início', headerTitle: 'Cozinha da Alexandra', tabBarIcon: icone('restaurant-outline', 'restaurant') }} />
       <Tabs.Screen name="pedidos" options={{ title: 'Pedidos', tabBarIcon: icone('receipt-outline', 'receipt') }} />

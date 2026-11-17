@@ -8,8 +8,9 @@ import { useCadeado } from '@/lib/cadeadoContexto';
 import { useCarrinho } from '@/lib/carrinho';
 import { mensagemErro } from '@/lib/formatar';
 import { useSessao } from '@/lib/sessao';
+import { ConvidarEntrar } from '@/components/ConvidarEntrar';
 
-export default function Conta() {
+function ContaCliente() {
   const router = useRouter();
   const { perfil, sair, ligada } = useSessao();
   const { activo } = useCadeado();
@@ -81,4 +82,18 @@ export default function Conta() {
       <Botao titulo="Apagar a conta" variante="texto" aoCarregar={() => router.push('/apagar-conta')} />
     </Ecra>
   );
+}
+
+/** Sem conta: entrar ou criar conta, a ajuda e a privacidade */
+export default function Conta() {
+  const { sessao, perfil } = useSessao();
+  if (!sessao || !perfil)
+    return (
+      <ConvidarEntrar
+        titulo="A tua conta"
+        texto="Entra para guardares os teus endereços, veres o teu saldo do Convida e Ganha e protegeres a conta."
+        ajuda
+      />
+    );
+  return <ContaCliente />;
 }
