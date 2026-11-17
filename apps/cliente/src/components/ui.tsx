@@ -1,4 +1,4 @@
-import { useContext, type ReactNode } from 'react';
+import { createContext, useContext, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -18,6 +18,26 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { cores, espaco, raio } from '@/lib/tema';
 
 /**
+ * Bloqueia a rolagem do ecrã enquanto o dedo está num mapa: sem isto, arrastar o mapa dentro de
+ * um ecrã que rola arrasta o ecrã inteiro (o ScrollView fica com o gesto).
+ */
+const BloquearRolagem = createContext<(bloquear: boolean) => void>(() => undefined);
+
+/** Envolve um mapa (ou outro elemento que se arrasta) para o ecrã não rolar enquanto se lhe toca */
+export function SemRolagem({ children, style }: { children: ReactNode; style?: ViewStyle | ViewStyle[] }) {
+  const bloquear = useContext(BloquearRolagem);
+  return (
+    <View
+      style={style}
+      onTouchStart={() => bloquear(true)}
+      onTouchEnd={() => bloquear(false)}
+      onTouchCancel={() => bloquear(false)}>
+      {children}
+    </View>
+  );
+}
+
+/**
  * Ecrã com conteúdo que rola. O teclado não tapa os campos: no Android (ecrã inteiro/edge-to-edge desde o Expo 54,
  * em que o sistema já não encolhe a janela) usa-se o modo "pan" do teclado (app.json: android.softwareKeyboardLayoutMode),
  * que empurra a janela para manter o campo com o cursor à vista; no iOS o KeyboardAvoidingView reserva o espaço do
@@ -25,6 +45,7 @@ import { cores, espaco, raio } from '@/lib/tema';
  */
 export function Ecra({ children, rolar = true }: { children: ReactNode; rolar?: boolean }) {
   const alturaCabecalho = useContext(HeaderHeightContext) ?? 0;
+  const [podeRolar, setPodeRolar] = useState(true);
   return (
     <SafeAreaView style={estilos.ecra} edges={['bottom', 'left', 'right']}>
       <KeyboardAvoidingView
@@ -32,9 +53,15 @@ export function Ecra({ children, rolar = true }: { children: ReactNode; rolar?: 
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={alturaCabecalho}>
         {rolar ? (
-          <ScrollView contentContainerStyle={estilos.conteudo} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
-            {children}
-          </ScrollView>
+          <BloquearRolagem.Provider value={(b) => setPodeRolar(!b)}>
+            <ScrollView
+              contentContainerStyle={estilos.conteudo}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="on-drag"
+              scrollEnabled={podeRolar}>
+              {children}
+            </ScrollView>
+          </BloquearRolagem.Provider>
         ) : (
           <View style={[estilos.conteudo, { flex: 1 }]}>{children}</View>
         )}

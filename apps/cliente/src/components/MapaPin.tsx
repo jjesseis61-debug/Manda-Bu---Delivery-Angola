@@ -8,6 +8,7 @@ import { estiloMapa } from '@/lib/mapaEstilo';
 import { GOOGLE_DISPONIVEL } from '@/lib/mapaNativo';
 import { useSessao } from '@/lib/sessao';
 import { cores, raio } from '@/lib/tema';
+import { SemRolagem } from '@/components/ui';
 
 export type Coordenadas = { latitude: number; longitude: number };
 
@@ -27,9 +28,10 @@ export function MapaPin({ ponto, aoMudar, centrarEm }: MapaProps) {
   const { ligada } = useSessao();
   const usarGoogle = GOOGLE_DISPONIVEL && ligada('mapa_google');
   return (
-    <View style={estilos.caixa}>
+    // Enquanto o dedo está no mapa o ecrã não rola (senão arrastar o mapa arrasta o ecrã inteiro)
+    <SemRolagem style={estilos.caixa}>
       {usarGoogle ? <Google ponto={ponto} aoMudar={aoMudar} centrarEm={centrarEm} /> : <Osm ponto={ponto} aoMudar={aoMudar} centrarEm={centrarEm} />}
-    </View>
+    </SemRolagem>
   );
 }
 

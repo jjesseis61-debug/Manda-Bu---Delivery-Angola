@@ -3,7 +3,7 @@ import * as Location from 'expo-location';
 import { useState } from 'react';
 import { Linking, Platform, Pressable, StyleSheet, Text, View, type NativeSyntheticEvent } from 'react-native';
 
-import { Aviso, Botao, Campo, Paragrafo } from '@/components/ui';
+import { Aviso, Botao, Campo, Paragrafo, SemRolagem } from '@/components/ui';
 import { extrairCoordenadas, geocodarOnline } from '@/lib/coordenadas';
 import { mensagemErro } from '@/lib/formatar';
 import { estiloMapa } from '@/lib/mapaEstilo';
@@ -143,7 +143,7 @@ export function CapturarPonto({
     <View>
       {erro && <Aviso tipo="erro">{erro}</Aviso>}
       {HA_MAPA && (
-        <View style={[estilos.caixa, { height: altura }]}>
+        <SemRolagem style={[estilos.caixa, { height: altura }]}>
           <Map
             style={StyleSheet.absoluteFill}
             mapStyle={estiloMapa}
@@ -171,7 +171,7 @@ export function CapturarPonto({
               <Text style={estilos.zoomTexto}>－</Text>
             </Pressable>
           </View>
-        </View>
+        </SemRolagem>
       )}
       {HA_MAPA && <Paragrafo suave>Toca no mapa para marcar o ponto (usa ＋ / － para aproximar), ou usa a localização actual.</Paragrafo>}
       <Botao
