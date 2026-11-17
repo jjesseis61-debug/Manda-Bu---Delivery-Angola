@@ -23,7 +23,7 @@ export default function PratoPartilhado() {
     if (!carregado || feito.current) return;
     feito.current = true;
     (async () => {
-      const codigo = r ? await guardarCodigoPendente(String(r)).catch(() => null) : null;
+      const codigo = r ? await guardarCodigoPendente(String(r), perfil?.codigo).catch(() => null) : null;
       if (codigo && perfil && ligada('indicacao') && !perfil.tem_ligacao && perfil.cliente_novo && perfil.codigo !== codigo) {
         // As regras (antifraude, auto-convite, prazos) ficam no servidor; uma recusa não impede ver o prato
         const ok = await ligarIndicacao(codigo).then(() => true).catch(() => false);

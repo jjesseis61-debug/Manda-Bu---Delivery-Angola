@@ -5,11 +5,24 @@ import { normalizarCodigo } from './formatar';
 
 const CHAVE = 'manda-bue:codigo-convite';
 
-/** Guarda o código que chegou pelo link de convite, para pré-preencher C2 */
-export async function guardarCodigoPendente(codigo: string): Promise<string | null> {
+/**
+ * Guarda o código que chegou pelo link de convite, para pré-preencher C2. O próprio código
+ * (quem abre o link que ele mesmo partilhou) não se guarda: não serve para nada e confundia o
+ * registo. Devolve o código guardado, ou null.
+ */
+export async function guardarCodigoPendente(codigo: string, meuCodigo?: string | null): Promise<string | null> {
   const normalizado = normalizarCodigo(codigo);
-  if (normalizado) await AsyncStorage.setItem(CHAVE, normalizado);
+  if (!normalizado) return null;
+  if (meuCodigo && normalizarCodigo(meuCodigo) === normalizado) return null;
+  await AsyncStorage.setItem(CHAVE, normalizado);
   return normalizado;
+}
+
+/** Ao entrar na conta: se o código guardado for o próprio, apaga-o */
+export async function esquecerProprioCodigo(meuCodigo: string | null | undefined): Promise<void> {
+  if (!meuCodigo) return;
+  const guardado = await lerCodigoPendente().catch(() => null);
+  if (guardado && guardado === normalizarCodigo(meuCodigo)) await limparCodigoPendente().catch(() => undefined);
 }
 
 export async function lerCodigoPendente(): Promise<string | null> {

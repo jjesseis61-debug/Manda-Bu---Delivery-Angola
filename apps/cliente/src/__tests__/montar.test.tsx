@@ -14,11 +14,18 @@ jest.mock('@/lib/sessao', () => ({
     carregado: true,
     ligada: (c: string) => !mockSessao.visitante || c === 'nenhum',
     sessao: mockSessao.visitante ? null : {},
-    perfil: mockSessao.visitante ? null : { cliente_id: 'c' },
+    perfil: mockSessao.visitante ? null : { cliente_id: 'c', codigo: 'MB-4812' },
+    parametros: mockSessao.visitante ? null : { desconto_indicado: 1000, desconto_subtotal_minimo: 5000 },
   }),
 }));
 jest.mock('@react-native-async-storage/async-storage', () => require('@react-native-async-storage/async-storage/jest/async-storage-mock'));
 jest.mock('@/lib/convite', () => ({ lerCodigoPendente: async () => 'MB-1234' }));
+jest.mock('@expo/vector-icons/Ionicons', () => () => null);
+const mockPartilhar = jest.fn();
+jest.mock('@/lib/partilha', () => ({
+  ...jest.requireActual('@/lib/partilha'),
+  partilharPrato: (...a: unknown[]) => mockPartilhar(...a),
+}));
 const mockLerPratoVisitante = jest.fn();
 jest.mock('@/lib/visitante', () => ({
   ...jest.requireActual('@/lib/visitante'),
@@ -260,4 +267,12 @@ describe('visitante (sem conta) pelo link', () => {
     await act(async () => undefined);
     expect(ecra.getByText('Este prato já não está disponível.')).toBeTruthy();
   });
+});
+
+test('com conta, «Partilhar» leva o código de convite de quem partilha', async () => {
+  mockPartilhar.mockClear();
+  const ecra = renderRouter({ 'montar/[id]': MontarPrato, inicio: () => <Text>Início</Text> }, { initialUrl: '/montar/m' });
+  await act(async () => undefined);
+  fireEvent.press(ecra.getByLabelText('Partilhar Muamba no WhatsApp'));
+  expect(mockPartilhar).toHaveBeenCalledWith('Muamba ', 'm', { codigo: 'MB-4812', desconto: 1000, minimo: 5000 });
 });

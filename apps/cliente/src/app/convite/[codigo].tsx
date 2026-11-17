@@ -3,15 +3,19 @@ import { useEffect, useState } from 'react';
 
 import { ACarregar } from '@/components/ui';
 import { guardarCodigoPendente } from '@/lib/convite';
+import { useSessao } from '@/lib/sessao';
 
 /** Link de convite (mandabue://convite/MB-1234): guarda o código para pré-preencher C2 */
 export default function Convite() {
   const { codigo } = useLocalSearchParams<{ codigo: string }>();
+  const { carregado, perfil } = useSessao();
   const [pronto, setPronto] = useState(false);
 
   useEffect(() => {
-    guardarCodigoPendente(String(codigo ?? '')).finally(() => setPronto(true));
-  }, [codigo]);
+    if (!carregado) return;
+    // O próprio código não se guarda (quem abre o seu link)
+    guardarCodigoPendente(String(codigo ?? ''), perfil?.codigo).finally(() => setPronto(true));
+  }, [codigo, carregado, perfil?.codigo]);
 
   return pronto ? <Redirect href="/" /> : <ACarregar />;
 }

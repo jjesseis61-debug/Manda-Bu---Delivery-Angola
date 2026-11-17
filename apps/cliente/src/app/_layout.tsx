@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 import { EcraCadeado } from '@/components/EcraCadeado';
 import { CadeadoProvider } from '@/lib/cadeadoContexto';
 import { CarrinhoProvider } from '@/lib/carrinho';
+import { esquecerProprioCodigo } from '@/lib/convite';
 import { registarEsteAparelho } from '@/lib/dispositivo';
 import { desligarPushWeb, renovarPushWeb } from '@/lib/pushWeb';
 import { activarPush, desactivarPush, rotaDaNotificacao } from '@/lib/push';
@@ -21,6 +22,8 @@ function EfeitosSessao() {
     if (perfil) void activarPush().catch(() => undefined);
     if (perfil) void registarEsteAparelho();
     if (perfil) void renovarPushWeb();
+    // Código guardado de um link próprio (aberto antes de entrar): não é convite, apaga-se
+    if (perfil) void esquecerProprioCodigo(perfil.codigo);
   }, [perfil]);
 
   useEffect(() => {

@@ -2,7 +2,7 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
 
-import { linkConvite, linkPartilhaPrato } from '../convite';
+import { esquecerProprioCodigo, guardarCodigoPendente, lerCodigoPendente, linkConvite, linkPartilhaPrato } from '../convite';
 
 describe('linkConvite', () => {
   it('monta o link da Play Store com o código no referrer', () => {
@@ -26,5 +26,21 @@ describe('linkPartilhaPrato', () => {
   });
   it('ignora um código inválido', () => {
     expect(linkPartilhaPrato(id, 'xpto')).toBe(`https://manda-bue.netlify.app/p/${id}`);
+  });
+});
+
+describe('código guardado do link', () => {
+  it('guarda o código de outra pessoa', async () => {
+    expect(await guardarCodigoPendente('mb-1234', 'MB-4812')).toBe('MB-1234');
+    expect(await lerCodigoPendente()).toBe('MB-1234');
+  });
+  it('não guarda o próprio código (quem abre o link que partilhou)', async () => {
+    expect(await guardarCodigoPendente('mb-4812', 'MB-4812')).toBeNull();
+    expect(await lerCodigoPendente()).toBe('MB-1234'); // o de antes fica
+  });
+  it('ao entrar, esquece o código guardado se for o próprio', async () => {
+    await guardarCodigoPendente('MB-4812');
+    await esquecerProprioCodigo('MB-4812');
+    expect(await lerCodigoPendente()).toBeNull();
   });
 });

@@ -39,7 +39,7 @@ import {
 } from '@/lib/condominio';
 import { corEstadoPedido, formatarData, formatarKz, horaLuanda, mensagemErro, nomeEstadoPedido, textoPediram, textoPromocao } from '@/lib/formatar';
 import { gruposEsgotados, precoMinimo } from '@/lib/opcoes';
-import { partilharPrato } from '@/lib/partilha';
+import { convitePartilhaDe, partilharPrato } from '@/lib/partilha';
 import { usePedirDeNovo } from '@/lib/pedirDeNovo';
 import { useSessao } from '@/lib/sessao';
 import {
@@ -65,10 +65,7 @@ export default function Inicio() {
   const [login, setLogin] = useState<{ motivo: string; destino: Destino } | null>(null);
   const carrinho = useCarrinho();
   // Quem tem código de convite partilha o prato com ele: o amigo ganha o desconto e conta para o embaixador
-  const convitePartilha =
-    ligada('indicacao') && perfil?.codigo && parametros
-      ? { codigo: perfil.codigo, desconto: parametros.desconto_indicado, minimo: parametros.desconto_subtotal_minimo ?? 0 }
-      : null;
+  const convitePartilha = convitePartilhaDe(perfil, parametros, ligada('indicacao'));
   const pedirDeNovoNoCarrinho = usePedirDeNovo();
   const [cardapio, setCardapio] = useState<ItemCardapio[] | null>(null);
   const [enderecos, setEnderecos] = useState<Endereco[]>([]);

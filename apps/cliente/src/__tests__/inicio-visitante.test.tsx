@@ -15,7 +15,7 @@ jest.mock('@/lib/supabase', () => ({ supabase: { rpc: async () => ({ data: null,
 jest.mock('@/lib/api', () => ({}));
 jest.mock('@/lib/condominio', () => ({}));
 jest.mock('@/lib/pedirDeNovo', () => ({ usePedirDeNovo: () => jest.fn() }));
-jest.mock('@/lib/partilha', () => ({ partilharPrato: jest.fn() }));
+jest.mock('@/lib/partilha', () => ({ partilharPrato: jest.fn(), convitePartilhaDe: () => null }));
 jest.mock('@/components/ComoChegar', () => ({ ComoChegar: () => null }));
 jest.mock('@/components/CartaoConvida', () => ({ CartaoConvida: () => null }));
 
