@@ -5,10 +5,9 @@
   base = "apps/cliente"
   command = "npm run build:web"
   publish = "dist"
-  # Créditos: só compila quando muda a app do cliente ou esta configuração
-  # (o branch recebe muitos commits de docs/operador/testes que não mexem no site).
-  # Na 1.ª publicação (sem commit anterior em cache) compila sempre.
-  ignore = "test -n \"$CACHED_COMMIT_REF\" && test \"$CACHED_COMMIT_REF\" != \"$COMMIT_REF\" && git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- . ../../netlify.toml"
+  # Créditos: sem pré-visualizações de PR e o site principal só se publica a pedido
+  # (commit com [publicar] na mensagem). Ver scripts/netlify-ignorar.sh.
+  ignore = "bash ../../scripts/netlify-ignorar.sh"
 
 # Valores PÚBLICOS da app (os mesmos dos APKs, em .github/workflows/apk.yml):
 # a chave publicável do Supabase vai sempre no código do cliente; a segurança está no RLS
