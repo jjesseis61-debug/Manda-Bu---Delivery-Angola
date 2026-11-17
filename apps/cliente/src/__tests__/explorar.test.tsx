@@ -19,7 +19,7 @@ jest.mock('@/lib/visitante', () => ({
   lerCozinhasVisitante: (...a: unknown[]) => mockCozinhas(...a),
 }));
 
-const rotas = { explorar: Explorar, 'visita/[cozinha]': () => <Text>Cardápio</Text> };
+const rotas = { explorar: Explorar, 'visita/[cozinha]': () => <Text>Cardápio</Text>, ganhar: () => <Text>Ganhar</Text> };
 
 beforeEach(() => mockCozinhas.mockReset());
 
@@ -70,4 +70,12 @@ test('mostra as 3 primeiras e «Ver mais»; as de um só prato vão para o fim',
   fireEvent.press(ecra.getByText('Ver mais cozinhas (1)'));
   expect(ecra.getByText('Uma')).toBeTruthy();
   expect(ecra.queryByText(/Ver mais cozinhas/)).toBeNull();
+});
+
+test('o visitante encontra o «Convida e ganha»', async () => {
+  const ecra = renderRouter(rotas, { initialUrl: '/explorar' });
+  await act(async () => undefined);
+  fireEvent.press(ecra.getByText('💰 Convida amigos e ganha'));
+  await act(async () => undefined);
+  expect(ecra.getByText('Ganhar')).toBeTruthy();
 });

@@ -203,6 +203,7 @@ export default function CardapioVisita() {
         </>
       )}
 
+      <Botao titulo="💰 Convida amigos e ganha" variante="texto" aoCarregar={() => router.push('/ganhar')} />
       <Confirmar
         visivel={pedirConta}
         titulo="Só falta o teu número"

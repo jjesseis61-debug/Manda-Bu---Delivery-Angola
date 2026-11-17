@@ -84,7 +84,25 @@ export function mensagemConvite(codigo: string, descontoIndicado: number, link: 
 }
 
 /** Texto das regras (secção 4.13, "Como funciona"), com os valores de `parametros` */
-export function textoRegras(p: Parametros): string[] {
+/** Campos dos parâmetros que as regras do Convida usam (o visitante recebe só estes) */
+export type RegrasConvida = Pick<
+  Parametros,
+  | 'ganho_por_pedido'
+  | 'duracao_dias'
+  | 'comissao_primeiro_pedido'
+  | 'desconto_indicado'
+  | 'desconto_subtotal_minimo'
+  | 'levantamento_minimo'
+  | 'validade_saldo_meses'
+  | 'limite_verificacao_semanal'
+  | 'bonus_boas_vindas'
+  | 'limiar_embaixador'
+  | 'limiar_ouro'
+  | 'ganho_por_pedido_embaixador'
+  | 'ganho_por_pedido_ouro'
+>;
+
+export function textoRegras(p: RegrasConvida): string[] {
   const minimo = p.desconto_subtotal_minimo ?? 0;
   return [
     p.comissao_primeiro_pedido

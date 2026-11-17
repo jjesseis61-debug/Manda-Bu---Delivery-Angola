@@ -1,5 +1,5 @@
 import { Redirect, useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { PainelNivel } from '@/components/PainelNivel';
@@ -11,6 +11,7 @@ import { formatarData, formatarKz, mensagemErro, textoAmigo } from '@/lib/format
 import { useSessao } from '@/lib/sessao';
 import { cores } from '@/lib/tema';
 import type { Amigo, Saldo } from '@/lib/tipos';
+import { limparDestino } from '@/lib/visitante';
 
 /** C1. Convida e Ganha */
 export default function Convida() {
@@ -20,6 +21,10 @@ export default function Convida() {
   const [amigos, setAmigos] = useState<Amigo[] | null>(null);
   const [verExpirados, setVerExpirados] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  // Chegou aqui depois de criar conta pelo «Convida e ganha» do visitante: destino cumprido
+  useEffect(() => {
+    void limparDestino();
+  }, []);
 
   useFocusEffect(
     useCallback(() => {

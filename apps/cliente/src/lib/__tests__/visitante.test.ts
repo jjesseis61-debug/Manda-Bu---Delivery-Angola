@@ -42,6 +42,10 @@ describe('destino depois de entrar', () => {
     await guardarDestino('/carrinho');
     expect(await lerDestino(Date.now() + 25 * 60 * 60 * 1000)).toBeNull();
   });
+  it('o Convida também é destino (criar conta para ganhar)', async () => {
+    await guardarDestino('/convida');
+    expect(await lerDestino()).toBe('/convida');
+  });
   it('só aceita destinos conhecidos', async () => {
     await AsyncStorage.setItem('manda-bue:depois-de-entrar', JSON.stringify({ destino: '/levantar', em: Date.now() }));
     expect(await lerDestino()).toBeNull();

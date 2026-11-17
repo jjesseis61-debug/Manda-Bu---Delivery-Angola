@@ -24,8 +24,9 @@ const ESPERA_REENVIO_SEG = 60;
 /** Entrar com o número de telefone e o código recebido por SMS (Supabase Auth) */
 export default function Entrar() {
   const router = useRouter();
-  // Vem do «Pedir» do visitante (já tem o carrinho): não lhe oferecemos voltar a ver o cardápio
-  const { pedir } = useLocalSearchParams<{ pedir?: string }>();
+  // Vem do «Pedir» do visitante (já tem o carrinho) ou de «Criar conta e começar a ganhar»:
+  // não lhe oferecemos voltar a ver o cardápio
+  const { pedir, ganhar } = useLocalSearchParams<{ pedir?: string; ganhar?: string }>();
   const [telefone, setTelefone] = useState('');
   const [codigo, setCodigo] = useState('');
   const [enviadoPara, setEnviadoPara] = useState<string | null>(null);
@@ -131,7 +132,8 @@ export default function Entrar() {
             {erro && <Aviso tipo="erro">{erro}</Aviso>}
             <Botao titulo="Receber código" aoCarregar={pedirCodigo} aCarregar={aEnviar} />
             {/* Quem ainda só quer ver: o cardápio do bairro sem conta (o número só em «Pedir») */}
-            {pedir !== '1' && (
+            {ganhar === '1' && <Paragrafo suave>Cria a tua conta e o teu código de convite fica logo pronto a partilhar.</Paragrafo>}
+            {pedir !== '1' && ganhar !== '1' && (
               <Botao titulo="Ver o cardápio primeiro" variante="secundario" aoCarregar={() => router.push('/explorar')} />
             )}
             {temContacto(CONTACTO_AJUDA) && (

@@ -77,6 +77,7 @@ export default function LayoutRaiz() {
           <Stack.Screen name="montar/[id]" options={{ title: 'Servir o prato' }} />
           <Stack.Screen name="visita/[cozinha]" options={{ title: 'Cardápio' }} />
           <Stack.Screen name="explorar" options={{ title: 'O teu bairro' }} />
+          <Stack.Screen name="ganhar" options={{ title: 'Convida e ganha' }} />
           <Stack.Screen name="pacotes" options={{ title: 'Pacote do mês' }} />
           <Stack.Screen name="ajuda" options={{ title: 'Ajuda' }} />
           <Stack.Screen name="contactos" options={{ title: 'Contactos' }} />

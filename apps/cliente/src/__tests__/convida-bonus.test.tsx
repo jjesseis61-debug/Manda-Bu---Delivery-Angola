@@ -4,6 +4,7 @@ import { renderRouter, waitFor } from 'expo-router/testing-library';
 import Convida from '@/app/(tabs)/convida';
 import { useSessao } from '@/lib/sessao';
 
+jest.mock('@/lib/visitante', () => ({ limparDestino: async () => undefined }));
 jest.mock('@/lib/sessao', () => ({ useSessao: jest.fn() }));
 jest.mock('@/lib/api', () => ({
   lerSaldo: jest.fn().mockResolvedValue({ ganho_hoje: 0, ganho_semana: 0, saldo_disponivel: 0, em_verificacao: 0 }),

@@ -4,6 +4,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { supabase } from './supabase';
+import type { RegrasConvida } from './formatar';
 import type { ComponentePrato, GrupoOpcoes, ItemCardapio } from './tipos';
 
 export type PratoVisitante = {
@@ -100,12 +101,20 @@ export function entregaVisitante(z: ZonaVisitante, pratos: number): { taxa: numb
   return { taxa, total: pratos + taxa, falta };
 }
 
+// ------------------------------------------------------------ Convida e ganha (montra)
+/** As regras do programa para o visitante; null = programa desligado */
+export async function lerRegrasConvida(): Promise<RegrasConvida | null> {
+  const r = await supabase.rpc('visitante_convida');
+  if (r.error) throw r.error;
+  return (r.data as RegrasConvida | null) ?? null;
+}
+
 // ------------------------------------------------------------ para onde ir depois de entrar
 const CHAVE_DESTINO = 'manda-bue:depois-de-entrar';
 /** O destino vale 24 h (o mesmo tempo do carrinho guardado) */
 const VALIDADE_MS = 24 * 60 * 60 * 1000;
 /** Só destinos conhecidos (nunca um caminho vindo de fora) */
-const DESTINOS = ['/carrinho'] as const;
+const DESTINOS = ['/carrinho', '/convida'] as const;
 export type Destino = (typeof DESTINOS)[number];
 
 export async function guardarDestino(destino: Destino): Promise<void> {

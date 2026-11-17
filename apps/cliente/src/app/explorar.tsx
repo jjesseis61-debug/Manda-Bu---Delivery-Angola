@@ -85,6 +85,7 @@ export default function Explorar() {
         ))}
         <Botao titulo="O meu bairro não está na lista" variante="texto" aoCarregar={() => setEscolha({ zona: null })} />
         <FaixaConfianca />
+        <Botao titulo="💰 Convida amigos e ganha" variante="texto" aoCarregar={() => router.push('/ganhar')} />
       </Ecra>
     );
   }
