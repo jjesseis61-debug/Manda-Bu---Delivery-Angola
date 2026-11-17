@@ -35,6 +35,7 @@ const rotas = {
   'visita/[cozinha]': CardapioVisita,
   'montar/[id]': () => <Text>Montar</Text>,
   entrar: () => <Text>Entrar</Text>,
+  explorar: () => <Text>Explorar</Text>,
   inicio: () => <Text>Início</Text>,
 };
 

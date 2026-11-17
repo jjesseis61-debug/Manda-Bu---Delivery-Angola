@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -24,6 +24,8 @@ const ESPERA_REENVIO_SEG = 60;
 /** Entrar com o número de telefone e o código recebido por SMS (Supabase Auth) */
 export default function Entrar() {
   const router = useRouter();
+  // Vem do «Pedir» do visitante (já tem o carrinho): não lhe oferecemos voltar a ver o cardápio
+  const { pedir } = useLocalSearchParams<{ pedir?: string }>();
   const [telefone, setTelefone] = useState('');
   const [codigo, setCodigo] = useState('');
   const [enviadoPara, setEnviadoPara] = useState<string | null>(null);
@@ -128,6 +130,10 @@ export default function Entrar() {
             <Paragrafo suave>Só usamos o teu número para entrares e para te avisarmos dos teus pedidos.</Paragrafo>
             {erro && <Aviso tipo="erro">{erro}</Aviso>}
             <Botao titulo="Receber código" aoCarregar={pedirCodigo} aCarregar={aEnviar} />
+            {/* Quem ainda só quer ver: o cardápio do bairro sem conta (o número só em «Pedir») */}
+            {pedir !== '1' && (
+              <Botao titulo="Ver o cardápio primeiro" variante="secundario" aoCarregar={() => router.push('/explorar')} />
+            )}
             {temContacto(CONTACTO_AJUDA) && (
               <View style={{ marginTop: 'auto' }}>
                 <BlocoContactos contacto={CONTACTO_AJUDA} titulo="Precisas de ajuda? Fala connosco" />

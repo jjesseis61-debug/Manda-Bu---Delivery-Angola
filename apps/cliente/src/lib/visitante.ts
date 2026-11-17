@@ -33,6 +33,24 @@ export async function lerCardapioVisitante(cozinhaId: string): Promise<CardapioV
   return (r.data as CardapioVisitante | null) ?? null;
 }
 
+// ------------------------------------------------------------ porta da frente (sem link)
+export type ZonaVisitante = { id: string; nome: string };
+export type CozinhaVisitante = { id: string; nome: string; pratos: number; distancia_km: number | null; foto_url: string | null };
+
+/** Bairros (zonas de entrega) para o visitante escolher */
+export async function lerZonasVisitante(): Promise<ZonaVisitante[]> {
+  const r = await supabase.rpc('visitante_zonas');
+  if (r.error) throw r.error;
+  return (r.data as ZonaVisitante[] | null) ?? [];
+}
+
+/** Cozinhas que servem o visitante, da mais perto do bairro para a mais longe; sem bairro, todas */
+export async function lerCozinhasVisitante(zonaId: string | null): Promise<CozinhaVisitante[]> {
+  const r = await supabase.rpc('visitante_cozinhas', { p_zona: zonaId });
+  if (r.error) throw r.error;
+  return (r.data as CozinhaVisitante[] | null) ?? [];
+}
+
 // ------------------------------------------------------------ para onde ir depois de entrar
 const CHAVE_DESTINO = 'manda-bue:depois-de-entrar';
 /** O destino vale 24 h (o mesmo tempo do carrinho guardado) */

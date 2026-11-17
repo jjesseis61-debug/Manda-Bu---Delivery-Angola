@@ -92,7 +92,7 @@ export default function CardapioVisita() {
   async function pedir() {
     setPedirConta(false);
     await guardarDestino('/carrinho');
-    router.push('/entrar');
+    router.push({ pathname: '/entrar', params: { pedir: '1' } });
   }
 
   return (

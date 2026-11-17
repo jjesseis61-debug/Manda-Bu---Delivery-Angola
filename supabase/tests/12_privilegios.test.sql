@@ -116,7 +116,7 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 -- condomínios fase 2: campanhas e relatório
                 'guardar_campanha', 'apagar_campanha', 'campanhas_lista', 'campanha_avisar', 'campanhas_para_mim', 'relatorio_condominio',
                 -- faixa de confiança (pontualidade agregada)
-                'pontualidade_entregas', 'visitante_prato', 'visitante_cardapio',
+                'pontualidade_entregas', 'visitante_prato', 'visitante_cardapio', 'visitante_cozinhas', 'visitante_zonas',
                 -- prato montável a partir do modelo (cozinhas.gerir)
                 'criar_montavel_do_modelo',
                 -- sugestão de despacho por proximidade
@@ -162,7 +162,7 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
             where p.pronamespace = 'public'::regnamespace and p.prosecdef
               and p.proname <> 'rls_auto_enable'
               and has_function_privilege('anon', p.oid, 'execute')),
-          'visitante_cardapio, visitante_prato',
+          'visitante_cardapio, visitante_cozinhas, visitante_prato, visitante_zonas',
           'sem sessão (anon) só as leituras do visitante do link partilhado (prato e cardápio visíveis na app)');
 
 -- ---------------------------------------------------------------------------
