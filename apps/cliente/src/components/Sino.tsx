@@ -3,6 +3,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
+import { LoginNecessario } from '@/components/LoginNecessario';
 import { contarAvisosNovos } from '@/lib/api';
 import { cores } from '@/lib/tema';
 
@@ -36,5 +37,23 @@ export function Sino() {
         </View>
       )}
     </Pressable>
+  );
+}
+
+/** O mesmo sino para quem ainda não tem conta: ao tocar, pede para entrar (e volta aos avisos) */
+export function SinoVisitante() {
+  const [aberto, setAberto] = useState(false);
+  return (
+    <>
+      <Pressable accessibilityRole="button" accessibilityLabel="Avisos" onPress={() => setAberto(true)} hitSlop={10} style={{ marginRight: 16 }}>
+        <Ionicons name="notifications-outline" size={24} color={cores.marca} />
+      </Pressable>
+      <LoginNecessario
+        visivel={aberto}
+        motivo="Entra para receberes os avisos dos teus pedidos."
+        destino="/avisos"
+        aoFechar={() => setAberto(false)}
+      />
+    </>
   );
 }

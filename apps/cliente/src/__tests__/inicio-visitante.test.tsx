@@ -9,7 +9,7 @@ import Pedidos from '@/app/(tabs)/pedidos';
 jest.mock('@react-native-async-storage/async-storage', () => require('@react-native-async-storage/async-storage/jest/async-storage-mock'));
 jest.mock('@expo/vector-icons/Ionicons', () => () => null);
 // Estável entre renders (como na app): o carregamento do Início depende de `ligada`
-const mockSessaoVisitante = { carregado: true, sessao: null, perfil: null, parametros: null, ligada: (c: string) => c === 'multi_cozinha' };
+const mockSessaoVisitante = { carregado: true, sessao: null, perfil: null, parametros: null, ligada: (c: string) => c === 'multi_cozinha' || c === 'pacotes' };
 jest.mock('@/lib/sessao', () => ({ useSessao: () => mockSessaoVisitante }));
 jest.mock('@/lib/supabase', () => ({ supabase: { rpc: async () => ({ data: null, error: null }) } }));
 jest.mock('@/lib/api', () => ({}));
@@ -26,8 +26,10 @@ const prato = (id: string, nome: string, preco: number, extra: object = {}) => (
 const mockCozinhas = jest.fn();
 const mockGuardarZona = jest.fn(async (..._a: unknown[]) => undefined);
 const mockZona: { valor: unknown } = { valor: null };
+const mockGuardarDestino = jest.fn(async (..._a: unknown[]) => undefined);
 jest.mock('@/lib/visitante', () => ({
   ...jest.requireActual('@/lib/visitante'),
+  guardarDestino: (...a: unknown[]) => mockGuardarDestino(...a),
   lerZonasVisitante: async () => [{ id: 'z1', nome: 'Maianga', taxa: 1000, entrega_gratis_acima: null }],
   lerZonaVisitante: async () => mockZona.valor,
   guardarZonaVisitante: (...a: unknown[]) => mockGuardarZona(...a),
@@ -63,13 +65,24 @@ test('sem conta, o Início abre com o cardápio e as cozinhas, sem pedir o núme
   expect(mockAdicionar).toHaveBeenCalledWith(expect.objectContaining({ id: 'm' }));
 });
 
-test('o visitante escolhe o bairro e vê a taxa de entrega', async () => {
-  const ecra = renderRouter({ inicio: Inicio }, { initialUrl: '/inicio' });
+test('igual ao Início com conta: sem a pergunta do bairro; pacote pede para entrar', async () => {
+  const ecra = renderRouter({ inicio: Inicio, entrar: () => <Text>Entrar</Text> }, { initialUrl: '/inicio' });
+  await act(async () => undefined);
+  expect(ecra.queryByText('🛵 Onde entregamos?')).toBeNull();
+  fireEvent.press(ecra.getByText('Pacote do mês: paga uma vez, almoça o mês todo'));
+  expect(ecra.getByText('Entra na tua conta')).toBeTruthy();
+  fireEvent.press(ecra.getByText('Entrar'));
+  await act(async () => undefined);
+  expect(mockGuardarDestino).toHaveBeenCalledWith('/pacotes');
+});
+
+test('carrinho do visitante: escolhe o bairro e vê a entrega', async () => {
+  mockCarrinho.linhas = [{ chave: 'm', item: prato('m', 'Muamba', 2500), qtd: 2, opcoes: [], tirados: [] }];
+  const ecra = renderRouter({ carrinho: Carrinho }, { initialUrl: '/carrinho' });
   await act(async () => undefined);
   fireEvent.press(ecra.getByText('Maianga · entrega 1.000 Kz'));
-  await act(async () => undefined);
   expect(mockGuardarZona).toHaveBeenCalledWith(expect.objectContaining({ id: 'z1' }));
-  expect(mockCozinhas).toHaveBeenLastCalledWith(null); // a zona guardada vem do armazenamento (aqui, simulado vazio)
+  expect(ecra.getByText('Total estimado: 6.000 Kz')).toBeTruthy();
 });
 
 test('carrinho do visitante: «Pedir» pede o número só aí', async () => {

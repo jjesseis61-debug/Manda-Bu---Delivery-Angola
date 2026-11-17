@@ -4,12 +4,20 @@ import { Pressable, Text, View } from 'react-native';
 
 import { Confirmar } from '@/components/Confirmar';
 import { FaixaConfianca } from '@/components/FaixaConfianca';
-import { Botao, Cartao, Ecra, Paragrafo, Subtitulo } from '@/components/ui';
+import { Botao, Cartao, Ecra, Escolha, Paragrafo, Subtitulo } from '@/components/ui';
 import { useCarrinho } from '@/lib/carrinho';
 import { formatarKz, textoEntregaGratis } from '@/lib/formatar';
 import { precoMontado } from '@/lib/opcoes';
 import { cores, espaco } from '@/lib/tema';
-import { entregaVisitante, guardarDestino, lerZonaVisitante, type ZonaVisitante } from '@/lib/visitante';
+import {
+  entregaVisitante,
+  guardarDestino,
+  guardarZonaVisitante,
+  lerZonaVisitante,
+  lerZonasVisitante,
+  rotuloZona,
+  type ZonaVisitante,
+} from '@/lib/visitante';
 
 function BotaoQtd({ sinal, rotulo, aoCarregar }: { sinal: string; rotulo: string; aoCarregar: () => void }) {
   return (
@@ -33,11 +41,23 @@ export function CarrinhoVisitante() {
   const router = useRouter();
   const carrinho = useCarrinho();
   const [zona, setZona] = useState<ZonaVisitante | null>(null);
+  const [zonas, setZonas] = useState<ZonaVisitante[]>([]);
   const [pedirConta, setPedirConta] = useState(false);
 
   useEffect(() => {
-    lerZonaVisitante().then(setZona, () => undefined);
+    Promise.all([lerZonasVisitante().catch(() => [] as ZonaVisitante[]), lerZonaVisitante()]).then(([zs, z]) => {
+      setZonas(zs);
+      // A taxa vem sempre da lista actual (a guardada pode estar desactualizada)
+      setZona(z ? (zs.find((x) => x.id === z.id) ?? null) : null);
+    }, () => undefined);
   }, []);
+
+  /** O bairro decide a taxa de entrega estimada (fica guardado 24 h) */
+  function escolherZona(id: string) {
+    const z = zonas.find((x) => x.id === id) ?? null;
+    setZona(z);
+    void guardarZonaVisitante(z);
+  }
 
   if (carrinho.linhas.length === 0)
     return (
@@ -81,6 +101,17 @@ export function CarrinhoVisitante() {
           </View>
         ))}
       </Cartao>
+      {zonas.length > 0 && (
+        <View style={{ gap: espaco.s }}>
+          <Text style={{ fontSize: 15, fontWeight: '700', color: cores.texto }}>🛵 Onde entregamos?</Text>
+          <Escolha
+            opcoes={zonas.map((z) => ({ valor: z.id, rotulo: (z.id === zona?.id ? '✓ ' : '') + rotuloZona(z, formatarKz) }))}
+            valor={zona?.id ?? ''}
+            aoMudar={escolherZona}
+            horizontal
+          />
+        </View>
+      )}
       <Cartao estilo={{ gap: espaco.xs }}>
         <Text style={{ color: cores.texto }}>Pratos: {formatarKz(pratos)}</Text>
         {zona && entrega ? (

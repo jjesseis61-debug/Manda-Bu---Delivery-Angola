@@ -5,6 +5,7 @@ import { Pressable, Text, View } from 'react-native';
 import { descontoGarantido, lerPerfilDestaques, lerSaldo } from '@/lib/api';
 import { formatarKz } from '@/lib/formatar';
 import { useSessao } from '@/lib/sessao';
+import { lerRegrasConvida } from '@/lib/visitante';
 import { cores, espaco, raio } from '@/lib/tema';
 import type { Saldo } from '@/lib/tipos';
 
@@ -23,6 +24,21 @@ export function CartaoConvida() {
 
   const activo = ligada('indicacao') && !!perfil;
   const clienteId = perfil?.cliente_id;
+  // Visitante (sem conta): o desconto do 1.º pedido vale para qualquer cliente novo — mostra-se igual
+  const [regrasVisitante, setRegrasVisitante] = useState<{ desconto: number; minimo: number } | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (perfil) return;
+      let vivo = true;
+      lerRegrasConvida()
+        .then((r) => vivo && setRegrasVisitante(r && r.desconto_indicado > 0 ? { desconto: r.desconto_indicado, minimo: r.desconto_subtotal_minimo ?? 0 } : null))
+        .catch(() => undefined);
+      return () => {
+        vivo = false;
+      };
+    }, [perfil]),
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -44,6 +60,21 @@ export function CartaoConvida() {
     }, [activo, clienteId]),
   );
 
+  if (!perfil) {
+    if (!regrasVisitante) return null;
+    const t = `🎁 Tens ${formatarKz(regrasVisitante.desconto)} no teu 1.º pedido`;
+    return (
+      <Pressable accessibilityRole="button" accessibilityLabel={t} onPress={() => router.push('/convida')}>
+        <View
+          style={{ backgroundColor: cores.fundoSuave, borderRadius: raio, borderLeftWidth: 4, borderLeftColor: cores.marca, padding: espaco.m, gap: 4 }}>
+          <Text style={{ fontSize: 16, fontWeight: '700', color: cores.marca }}>{t}</Text>
+          <Text style={{ color: cores.textoSuave }}>
+            {regrasVisitante.minimo > 0 ? `Em pedidos acima de ${formatarKz(regrasVisitante.minimo)}. Toca para saber como.` : 'Toca para saber como.'}
+          </Text>
+        </View>
+      </Pressable>
+    );
+  }
   if (!activo) return null;
 
   const minimo = parametros?.desconto_subtotal_minimo ?? 0;

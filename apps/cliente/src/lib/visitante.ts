@@ -114,7 +114,7 @@ const CHAVE_DESTINO = 'manda-bue:depois-de-entrar';
 /** O destino vale 24 h (o mesmo tempo do carrinho guardado) */
 const VALIDADE_MS = 24 * 60 * 60 * 1000;
 /** Só destinos conhecidos (nunca um caminho vindo de fora) */
-const DESTINOS = ['/carrinho', '/convida'] as const;
+const DESTINOS = ['/carrinho', '/convida', '/inicio', '/pedidos', '/conta', '/avisos', '/pacotes', '/grupos', '/receitas'] as const;
 export type Destino = (typeof DESTINOS)[number];
 
 export async function guardarDestino(destino: Destino): Promise<void> {

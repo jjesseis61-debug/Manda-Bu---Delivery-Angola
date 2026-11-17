@@ -5,6 +5,7 @@ import { Image, Pressable, RefreshControl, ScrollView, Text, View } from 'react-
 
 import { CartaoConvida } from '@/components/CartaoConvida';
 import { Confirmar } from '@/components/Confirmar';
+import { LoginNecessario } from '@/components/LoginNecessario';
 import { FaixaConfianca } from '@/components/FaixaConfianca';
 import { ComoChegar } from '@/components/ComoChegar';
 import { MediaAvaliacao } from '@/components/MediaAvaliacao';
@@ -42,13 +43,12 @@ import { partilharPrato } from '@/lib/partilha';
 import { usePedirDeNovo } from '@/lib/pedirDeNovo';
 import { useSessao } from '@/lib/sessao';
 import {
-  guardarZonaVisitante,
   lerCardapioVisitante,
   lerCozinhasVisitante,
   lerZonasVisitante,
   lerZonaVisitante,
   ordenarCozinhasVisitante,
-  rotuloZona,
+  type Destino,
   type ZonaVisitante,
 } from '@/lib/visitante';
 import { cores, espaco, raio } from '@/lib/tema';
@@ -61,8 +61,8 @@ export default function Inicio() {
   const { ligada, perfil, parametros, sessao } = useSessao();
   // Sem conta (a app abre no Início para todos): lê o que é público e pede o número só no «Pedir»
   const visitante = !sessao || !perfil;
-  const [zonas, setZonas] = useState<ZonaVisitante[]>([]);
-  const [zona, setZona] = useState<ZonaVisitante | null>(null);
+  // Funções pessoais tocadas pelo visitante (pacote, grupo, receitas): pede para entrar e volta aqui
+  const [login, setLogin] = useState<{ motivo: string; destino: Destino } | null>(null);
   const carrinho = useCarrinho();
   // Quem tem código de convite partilha o prato com ele: o amigo ganha o desconto e conta para o embaixador
   const convitePartilha =
@@ -116,8 +116,6 @@ export default function Inicio() {
         // Visitante: bairro escolhido (taxa de entrega), cozinhas desse bairro e o cardápio público
         const [zs, guardada] = await Promise.all([lerZonasVisitante().catch(() => [] as ZonaVisitante[]), lerZonaVisitante()]);
         const z = guardada ? (zs.find((x) => x.id === guardada.id) ?? null) : null;
-        setZonas(zs);
-        setZona(z);
         const lista: CozinhaParaPedir[] = ordenarCozinhasVisitante(await lerCozinhasVisitante(z?.id ?? null)).map((c) => ({
           cozinha_id: c.id,
           nome: c.nome,
@@ -223,13 +221,6 @@ export default function Inicio() {
     }
   }, [ligada, cozinhaId, emGrupo, visitante]);
 
-  /** Visitante escolhe o bairro: guarda-o (24 h) e volta a ordenar as cozinhas e a mostrar a entrega */
-  async function escolherZona(id: string) {
-    const z = zonas.find((x) => x.id === id) ?? null;
-    setZona(z);
-    await guardarZonaVisitante(z);
-    await carregar();
-  }
 
   useFocusEffect(
     useCallback(() => {
@@ -451,20 +442,6 @@ export default function Inicio() {
             {p.fim && <Text style={{ color: cores.textoSuave, fontSize: 12 }}>Até {formatarData(p.fim)}</Text>}
           </Cartao>
         ))}
-        {visitante && zonas.length > 0 && (
-          <View style={{ gap: espaco.s }}>
-            <Text style={{ fontSize: 15, fontWeight: '700', color: cores.texto }}>🛵 Onde entregamos?</Text>
-            <Text style={{ fontSize: 12, color: cores.textoSuave, marginTop: -espaco.xs }}>
-              {zona ? 'A taxa de entrega do teu bairro' : 'Escolhe o teu bairro para veres a entrega e as cozinhas mais perto'}
-            </Text>
-            <Escolha
-              opcoes={zonas.map((z) => ({ valor: z.id, rotulo: (z.id === zona?.id ? '✓ ' : '') + rotuloZona(z, formatarKz) }))}
-              valor={zona?.id ?? ''}
-              aoMudar={(id) => void escolherZona(id)}
-              horizontal
-            />
-          </View>
-        )}
         {ligada('multi_cozinha') && !carrinho.grupo && cozinhas.length > 1 && (
           <View style={{ gap: espaco.s }}>
             <Text style={{ fontSize: 15, fontWeight: '700', color: cores.texto }}>📍 De onde queres pedir?</Text>
@@ -577,22 +554,40 @@ export default function Inicio() {
           </View>
         ))}
         {/* Promos e extras ficam DEPOIS do cardápio (comida primeiro): pacote, grupo, como chegar. */}
-        {!visitante && ligada('pacotes') && !carrinho.grupo && (
-          <Botao titulo="Pacote do mês: paga uma vez, almoça o mês todo" variante="secundario" aoCarregar={() => router.push('/pacotes')} />
+        {ligada('pacotes') && !carrinho.grupo && (
+          <Botao
+            titulo="Pacote do mês: paga uma vez, almoça o mês todo"
+            variante="secundario"
+            aoCarregar={() =>
+              visitante ? setLogin({ motivo: 'Entra para comprares o pacote do mês.', destino: '/pacotes' }) : router.push('/pacotes')
+            }
+          />
         )}
-        {!visitante && ligada('pedidos_grupo') && !carrinho.grupo && (
-          <Botao titulo="Pedido de grupo com os colegas" variante="secundario" aoCarregar={() => router.push('/grupos')} />
+        {ligada('pedidos_grupo') && !carrinho.grupo && (
+          <Botao
+            titulo="Pedido de grupo com os colegas"
+            variante="secundario"
+            aoCarregar={() =>
+              visitante ? setLogin({ motivo: 'Entra para fazeres um pedido de grupo com os colegas.', destino: '/grupos' }) : router.push('/grupos')
+            }
+          />
         )}
         {!visitante && ligada('como_chegar') && (cozinhaId ?? cardapio?.[0]?.cozinha_id) && (
           <ComoChegar cozinhaId={(cozinhaId ?? cardapio?.[0]?.cozinha_id) as string} />
         )}
         {/* No fim do cardápio: convite às receitas — "comida primeiro, conteúdo depois".
             Cartão (não botão de rodapé solto) para ser discreto mas descoberto. */}
-        {!visitante && ligada('receitas') && !carrinho.grupo && cardapio !== null && cardapio.length > 0 && (
+        {ligada('receitas') && !carrinho.grupo && cardapio !== null && cardapio.length > 0 && (
           <Cartao>
             <Text style={{ fontSize: 16, fontWeight: '700', color: cores.texto }}>🍲 Cozinha de casa</Text>
             <Text style={{ color: cores.textoSuave }}>Não decidiste? Inspira-te nas receitas da terra.</Text>
-            <Botao titulo="Ver receitas da terra" variante="destaque" aoCarregar={() => router.push('/receitas')} />
+            <Botao
+              titulo="Ver receitas da terra"
+              variante="destaque"
+              aoCarregar={() =>
+                visitante ? setLogin({ motivo: 'Entra para veres as receitas da terra.', destino: '/receitas' }) : router.push('/receitas')
+              }
+            />
           </Cartao>
         )}
       </ScrollView>
@@ -628,6 +623,12 @@ export default function Inicio() {
           />
         </View>
       )}
+      <LoginNecessario
+        visivel={login !== null}
+        motivo={login?.motivo ?? ''}
+        destino={login?.destino ?? '/inicio'}
+        aoFechar={() => setLogin(null)}
+      />
       <Confirmar
         visivel={trocaPendente !== null}
         titulo="Mudar de cozinha?"

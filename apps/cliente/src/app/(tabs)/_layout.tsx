@@ -1,12 +1,10 @@
-import { Redirect, useRouter } from 'expo-router';
+import { Redirect } from 'expo-router';
 import { Tabs } from 'expo-router/js-tabs';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import type { ComponentProps } from 'react';
 import type { ColorValue } from 'react-native';
 
-import { Sino } from '@/components/Sino';
-import { Pressable, Text } from 'react-native';
-
+import { Sino, SinoVisitante } from '@/components/Sino';
 import { ACarregar } from '@/components/ui';
 import { useSessao } from '@/lib/sessao';
 import { cores } from '@/lib/tema';
@@ -18,16 +16,6 @@ function icone(nome: NomeIcone, nomeActivo: NomeIcone) {
   return function Icone({ color, focused, size }: { color: ColorValue; focused: boolean; size: number }) {
     return <Ionicons name={focused ? nomeActivo : nome} size={size} color={color as string} />;
   };
-}
-
-/** No cabeçalho do visitante, em vez do sino: quem já tem conta encontra logo onde entrar */
-function BotaoEntrar() {
-  const router = useRouter();
-  return (
-    <Pressable accessibilityRole="button" onPress={() => router.push('/entrar')} hitSlop={8} style={{ marginRight: 16 }}>
-      <Text style={{ color: cores.marca, fontWeight: '800', fontSize: 16 }}>Entrar</Text>
-    </Pressable>
-  );
 }
 
 export default function LayoutSeparadores() {
@@ -44,7 +32,7 @@ export default function LayoutSeparadores() {
         tabBarActiveTintColor: cores.marca,
         tabBarInactiveTintColor: cores.textoSuave,
         headerTitleStyle: { color: cores.texto },
-        headerRight: () => (visitante ? <BotaoEntrar /> : <Sino />),
+        headerRight: () => (visitante ? <SinoVisitante /> : <Sino />),
       }}>
       <Tabs.Screen name="inicio" options={{ title: 'Início', headerTitle: 'Cozinha da Alexandra', tabBarIcon: icone('restaurant-outline', 'restaurant') }} />
       <Tabs.Screen name="pedidos" options={{ title: 'Pedidos', tabBarIcon: icone('receipt-outline', 'receipt') }} />
