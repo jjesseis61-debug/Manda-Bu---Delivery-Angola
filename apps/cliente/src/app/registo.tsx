@@ -1,7 +1,7 @@
 import { Redirect, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 
-import { Aviso, Botao, Campo, Ecra, Escolha, Paragrafo, Subtitulo } from '@/components/ui';
+import { ACarregar, Aviso, Botao, Campo, Ecra, Escolha, Paragrafo, Subtitulo } from '@/components/ui';
 import { descontoGarantido, ligarIndicacao, meuPerfil, registarCliente } from '@/lib/api';
 import { lerCodigoPendente, limparCodigoPendente } from '@/lib/convite';
 import { formatarKz, mensagemCodigo, mensagemErro, normalizarCodigo } from '@/lib/formatar';
@@ -19,12 +19,29 @@ export default function Registo() {
   const [aviso, setAviso] = useState<string | null>(null);
   const [aEnviar, setAEnviar] = useState(false);
 
+  // Antes de mostrar o formulário, confirma no servidor que a conta ainda não existe: quem já é
+  // cliente nunca deve ver «Criar conta» (vai logo para onde ia)
+  const [verificado, setVerificado] = useState(false);
   useEffect(() => {
     lerCodigoPendente().then((c) => c && setCodigo(c));
   }, []);
+  useEffect(() => {
+    if (!sessao || perfil) return;
+    let vivo = true;
+    meuPerfil()
+      .then(async (p) => {
+        if (p) await actualizar();
+      })
+      .catch(() => undefined)
+      .finally(() => vivo && setVerificado(true));
+    return () => {
+      vivo = false;
+    };
+  }, [sessao, perfil, actualizar]);
 
-  if (!sessao) return <Redirect href="/entrar" />;
+  if (!sessao) return <Redirect href="/inicio" />;
   if (perfil && !aviso) return <Redirect href="/" />;
+  if (!verificado) return <ACarregar />;
 
   /** A porta de entrada decide: o início ou, se veio de um link com o carrinho montado, o carrinho */
   const seguir = () => router.replace('/');
