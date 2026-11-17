@@ -70,6 +70,12 @@ test('cliente novo: segue para o registo (só o nome) e guarda o destino', async
   expect(ecra.getByText('Registo')).toBeTruthy();
 });
 
+test('a folha diz para que serve o número', async () => {
+  const ecra = renderRouter(rotas, { initialUrl: '/carrinho' });
+  await act(async () => undefined);
+  expect(ecra.getByText('Só usamos o teu número para os teus pedidos.')).toBeTruthy();
+});
+
 test('número inválido: explica e não envia', async () => {
   const ecra = renderRouter(rotas, { initialUrl: '/carrinho' });
   await act(async () => undefined);

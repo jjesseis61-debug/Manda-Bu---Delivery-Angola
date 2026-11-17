@@ -202,7 +202,8 @@ export default function CardapioVisita() {
       <LoginNecessario
         visivel={pedirConta}
         titulo="Só falta o teu número"
-        motivo="Para a cozinha e o entregador te encontrarem. O teu carrinho fica guardado."
+        motivo="Recebes um código por SMS ou WhatsApp para confirmar. O teu carrinho fica guardado."
+        nota="Só usamos o teu número para os teus pedidos. Pagas na entrega."
         destino="/carrinho"
         aoFechar={() => setPedirConta(false)}
       />

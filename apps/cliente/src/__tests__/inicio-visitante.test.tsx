@@ -95,6 +95,8 @@ test('carrinho do visitante: «Pedir» pede o número só aí', async () => {
   expect(ecra.getByText('Total dos pratos: 2.500 Kz')).toBeTruthy();
   fireEvent.press(ecra.getByText('Pedir · 2.500 Kz'));
   expect(ecra.getByText('Só falta o teu número')).toBeTruthy();
+  expect(ecra.getByText('Recebes um código por SMS ou WhatsApp para confirmar. O teu carrinho fica guardado.')).toBeTruthy();
+  expect(ecra.getByText('Só usamos o teu número para os teus pedidos. Pagas na entrega.')).toBeTruthy();
   expect(ecra.getByText('Receber código')).toBeTruthy();
 });
 

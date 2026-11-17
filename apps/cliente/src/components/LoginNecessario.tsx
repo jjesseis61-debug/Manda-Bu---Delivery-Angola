@@ -31,12 +31,15 @@ export function LoginNecessario({
   destino,
   aoFechar,
   titulo = 'Entra na tua conta',
+  nota = 'Só usamos o teu número para os teus pedidos.',
 }: {
   visivel: boolean;
   motivo: string;
   destino: Destino;
   aoFechar: () => void;
   titulo?: string;
+  /** Garantia por baixo do campo (privacidade; no «Pedir» também «Pagas na entrega») */
+  nota?: string;
 }) {
   const router = useRouter();
   const aqui = usePathname();
@@ -174,6 +177,7 @@ export function LoginNecessario({
                 value={telefone}
                 onChangeText={setTelefone}
               />
+              <Text style={{ color: cores.textoSuave, fontSize: 13, marginTop: -espaco.xs }}>{nota}</Text>
               {erro && <Aviso tipo="erro">{erro}</Aviso>}
               <Botao titulo="Receber código" aoCarregar={pedirCodigo} aCarregar={aEnviar} />
             </>
