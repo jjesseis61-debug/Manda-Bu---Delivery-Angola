@@ -6,11 +6,19 @@ import { Confirmar } from '@/components/Confirmar';
 import { FaixaConfianca } from '@/components/FaixaConfianca';
 import { ACarregar, Aviso, Botao, Cartao, Ecra, Paragrafo, Subtitulo } from '@/components/ui';
 import { useCarrinho } from '@/lib/carrinho';
-import { formatarKz, mensagemErro } from '@/lib/formatar';
+import { formatarKz, mensagemErro, textoEntregaGratis } from '@/lib/formatar';
 import { precoMontado } from '@/lib/opcoes';
 import { useSessao } from '@/lib/sessao';
 import { cores, espaco, raio } from '@/lib/tema';
-import { guardarDestino, lerCardapioVisitante, type CardapioVisitante, type PratoCardapioVisitante } from '@/lib/visitante';
+import {
+  entregaVisitante,
+  guardarDestino,
+  lerCardapioVisitante,
+  lerZonaVisitante,
+  type CardapioVisitante,
+  type PratoCardapioVisitante,
+  type ZonaVisitante,
+} from '@/lib/visitante';
 
 function BotaoQtd({ sinal, rotulo, aoCarregar }: { sinal: string; rotulo: string; aoCarregar: () => void }) {
   return (
@@ -39,6 +47,12 @@ export default function CardapioVisita() {
   const [erro, setErro] = useState<string | null>(null);
   const [troca, setTroca] = useState<PratoCardapioVisitante | null>(null);
   const [pedirConta, setPedirConta] = useState(false);
+  // Bairro escolhido em «Ver o cardápio primeiro» (pelo link partilhado não há: a entrega vem depois)
+  const [zona, setZona] = useState<ZonaVisitante | null>(null);
+
+  useEffect(() => {
+    lerZonaVisitante().then(setZona, () => undefined);
+  }, []);
 
   useEffect(() => {
     let vivo = true;
@@ -68,7 +82,17 @@ export default function CardapioVisita() {
 
   const daCozinha = carrinho.cozinhaActual?.id === dados.cozinha.id;
   const linhas = daCozinha ? carrinho.linhas : [];
-  const total = linhas.reduce((s, l) => s + l.qtd * precoMontado(l.item.preco, l.opcoes, l.tirados), 0);
+  const pratos = linhas.reduce((s, l) => s + l.qtd * precoMontado(l.item.preco, l.opcoes, l.tirados), 0);
+  const entrega = zona ? entregaVisitante(zona, pratos) : null;
+  const total = entrega ? entrega.total : pratos;
+  const avisoGratis =
+    zona && entrega
+      ? textoEntregaGratis({
+          entrega_gratis: entrega.taxa === 0 && zona.taxa > 0,
+          entrega_gratis_acima: zona.entrega_gratis_acima,
+          falta_entrega_gratis: entrega.falta,
+        })
+      : null;
 
   function escolher(p: PratoCardapioVisitante) {
     if (p.montar) {
@@ -147,8 +171,22 @@ export default function CardapioVisita() {
                 <BotaoQtd sinal="+" rotulo={`Mais um ${l.item.nome}`} aoCarregar={() => carrinho.alterar(l.chave, l.qtd + 1)} />
               </View>
             ))}
-            <Text style={{ fontWeight: '800', color: cores.texto }}>Pratos: {formatarKz(total)}</Text>
-            <Paragrafo suave>A entrega e os descontos são calculados no passo seguinte.</Paragrafo>
+            <Text style={{ color: cores.texto }}>Pratos: {formatarKz(pratos)}</Text>
+            {zona && entrega ? (
+              <>
+                <Text style={{ color: cores.texto }}>
+                  Entrega para {zona.nome}: {entrega.taxa > 0 ? formatarKz(entrega.taxa) : 'grátis'}
+                </Text>
+                {avisoGratis && <Paragrafo suave>{avisoGratis}</Paragrafo>}
+                <Text style={{ fontWeight: '800', color: cores.texto }}>Total estimado: {formatarKz(total)}</Text>
+                <Paragrafo suave>Confirmamos a entrega e os descontos com a tua morada, no passo seguinte.</Paragrafo>
+              </>
+            ) : (
+              <>
+                <Text style={{ fontWeight: '800', color: cores.texto }}>Total dos pratos: {formatarKz(pratos)}</Text>
+                <Paragrafo suave>A entrega e os descontos são calculados no passo seguinte.</Paragrafo>
+              </>
+            )}
           </Cartao>
           <Botao titulo={`Pedir · ${formatarKz(total)}`} aoCarregar={() => setPedirConta(true)} />
         </>

@@ -34,7 +34,8 @@ export async function lerCardapioVisitante(cozinhaId: string): Promise<CardapioV
 }
 
 // ------------------------------------------------------------ porta da frente (sem link)
-export type ZonaVisitante = { id: string; nome: string };
+/** Bairro com a taxa de entrega e o limiar da entrega grátis (null = sem entrega grátis) */
+export type ZonaVisitante = { id: string; nome: string; taxa: number; entrega_gratis_acima: number | null };
 export type CozinhaVisitante = { id: string; nome: string; pratos: number; distancia_km: number | null; foto_url: string | null };
 
 /** Bairros (zonas de entrega) para o visitante escolher */
@@ -49,6 +50,43 @@ export async function lerCozinhasVisitante(zonaId: string | null): Promise<Cozin
   const r = await supabase.rpc('visitante_cozinhas', { p_zona: zonaId });
   if (r.error) throw r.error;
   return (r.data as CozinhaVisitante[] | null) ?? [];
+}
+
+// O bairro escolhido fica guardado 24 h (o cardápio e o carrinho do visitante mostram a entrega)
+const CHAVE_ZONA = 'manda-bue:zona-visitante';
+
+export async function guardarZonaVisitante(z: ZonaVisitante | null): Promise<void> {
+  await (z ? AsyncStorage.setItem(CHAVE_ZONA, JSON.stringify({ zona: z, em: Date.now() })) : AsyncStorage.removeItem(CHAVE_ZONA)).catch(
+    () => undefined,
+  );
+}
+
+export async function lerZonaVisitante(agora = Date.now()): Promise<ZonaVisitante | null> {
+  try {
+    const bruto = await AsyncStorage.getItem(CHAVE_ZONA);
+    if (!bruto) return null;
+    const { zona, em } = JSON.parse(bruto) as { zona: ZonaVisitante; em: number };
+    if (typeof em !== 'number' || agora - em > VALIDADE_MS || !zona || typeof zona.taxa !== 'number') return null;
+    return zona;
+  } catch {
+    return null;
+  }
+}
+
+/** O que mostrar no botão do bairro */
+export function rotuloZona(z: ZonaVisitante, formatar: (v: number) => string): string {
+  return `${z.nome} · ${z.taxa > 0 ? `entrega ${formatar(z.taxa)}` : 'entrega grátis'}`;
+}
+
+/**
+ * Entrega estimada no carrinho do visitante: a taxa do bairro, grátis a partir do limiar.
+ * Estimativa: o servidor confirma no carrinho (com a morada e os descontos).
+ */
+export function entregaVisitante(z: ZonaVisitante, pratos: number): { taxa: number; total: number; falta: number | null } {
+  const gratis = z.entrega_gratis_acima !== null && z.entrega_gratis_acima > 0 && pratos >= z.entrega_gratis_acima;
+  const taxa = gratis ? 0 : z.taxa;
+  const falta = !gratis && z.taxa > 0 && z.entrega_gratis_acima ? z.entrega_gratis_acima - pratos : null;
+  return { taxa, total: pratos + taxa, falta };
 }
 
 // ------------------------------------------------------------ para onde ir depois de entrar

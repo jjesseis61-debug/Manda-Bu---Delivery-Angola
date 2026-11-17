@@ -4,12 +4,14 @@ import { Image, Pressable, Text, View } from 'react-native';
 
 import { FaixaConfianca } from '@/components/FaixaConfianca';
 import { ACarregar, Aviso, Botao, Cartao, Ecra, Paragrafo, Subtitulo } from '@/components/ui';
-import { mensagemErro } from '@/lib/formatar';
+import { formatarKz, mensagemErro } from '@/lib/formatar';
 import { useSessao } from '@/lib/sessao';
 import { cores, espaco, raio } from '@/lib/tema';
 import {
+  guardarZonaVisitante,
   lerCozinhasVisitante,
   lerZonasVisitante,
+  rotuloZona,
   type CozinhaVisitante,
   type ZonaVisitante,
 } from '@/lib/visitante';
@@ -41,6 +43,8 @@ export default function Explorar() {
 
   useEffect(() => {
     if (!escolha) return;
+    // O cardápio e o carrinho mostram a entrega deste bairro
+    void guardarZonaVisitante(escolha.zona);
     let vivo = true;
     setCozinhas(null);
     lerCozinhasVisitante(escolha.zona?.id ?? null)
@@ -71,7 +75,7 @@ export default function Explorar() {
         <Paragrafo suave>Escolhe o teu bairro para veres as cozinhas que te podem servir.</Paragrafo>
         {erro && <Aviso tipo="erro">{erro}</Aviso>}
         {zonas.map((z) => (
-          <Botao key={z.id} titulo={z.nome} variante="leve" aoCarregar={() => setEscolha({ zona: z })} />
+          <Botao key={z.id} titulo={rotuloZona(z, formatarKz)} variante="leve" aoCarregar={() => setEscolha({ zona: z })} />
         ))}
         <Botao titulo="O meu bairro não está na lista" variante="texto" aoCarregar={() => setEscolha({ zona: null })} />
         <FaixaConfianca />
@@ -84,7 +88,14 @@ export default function Explorar() {
   return (
     <Ecra>
       <Subtitulo>{escolha.zona ? `Cozinhas para ${escolha.zona.nome}` : 'Cozinhas da Manda Bué'}</Subtitulo>
-      {!escolha.zona && <Paragrafo suave>Ao pedir, confirmamos se entregamos na tua morada.</Paragrafo>}
+      {escolha.zona ? (
+        <Paragrafo suave>
+          {escolha.zona.taxa > 0 ? `Entrega para ${escolha.zona.nome}: ${formatarKz(escolha.zona.taxa)}` : `Entrega grátis para ${escolha.zona.nome}`}
+          {escolha.zona.taxa > 0 && escolha.zona.entrega_gratis_acima ? ` · grátis a partir de ${formatarKz(escolha.zona.entrega_gratis_acima)}` : ''}.
+        </Paragrafo>
+      ) : (
+        <Paragrafo suave>Ao pedir, confirmamos se entregamos na tua morada e quanto custa a entrega.</Paragrafo>
+      )}
       {erro && <Aviso tipo="erro">{erro}</Aviso>}
       {cozinhas.length === 0 && <Aviso>Agora não há cozinhas abertas. Volta um pouco mais tarde.</Aviso>}
       {cozinhas.map((c) => (

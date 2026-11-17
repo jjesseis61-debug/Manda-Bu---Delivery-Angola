@@ -14,7 +14,11 @@ const prato = (id: string, nome: string, preco: number, extra: object = {}) => (
   id, nome, preco, descricao: null, categoria: null, foto_url: null, do_dia: false, cozinha_id: 'v', prato_base_id: null, pedidos_mes: 0,
   esgotado: false, montar: false, ...extra,
 });
+jest.mock('@react-native-async-storage/async-storage', () => require('@react-native-async-storage/async-storage/jest/async-storage-mock'));
+const mockZona: { valor: unknown } = { valor: null };
 jest.mock('@/lib/visitante', () => ({
+  entregaVisitante: jest.requireActual('@/lib/visitante').entregaVisitante,
+  lerZonaVisitante: async () => mockZona.valor,
   guardarDestino: (...a: unknown[]) => mockGuardarDestino(...(a as [])),
   lerCardapioVisitante: async () => ({
     cozinha: { id: 'v', nome: 'Viana' },
@@ -45,6 +49,7 @@ beforeEach(() => {
   mockCarrinho.linhas = [];
   mockCarrinho.cozinha = null;
   mockSessao.comConta = false;
+  mockZona.valor = null;
 });
 
 test('o visitante vê o cardápio da cozinha e adiciona um prato simples', async () => {
@@ -84,4 +89,16 @@ test('quem já tem conta vai para o início', async () => {
   const ecra = renderRouter(rotas, { initialUrl: '/visita/v' });
   await act(async () => undefined);
   expect(ecra.getByText('Início')).toBeTruthy();
+});
+
+test('com o bairro escolhido mostra a entrega e quanto falta para ser grátis', async () => {
+  mockZona.valor = { id: 'z1', nome: 'Talatona', taxa: 500, entrega_gratis_acima: 10000 };
+  mockCarrinho.cozinha = { id: 'v', nome: 'Viana' };
+  mockCarrinho.linhas = [{ chave: 'm', item: prato('m', 'Muamba', 2500), qtd: 2, opcoes: [], tirados: [] }];
+  const ecra = renderRouter(rotas, { initialUrl: '/visita/v' });
+  await act(async () => undefined);
+  expect(ecra.getByText('Entrega para Talatona: 500 Kz')).toBeTruthy();
+  expect(ecra.getByText(/Junta mais 5.000 Kz e a entrega fica grátis/)).toBeTruthy();
+  expect(ecra.getByText('Total estimado: 5.500 Kz')).toBeTruthy();
+  expect(ecra.getByText('Pedir · 5.500 Kz')).toBeTruthy();
 });

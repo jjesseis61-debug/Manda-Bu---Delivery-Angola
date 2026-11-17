@@ -6,7 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { restaurarCarrinho, VALIDADE_CARRINHO_MS } from '../carrinho';
 import { formatarKz } from '../formatar';
-import { guardarDestino, lerDestino, limparDestino, textoConviteVisitante } from '../visitante';
+import { entregaVisitante, guardarDestino, guardarZonaVisitante, lerDestino, lerZonaVisitante, limparDestino, rotuloZona, textoConviteVisitante } from '../visitante';
 
 const linha = { chave: 'm', item: { id: 'm', nome: 'Muamba', preco: 2500 }, qtd: 2, opcoes: [], tirados: [] };
 
@@ -53,5 +53,29 @@ describe('texto do convite', () => {
     expect(textoConviteVisitante({ desconto: 500, minimo: 2000 }, formatarKz)).toBe('🎁 Convite aplicado: −500 Kz no teu 1.º pedido (pedido a partir de 2.000 Kz).');
     expect(textoConviteVisitante({ desconto: 500, minimo: 0 }, formatarKz)).toBe('🎁 Convite aplicado: −500 Kz no teu 1.º pedido.');
     expect(textoConviteVisitante(null, formatarKz)).toBeNull();
+  });
+});
+
+describe('entrega do bairro', () => {
+  const zona = { id: 'z', nome: 'Talatona', taxa: 500, entrega_gratis_acima: 10000 };
+  it('soma a taxa e diz quanto falta para ser grátis', () => {
+    expect(entregaVisitante(zona, 6000)).toEqual({ taxa: 500, total: 6500, falta: 4000 });
+  });
+  it('a partir do limiar a entrega é grátis', () => {
+    expect(entregaVisitante(zona, 10000)).toEqual({ taxa: 0, total: 10000, falta: null });
+  });
+  it('sem entrega grátis configurada, nunca falta nada', () => {
+    expect(entregaVisitante({ ...zona, entrega_gratis_acima: null }, 50000)).toEqual({ taxa: 500, total: 50500, falta: null });
+  });
+  it('rótulo do bairro', () => {
+    expect(rotuloZona(zona, formatarKz)).toBe('Talatona · entrega 500 Kz');
+    expect(rotuloZona({ ...zona, taxa: 0 }, formatarKz)).toBe('Talatona · entrega grátis');
+  });
+  it('o bairro fica guardado 24 h', async () => {
+    await guardarZonaVisitante(zona);
+    expect(await lerZonaVisitante()).toEqual(zona);
+    expect(await lerZonaVisitante(Date.now() + 25 * 60 * 60 * 1000)).toBeNull();
+    await guardarZonaVisitante(null);
+    expect(await lerZonaVisitante()).toBeNull();
   });
 });

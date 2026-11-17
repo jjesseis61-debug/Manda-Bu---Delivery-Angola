@@ -1,7 +1,7 @@
 -- Visitante pela porta da frente: bairros e cozinhas que lhe servem, da mais perto para a mais longe
 begin;
 \ir _helpers.psql
-select plan(7);
+select plan(9);
 
 select testes.def('coz', cozinha_padrao());
 with z as (insert into zonas (nome, tipo, taxa, centro_lat, centro_lng) values (' Talatona', 'Própria', 300, -8.92, 13.18) returning id)
@@ -21,6 +21,10 @@ select testes.def('sem_centro', visitante_cozinhas(testes.u('zango')));
 select testes.def('sem_zona', visitante_cozinhas());
 reset role;
 
+select is((select (x ->> 'taxa')::int from jsonb_array_elements(testes.v('zonas')::jsonb) x where x ->> 'nome' = 'Zango'), 500,
+          'cada bairro com a taxa de entrega');
+select is((select x -> 'entrega_gratis_acima' from jsonb_array_elements(testes.v('zonas')::jsonb) x where x ->> 'nome' = 'Zango'), 'null'::jsonb,
+          'sem entrega grátis configurada: null');
 select ok((select bool_or(x ->> 'nome' = 'Talatona') from jsonb_array_elements(testes.v('zonas')::jsonb) x), 'bairros para escolher (nome sem espaços)');
 select is(testes.v('perto_de_talatona')::jsonb #>> '{0,nome}', 'Cozinha Talatona', 'bairro com centro: a cozinha mais perto primeiro');
 select ok((testes.v('perto_de_talatona')::jsonb #>> '{0,distancia_km}')::numeric < 1, 'com a distância');
