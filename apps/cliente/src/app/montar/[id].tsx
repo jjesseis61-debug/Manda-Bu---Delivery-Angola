@@ -7,11 +7,13 @@ import { Confirmar } from '@/components/Confirmar';
 import { FaixaConfianca } from '@/components/FaixaConfianca';
 import { ACarregar, Aviso, Botao, Ecra, Paragrafo, Subtitulo } from '@/components/ui';
 import { lerComponentes, lerDoses, lerItemCardapio, lerOpcoes } from '@/lib/api';
+import { lerCodigoPendente } from '@/lib/convite';
 import { type PendenteMontar, useCarrinho } from '@/lib/carrinho';
 import { formatarKz, mensagemErro } from '@/lib/formatar';
 import { alternar, emojiOpcao, gruposEmFalta, gruposEsgotados, opcoesEscolhidas, precoMontado, regraGrupo } from '@/lib/opcoes';
 import { cozinhasDisponiveis, decidirCozinha, pratoSimples, TEXTO_INDISPONIVEL } from '@/lib/pratoPartilhado';
 import { useSessao } from '@/lib/sessao';
+import { lerPratoVisitante, textoConviteVisitante } from '@/lib/visitante';
 import { cores, espaco, raio } from '@/lib/tema';
 import type { ComponentePrato, GrupoOpcoes, ItemCardapio } from '@/lib/tipos';
 
@@ -27,7 +29,10 @@ const LARGURA_RESUMO = 150;
 export default function MontarPrato() {
   const { id, rever } = useLocalSearchParams<{ id: string; rever?: string }>();
   const router = useRouter();
-  const { carregado, ligada } = useSessao();
+  const { carregado, ligada, sessao, perfil } = useSessao();
+  // Sem conta (chegou por um link partilhado): lê o prato pela leitura do visitante
+  const visitante = carregado && (!sessao || !perfil);
+  const [convite, setConvite] = useState<string | null>(null);
   const carrinho = useCarrinho();
   const [item, setItem] = useState<ItemCardapio | null | undefined>(undefined);
   const [grupos, setGrupos] = useState<GrupoOpcoes[]>([]);
@@ -48,6 +53,31 @@ export default function MontarPrato() {
   const comCondominios = ligada('condominios');
 
   useEffect(() => {
+    if (!carregado) return;
+    if (visitante) {
+      let vivo = true;
+      lerCodigoPendente()
+        .catch(() => null)
+        .then((codigo) => lerPratoVisitante(String(id), codigo))
+        .then((v) => {
+          if (!vivo) return;
+          setItem(v?.prato ?? null);
+          if (!v) return;
+          setSemDoses(v.esgotado);
+          setComponentes(v.componentes.length > 1 ? v.componentes : []);
+          setGrupos(v.grupos.filter((x) => x.opcoes.length > 0 || x.minimo > 0));
+          setDisponiveis([v.cozinha]);
+          setConvite(textoConviteVisitante(v.convite, formatarKz));
+        })
+        .catch((e) => {
+          if (!vivo) return;
+          setErro(mensagemErro(e));
+          setItem(null);
+        });
+      return () => {
+        vivo = false;
+      };
+    }
     Promise.all([lerItemCardapio(String(id)), lerOpcoes([String(id)]), lerComponentes([String(id)]).catch(() => [])])
       .then(([i, g, c]) => {
         setItem(i);
@@ -70,20 +100,20 @@ export default function MontarPrato() {
         setErro(mensagemErro(e));
         setItem(null);
       });
-  }, [id, rever]);
+  }, [id, rever, carregado, visitante]);
 
   useEffect(() => {
-    if (!carregado) return;
+    if (!carregado || visitante) return;
     let vivo = true;
     cozinhasDisponiveis(multi, comCondominios).then((d) => vivo && setDisponiveis(d));
     return () => {
       vivo = false;
     };
-  }, [carregado, multi, comCondominios]);
+  }, [carregado, visitante, multi, comCondominios]);
 
   // Aberto por link: espera pelos interruptores antes de decidir
   if (!carregado) return <ACarregar />;
-  if (!ligada('pratos_montaveis')) return <Redirect href="/inicio" />;
+  if (!visitante && !ligada('pratos_montaveis')) return <Redirect href="/inicio" />;
   if (item === undefined) return <ACarregar />;
   if (item === null) return <Ecra><Aviso tipo="erro">{erro ?? 'Este prato já não está disponível.'}</Aviso></Ecra>;
 
@@ -106,8 +136,9 @@ export default function MontarPrato() {
     const actual = carrinho.cozinhaActual?.id ?? null;
     const decisao = decidirCozinha({
       cozinhaPrato: item.cozinha_id,
-      // Sem multi_cozinha só há a cozinha principal: o carrinho não guarda cozinha
-      actual: multi ? actual : item.cozinha_id,
+      // Sem multi_cozinha só há a cozinha principal: o carrinho não guarda cozinha.
+      // O visitante guarda sempre a cozinha (o carrinho fica à espera de ele entrar).
+      actual: multi || visitante ? actual : item.cozinha_id,
       quantidade: carrinho.quantidade,
       emGrupo: carrinho.grupo !== null,
       disponiveis: disponiveis?.map((c) => c.id) ?? null,
@@ -131,9 +162,11 @@ export default function MontarPrato() {
       });
   }
 
+  const cardapioVisitante = () => router.replace({ pathname: '/visita/[cozinha]', params: { cozinha: item.cozinha_id } });
   const voltar = () => {
-    // Aberto por link não há ecrã anterior: segue para o início
+    // Aberto por link não há ecrã anterior: segue para o início (o visitante, para o cardápio da cozinha)
     if (router.canGoBack()) router.back();
+    else if (visitante) cardapioVisitante();
     else router.replace('/inicio');
   };
 
@@ -165,13 +198,14 @@ export default function MontarPrato() {
         <Text style={{ fontSize: 18, fontWeight: '800', color: cores.texto }}>{formatarKz(item.preco)}</Text>
         {semDoses && <Aviso>Esgotado: acabaram as doses de hoje.</Aviso>}
         {avisoCozinha && <Aviso>{avisoCozinha}</Aviso>}
+        {convite && <Aviso tipo="sucesso">{convite}</Aviso>}
         <FaixaConfianca />
         <Botao
           titulo={semDoses ? 'Esgotado' : `Adicionar ao carrinho · ${formatarKz(item.preco)}`}
           desactivado={semDoses}
           aoCarregar={() => adicionarNaCozinha(voltar)}
         />
-        <Botao titulo="Ver o cardápio" variante="texto" aoCarregar={() => router.replace('/inicio')} />
+        <Botao titulo="Ver o cardápio" variante="texto" aoCarregar={() => (visitante ? cardapioVisitante() : router.replace('/inicio'))} />
       </Ecra>
     );
   }
@@ -198,6 +232,7 @@ export default function MontarPrato() {
           </Text>
           <Text style={{ fontSize: 22, fontWeight: '700', color: cores.texto }}>{item.nome.trim()}</Text>
           {item.descricao && <Paragrafo suave>{item.descricao}</Paragrafo>}
+          {convite && <Aviso tipo="sucesso">{convite}</Aviso>}
           {minimo > 0 && (
             <Text style={{ color: cores.marca, fontSize: 13, fontWeight: '600' }}>
               O valor mínimo para servir é {formatarKz(minimo)}.

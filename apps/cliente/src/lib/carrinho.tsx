@@ -1,4 +1,5 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 import { chaveLinha, precoMontado } from './opcoes';
 import type { ComponentePrato, ItemCardapio, OpcaoEscolhida } from './tipos';
@@ -60,11 +61,67 @@ type Carrinho = {
 
 const Contexto = createContext<Carrinho | null>(null);
 
+// O carrinho fica guardado 24 h neste telemóvel/navegador: quem chega por um link sem conta
+// monta o carrinho, entra (SMS) e encontra-o igual; quem fecha a app a meio também.
+// Os preços guardados são só para mostrar: o servidor recalcula tudo no orçamento.
+const CHAVE_CARRINHO = 'manda-bue:carrinho';
+export const VALIDADE_CARRINHO_MS = 24 * 60 * 60 * 1000;
+type CarrinhoGuardado = { em: number; linhas: LinhaCarrinho[]; cozinha: CozinhaCarrinho | null };
+
+/** Carrinho guardado, se ainda dentro do prazo e bem formado */
+export function restaurarCarrinho(bruto: string | null, agora = Date.now()): Omit<CarrinhoGuardado, 'em'> | null {
+  if (!bruto) return null;
+  try {
+    const g = JSON.parse(bruto) as CarrinhoGuardado;
+    if (typeof g.em !== 'number' || agora - g.em > VALIDADE_CARRINHO_MS || !Array.isArray(g.linhas)) return null;
+    const linhas = g.linhas.filter(
+      (l) => l && typeof l.chave === 'string' && l.item && typeof l.item.id === 'string' && typeof l.qtd === 'number' && l.qtd > 0,
+    );
+    if (linhas.length === 0) return null;
+    return { linhas, cozinha: g.cozinha && typeof g.cozinha.id === 'string' ? g.cozinha : null };
+  } catch {
+    return null;
+  }
+}
+
 export function CarrinhoProvider({ children }: { children: ReactNode }) {
   const [linhas, setLinhas] = useState<LinhaCarrinho[]>([]);
   const [grupo, setGrupo] = useState<GrupoCarrinho | null>(null);
   const [cozinha, setCozinha] = useState<CozinhaCarrinho | null>(null);
   const [repeticao, setRepeticao] = useState<Repeticao | null>(null);
+  const lido = useRef(false);
+  // O que está guardado (sem a data): repor não renova o prazo de 24 h, só uma mudança renova
+  const guardado = useRef<string | null>(null);
+
+  // Ao abrir: repõe o carrinho guardado (se o actual ainda estiver vazio)
+  useEffect(() => {
+    AsyncStorage.getItem(CHAVE_CARRINHO)
+      .then((bruto) => {
+        const g = restaurarCarrinho(bruto);
+        if (g) {
+          guardado.current = JSON.stringify({ linhas: g.linhas, cozinha: g.cozinha });
+          setLinhas((actual) => (actual.length > 0 ? actual : g.linhas));
+          setCozinha((actual) => actual ?? g.cozinha);
+        }
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        lido.current = true;
+      });
+  }, []);
+
+  // Guarda a cada mudança (o pedido de grupo não se guarda: é de um momento)
+  useEffect(() => {
+    if (!lido.current) return;
+    const vazio = linhas.length === 0 || grupo !== null;
+    const conteudo = vazio ? null : JSON.stringify({ linhas, cozinha });
+    if (conteudo === guardado.current) return;
+    guardado.current = conteudo;
+    const p = vazio
+      ? AsyncStorage.removeItem(CHAVE_CARRINHO)
+      : AsyncStorage.setItem(CHAVE_CARRINHO, JSON.stringify({ em: Date.now(), linhas, cozinha } satisfies CarrinhoGuardado));
+    p.catch(() => undefined);
+  }, [linhas, cozinha, grupo]);
 
   const valor = useMemo<Carrinho>(
     () => ({

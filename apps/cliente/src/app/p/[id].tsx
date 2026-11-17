@@ -9,8 +9,9 @@ import { useSessao } from '@/lib/sessao';
 /**
  * Prato partilhado: {site}/p/{prato}?r={código} (ou mandabue://p/{prato}?r=…).
  * Guarda o código de quem partilhou (o registo usa-o) e, se o cliente já tem conta e ainda pode
- * ser convidado, liga a indicação em silêncio. Depois abre o prato; sem conta, vai para a entrada
- * (entrar/registo) com o código já guardado.
+ * ser convidado, liga a indicação em silêncio. Depois abre o prato — com ou sem conta: o visitante
+ * vê o prato e o cardápio da cozinha e só entra/cria conta ao carregar em «Pedir» (o código fica
+ * guardado para o registo).
  */
 export default function PratoPartilhado() {
   const { id, r } = useLocalSearchParams<{ id: string; r?: string }>();
@@ -36,6 +37,7 @@ export default function PratoPartilhado() {
   }, [carregado, perfil, r, ligada, actualizar]);
 
   if (!pronto) return <ACarregar />;
-  if (!sessao || !perfil) return <Redirect href="/" />;
+  // Conta suspensa: a porta de entrada trata (recuperar a conta)
+  if (sessao && perfil?.suspensa) return <Redirect href="/" />;
   return <Redirect href={{ pathname: '/montar/[id]', params: { id: String(id ?? '') } }} />;
 }

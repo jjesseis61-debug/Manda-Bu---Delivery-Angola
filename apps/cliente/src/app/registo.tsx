@@ -24,7 +24,10 @@ export default function Registo() {
   }, []);
 
   if (!sessao) return <Redirect href="/entrar" />;
-  if (perfil && !aviso) return <Redirect href="/inicio" />;
+  if (perfil && !aviso) return <Redirect href="/" />;
+
+  /** A porta de entrada decide: o início ou, se veio de um link com o carrinho montado, o carrinho */
+  const seguir = () => router.replace('/');
 
   async function criar() {
     setErro(null);
@@ -48,7 +51,7 @@ export default function Registo() {
         }
       }
       await actualizar();
-      if (!codigoNormalizado || !ligada('indicacao')) router.replace('/inicio');
+      if (!codigoNormalizado || !ligada('indicacao')) seguir();
     } catch (e) {
       setErro(mensagemErro(e));
     } finally {
@@ -60,7 +63,7 @@ export default function Registo() {
     return (
       <Ecra>
         <Aviso tipo={aviso.startsWith('Código aceite') ? 'sucesso' : 'aviso'}>{aviso}</Aviso>
-        <Botao titulo="Continuar" aoCarregar={() => router.replace('/inicio')} />
+        <Botao titulo="Continuar" aoCarregar={seguir} />
       </Ecra>
     );
   }

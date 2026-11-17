@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
+import { useSessao } from '@/lib/sessao';
 import { fraseBairro, frasesFaixa, lerPontualidade, type Pontualidade } from '@/lib/faixa';
 import { cores, espaco, raio } from '@/lib/tema';
 
@@ -22,6 +23,8 @@ export function FaixaConfianca({
   agendado?: boolean;
 }) {
   const router = useRouter();
+  // O visitante (sem conta) não tem a Ajuda: a frase fica, sem ligação
+  const { perfil } = useSessao();
   const [pont, setPont] = useState<Pontualidade | null>(cache ?? null);
   const [vez, setVez] = useState(0);
   const social = fraseBairro(contador, bairro);
@@ -71,7 +74,7 @@ export function FaixaConfianca({
           borderLeftWidth: i === 0 ? 0 : 1,
           borderLeftColor: cores.linha,
         };
-        return f.ajuda ? (
+        return f.ajuda && perfil ? (
           <Pressable key={i} accessibilityRole="link" onPress={() => router.push('/ajuda')} style={estilo}>
             {conteudo}
           </Pressable>

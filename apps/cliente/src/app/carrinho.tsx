@@ -10,6 +10,7 @@ import { type LinhaCarrinho, useCarrinho } from '@/lib/carrinho';
 import { novoId } from '@/lib/dispositivo';
 import { formatarKz, mensagemCodigo, mensagemErro, textoCampanha, textoEntregaGratis } from '@/lib/formatar';
 import { useSessao } from '@/lib/sessao';
+import { limparDestino } from '@/lib/visitante';
 import { cores, espaco } from '@/lib/tema';
 import type { Endereco, MeuPacote, MinhaEmpresa, Orcamento } from '@/lib/tipos';
 
@@ -55,6 +56,10 @@ export default function Carrinho() {
   const [erro, setErro] = useState<string | null>(null);
   const [aEnviar, setAEnviar] = useState(false);
   const [versao, setVersao] = useState(0);
+  // Chegou aqui depois de entrar (carrinho montado como visitante): o destino já foi cumprido
+  useEffect(() => {
+    void limparDestino();
+  }, []);
   // Id do pedido, mantido entre tentativas: retentar depois de uma falha de rede não cria outro pedido.
   // Muda quando mudam os pratos, o endereço ou o grupo, porque passa a ser outro pedido.
   const idPedido = useRef<string | null>(null);
