@@ -32,7 +32,7 @@ export default function RecuperarConta() {
 
   async function sairAgora() {
     await sair().catch(() => undefined);
-    router.replace('/entrar');
+    router.replace('/inicio'); // a app continua aberta (Início do visitante)
   }
 
   return (

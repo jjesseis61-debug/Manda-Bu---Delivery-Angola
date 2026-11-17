@@ -25,7 +25,7 @@ function ContaCliente() {
     try {
       await sairDeTodosOsDispositivos();
       carrinho.limpar();
-      router.replace('/entrar');
+      router.replace('/inicio'); // a app continua aberta (Início do visitante)
     } catch (e) {
       setErro(mensagemErro(e));
       setOcupado(false);
@@ -76,7 +76,7 @@ function ContaCliente() {
         aoCarregar={async () => {
           carrinho.limpar();
           await sair();
-          router.replace('/entrar');
+          router.replace('/inicio'); // a app continua aberta (Início do visitante)
         }}
       />
       <Botao titulo="Apagar a conta" variante="texto" aoCarregar={() => router.push('/apagar-conta')} />

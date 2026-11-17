@@ -27,7 +27,7 @@ export default function ApagarConta() {
       carrinho.limpar();
       // O utilizador já não existe no servidor: sair só limpa a sessão guardada no telemóvel
       await sair().catch(() => undefined);
-      router.replace('/entrar');
+      router.replace('/inicio'); // a app continua aberta (Início do visitante)
     } catch (e) {
       setErro(mensagemErro(e));
       setAApagar(false);
