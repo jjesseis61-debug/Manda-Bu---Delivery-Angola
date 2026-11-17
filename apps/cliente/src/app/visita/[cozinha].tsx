@@ -4,6 +4,7 @@ import { Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Confirmar } from '@/components/Confirmar';
+import { LoginNecessario } from '@/components/LoginNecessario';
 import { FaixaConfianca } from '@/components/FaixaConfianca';
 import { ACarregar, Aviso, Botao, Cartao, Ecra, Paragrafo, Subtitulo } from '@/components/ui';
 import { useCarrinho } from '@/lib/carrinho';
@@ -13,7 +14,6 @@ import { useSessao } from '@/lib/sessao';
 import { cores, espaco, raio } from '@/lib/tema';
 import {
   entregaVisitante,
-  guardarDestino,
   lerCardapioVisitante,
   lerZonaVisitante,
   type CardapioVisitante,
@@ -115,11 +115,6 @@ export default function CardapioVisita() {
     carrinho.adicionar(item);
   }
 
-  async function pedir() {
-    setPedirConta(false);
-    await guardarDestino('/carrinho');
-    router.push({ pathname: '/entrar', params: { pedir: '1' } });
-  }
 
   const nPratos = linhas.reduce((s, l) => s + l.qtd, 0);
 
@@ -204,13 +199,12 @@ export default function CardapioVisita() {
       )}
 
       <Botao titulo="💰 Convida amigos e ganha" variante="texto" aoCarregar={() => router.push('/ganhar')} />
-      <Confirmar
+      <LoginNecessario
         visivel={pedirConta}
         titulo="Só falta o teu número"
-        mensagem="Para a cozinha e o entregador te encontrarem, entra com o teu número de telefone (recebes um código por SMS). O teu carrinho fica guardado."
-        textoConfirmar="Continuar"
-        aoConfirmar={() => void pedir()}
-        aoCancelar={() => setPedirConta(false)}
+        motivo="Para a cozinha e o entregador te encontrarem. O teu carrinho fica guardado."
+        destino="/carrinho"
+        aoFechar={() => setPedirConta(false)}
       />
       <Confirmar
         visivel={troca !== null}

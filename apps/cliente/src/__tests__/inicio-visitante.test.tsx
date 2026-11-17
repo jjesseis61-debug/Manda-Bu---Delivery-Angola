@@ -9,7 +9,7 @@ import Pedidos from '@/app/(tabs)/pedidos';
 jest.mock('@react-native-async-storage/async-storage', () => require('@react-native-async-storage/async-storage/jest/async-storage-mock'));
 jest.mock('@expo/vector-icons/Ionicons', () => () => null);
 // Estável entre renders (como na app): o carregamento do Início depende de `ligada`
-const mockSessaoVisitante = { carregado: true, sessao: null, perfil: null, parametros: null, ligada: (c: string) => c === 'multi_cozinha' || c === 'pacotes' };
+const mockSessaoVisitante = { carregado: true, actualizar: async () => undefined, sessao: null, perfil: null, parametros: null, ligada: (c: string) => c === 'multi_cozinha' || c === 'pacotes' };
 jest.mock('@/lib/sessao', () => ({ useSessao: () => mockSessaoVisitante }));
 jest.mock('@/lib/supabase', () => ({ supabase: { rpc: async () => ({ data: null, error: null }) } }));
 jest.mock('@/lib/api', () => ({}));
@@ -75,9 +75,8 @@ test('igual ao Início com conta: sem a pergunta do bairro; pacote pede para ent
   expect(ecra.queryByText('🛵 Onde entregamos?')).toBeNull();
   fireEvent.press(ecra.getByText('Pacote do mês: paga uma vez, almoça o mês todo'));
   expect(ecra.getByText('Entra na tua conta')).toBeTruthy();
-  fireEvent.press(ecra.getByText('Entrar'));
-  await act(async () => undefined);
-  expect(mockGuardarDestino).toHaveBeenCalledWith('/pacotes');
+  expect(ecra.getByText('Entra para comprares o pacote do mês.')).toBeTruthy();
+  expect(ecra.getByText('Receber código')).toBeTruthy();
 });
 
 test('carrinho do visitante: escolhe o bairro e vê a entrega', async () => {
@@ -95,9 +94,8 @@ test('carrinho do visitante: «Pedir» pede o número só aí', async () => {
   await act(async () => undefined);
   expect(ecra.getByText('Total dos pratos: 2.500 Kz')).toBeTruthy();
   fireEvent.press(ecra.getByText('Pedir · 2.500 Kz'));
-  fireEvent.press(ecra.getByText('Continuar'));
-  await act(async () => undefined);
-  expect(ecra.getByText('Entrar')).toBeTruthy();
+  expect(ecra.getByText('Só falta o teu número')).toBeTruthy();
+  expect(ecra.getByText('Receber código')).toBeTruthy();
 });
 
 test('Pedidos sem conta: convite a entrar', async () => {

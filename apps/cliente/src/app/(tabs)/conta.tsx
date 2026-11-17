@@ -91,6 +91,7 @@ export default function Conta() {
     return (
       <ConvidarEntrar
         titulo="A tua conta"
+        destino="/conta"
         texto="Entra para guardares os teus endereços, veres o teu saldo do Convida e Ganha e protegeres a conta."
         ajuda
       />

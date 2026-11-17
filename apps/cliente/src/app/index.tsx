@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 
 import { ACarregar } from '@/components/ui';
 import { useSessao } from '@/lib/sessao';
-import { lerDestino } from '@/lib/visitante';
+import { tirarDestino } from '@/lib/visitante';
 
 /**
  * Porta de entrada: sem sessão → início do visitante; sem cliente registado → registo; senão → início.
@@ -17,7 +17,7 @@ export default function Entrada() {
   useEffect(() => {
     if (!pronto) return;
     let vivo = true;
-    lerDestino().then((d) => vivo && setDestino(d ?? '/inicio'));
+    tirarDestino().then((d) => vivo && setDestino(d ?? '/inicio'));
     return () => {
       vivo = false;
     };

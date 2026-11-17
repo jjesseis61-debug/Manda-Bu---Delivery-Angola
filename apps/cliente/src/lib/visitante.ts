@@ -138,6 +138,21 @@ export async function lerDestino(agora = Date.now()): Promise<Destino | null> {
   }
 }
 
+// Último destino tirado: a porta de entrada pode abrir duas vezes seguidas (registo → «/»);
+// a segunda vez, nos segundos seguintes, recebe o mesmo destino em vez de cair no início.
+let tiradoHaPouco: { destino: Destino; em: number } | null = null;
+
+/** Lê e apaga o destino (uma só vez), para não voltar a ele em cada abertura da app */
+export async function tirarDestino(agora = Date.now()): Promise<Destino | null> {
+  const d = await lerDestino(agora);
+  if (d) {
+    tiradoHaPouco = { destino: d, em: agora };
+    await limparDestino();
+    return d;
+  }
+  return tiradoHaPouco && agora - tiradoHaPouco.em < 10_000 ? tiradoHaPouco.destino : null;
+}
+
 export async function limparDestino(): Promise<void> {
   await AsyncStorage.removeItem(CHAVE_DESTINO).catch(() => undefined);
 }

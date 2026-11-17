@@ -9,6 +9,7 @@ jest.mock('@/lib/sessao', () => ({
   useSessao: () => ({ carregado: true, ligada: () => false, sessao: mockSessao.comConta ? {} : null, perfil: mockSessao.comConta ? {} : null }),
 }));
 jest.mock('@/lib/supabase', () => ({ supabase: { rpc: async () => ({ data: null, error: null }) } }));
+jest.mock('@/lib/api', () => ({ meuPerfil: async () => null }));
 const mockGuardarDestino = jest.fn(async () => undefined);
 const prato = (id: string, nome: string, preco: number, extra: object = {}) => ({
   id, nome, preco, descricao: null, categoria: null, foto_url: null, do_dia: false, cozinha_id: 'v', prato_base_id: null, pedidos_mes: 0,
@@ -73,7 +74,7 @@ test('prato com opções abre o ecrã de montar', async () => {
   expect(ecra.getByText('Montar')).toBeTruthy();
 });
 
-test('«Pedir» só então pede o número, guarda o carrinho como destino e vai entrar', async () => {
+test('«Pedir» só então pede o número, numa folha por cima do cardápio', async () => {
   mockCarrinho.cozinha = { id: 'v', nome: 'Viana' };
   mockCarrinho.linhas = [{ chave: 'm', item: prato('m', 'Muamba', 2500), qtd: 2, opcoes: [], tirados: [] }];
   const ecra = renderRouter(rotas, { initialUrl: '/visita/v' });
@@ -81,11 +82,9 @@ test('«Pedir» só então pede o número, guarda o carrinho como destino e vai 
   // Barra fixa do carrinho, sempre à vista
   expect(ecra.getByText('🛒 2 pratos · 5.000 Kz')).toBeTruthy();
   fireEvent.press(ecra.getByText('Pedir ›'));
+  // A folha de login abre por cima do cardápio, já com o campo do número
   expect(ecra.getByText('Só falta o teu número')).toBeTruthy();
-  fireEvent.press(ecra.getByText('Continuar'));
-  await act(async () => undefined);
-  expect(mockGuardarDestino).toHaveBeenCalledWith('/carrinho');
-  expect(ecra.getByText('Entrar')).toBeTruthy();
+  expect(ecra.getByText('Receber código')).toBeTruthy();
 });
 
 test('quem já tem conta vai para o início', async () => {

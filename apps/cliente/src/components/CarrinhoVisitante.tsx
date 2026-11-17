@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
-import { Confirmar } from '@/components/Confirmar';
+import { LoginNecessario } from '@/components/LoginNecessario';
 import { FaixaConfianca } from '@/components/FaixaConfianca';
 import { Botao, Cartao, Ecra, Escolha, Paragrafo, Subtitulo } from '@/components/ui';
 import { useCarrinho } from '@/lib/carrinho';
@@ -11,8 +11,7 @@ import { precoMontado } from '@/lib/opcoes';
 import { cores, espaco } from '@/lib/tema';
 import {
   entregaVisitante,
-  guardarDestino,
-  guardarZonaVisitante,
+    guardarZonaVisitante,
   lerZonaVisitante,
   lerZonasVisitante,
   rotuloZona,
@@ -79,11 +78,6 @@ export function CarrinhoVisitante() {
         })
       : null;
 
-  async function pedir() {
-    setPedirConta(false);
-    await guardarDestino('/carrinho');
-    router.push({ pathname: '/entrar', params: { pedir: '1' } });
-  }
 
   return (
     <Ecra>
@@ -131,13 +125,12 @@ export function CarrinhoVisitante() {
       <FaixaConfianca />
       <Botao titulo={`Pedir · ${formatarKz(total)}`} aoCarregar={() => setPedirConta(true)} />
       <Botao titulo="Continuar a escolher" variante="texto" aoCarregar={() => (router.canGoBack() ? router.back() : router.replace('/inicio'))} />
-      <Confirmar
+      <LoginNecessario
         visivel={pedirConta}
         titulo="Só falta o teu número"
-        mensagem="Para a cozinha e o entregador te encontrarem, entra com o teu número de telefone (recebes um código por SMS). O teu carrinho fica guardado."
-        textoConfirmar="Continuar"
-        aoConfirmar={() => void pedir()}
-        aoCancelar={() => setPedirConta(false)}
+        motivo="Para a cozinha e o entregador te encontrarem. O teu carrinho fica guardado."
+        destino="/carrinho"
+        aoFechar={() => setPedirConta(false)}
       />
     </Ecra>
   );

@@ -40,20 +40,30 @@ export function Sino() {
   );
 }
 
-/** O mesmo sino para quem ainda não tem conta: ao tocar, pede para entrar (e volta aos avisos) */
+/**
+ * Cabeçalho de quem ainda não entrou: «Entrar» bem visível (quem já é cliente sabe logo que falta
+ * o login) e o mesmo sino; os dois abrem a folha de login e, depois, ficam onde estavam (ou avisos).
+ */
 export function SinoVisitante() {
-  const [aberto, setAberto] = useState(false);
+  const [aberto, setAberto] = useState<'entrar' | 'avisos' | null>(null);
   return (
-    <>
-      <Pressable accessibilityRole="button" accessibilityLabel="Avisos" onPress={() => setAberto(true)} hitSlop={10} style={{ marginRight: 16 }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, marginRight: 16 }}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Entrar na conta" onPress={() => setAberto('entrar')} hitSlop={8}>
+        <Text style={{ color: cores.marca, fontWeight: '800', fontSize: 15 }}>Entrar</Text>
+      </Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel="Avisos" onPress={() => setAberto('avisos')} hitSlop={10}>
         <Ionicons name="notifications-outline" size={24} color={cores.marca} />
       </Pressable>
       <LoginNecessario
-        visivel={aberto}
-        motivo="Entra para receberes os avisos dos teus pedidos."
-        destino="/avisos"
-        aoFechar={() => setAberto(false)}
+        visivel={aberto !== null}
+        motivo={
+          aberto === 'avisos'
+            ? 'Entra para receberes os avisos dos teus pedidos.'
+            : 'Para veres os teus pedidos, o teu saldo e os avisos. Se és novo, a conta cria-se aqui.'
+        }
+        destino={aberto === 'avisos' ? '/avisos' : '/inicio'}
+        aoFechar={() => setAberto(null)}
       />
-    </>
+    </View>
   );
 }

@@ -6,9 +6,11 @@ import Ganhar from '@/app/ganhar';
 
 const mockSessao = { comConta: false };
 jest.mock('@/lib/sessao', () => ({
-  useSessao: () => ({ carregado: true, ligada: () => false, sessao: mockSessao.comConta ? {} : null, perfil: mockSessao.comConta ? {} : null }),
+  useSessao: () => ({ carregado: true, actualizar: async () => undefined, ligada: () => false, sessao: mockSessao.comConta ? {} : null, perfil: mockSessao.comConta ? {} : null }),
 }));
+jest.mock('@react-native-async-storage/async-storage', () => require('@react-native-async-storage/async-storage/jest/async-storage-mock'));
 jest.mock('@/lib/supabase', () => ({ supabase: {} }));
+jest.mock('@/lib/api', () => ({ meuPerfil: async () => null }));
 const mockCodigo: { valor: string | null } = { valor: null };
 jest.mock('@/lib/convite', () => ({ lerCodigoPendente: async () => mockCodigo.valor }));
 const mockGuardarDestino = jest.fn(async (..._a: unknown[]) => undefined);
@@ -43,13 +45,12 @@ test('o visitante vê as regras e os níveis, mas sem código', async () => {
   expect(ecra.queryByText(/MB-\d/)).toBeNull();
 });
 
-test('«Criar conta e começar a ganhar» guarda o Convida como destino e vai entrar', async () => {
+test('«Criar conta e começar a ganhar» abre a folha com o número, sem sair do ecrã', async () => {
   const ecra = renderRouter(rotas, { initialUrl: '/ganhar' });
   await act(async () => undefined);
   fireEvent.press(ecra.getByText('Criar conta e começar a ganhar'));
-  await act(async () => undefined);
-  expect(mockGuardarDestino).toHaveBeenCalledWith('/convida');
-  expect(ecra.getByText('Entrar')).toBeTruthy();
+  expect(ecra.getByText('Cria conta e começa a ganhar')).toBeTruthy();
+  expect(ecra.getByText('Receber código')).toBeTruthy();
 });
 
 test('chegou por um convite: mostra o desconto que já tem', async () => {

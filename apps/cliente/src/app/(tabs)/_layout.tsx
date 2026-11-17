@@ -41,7 +41,8 @@ export default function LayoutSeparadores() {
         name="convida"
         options={{ title: 'Convida e Ganha', tabBarIcon: icone('gift-outline', 'gift'), href: ligada('indicacao') ? undefined : null }}
       />
-      <Tabs.Screen name="conta" options={{ title: 'Conta', tabBarIcon: icone('person-outline', 'person') }} />
+      {/* Sem conta, o separador diz «Entrar»: quem já é cliente encontra logo onde entrar */}
+      <Tabs.Screen name="conta" options={{ title: visitante ? 'Entrar' : 'Conta', tabBarIcon: icone('person-outline', 'person') }} />
     </Tabs>
   );
 }

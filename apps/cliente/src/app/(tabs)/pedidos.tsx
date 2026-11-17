@@ -90,6 +90,7 @@ export default function Pedidos() {
     return (
       <ConvidarEntrar
         titulo="Os teus pedidos"
+        destino="/pedidos"
         texto="Entra para acompanhares os teus pedidos e a entrega, e repetires o teu habitual num toque."
       />
     );

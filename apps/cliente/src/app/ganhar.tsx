@@ -2,12 +2,13 @@ import { Redirect, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 
+import { LoginNecessario } from '@/components/LoginNecessario';
 import { ACarregar, Botao, Cartao, Ecra, Paragrafo, Subtitulo } from '@/components/ui';
 import { lerCodigoPendente } from '@/lib/convite';
 import { formatarKz, textoRegras, type RegrasConvida } from '@/lib/formatar';
 import { useSessao } from '@/lib/sessao';
 import { cores } from '@/lib/tema';
-import { guardarDestino, lerRegrasConvida } from '@/lib/visitante';
+import { lerRegrasConvida } from '@/lib/visitante';
 
 /**
  * «Convida e ganha» para quem ainda não tem conta: uma montra das regras (quanto ganhas, quanto
@@ -19,6 +20,7 @@ export default function Ganhar() {
   const { carregado, sessao, perfil } = useSessao();
   const [regras, setRegras] = useState<RegrasConvida | null | undefined>(undefined);
   const [convidado, setConvidado] = useState(false);
+  const [folha, setFolha] = useState(false);
 
   useEffect(() => {
     lerRegrasConvida().then(setRegras, () => setRegras(null));
@@ -29,11 +31,6 @@ export default function Ganhar() {
   // Já tem conta: o Convida verdadeiro, com o código e o saldo
   if (sessao && perfil) return <Redirect href="/convida" />;
   if (regras === undefined) return <ACarregar />;
-
-  async function criarConta() {
-    await guardarDestino('/convida');
-    router.push({ pathname: '/entrar', params: { ganhar: '1' } });
-  }
 
   if (regras === null)
     return (
@@ -78,7 +75,7 @@ export default function Ganhar() {
         <View style={{ borderWidth: 1, borderStyle: 'dashed', borderColor: cores.contorno, borderRadius: 8, padding: 12, alignItems: 'center' }}>
           <Text style={{ color: cores.textoSuave, textAlign: 'center' }}>🔒 O teu código aparece quando criares conta.</Text>
         </View>
-        <Botao titulo="Criar conta e começar a ganhar" aoCarregar={() => void criarConta()} />
+        <Botao titulo="Criar conta e começar a ganhar" aoCarregar={() => setFolha(true)} />
         <Text style={{ color: cores.textoSuave, fontSize: 13 }}>Só ganhas com o teu código — partilhar o site sem ele não conta.</Text>
       </Cartao>
 
@@ -102,6 +99,13 @@ export default function Ganhar() {
         </Paragrafo>
       ))}
       <Botao titulo="Ver o cardápio" variante="texto" aoCarregar={() => router.replace('/inicio')} />
+      <LoginNecessario
+        visivel={folha}
+        titulo="Cria conta e começa a ganhar"
+        motivo="O teu código de convite fica logo pronto a partilhar."
+        destino="/convida"
+        aoFechar={() => setFolha(false)}
+      />
     </Ecra>
   );
 }
