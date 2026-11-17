@@ -6,7 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { restaurarCarrinho, VALIDADE_CARRINHO_MS } from '../carrinho';
 import { formatarKz } from '../formatar';
-import { entregaVisitante, guardarDestino, guardarZonaVisitante, lerDestino, lerZonaVisitante, limparDestino, rotuloZona, textoConviteVisitante } from '../visitante';
+import { entregaVisitante, guardarDestino, guardarZonaVisitante, lerDestino, lerZonaVisitante, limparDestino, ordenarCozinhasVisitante, rotuloZona, textoConviteVisitante } from '../visitante';
 
 const linha = { chave: 'm', item: { id: 'm', nome: 'Muamba', preco: 2500 }, qtd: 2, opcoes: [], tirados: [] };
 
@@ -78,4 +78,9 @@ describe('entrega do bairro', () => {
     await guardarZonaVisitante(null);
     expect(await lerZonaVisitante()).toBeNull();
   });
+});
+
+it('cozinhas de um só prato vão para o fim, o resto mantém a ordem (mais perto primeiro)', () => {
+  const c = (id: string, pratos: number) => ({ id, nome: id, pratos, distancia_km: null, foto_url: null });
+  expect(ordenarCozinhasVisitante([c('a', 1), c('b', 4), c('c', 1), c('d', 2)]).map((x) => x.id)).toEqual(['b', 'd', 'a', 'c']);
 });

@@ -52,3 +52,22 @@ test('uma só cozinha: abre logo o cardápio', async () => {
   expect(mockCozinhas).toHaveBeenCalledWith(null);
   expect(ecra.getByText('Cardápio')).toBeTruthy();
 });
+
+test('mostra as 3 primeiras e «Ver mais»; as de um só prato vão para o fim', async () => {
+  mockCozinhas.mockResolvedValue([
+    { id: 'a', nome: 'Uma', pratos: 1, distancia_km: 0.5, foto_url: null },
+    { id: 'b', nome: 'Duas', pratos: 3, distancia_km: 1, foto_url: null },
+    { id: 'c', nome: 'Tres', pratos: 2, distancia_km: 2, foto_url: null },
+    { id: 'd', nome: 'Quatro', pratos: 5, distancia_km: 3, foto_url: null },
+  ]);
+  const ecra = renderRouter(rotas, { initialUrl: '/explorar' });
+  await act(async () => undefined);
+  fireEvent.press(ecra.getByText('Talatona · entrega 500 Kz'));
+  await act(async () => undefined);
+  expect(ecra.getByText('Duas')).toBeTruthy();
+  expect(ecra.getByText('Quatro')).toBeTruthy();
+  expect(ecra.queryByText('Uma')).toBeNull();
+  fireEvent.press(ecra.getByText('Ver mais cozinhas (1)'));
+  expect(ecra.getByText('Uma')).toBeTruthy();
+  expect(ecra.queryByText(/Ver mais cozinhas/)).toBeNull();
+});

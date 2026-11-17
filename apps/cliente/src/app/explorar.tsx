@@ -11,6 +11,8 @@ import {
   guardarZonaVisitante,
   lerCozinhasVisitante,
   lerZonasVisitante,
+  COZINHAS_A_MOSTRAR,
+  ordenarCozinhasVisitante,
   rotuloZona,
   type CozinhaVisitante,
   type ZonaVisitante,
@@ -31,6 +33,7 @@ export default function Explorar() {
   const [escolha, setEscolha] = useState<Escolha | null>(null);
   const [cozinhas, setCozinhas] = useState<CozinhaVisitante[] | null>(null);
   const [erro, setErro] = useState<string | null>(null);
+  const [verTodas, setVerTodas] = useState(false);
 
   useEffect(() => {
     lerZonasVisitante()
@@ -52,7 +55,10 @@ export default function Explorar() {
         if (!vivo) return;
         // Uma só cozinha: não há nada para escolher, abre logo o cardápio
         if (lista.length === 1) router.replace({ pathname: '/visita/[cozinha]', params: { cozinha: lista[0].id } });
-        else setCozinhas(lista);
+        else {
+          setVerTodas(false);
+          setCozinhas(ordenarCozinhasVisitante(lista));
+        }
       })
       .catch((e) => {
         if (!vivo) return;
@@ -98,7 +104,7 @@ export default function Explorar() {
       )}
       {erro && <Aviso tipo="erro">{erro}</Aviso>}
       {cozinhas.length === 0 && <Aviso>Agora não há cozinhas abertas. Volta um pouco mais tarde.</Aviso>}
-      {cozinhas.map((c) => (
+      {(verTodas ? cozinhas : cozinhas.slice(0, COZINHAS_A_MOSTRAR)).map((c) => (
         <Pressable
           key={c.id}
           accessibilityRole="button"
@@ -107,7 +113,14 @@ export default function Explorar() {
           <Cartao estilo={{ flexDirection: 'row', gap: espaco.m, alignItems: 'center' }}>
             {c.foto_url ? (
               <Image source={{ uri: c.foto_url }} style={{ width: 56, height: 56, borderRadius: raio }} accessibilityIgnoresInvertColors />
-            ) : null}
+            ) : (
+              <View
+                accessibilityElementsHidden
+                importantForAccessibility="no-hide-descendants"
+                style={{ width: 56, height: 56, borderRadius: raio, backgroundColor: cores.marcaClara, alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ fontSize: 26 }}>🍲</Text>
+              </View>
+            )}
             <View style={{ flex: 1, gap: 2 }}>
               <Text style={{ fontSize: 16, fontWeight: '700', color: cores.texto }}>{c.nome}</Text>
               <Text style={{ color: cores.textoSuave }}>
@@ -119,6 +132,13 @@ export default function Explorar() {
           </Cartao>
         </Pressable>
       ))}
+      {!verTodas && cozinhas.length > COZINHAS_A_MOSTRAR && (
+        <Botao
+          titulo={`Ver mais cozinhas (${cozinhas.length - COZINHAS_A_MOSTRAR})`}
+          variante="secundario"
+          aoCarregar={() => setVerTodas(true)}
+        />
+      )}
       <Botao titulo="Mudar de bairro" variante="texto" aoCarregar={() => setEscolha(null)} />
     </Ecra>
   );

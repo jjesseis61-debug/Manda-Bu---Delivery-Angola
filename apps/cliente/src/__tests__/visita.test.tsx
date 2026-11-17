@@ -1,6 +1,6 @@
 /// <reference types="jest" />
 import { act, fireEvent, renderRouter } from 'expo-router/testing-library';
-import { Text } from 'react-native';
+import { Linking, Text } from 'react-native';
 
 import CardapioVisita from '@/app/visita/[cozinha]';
 
@@ -16,6 +16,7 @@ const prato = (id: string, nome: string, preco: number, extra: object = {}) => (
 });
 jest.mock('@react-native-async-storage/async-storage', () => require('@react-native-async-storage/async-storage/jest/async-storage-mock'));
 const mockZona: { valor: unknown } = { valor: null };
+jest.mock('@/lib/empresa', () => ({ CONTACTO_AJUDA: { whatsapp: '958077592', telefone: null, horario: null, email: null, morada: null } }));
 jest.mock('@/lib/visitante', () => ({
   entregaVisitante: jest.requireActual('@/lib/visitante').entregaVisitante,
   lerZonaVisitante: async () => mockZona.valor,
@@ -55,6 +56,7 @@ beforeEach(() => {
 test('o visitante vê o cardápio da cozinha e adiciona um prato simples', async () => {
   const ecra = renderRouter(rotas, { initialUrl: '/visita/v' });
   await act(async () => undefined);
+  expect(ecra.queryByText('Pedir ›')).toBeNull(); // sem pratos, sem barra
   expect(ecra.getByText('Muamba')).toBeTruthy();
   expect(ecra.getByText('Esgotado')).toBeTruthy();
   fireEvent.press(ecra.getByLabelText('Muamba, 2.500 Kz'));
@@ -76,7 +78,9 @@ test('«Pedir» só então pede o número, guarda o carrinho como destino e vai 
   mockCarrinho.linhas = [{ chave: 'm', item: prato('m', 'Muamba', 2500), qtd: 2, opcoes: [], tirados: [] }];
   const ecra = renderRouter(rotas, { initialUrl: '/visita/v' });
   await act(async () => undefined);
-  fireEvent.press(ecra.getByText('Pedir · 5.000 Kz'));
+  // Barra fixa do carrinho, sempre à vista
+  expect(ecra.getByText('🛒 2 pratos · 5.000 Kz')).toBeTruthy();
+  fireEvent.press(ecra.getByText('Pedir ›'));
   expect(ecra.getByText('Só falta o teu número')).toBeTruthy();
   fireEvent.press(ecra.getByText('Continuar'));
   await act(async () => undefined);
@@ -100,5 +104,14 @@ test('com o bairro escolhido mostra a entrega e quanto falta para ser grátis', 
   expect(ecra.getByText('Entrega para Talatona: 500 Kz')).toBeTruthy();
   expect(ecra.getByText(/Junta mais 5.000 Kz e a entrega fica grátis/)).toBeTruthy();
   expect(ecra.getByText('Total estimado: 5.500 Kz')).toBeTruthy();
-  expect(ecra.getByText('Pedir · 5.500 Kz')).toBeTruthy();
+  expect(ecra.getByText('🛒 2 pratos · 5.500 Kz')).toBeTruthy();
+  expect(ecra.getByText('🛵 Entrega para Talatona: 500 Kz · grátis a partir de 10.000 Kz')).toBeTruthy();
+});
+
+test('«Problema? Resolvemos» abre o WhatsApp de apoio ao visitante', async () => {
+  const mockAbrir = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+  const ecra = renderRouter(rotas, { initialUrl: '/visita/v' });
+  await act(async () => undefined);
+  fireEvent.press(ecra.getByLabelText('Problema? Resolvemos. Falar connosco'));
+  expect(mockAbrir).toHaveBeenCalledWith('https://wa.me/244958077592');
 });

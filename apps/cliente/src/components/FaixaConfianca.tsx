@@ -1,7 +1,9 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Linking, Pressable, Text, View } from 'react-native';
 
+import { urlTelefone, urlWhatsapp } from '@/lib/contactos';
+import { CONTACTO_AJUDA } from '@/lib/empresa';
 import { useSessao } from '@/lib/sessao';
 import { fraseBairro, frasesFaixa, lerPontualidade, type Pontualidade } from '@/lib/faixa';
 import { cores, espaco, raio } from '@/lib/tema';
@@ -23,8 +25,19 @@ export function FaixaConfianca({
   agendado?: boolean;
 }) {
   const router = useRouter();
-  // O visitante (sem conta) não tem a Ajuda: a frase fica, sem ligação
+  // Com conta: a Ajuda da app. O visitante (sem conta) não tem a Ajuda: fala connosco pelo
+  // WhatsApp (ou liga), o mesmo contacto da página de entrada; sem contacto, a frase fica sem ligação.
   const { perfil } = useSessao();
+  const contactoVisitante = CONTACTO_AJUDA.whatsapp
+    ? urlWhatsapp(CONTACTO_AJUDA.whatsapp)
+    : CONTACTO_AJUDA.telefone
+      ? urlTelefone(CONTACTO_AJUDA.telefone)
+      : null;
+  const abrirAjuda = perfil
+    ? () => router.push('/ajuda')
+    : contactoVisitante
+      ? () => void Linking.openURL(contactoVisitante).catch(() => undefined)
+      : null;
   const [pont, setPont] = useState<Pontualidade | null>(cache ?? null);
   const [vez, setVez] = useState(0);
   const social = fraseBairro(contador, bairro);
@@ -74,8 +87,8 @@ export function FaixaConfianca({
           borderLeftWidth: i === 0 ? 0 : 1,
           borderLeftColor: cores.linha,
         };
-        return f.ajuda && perfil ? (
-          <Pressable key={i} accessibilityRole="link" onPress={() => router.push('/ajuda')} style={estilo}>
+        return f.ajuda && abrirAjuda ? (
+          <Pressable key={i} accessibilityRole="link" accessibilityLabel="Problema? Resolvemos. Falar connosco" onPress={abrirAjuda} style={estilo}>
             {conteudo}
           </Pressable>
         ) : (

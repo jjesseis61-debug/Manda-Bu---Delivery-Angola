@@ -73,6 +73,17 @@ export async function lerZonaVisitante(agora = Date.now()): Promise<ZonaVisitant
   }
 }
 
+/** Quantas cozinhas se mostram antes de «Ver mais» (escolha curta para quem está a experimentar) */
+export const COZINHAS_A_MOSTRAR = 3;
+
+/**
+ * Ordem para o visitante: mantém a do servidor (mais perto primeiro), mas as cozinhas com um só
+ * prato vão para o fim (a quem chega pela primeira vez parecem vazias).
+ */
+export function ordenarCozinhasVisitante(lista: CozinhaVisitante[]): CozinhaVisitante[] {
+  return [...lista.filter((c) => c.pratos > 1), ...lista.filter((c) => c.pratos <= 1)];
+}
+
 /** O que mostrar no botão do bairro */
 export function rotuloZona(z: ZonaVisitante, formatar: (v: number) => string): string {
   return `${z.nome} · ${z.taxa > 0 ? `entrega ${formatar(z.taxa)}` : 'entrega grátis'}`;

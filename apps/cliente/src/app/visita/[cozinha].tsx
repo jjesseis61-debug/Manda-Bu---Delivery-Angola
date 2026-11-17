@@ -1,6 +1,7 @@
 import { Redirect, Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Image, Pressable, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Image, Pressable, ScrollView, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Confirmar } from '@/components/Confirmar';
 import { FaixaConfianca } from '@/components/FaixaConfianca';
@@ -49,6 +50,7 @@ export default function CardapioVisita() {
   const [pedirConta, setPedirConta] = useState(false);
   // Bairro escolhido em «Ver o cardápio primeiro» (pelo link partilhado não há: a entrega vem depois)
   const [zona, setZona] = useState<ZonaVisitante | null>(null);
+  const rolagem = useRef<ScrollView>(null);
 
   useEffect(() => {
     lerZonaVisitante().then(setZona, () => undefined);
@@ -119,10 +121,20 @@ export default function CardapioVisita() {
     router.push({ pathname: '/entrar', params: { pedir: '1' } });
   }
 
+  const nPratos = linhas.reduce((s, l) => s + l.qtd, 0);
+
   return (
-    <Ecra>
+    <SafeAreaView style={{ flex: 1, backgroundColor: cores.fundo }} edges={['bottom', 'left', 'right']}>
       <Stack.Screen options={{ title: dados.cozinha.nome }} />
+      <ScrollView ref={rolagem} contentContainerStyle={{ padding: espaco.l, paddingBottom: espaco.xl * 2, gap: espaco.m }}>
       <FaixaConfianca />
+      {/* A entrega do bairro escolhido, logo à vista (pelo link partilhado ainda não há bairro) */}
+      {zona && (
+        <Text style={{ color: cores.textoSuave }}>
+          🛵 Entrega para {zona.nome}: {zona.taxa > 0 ? formatarKz(zona.taxa) : 'grátis'}
+          {zona.taxa > 0 && zona.entrega_gratis_acima ? ` · grátis a partir de ${formatarKz(zona.entrega_gratis_acima)}` : ''}
+        </Text>
+      )}
       {dados.pratos.length === 0 && <Paragrafo suave>Hoje esta cozinha ainda não tem pratos no cardápio.</Paragrafo>}
       {dados.pratos.map((p) => {
         const noCarrinho = linhas.filter((l) => l.item.id === p.id).reduce((s, l) => s + l.qtd, 0);
@@ -188,7 +200,6 @@ export default function CardapioVisita() {
               </>
             )}
           </Cartao>
-          <Botao titulo={`Pedir · ${formatarKz(total)}`} aoCarregar={() => setPedirConta(true)} />
         </>
       )}
 
@@ -212,6 +223,36 @@ export default function CardapioVisita() {
         }}
         aoCancelar={() => setTroca(null)}
       />
-    </Ecra>
+      </ScrollView>
+
+      {/* Barra fixa do carrinho: sempre à vista depois do primeiro prato (o carrinho detalhado fica no fim da lista) */}
+      {linhas.length > 0 && (
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: espaco.m,
+            paddingHorizontal: espaco.l,
+            paddingVertical: espaco.m,
+            borderTopWidth: 1,
+            borderTopColor: cores.linha,
+            backgroundColor: cores.fundo,
+          }}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Ver o carrinho: ${nPratos} ${nPratos === 1 ? 'prato' : 'pratos'}, ${formatarKz(total)}`}
+            onPress={() => rolagem.current?.scrollToEnd({ animated: true })}
+            style={{ flex: 1 }}>
+            <Text style={{ fontWeight: '800', color: cores.texto }}>
+              🛒 {nPratos} {nPratos === 1 ? 'prato' : 'pratos'} · {formatarKz(total)}
+            </Text>
+            <Text style={{ color: cores.textoSuave, fontSize: 12 }}>{entrega ? 'Com a entrega · ver carrinho' : 'Ver carrinho'}</Text>
+          </Pressable>
+          <View style={{ minWidth: 130 }}>
+            <Botao titulo="Pedir ›" aoCarregar={() => setPedirConta(true)} />
+          </View>
+        </View>
+      )}
+    </SafeAreaView>
   );
 }
