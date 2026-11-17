@@ -20,6 +20,7 @@ jest.mock('@/lib/carrinho', () => ({
   }),
 }));
 jest.mock('@/lib/condominio', () => ({ posicaoParaCondominio: async () => null, condominioAqui: async () => null }));
+jest.mock('@/lib/supabase', () => ({ supabase: { rpc: async () => ({ data: null, error: null }) } }));
 const mockItem = { cozinha: 'k', semOpcoes: false };
 const mockCozinhas: { valor: { cozinha_id: string; nome: string }[] } = { valor: [{ cozinha_id: 'k', nome: 'Maianga' }, { cozinha_id: 'v', nome: 'Viana' }] };
 jest.mock('@/lib/api', () => ({

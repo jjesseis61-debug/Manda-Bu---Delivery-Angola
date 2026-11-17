@@ -4,6 +4,7 @@ import { Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Confirmar } from '@/components/Confirmar';
+import { FaixaConfianca } from '@/components/FaixaConfianca';
 import { ACarregar, Aviso, Botao, Ecra, Paragrafo, Subtitulo } from '@/components/ui';
 import { lerComponentes, lerDoses, lerItemCardapio, lerOpcoes } from '@/lib/api';
 import { type PendenteMontar, useCarrinho } from '@/lib/carrinho';
@@ -164,6 +165,7 @@ export default function MontarPrato() {
         <Text style={{ fontSize: 18, fontWeight: '800', color: cores.texto }}>{formatarKz(item.preco)}</Text>
         {semDoses && <Aviso>Esgotado: acabaram as doses de hoje.</Aviso>}
         {avisoCozinha && <Aviso>{avisoCozinha}</Aviso>}
+        <FaixaConfianca />
         <Botao
           titulo={semDoses ? 'Esgotado' : `Adicionar ao carrinho · ${formatarKz(item.preco)}`}
           desactivado={semDoses}

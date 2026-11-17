@@ -5,6 +5,7 @@ import { Image, Pressable, RefreshControl, ScrollView, Text, View } from 'react-
 
 import { CartaoConvida } from '@/components/CartaoConvida';
 import { Confirmar } from '@/components/Confirmar';
+import { FaixaConfianca } from '@/components/FaixaConfianca';
 import { ComoChegar } from '@/components/ComoChegar';
 import { MediaAvaliacao } from '@/components/MediaAvaliacao';
 import { Aviso, Botao, Cartao, Escolha, Paragrafo, Subtitulo, estilos } from '@/components/ui';
@@ -244,6 +245,8 @@ export default function Inicio() {
           {perfil?.primeiro_nome ? `Olá, ${perfil.primeiro_nome} 👋` : 'Olá 👋'}
         </Text>
         <Text style={{ color: cores.textoSuave, marginTop: -espaco.xs }}>O que vais almoçar hoje?</Text>
+        {/* Faixa de confiança: o contador do bairro passa a alternar dentro dela */}
+        <FaixaConfianca contador={contador} />
         {/* Banner: pedido em andamento — toca para acompanhar a entrega */}
         {pedidoActivo && (
           <Pressable
@@ -399,11 +402,6 @@ export default function Inicio() {
               horizontal
             />
           </View>
-        )}
-        {contador !== null && (
-          <Cartao>
-            <Text style={{ fontSize: 16, fontWeight: '600' }}>{contador} pedidos no teu bairro hoje</Text>
-          </Cartao>
         )}
         {enderecos.length === 0 && cardapio !== null && (
           <Aviso>
