@@ -35,7 +35,8 @@ export function LoginNecessario({
 }: {
   visivel: boolean;
   motivo: string;
-  destino: Destino;
+  /** Para onde ir depois de entrar; sem destino fica onde está (cliente novo: registo e depois o Início) */
+  destino?: Destino;
   aoFechar: () => void;
   titulo?: string;
   /** Garantia por baixo do campo (privacidade; no «Pedir» também «Pagas na entrega») */
@@ -133,13 +134,13 @@ export function LoginNecessario({
     aoFechar();
     if (!perfil) {
       // Cliente novo: só falta o nome (o registo já traz o código de convite); depois segue para o destino
-      await guardarDestino(destino);
+      if (destino) await guardarDestino(destino);
       router.replace('/registo');
       return;
     }
     await actualizar().catch(() => undefined);
     // Já tinha conta: fica onde estava (o ecrã passa a mostrar a versão com conta) ou vai ao destino
-    if (destino !== aqui) router.push(destino as Href);
+    if (destino && destino !== aqui) router.push(destino as Href);
   }
 
   const expirado = restante <= 0;

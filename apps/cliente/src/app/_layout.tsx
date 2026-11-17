@@ -7,6 +7,8 @@ import { EcraCadeado } from '@/components/EcraCadeado';
 import { CadeadoProvider } from '@/lib/cadeadoContexto';
 import { CarrinhoProvider } from '@/lib/carrinho';
 import { esquecerProprioCodigo } from '@/lib/convite';
+import { convitePartilhaDe, partilharPrato } from '@/lib/partilha';
+import { tirarPartilhaPendente } from '@/lib/partilhaPendente';
 import { registarEsteAparelho } from '@/lib/dispositivo';
 import { desligarPushWeb, renovarPushWeb } from '@/lib/pushWeb';
 import { activarPush, desactivarPush, rotaDaNotificacao } from '@/lib/push';
@@ -15,8 +17,16 @@ import { cores } from '@/lib/tema';
 
 /** Regista o telemóvel para push depois do registo e abre o ecrã certo ao tocar numa notificação */
 function EfeitosSessao() {
-  const { perfil } = useSessao();
+  const { perfil, parametros, ligada } = useSessao();
   const router = useRouter();
+
+  // «Entrar e partilhar»: depois de entrar (ou criar conta), a partilha continua sozinha com o código
+  const convite = convitePartilhaDe(perfil, parametros, ligada('indicacao'));
+  useEffect(() => {
+    if (!perfil?.codigo || !convite) return;
+    void tirarPartilhaPendente().then((p) => p && partilharPrato(p.nome, p.id, convite));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [perfil?.codigo, convite?.codigo]);
 
   useEffect(() => {
     if (perfil) void activarPush().catch(() => undefined);

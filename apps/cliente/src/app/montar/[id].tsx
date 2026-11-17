@@ -9,7 +9,6 @@ import { FaixaConfianca } from '@/components/FaixaConfianca';
 import { ACarregar, Aviso, Botao, Ecra, Paragrafo, Subtitulo } from '@/components/ui';
 import { lerComponentes, lerDoses, lerItemCardapio, lerOpcoes } from '@/lib/api';
 import { lerCodigoPendente } from '@/lib/convite';
-import { convitePartilhaDe } from '@/lib/partilha';
 import { type PendenteMontar, useCarrinho } from '@/lib/carrinho';
 import { formatarKz, mensagemErro } from '@/lib/formatar';
 import { alternar, emojiOpcao, gruposEmFalta, gruposEsgotados, opcoesEscolhidas, precoMontado, regraGrupo } from '@/lib/opcoes';
@@ -31,12 +30,10 @@ const LARGURA_RESUMO = 150;
 export default function MontarPrato() {
   const { id, rever } = useLocalSearchParams<{ id: string; rever?: string }>();
   const router = useRouter();
-  const { carregado, ligada, sessao, perfil, parametros } = useSessao();
+  const { carregado, ligada, sessao, perfil } = useSessao();
   // Sem conta (chegou por um link partilhado): lê o prato pela leitura do visitante
   const visitante = carregado && (!sessao || !perfil);
   const [convite, setConvite] = useState<string | null>(null);
-  // Partilhar: com conta, o link leva o código de convite de quem partilha
-  const convitePartilha = convitePartilhaDe(perfil, parametros, ligada('indicacao'));
   const carrinho = useCarrinho();
   const [item, setItem] = useState<ItemCardapio | null | undefined>(undefined);
   const [grupos, setGrupos] = useState<GrupoOpcoes[]>([]);
@@ -204,7 +201,7 @@ export default function MontarPrato() {
         <Text style={{ fontSize: 22, fontWeight: '700', color: cores.texto }}>{item.nome.trim()}</Text>
         {item.descricao && <Paragrafo suave>{item.descricao}</Paragrafo>}
         <Text style={{ fontSize: 18, fontWeight: '800', color: cores.texto }}>{formatarKz(item.preco)}</Text>
-        <BotaoPartilhar nome={item.nome} id={item.id} convite={convitePartilha} />
+        <BotaoPartilhar nome={item.nome} id={item.id} />
         {semDoses && <Aviso>Esgotado: acabaram as doses de hoje.</Aviso>}
         {avisoCozinha && <Aviso>{avisoCozinha}</Aviso>}
         {convite && <Aviso tipo="sucesso">{convite}</Aviso>}
@@ -241,7 +238,7 @@ export default function MontarPrato() {
           </Text>
           <Text style={{ fontSize: 22, fontWeight: '700', color: cores.texto }}>{item.nome.trim()}</Text>
           {item.descricao && <Paragrafo suave>{item.descricao}</Paragrafo>}
-          <BotaoPartilhar nome={item.nome} id={item.id} convite={convitePartilha} />
+          <BotaoPartilhar nome={item.nome} id={item.id} />
           {convite && <Aviso tipo="sucesso">{convite}</Aviso>}
           {minimo > 0 && (
             <Text style={{ color: cores.marca, fontSize: 13, fontWeight: '600' }}>

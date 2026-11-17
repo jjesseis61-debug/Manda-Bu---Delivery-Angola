@@ -39,7 +39,7 @@ import {
 } from '@/lib/condominio';
 import { corEstadoPedido, formatarData, formatarKz, horaLuanda, mensagemErro, nomeEstadoPedido, textoPediram, textoPromocao } from '@/lib/formatar';
 import { gruposEsgotados, precoMinimo } from '@/lib/opcoes';
-import { convitePartilhaDe, partilharPrato } from '@/lib/partilha';
+import { usePartilhar } from '@/components/Partilhar';
 import { usePedirDeNovo } from '@/lib/pedirDeNovo';
 import { useSessao } from '@/lib/sessao';
 import {
@@ -65,7 +65,8 @@ export default function Inicio() {
   const [login, setLogin] = useState<{ motivo: string; destino: Destino } | null>(null);
   const carrinho = useCarrinho();
   // Quem tem código de convite partilha o prato com ele: o amigo ganha o desconto e conta para o embaixador
-  const convitePartilha = convitePartilhaDe(perfil, parametros, ligada('indicacao'));
+  // Partilhar: com conta leva o código de convite; sem conta propõe «Partilha e ganha» antes
+  const { partilhar, folhas: folhasPartilha } = usePartilhar();
   const pedirDeNovoNoCarrinho = usePedirDeNovo();
   const [cardapio, setCardapio] = useState<ItemCardapio[] | null>(null);
   const [enderecos, setEnderecos] = useState<Endereco[]>([]);
@@ -376,7 +377,7 @@ export default function Inicio() {
                         accessibilityRole="button"
                         accessibilityLabel={`Partilhar ${item.nome} no WhatsApp`}
                         hitSlop={8}
-                        onPress={() => void partilharPrato(item.nome, item.id, convitePartilha)}
+                        onPress={() => void partilhar(item.nome, item.id)}
                         style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginRight: 'auto' }}>
                         <Ionicons name="share-social-outline" size={18} color={cores.marca} />
                         <Text style={{ color: cores.marca, fontWeight: '600' }}>Partilhar</Text>
@@ -520,7 +521,7 @@ export default function Inicio() {
                     <Pressable
                       accessibilityRole="button"
                       accessibilityLabel={`Partilhar ${item.nome} no WhatsApp`}
-                      onPress={() => void partilharPrato(item.nome, item.id, convitePartilha)}
+                      onPress={() => void partilhar(item.nome, item.id)}
                       hitSlop={8}
                       style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginRight: 'auto' }}>
                       <Ionicons name="share-social-outline" size={18} color={cores.marca} />
@@ -620,6 +621,7 @@ export default function Inicio() {
           />
         </View>
       )}
+      {folhasPartilha}
       <LoginNecessario
         visivel={login !== null}
         motivo={login?.motivo ?? ''}
