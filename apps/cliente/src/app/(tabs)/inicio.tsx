@@ -137,7 +137,7 @@ export default function Inicio() {
         setMontaveis(new Set(itens.filter((i) => i.montar).map((i) => i.id)));
         setEsgotados(new Set(itens.filter((i) => i.esgotado).map((i) => i.id)));
         setDoses(new Map());
-        setDesde(new Map());
+        setDesde(new Map(itens.filter((i) => i.desde != null).map((i) => [i.id, i.desde as number])));
         setEnderecos([]);
         setMaisZona([]);
         setPromocoes([]);

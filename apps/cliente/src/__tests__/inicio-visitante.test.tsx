@@ -34,7 +34,10 @@ jest.mock('@/lib/visitante', () => ({
   lerZonaVisitante: async () => mockZona.valor,
   guardarZonaVisitante: (...a: unknown[]) => mockGuardarZona(...a),
   lerCozinhasVisitante: (...a: unknown[]) => mockCozinhas(...a),
-  lerCardapioVisitante: async () => ({ cozinha: { id: 'k1', nome: 'Viana' }, pratos: [prato('m', 'Muamba', 2500), prato('s', 'Strogonoff', 3000)] }),
+  lerCardapioVisitante: async () => ({
+    cozinha: { id: 'k1', nome: 'Viana' },
+    pratos: [prato('m', 'Muamba', 2500), prato('s', 'Strogonoff', 3000), prato('c', 'Calulu', 3000, { categoria: 'Peixe', montar: false, desde: 3500 })],
+  }),
 }));
 const mockAdicionar = jest.fn();
 const mockCarrinho: { linhas: unknown[]; cozinha: unknown } = { linhas: [], cozinha: null };
@@ -61,6 +64,7 @@ test('sem conta, o Início abre com o cardápio e as cozinhas, sem pedir o núme
   expect(ecra.getByText('Muamba')).toBeTruthy();
   expect(ecra.getByText('📍 De onde queres pedir?')).toBeTruthy();
   expect(ecra.queryByText(/adiciona o endereço/)).toBeNull();
+  expect(ecra.getByText('desde 3.500 Kz')).toBeTruthy(); // como no Início com conta
   fireEvent.press(ecra.getAllByText('Adicionar')[0]);
   expect(mockAdicionar).toHaveBeenCalledWith(expect.objectContaining({ id: 'm' }));
 });

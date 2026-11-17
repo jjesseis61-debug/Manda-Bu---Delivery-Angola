@@ -17,7 +17,8 @@ export type PratoVisitante = {
   convite: { desconto: number; minimo: number } | null;
 };
 
-export type PratoCardapioVisitante = ItemCardapio & { esgotado: boolean; montar: boolean };
+/** `desde`: preço mais baixo possível dos pratos com grupos obrigatórios (null nos outros) */
+export type PratoCardapioVisitante = ItemCardapio & { esgotado: boolean; montar: boolean; desde?: number | null };
 
 export type CardapioVisitante = { cozinha: { id: string; nome: string }; pratos: PratoCardapioVisitante[] };
 
