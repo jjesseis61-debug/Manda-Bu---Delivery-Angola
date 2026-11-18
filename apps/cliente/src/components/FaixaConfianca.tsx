@@ -27,14 +27,15 @@ export function FaixaConfianca({
   const router = useRouter();
   // Com conta: a Ajuda da app. O visitante (sem conta) não tem a Ajuda: fala connosco pelo
   // WhatsApp (ou liga), o mesmo contacto da página de entrada; sem contacto, a frase fica sem ligação.
-  const { perfil } = useSessao();
+  const { perfil, ligada } = useSessao();
   const contactoVisitante = CONTACTO_AJUDA.whatsapp
     ? urlWhatsapp(CONTACTO_AJUDA.whatsapp)
     : CONTACTO_AJUDA.telefone
       ? urlTelefone(CONTACTO_AJUDA.telefone)
       : null;
   const abrirAjuda = perfil
-    ? () => router.push('/ajuda')
+    ? // Com conta: o assistente (se ligado) ou os contactos (WhatsApp/ligar) — nunca um toque sem resposta
+      () => router.push(ligada('agente_atendimento') ? '/ajuda' : '/contactos')
     : contactoVisitante
       ? () => void Linking.openURL(contactoVisitante).catch(() => undefined)
       : null;
