@@ -5,16 +5,40 @@ import { normalizarCodigo } from './formatar';
 
 const CHAVE = 'manda-bue:codigo-convite';
 
+/** O código de um link vale 30 dias neste telemóvel (depois deixa de contar) */
+export const VALIDADE_CODIGO_MS = 30 * 24 * 60 * 60 * 1000;
+
+type Guardado = { codigo: string; em: number };
+
+/** O código guardado, se ainda dentro do prazo (os guardados antes desta regra, sem data, já não contam) */
+async function lerGuardado(agora = Date.now()): Promise<Guardado | null> {
+  const bruto = await AsyncStorage.getItem(CHAVE);
+  if (!bruto) return null;
+  try {
+    const g = JSON.parse(bruto) as Guardado;
+    const codigo = normalizarCodigo(g?.codigo);
+    if (!codigo || typeof g.em !== 'number' || agora - g.em > VALIDADE_CODIGO_MS) return null;
+    return { codigo, em: g.em };
+  } catch {
+    return null;
+  }
+}
+
 /**
- * Guarda o código que chegou pelo link de convite, para pré-preencher C2. O próprio código
- * (quem abre o link que ele mesmo partilhou) não se guarda: não serve para nada e confundia o
- * registo. Devolve o código guardado, ou null.
+ * Guarda o código que chegou por um link (de prato ou de convite), para o registo o mostrar já
+ * aplicado. Regras (decisão do dono, 18/11/2026):
+ *   * o primeiro link conta: enquanto houver um código válido guardado, outro link não o troca;
+ *   * vale 30 dias;
+ *   * o próprio código (quem abre o link que ele mesmo partilhou) não se guarda.
+ * Devolve o código que fica a valer (o já guardado, ou o novo), ou null.
  */
-export async function guardarCodigoPendente(codigo: string, meuCodigo?: string | null): Promise<string | null> {
+export async function guardarCodigoPendente(codigo: string, meuCodigo?: string | null, agora = Date.now()): Promise<string | null> {
   const normalizado = normalizarCodigo(codigo);
-  if (!normalizado) return null;
-  if (meuCodigo && normalizarCodigo(meuCodigo) === normalizado) return null;
-  await AsyncStorage.setItem(CHAVE, normalizado);
+  const meu = meuCodigo ? normalizarCodigo(meuCodigo) : null;
+  const actual = await lerGuardado(agora).catch(() => null);
+  if (actual && actual.codigo !== meu) return actual.codigo;
+  if (!normalizado || normalizado === meu) return null;
+  await AsyncStorage.setItem(CHAVE, JSON.stringify({ codigo: normalizado, em: agora } satisfies Guardado));
   return normalizado;
 }
 
@@ -25,8 +49,9 @@ export async function esquecerProprioCodigo(meuCodigo: string | null | undefined
   if (guardado && guardado === normalizarCodigo(meuCodigo)) await limparCodigoPendente().catch(() => undefined);
 }
 
-export async function lerCodigoPendente(): Promise<string | null> {
-  return normalizarCodigo(await AsyncStorage.getItem(CHAVE));
+/** O código vindo de um link, se ainda valer (30 dias) */
+export async function lerCodigoPendente(agora = Date.now()): Promise<string | null> {
+  return (await lerGuardado(agora))?.codigo ?? null;
 }
 
 export async function limparCodigoPendente(): Promise<void> {
