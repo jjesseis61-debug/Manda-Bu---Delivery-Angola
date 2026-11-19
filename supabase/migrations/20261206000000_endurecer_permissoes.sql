@@ -28,5 +28,7 @@ begin
   end loop;
 end $$;
 
--- Tabelas futuras (criadas pelo postgres nas migrações): sem estas permissões por defeito
+-- Tabelas futuras: sem estas permissões por defeito, tanto as criadas pelo postgres (migrações no
+-- Supabase) como as criadas por quem corre esta migração (no CI é outro utilizador)
 alter default privileges for role postgres in schema public revoke truncate, references, trigger on tables from anon, authenticated;
+alter default privileges in schema public revoke truncate, references, trigger on tables from anon, authenticated;
