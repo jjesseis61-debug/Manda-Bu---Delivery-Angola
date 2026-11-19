@@ -2,7 +2,7 @@
 // Lê com a chave de serviço só informação pública (nome, preço, foto) e, se o link trouxer um
 // código de convite válido, o desconto do 1.º pedido (parâmetros públicos do Convida).
 //
-//  * ?formato=json&id=…[&r=MB-1234] → dados do prato em JSON (usados pela página do Netlify,
+//  * ?formato=json&id=…[&r=MB1234] → dados do prato em JSON (usados pela página do Netlify,
 //    que monta o cartão Open Graph — o Supabase serve HTML como text/plain, por isso o cartão
 //    não pode ser feito aqui).
 //  * ?id=…[&r=…] (links antigos) → reencaminha (302) para a página do prato no site da app.
@@ -11,7 +11,8 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 const SITE = (Deno.env.get('SITE_URL') ?? 'https://manda-bue.netlify.app').replace(/\/+$/, '');
 const MARCA = 'Cozinha da Alexandra';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const CODIGO = /^MB-\d{4,5}$/;
+// MB4812 (e o antigo MB-4812, dos links já partilhados) -> MB4812
+const CODIGO = /^MB-?\d{4,5}$/;
 
 const CORS = { 'Access-Control-Allow-Origin': '*' };
 
@@ -26,7 +27,7 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   const id = url.searchParams.get('id') ?? '';
   const r = (url.searchParams.get('r') ?? '').trim().toUpperCase();
-  const codigo = CODIGO.test(r) ? r : null;
+  const codigo = CODIGO.test(r) ? r.replace('-', '') : null;
 
   if (url.searchParams.get('formato') !== 'json') {
     const destino = UUID.test(id) ? `${SITE}/p/${id.toLowerCase()}${codigo ? `?r=${codigo}` : ''}` : SITE;

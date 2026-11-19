@@ -15,8 +15,9 @@ describe('og', () => {
     expect(kz(950)).toBe('950 Kz');
   });
 
-  it('codigoDoLink aceita só MB-1234/MB-12345', () => {
-    expect(codigoDoLink(' mb-4812 ')).toBe('MB-4812');
+  it('codigoDoLink aceita MB1234 e o antigo MB-1234, e devolve MB1234', () => {
+    expect(codigoDoLink(' mb-4812 ')).toBe('MB4812');
+    expect(codigoDoLink('MB4812')).toBe('MB4812');
     expect(codigoDoLink('MB-12')).toBeNull();
     expect(codigoDoLink('<script>')).toBeNull();
     expect(codigoDoLink(null)).toBeNull();

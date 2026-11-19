@@ -23,7 +23,7 @@ select results_eq(format($$select nome, telefone, tipo from clientes where id = 
                   $$values ('Rui Manuel'::text, '923000111'::text, 'Particular'::text)$$,
                   'registo cria o cliente com o telefone confirmado (normalizado)');
 select is(testes.u('rui_2'), testes.u('rui'), 'registar de novo devolve o mesmo cliente');
-select ok(testes.v('perfil_rui')::jsonb ->> 'codigo' ~ '^MB-[0-9]{4,5}$'
+select ok(testes.v('perfil_rui')::jsonb ->> 'codigo' ~ '^MB[0-9]{4,5}$'
           and testes.v('perfil_rui')::jsonb ->> 'primeiro_nome' = 'Rui'
           and (testes.v('perfil_rui')::jsonb ->> 'cliente_novo')::boolean,
           'meu_perfil: código, primeiro nome e cliente novo');

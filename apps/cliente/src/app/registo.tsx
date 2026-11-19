@@ -2,6 +2,7 @@ import { Redirect, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Text } from 'react-native';
 
+import { CampoConvite } from '@/components/CampoConvite';
 import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Escolha, Paragrafo, Subtitulo } from '@/components/ui';
 import { descontoGarantido, ligarIndicacao, meuPerfil, registarCliente } from '@/lib/api';
 import { lerCodigoPendente, limparCodigoPendente } from '@/lib/convite';
@@ -125,14 +126,7 @@ export default function Registo() {
         <Aviso tipo={aviso.startsWith('Código aceite') ? 'sucesso' : 'aviso'}>{aviso}</Aviso>
         {recusado && (
           <>
-            <Campo
-              rotulo="Outro código de convite (opcional)"
-              placeholder="MB-1234"
-              autoCapitalize="characters"
-              autoCorrect={false}
-              value={outro}
-              onChangeText={setOutro}
-            />
+            <CampoConvite rotulo="Outro código de convite (opcional)" valor={outro} aoMudar={setOutro} />
             {erro && <Aviso tipo="erro">{erro}</Aviso>}
             <Botao titulo="Usar este código" variante="secundario" aoCarregar={usarOutro} aCarregar={aEnviar} desactivado={!outro.trim()} />
           </>
@@ -174,14 +168,7 @@ export default function Registo() {
       {ligada('indicacao') && !doLink && (
         <>
           <Subtitulo>Tens um código de convite?</Subtitulo>
-          <Campo
-            rotulo="Código (opcional)"
-            placeholder="MB-1234"
-            autoCapitalize="characters"
-            autoCorrect={false}
-            value={codigo}
-            onChangeText={setCodigo}
-          />
+          <CampoConvite rotulo="Código (opcional)" valor={codigo} aoMudar={setCodigo} />
         </>
       )}
       {erro && <Aviso tipo="erro">{erro}</Aviso>}

@@ -37,11 +37,11 @@ test('código vindo de um link: aparece aplicado e não se pode escrever outro',
   const ecra = renderRouter(rotas, { initialUrl: '/registo' });
   await act(async () => undefined);
   expect(ecra.getByText('🎁 Convite aplicado ✓')).toBeTruthy();
-  expect(ecra.queryByPlaceholderText('MB-1234')).toBeNull();
+  expect(ecra.queryByPlaceholderText('1234')).toBeNull();
   fireEvent.changeText(ecra.getByPlaceholderText('O teu nome'), 'Ana');
   fireEvent.press(ecra.getByText('Criar conta'));
   await act(async () => undefined);
-  expect(mockLigar).toHaveBeenCalledWith('MB-1234');
+  expect(mockLigar).toHaveBeenCalledWith('MB1234');
 });
 
 test('«Continuar sem convite» tira o código (e não deixa pôr outro)', async () => {
@@ -50,7 +50,7 @@ test('«Continuar sem convite» tira o código (e não deixa pôr outro)', async
   await act(async () => undefined);
   fireEvent.press(ecra.getByText('Continuar sem convite'));
   expect(ecra.queryByText('🎁 Convite aplicado ✓')).toBeNull();
-  expect(ecra.queryByPlaceholderText('MB-1234')).toBeNull();
+  expect(ecra.queryByPlaceholderText('1234')).toBeNull();
   fireEvent.changeText(ecra.getByPlaceholderText('O teu nome'), 'Ana');
   fireEvent.press(ecra.getByText('Criar conta'));
   await act(async () => undefined);
@@ -60,7 +60,17 @@ test('«Continuar sem convite» tira o código (e não deixa pôr outro)', async
 test('sem link: o campo do código fica livre', async () => {
   const ecra = renderRouter(rotas, { initialUrl: '/registo' });
   await act(async () => undefined);
-  expect(ecra.getByPlaceholderText('MB-1234')).toBeTruthy();
+  expect(ecra.getByPlaceholderText('1234')).toBeTruthy();
+});
+
+test('sem link: basta escrever o número (o «MB» já está no campo)', async () => {
+  const ecra = renderRouter(rotas, { initialUrl: '/registo' });
+  await act(async () => undefined);
+  fireEvent.changeText(ecra.getByPlaceholderText('O teu nome'), 'Ana');
+  fireEvent.changeText(ecra.getByLabelText('Código (opcional)'), '4812');
+  fireEvent.press(ecra.getByText('Criar conta'));
+  await act(async () => undefined);
+  expect(mockLigar).toHaveBeenCalledWith('MB4812');
 });
 
 test('o servidor recusa o código do link: só então se pode escrever outro', async () => {
@@ -74,6 +84,6 @@ test('o servidor recusa o código do link: só então se pode escrever outro', a
   fireEvent.changeText(ecra.getByLabelText('Outro código de convite (opcional)'), 'MB-5678');
   fireEvent.press(ecra.getByText('Usar este código'));
   await act(async () => undefined);
-  expect(mockLigar).toHaveBeenLastCalledWith('MB-5678');
+  expect(mockLigar).toHaveBeenLastCalledWith('MB5678');
   expect(ecra.getByText('Código aceite.')).toBeTruthy();
 });

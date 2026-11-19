@@ -48,6 +48,11 @@ export function PartilharCodigo({ mostrarCodigo = true }: { mostrarCodigo?: bool
           <Botao titulo={copiado ? 'Copiado' : 'Copiar'} variante="secundario" aoCarregar={copiar} />
         </View>
       )}
+      {mostrarCodigo && /^MB\d+$/.test(codigo) && (
+        <Text style={{ color: cores.textoSuave, fontSize: 13, marginTop: -4 }}>
+          Os teus amigos podem escrever só {codigo.slice(2)}
+        </Text>
+      )}
       <Botao titulo="Partilhar no WhatsApp" variante="whatsapp" aoCarregar={partilhar} />
     </View>
   );

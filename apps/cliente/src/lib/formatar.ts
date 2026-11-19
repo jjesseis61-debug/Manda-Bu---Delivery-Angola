@@ -120,11 +120,19 @@ export function textoRegras(p: RegrasConvida): string[] {
   ];
 }
 
-/** "mb-4821 " -> "MB-4821"; devolve null se não tiver o formato do código */
+/**
+ * "mb-4821 ", "MB 4821", "MB4821" ou só "4821" -> "MB4821" (o formato da plataforma, sem hífen;
+ * os links antigos com "MB-4821" continuam a valer). null se não tiver o formato do código.
+ */
 export function normalizarCodigo(texto: string | null | undefined): string | null {
-  const limpo = (texto ?? '').trim().toUpperCase().replace(/\s+/g, '');
-  const comPrefixo = /^\d{4,5}$/.test(limpo) ? `MB-${limpo}` : limpo.replace(/^MB(?=\d)/, 'MB-');
-  return /^MB-\d{4,5}$/.test(comPrefixo) ? comPrefixo : null;
+  const limpo = (texto ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (/^\d{4,5}$/.test(limpo)) return `MB${limpo}`;
+  return /^MB\d{4,5}$/.test(limpo) ? limpo : null;
+}
+
+/** Só os dígitos do código (para o campo com o «MB» fixo): "MB-4821" -> "4821" */
+export function digitosCodigo(texto: string | null | undefined): string {
+  return (texto ?? '').toUpperCase().replace(/^\s*MB/, '').replace(/\D/g, '').slice(0, 5);
 }
 
 /** "923 456 789" ou "+244923456789" -> "+244923456789"; null se não for um número angolano */

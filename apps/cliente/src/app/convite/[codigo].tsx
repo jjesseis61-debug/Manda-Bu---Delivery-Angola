@@ -5,7 +5,7 @@ import { ACarregar } from '@/components/ui';
 import { guardarCodigoPendente } from '@/lib/convite';
 import { useSessao } from '@/lib/sessao';
 
-/** Link de convite (mandabue://convite/MB-1234): guarda o código para pré-preencher C2 */
+/** Link de convite (mandabue://convite/MB1234): guarda o código para pré-preencher C2 */
 export default function Convite() {
   const { codigo } = useLocalSearchParams<{ codigo: string }>();
   const { carregado, perfil } = useSessao();

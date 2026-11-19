@@ -141,7 +141,7 @@ export default function Empresas() {
 
             <Cartao>
               <Subtitulo>Membros ({membros.length})</Subtitulo>
-              <Paragrafo suave>Adiciona pelo código que o funcionário partilha na app (ex.: MB-1234).</Paragrafo>
+              <Paragrafo suave>Adiciona pelo código que o funcionário partilha na app (ex.: MB1234).</Paragrafo>
               <View style={{ flexDirection: 'row', gap: espaco.s, alignItems: 'flex-end' }}>
                 <View style={{ flex: 1 }}>
                   <Campo rotulo="Código do cliente" value={codigo} onChangeText={setCodigo} autoCapitalize="characters" />

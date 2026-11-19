@@ -15,6 +15,7 @@ import {
   textoPediram,
   mensagemErro,
   normalizarCodigo,
+  digitosCodigo,
   telefoneInternacional,
   textoAmigo,
   textoAmigosEmFalta,
@@ -111,17 +112,27 @@ describe('textoRegras (4.13)', () => {
 });
 
 describe('normalizarCodigo', () => {
-  it('aceita variações e devolve MB-dddd', () => {
-    expect(normalizarCodigo(' mb-4821 ')).toBe('MB-4821');
-    expect(normalizarCodigo('MB4821')).toBe('MB-4821');
-    expect(normalizarCodigo('4821')).toBe('MB-4821');
-    expect(normalizarCodigo('MB-48210')).toBe('MB-48210');
+  it('aceita variações e devolve MBdddd (sem hífen)', () => {
+    expect(normalizarCodigo(' mb-4821 ')).toBe('MB4821');
+    expect(normalizarCodigo('MB4821')).toBe('MB4821');
+    expect(normalizarCodigo('MB 4821')).toBe('MB4821');
+    expect(normalizarCodigo('4821')).toBe('MB4821');
+    expect(normalizarCodigo('MB-48210')).toBe('MB48210');
   });
-  it('recusa o que não é um código', () => {
+  it('recusa o que não é código', () => {
     expect(normalizarCodigo('MB-48')).toBeNull();
     expect(normalizarCodigo('ABC-1234')).toBeNull();
     expect(normalizarCodigo('')).toBeNull();
     expect(normalizarCodigo(null)).toBeNull();
+  });
+});
+
+describe('digitosCodigo', () => {
+  it('fica só com o número do código', () => {
+    expect(digitosCodigo('MB-4821')).toBe('4821');
+    expect(digitosCodigo('mb4821')).toBe('4821');
+    expect(digitosCodigo('48 21')).toBe('4821');
+    expect(digitosCodigo('1234567')).toBe('12345');
   });
 });
 

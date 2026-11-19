@@ -3,10 +3,11 @@ import { View } from 'react-native';
 
 import { descontoGarantido, ligarIndicacao } from '@/lib/api';
 import { lerCodigoPendente, limparCodigoPendente } from '@/lib/convite';
-import { formatarKz, mensagemCodigo, mensagemErro, normalizarCodigo } from '@/lib/formatar';
+import { digitosCodigo, formatarKz, mensagemCodigo, mensagemErro, normalizarCodigo } from '@/lib/formatar';
 import { useSessao } from '@/lib/sessao';
 
-import { Aviso, Botao, Campo, Subtitulo } from './ui';
+import { CampoConvite } from './CampoConvite';
+import { Aviso, Botao, Subtitulo } from './ui';
 
 /**
  * C2. Campo "Tens um código de convite?" (registo e checkout do 1.º pedido).
@@ -20,7 +21,7 @@ export function CampoCodigo({ aoLigar }: { aoLigar?: () => void }) {
   const [aEnviar, setAEnviar] = useState(false);
 
   useEffect(() => {
-    lerCodigoPendente().then((c) => c && setCodigo(c));
+    lerCodigoPendente().then((c) => c && setCodigo(digitosCodigo(c)));
   }, []);
 
   if (!ligada('indicacao') || !perfil || perfil.tem_ligacao || !perfil.cliente_novo) {
@@ -61,14 +62,7 @@ export function CampoCodigo({ aoLigar }: { aoLigar?: () => void }) {
   return (
     <View style={{ gap: 8 }}>
       <Subtitulo>Tens um código de convite?</Subtitulo>
-      <Campo
-        rotulo="Código"
-        placeholder="MB-1234"
-        autoCapitalize="characters"
-        autoCorrect={false}
-        value={codigo}
-        onChangeText={setCodigo}
-      />
+      <CampoConvite rotulo="Código" valor={codigo} aoMudar={setCodigo} />
       {erro && <Aviso tipo="erro">{erro}</Aviso>}
       <Botao titulo="Usar código" variante="secundario" aoCarregar={usar} aCarregar={aEnviar} desactivado={!codigo.trim()} />
     </View>
