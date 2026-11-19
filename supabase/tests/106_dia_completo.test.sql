@@ -97,6 +97,7 @@ select testes.como(testes.v('u_rosa'));
 set local role authenticated;
 select testes.passo('2 Cardápio', 'Rosa cria «Muamba de galinha» (4.000 Kz, do dia, 20 doses)', format($$insert into cardapio (nome, preco, cozinha_id, do_dia, doses_dia, categoria) values ('Muamba de galinha', 4000, %L, true, 20, 'Pratos') returning id$$, testes.v('cz')), 'muamba');
 select testes.passo('2 Cardápio', 'Rosa cria «Calulu de peixe» (5.000 Kz, 2 doses)', format($$insert into cardapio (nome, preco, cozinha_id, doses_dia, categoria) values ('Calulu de peixe', 5000, %L, 2, 'Pratos') returning id$$, testes.v('cz')), 'calulu');
+select testes.verifica('2 Cardápio', 'a Muamba ganhou um prato base com o mesmo nome', format($$select ((select pb.nome from cardapio c join pratos_base pb on pb.id = c.prato_base_id where c.id = %L) = 'Muamba de galinha')::text$$, testes.v('muamba')));
 select testes.passo('2 Cardápio', 'Rosa cria «Sumo de múcua» (500 Kz)', format($$insert into cardapio (nome, preco, cozinha_id, categoria) values ('Sumo de múcua', 500, %L, 'Bebidas') returning id$$, testes.v('cz')), 'sumo');
 select testes.passo('2 Cardápio', 'Rosa cria o montável «Prato à escolha» (3.000 Kz)', format($$insert into cardapio (nome, preco, cozinha_id, categoria) values ('Prato à escolha', 3000, %L, 'Pratos') returning id$$, testes.v('cz')), 'montavel');
 select testes.passo('2 Cardápio', 'grupo «Acompanhamento» (escolher 1)', format($$insert into opcoes_grupos (cardapio_id, nome, minimo, maximo) values (%L, 'Acompanhamento', 1, 1) returning id$$, testes.v('montavel')), 'grupo');
@@ -190,7 +191,7 @@ select testes.passo('5 Cozinha', 'Rosa começa a preparar (Joana)', format($$sel
 select testes.passo('5 Cozinha', 'Rosa marca «pronto» (Rui)', format($$select marcar_pedido_pronto(%L, true)$$, testes.v('p_rui')));
 reset role;
 select testes.como(testes.v('u_marta')); set local role authenticated;
-select testes.passo('5 Operador', 'Marta vê os estafetas da cozinha', format($$select string_agg(nome, ', ') from estafetas_para_atribuir(%L)$$, testes.v('cz')));
+select testes.verifica('5 Operador', 'Marta vê só o Carlos na lista de estafetas (o dono não)', format($$select (string_agg(nome, ', ') = 'Carlos Estafeta')::text from estafetas_para_atribuir(%L)$$, testes.v('cz')));
 select testes.passo('5 Operador', 'Marta entrega os dois pedidos ao Carlos', format($$select atribuir_entrega(%L, %L), atribuir_entrega(%L, %L)$$, testes.v('p_rui'), testes.v('carlos'), testes.v('p_joana'), testes.v('carlos')));
 select testes.passo('5 Operador', 'Marta avisa a Joana de um atraso de 10 min', format($$select informar_atraso(%L, 'Muitos pedidos', 10)$$, testes.v('p_joana')));
 reset role;
@@ -220,7 +221,8 @@ select testes.verifica('5 Stock', 'doses da Muamba: 20 − 2 = 18', format($$sel
 -- =============================================================================
 select testes.como(testes.v('u_rui')); set local role authenticated;
 select testes.passo('6 Pós-venda', 'Rui avalia com 5 estrelas', format($$insert into avaliacoes (pedido_id, cliente_id, estrelas, comentario) values (%L, %L, 5, 'Muamba deliciosa!') returning id$$, testes.v('p_rui'), testes.v('rui')), 'av_rui');
-select testes.recusa('6 LIMITAÇÃO', 'estrelas por prato: a Muamba não tem «prato base», não dá',  format($$insert into avaliacoes_pratos (avaliacao_id, prato_id, estrelas) values (%L, %L, 5)$$, testes.v('av_rui'), testes.v('muamba')));
+select testes.passo('6 Pós-venda', 'Rui dá 5 estrelas à Muamba (o prato tem prato base automático)', format($$insert into avaliacoes_pratos (avaliacao_id, prato_id, estrelas) values (%L, (select prato_base_id from cardapio where id = %L), 5) returning id$$, testes.v('av_rui'), testes.v('muamba')));
+select testes.verifica('6 Pós-venda', 'o pedido guardou o prato base de cada prato (o ecrã «Avaliar» mostra as estrelas)', format($$select bool_and(i ->> 'prato_base_id' is not null)::text from pedidos p, jsonb_array_elements(p.itens) i where p.id = %L$$, testes.v('p_rui')));
 select testes.recusa('6 Ataque', 'Rui tenta escolher a cozinha da avaliação', format($$insert into avaliacoes (pedido_id, cliente_id, cozinha_id, estrelas) values (%L, %L, %L, 1)$$, testes.v('p_rui'), testes.v('rui'), testes.v('cz')));
 select testes.passo('6 Pós-venda', 'Rui vê os avisos dele (pedido a caminho, entregue…)', $$select count(*)::text || ' avisos' from meus_avisos(20)$$);
 reset role;
@@ -234,6 +236,8 @@ select testes.passo('6 Pós-venda', 'Marta vê as notificações dela', $$select
 reset role; select testes.sair();
 select testes.como(testes.v('u_ana')); set local role authenticated;
 select testes.verifica('6 Pós-venda', 'a Ana vê a avaliação na média da cozinha', format($$select (medias_avaliacoes(%L) is not null)::text$$, testes.v('cz')));
+reset role; update parametros set avaliacoes_minimo = 1 where unico; set local role authenticated;  -- a média só aparece a partir de N avaliações
+select testes.verifica('6 Pós-venda', 'a Muamba aparece com 5 estrelas nas médias por prato', format($$select coalesce(((select (p ->> 'media')::numeric from jsonb_array_elements(medias_avaliacoes(%L) -> 'pratos') p where p ->> 'prato_base_id' = (select prato_base_id::text from cardapio where id = %L)) = 5), false)::text$$, testes.v('cz'), testes.v('muamba')));
 reset role;
 
 -- =============================================================================
