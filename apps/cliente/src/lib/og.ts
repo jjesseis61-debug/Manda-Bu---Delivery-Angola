@@ -24,7 +24,7 @@ export function kz(n: number): string {
 /** Código de convite do link (MB4812, e o antigo MB-4812) no formato da plataforma (MB4812), ou null */
 export function codigoDoLink(r: string | null | undefined): string | null {
   const c = (r ?? '').trim().toUpperCase();
-  return /^MB-?\d{4,5}$/.test(c) ? c.replace('-', '') : null;
+  return /^MB-?\d{4,6}$/.test(c) ? c.replace('-', '') : null;
 }
 
 /** Id do prato no caminho /p/{uuid} (ou null) */

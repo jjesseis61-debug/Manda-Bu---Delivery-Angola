@@ -118,9 +118,12 @@ describe('normalizarCodigo', () => {
     expect(normalizarCodigo('MB 4821')).toBe('MB4821');
     expect(normalizarCodigo('4821')).toBe('MB4821');
     expect(normalizarCodigo('MB-48210')).toBe('MB48210');
+    expect(normalizarCodigo('482100')).toBe('MB482100');
+    expect(normalizarCodigo('0042')).toBe('MB0042');
   });
   it('recusa o que não é código', () => {
     expect(normalizarCodigo('MB-48')).toBeNull();
+    expect(normalizarCodigo('1234567')).toBeNull();
     expect(normalizarCodigo('ABC-1234')).toBeNull();
     expect(normalizarCodigo('')).toBeNull();
     expect(normalizarCodigo(null)).toBeNull();
@@ -132,7 +135,7 @@ describe('digitosCodigo', () => {
     expect(digitosCodigo('MB-4821')).toBe('4821');
     expect(digitosCodigo('mb4821')).toBe('4821');
     expect(digitosCodigo('48 21')).toBe('4821');
-    expect(digitosCodigo('1234567')).toBe('12345');
+    expect(digitosCodigo('1234567')).toBe('123456');
   });
 });
 

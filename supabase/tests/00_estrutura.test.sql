@@ -38,7 +38,7 @@ select is((select c.nome from turnos t join cozinhas c on c.id = t.cozinha_id li
 
 -- Registo de cliente: código MB-dddd e pseudónimo sem dados pessoais
 select testes.def('joana', testes.cliente('Joana Kiala', 'Particular', '923456789'));
-select matches(testes.codigo(testes.u('joana')), '^MB[0-9]{4}$', 'código no formato MB + 4 dígitos (sem hífen)');
+select matches(testes.codigo(testes.u('joana')), '^MB[1-9][0-9]{3}$', 'código no formato MB + 4 dígitos (sem hífen nem zero à esquerda)');
 select ok((select pseudonimo !~* '(joana|kiala|923456789)'
              from perfil_destaques where cliente_id = testes.u('joana')),
           'pseudónimo não deriva do nome nem do telefone');

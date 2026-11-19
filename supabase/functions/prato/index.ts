@@ -12,7 +12,7 @@ const SITE = (Deno.env.get('SITE_URL') ?? 'https://manda-bue.netlify.app').repla
 const MARCA = 'Cozinha da Alexandra';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 // MB4812 (e o antigo MB-4812, dos links já partilhados) -> MB4812
-const CODIGO = /^MB-?\d{4,5}$/;
+const CODIGO = /^MB-?\d{4,6}$/;
 
 const CORS = { 'Access-Control-Allow-Origin': '*' };
 

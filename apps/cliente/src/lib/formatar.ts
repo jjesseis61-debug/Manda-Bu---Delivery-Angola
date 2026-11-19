@@ -126,13 +126,13 @@ export function textoRegras(p: RegrasConvida): string[] {
  */
 export function normalizarCodigo(texto: string | null | undefined): string | null {
   const limpo = (texto ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-  if (/^\d{4,5}$/.test(limpo)) return `MB${limpo}`;
-  return /^MB\d{4,5}$/.test(limpo) ? limpo : null;
+  if (/^\d{4,6}$/.test(limpo)) return `MB${limpo}`;
+  return /^MB\d{4,6}$/.test(limpo) ? limpo : null;
 }
 
 /** Só os dígitos do código (para o campo com o «MB» fixo): "MB-4821" -> "4821" */
 export function digitosCodigo(texto: string | null | undefined): string {
-  return (texto ?? '').toUpperCase().replace(/^\s*MB/, '').replace(/\D/g, '').slice(0, 5);
+  return (texto ?? '').toUpperCase().replace(/^\s*MB/, '').replace(/\D/g, '').slice(0, 6);
 }
 
 /** "923 456 789" ou "+244923456789" -> "+244923456789"; null se não for um número angolano */

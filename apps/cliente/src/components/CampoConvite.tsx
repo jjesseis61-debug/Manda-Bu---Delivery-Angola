@@ -23,7 +23,7 @@ export function CampoConvite({
       placeholder="1234"
       keyboardType="number-pad"
       autoCorrect={false}
-      maxLength={8}
+      maxLength={9}
       value={valor}
       onChangeText={(t) => aoMudar(digitosCodigo(t))}
     />
