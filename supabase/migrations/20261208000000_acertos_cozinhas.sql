@@ -16,7 +16,7 @@
 -- Permissão: financas.conferir (o administrador principal tem todas).
 -- =============================================================================
 
-create table acertos_cozinha (
+create table if not exists acertos_cozinha (
   id              uuid primary key default gen_random_uuid(),
   dispositivo_id  text,
   criado_em       timestamptz not null default now(),
@@ -43,9 +43,9 @@ create table acertos_cozinha (
   nota            text check (nota is null or length(nota) <= 500),
   unique (cozinha_id, semana_inicio)
 );
-create index acertos_cozinha_cozinha_idx on acertos_cozinha (cozinha_id, semana_inicio desc);
+create index if not exists acertos_cozinha_cozinha_idx on acertos_cozinha (cozinha_id, semana_inicio desc);
 
-create table acertos_linhas (
+create table if not exists acertos_linhas (
   id              uuid primary key default gen_random_uuid(),
   criado_em       timestamptz not null default now(),
   acerto_id       uuid not null references acertos_cozinha(id),
@@ -60,9 +60,9 @@ create table acertos_linhas (
   saldo           integer not null,
   unique (pedido_id, tipo)
 );
-create index acertos_linhas_acerto_idx on acertos_linhas (acerto_id);
+create index if not exists acertos_linhas_acerto_idx on acertos_linhas (acerto_id);
 
-create table acertos_pagamentos (
+create table if not exists acertos_pagamentos (
   id              uuid primary key default gen_random_uuid(),
   criado_em       timestamptz not null default now(),
   deletado_em     timestamptz,
@@ -74,9 +74,9 @@ create table acertos_pagamentos (
   data            date not null,
   registado_por   uuid references funcionarios(id)
 );
-create index acertos_pagamentos_acerto_idx on acertos_pagamentos (acerto_id);
-create index acertos_pagamentos_registado_idx on acertos_pagamentos (registado_por);
-create index acertos_cozinha_fechado_por_idx on acertos_cozinha (fechado_por);
+create index if not exists acertos_pagamentos_acerto_idx on acertos_pagamentos (acerto_id);
+create index if not exists acertos_pagamentos_registado_idx on acertos_pagamentos (registado_por);
+create index if not exists acertos_cozinha_fechado_por_idx on acertos_cozinha (fechado_por);
 
 -- Só o servidor escreve; leitura também só pelas funções
 alter table acertos_cozinha enable row level security;
