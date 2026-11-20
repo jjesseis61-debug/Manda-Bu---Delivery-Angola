@@ -4,6 +4,9 @@ import type { RelatorioDetalhado, Rentabilidade, TemposEtapas } from './relatori
 import { supabase } from './supabase';
 import type {
   AcertosSemana,
+  Compensacao,
+  ContasEmpresas,
+  VendaSemFatura,
   Aviso,
   AuditoriaCardapio,
   ImpactoPreco,
@@ -121,10 +124,59 @@ export async function fecharAcerto(cozinhaId: string, semana: string): Promise<s
   return verificar(await supabase.rpc('fechar_acerto', { p_cozinha: cozinhaId, p_semana: semana })) as string;
 }
 
-export async function registarPagamentoAcerto(acertoId: string, valor: number, metodo: string, referencia: string | null) {
+export async function registarPagamentoAcerto(
+  acertoId: string,
+  valor: number,
+  metodo: string,
+  referencia: string | null,
+  comprovativo: string | null = null,
+) {
   return verificar(
-    await supabase.rpc('registar_pagamento_acerto', { p_acerto: acertoId, p_valor: valor, p_metodo: metodo, p_referencia: referencia }),
+    await supabase.rpc('registar_pagamento_acerto', {
+      p_acerto: acertoId,
+      p_valor: valor,
+      p_metodo: metodo,
+      p_referencia: referencia,
+      p_comprovativo: comprovativo,
+    }),
   ) as { pago: number; falta: number; estado: string };
+}
+
+// Faturas das vendas (número do software certificado; emitida pela plataforma ou pela cozinha)
+export async function vendasSemFatura(dias = 30): Promise<VendaSemFatura[]> {
+  return verificar(await supabase.rpc('vendas_sem_fatura', { p_dias: dias })) as VendaSemFatura[];
+}
+
+export async function registarFaturaPedido(pedidoId: string, numero: string, emitidaPor: 'plataforma' | 'cozinha') {
+  verificar(await supabase.rpc('registar_fatura_pedido', { p_pedido: pedidoId, p_numero: numero, p_emitida_por: emitidaPor }));
+}
+
+// Compensações das reclamações (a plataforma paga ao cliente; a cargo da cozinha entra no acerto)
+export async function compensacoesLista(estado: string | null): Promise<Compensacao[]> {
+  return verificar(await supabase.rpc('compensacoes_lista', { p_estado: estado })) as Compensacao[];
+}
+
+export async function definirCargoCompensacao(id: string, aCargo: 'plataforma' | 'cozinha') {
+  verificar(await supabase.rpc('definir_cargo_compensacao', { p_id: id, p_a_cargo: aCargo }));
+}
+
+export async function pagarCompensacao(id: string, metodo: string, referencia: string | null) {
+  verificar(await supabase.rpc('pagar_compensacao', { p_id: id, p_metodo: metodo, p_referencia: referencia }));
+}
+
+// Contas a receber das empresas (B2B)
+export async function contasEmpresas(mes: string | null): Promise<ContasEmpresas> {
+  return verificar(await supabase.rpc('contas_empresas', { p_mes: mes })) as ContasEmpresas;
+}
+
+export async function emitirFaturaEmpresa(empresaId: string, mes: string, numero: string, vencimento: string) {
+  return verificar(
+    await supabase.rpc('emitir_fatura_empresa', { p_empresa: empresaId, p_mes: mes, p_numero: numero, p_vencimento: vencimento }),
+  ) as string;
+}
+
+export async function pagarFaturaEmpresa(faturaId: string, metodo: string, referencia: string | null) {
+  verificar(await supabase.rpc('pagar_fatura_empresa', { p_fatura: faturaId, p_metodo: metodo, p_referencia: referencia }));
 }
 
 export async function definirFaturaAcerto(acertoId: string, numero: string) {

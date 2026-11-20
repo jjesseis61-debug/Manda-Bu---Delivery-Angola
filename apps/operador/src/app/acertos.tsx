@@ -1,10 +1,11 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Text, View } from 'react-native';
+import { Share, Text, View } from 'react-native';
 
 import { Guarda } from '@/components/Guarda';
 import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Escolha, Linha, Paragrafo, Subtitulo } from '@/components/ui';
 import { acertosSemana, definirFaturaAcerto, fecharAcerto, registarPagamentoAcerto } from '@/lib/api';
+import { escolherFoto, enviarComprovativoAcerto } from '@/lib/fotos';
 import { formatarKz, mensagemErro } from '@/lib/formatar';
 import { cores, espaco } from '@/lib/tema';
 import type { AcertoCozinha, AcertosSemana } from '@/lib/tipos';
@@ -37,6 +38,34 @@ export function textoSaldo(saldo: number): string {
   return 'Nada a acertar';
 }
 
+/** Nota do acerto para enviar à cozinha (WhatsApp/partilhar) */
+export function notaAcerto(c: AcertoCozinha, inicio: string, fim: string): string {
+  const t = c.totais;
+  const linhas = [
+    `*Manda Bué · Acerto da semana ${nomeSemana(inicio, fim)}*`,
+    c.cozinha_nome,
+    '',
+    `Pedidos entregues: ${t.pedidos}`,
+    `Vendas de comida: ${formatarKz(t.vendas)}`,
+    '',
+    'A cozinha deve à plataforma:',
+    `• Taxas de entrega: ${formatarKz(t.taxas_entrega)}`,
+    `• Comissão (${c.comissao_percent}%): ${formatarKz(t.comissao)}`,
+    ...(t.compensacoes ? [`• Compensações a clientes: ${formatarKz(t.compensacoes)}`] : []),
+    '',
+    'A plataforma deve à cozinha:',
+    `• Convida (descontos e saldo): ${formatarKz(t.convida_plataforma)}`,
+    `• Refeições de pacotes: ${formatarKz(t.pago_pacote)}`,
+    `• Parte das empresas: ${formatarKz(t.valor_empresa)}`,
+    '',
+    `*Saldo: ${textoSaldo(t.saldo)}*`,
+  ];
+  if (c.pago > 0) linhas.push(`Já pago: ${formatarKz(c.pago)}`);
+  if (c.estado === 'fechado') linhas.push(`Falta pagar: ${formatarKz(c.por_pagar)}`);
+  if (c.numero_fatura) linhas.push(`Fatura: ${c.numero_fatura}`);
+  return linhas.join('\n');
+}
+
 /**
  * Acertos com as cozinhas (semana a semana). A cozinha fica com o dinheiro das entregas: deve à
  * plataforma a taxa de entrega e a comissão; a plataforma deve-lhe o Convida (na parte dela), as
@@ -52,6 +81,7 @@ export default function Acertos() {
   const [metodo, setMetodo] = useState<Metodo>('Transferência');
   const [texto, setTexto] = useState('');
   const [ocupado, setOcupado] = useState<string | null>(null);
+  const [foto, setFoto] = useState<string | null>(null);
 
   const carregar = useCallback(() => {
     setDados(null);
@@ -78,6 +108,7 @@ export default function Acertos() {
       setAberto(null);
       setTexto('');
       setValor('');
+      setFoto(null);
       carregar();
     } catch (e) {
       setErro(mensagemErro(e));
@@ -91,7 +122,7 @@ export default function Acertos() {
   const aPagar = fechadas.filter((c) => c.totais.saldo < 0).reduce((s, c) => s + c.por_pagar, 0);
 
   return (
-    <Guarda permissoes={['financas.conferir']}>
+    <Guarda permissoes={['financas.conferir', 'relatorios.exportar']}>
       <Ecra>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: espaco.s }}>
           <Botao titulo="‹ Anterior" variante="texto" aoCarregar={() => mudarSemana(-7)} desactivado={!dados} />
@@ -117,6 +148,13 @@ export default function Acertos() {
                 key={c.cozinha_id}
                 c={c}
                 podeFechar={dados.pode_fechar}
+                podeGerir={dados.pode_gerir !== false}
+                aoPartilhar={() => void Share.share({ message: notaAcerto(c, dados.semana_inicio, dados.semana_fim) }).catch(() => undefined)}
+                foto={foto}
+                aoFoto={async () => {
+                  const uri = await escolherFoto('camera', false).catch(() => null);
+                  if (uri) setFoto(uri);
+                }}
                 aberto={aberto && aberto.id === c.acerto_id ? aberto.accao : null}
                 ocupado={ocupado === (c.acerto_id ?? c.cozinha_id)}
                 aoFechar={() => accao(c.cozinha_id, () => fecharAcerto(c.cozinha_id, dados.semana_inicio))}
@@ -133,9 +171,10 @@ export default function Acertos() {
                 texto={texto}
                 setTexto={setTexto}
                 aoPagar={() =>
-                  accao(c.acerto_id!, () =>
-                    registarPagamentoAcerto(c.acerto_id!, Number(valor.replace(/\D/g, '')), metodo, texto.trim() || null),
-                  )
+                  accao(c.acerto_id!, async () => {
+                    const caminho = foto ? await enviarComprovativoAcerto(c.acerto_id!, foto) : null;
+                    return registarPagamentoAcerto(c.acerto_id!, Number(valor.replace(/\D/g, '')), metodo, texto.trim() || null, caminho);
+                  })
                 }
                 aoGuardarFatura={() => accao(c.acerto_id!, () => definirFaturaAcerto(c.acerto_id!, texto.trim()))}
               />
@@ -150,6 +189,10 @@ export default function Acertos() {
 function CartaoCozinha(p: {
   c: AcertoCozinha;
   podeFechar: boolean;
+  podeGerir: boolean;
+  aoPartilhar: () => void;
+  foto: string | null;
+  aoFoto: () => void;
   aberto: 'pagar' | 'fatura' | null;
   ocupado: boolean;
   aoFechar: () => void;
@@ -179,6 +222,7 @@ function CartaoCozinha(p: {
       <Text style={{ color: cores.textoSuave, marginTop: espaco.xs }}>A cozinha deve à plataforma</Text>
       <Linha esquerda="Taxas de entrega" direita={formatarKz(t.taxas_entrega)} />
       <Linha esquerda={`Comissão (${c.comissao_percent}%)`} direita={formatarKz(t.comissao)} />
+      {!!t.compensacoes && <Linha esquerda="Compensações a clientes" direita={formatarKz(t.compensacoes)} />}
       <Text style={{ color: cores.textoSuave, marginTop: espaco.xs }}>A plataforma deve à cozinha</Text>
       <Linha esquerda="Convida (descontos e saldo)" direita={formatarKz(t.convida_plataforma)} />
       <Linha esquerda="Refeições de pacotes" direita={formatarKz(t.pago_pacote)} />
@@ -187,8 +231,13 @@ function CartaoCozinha(p: {
       {c.estado !== 'aberto' && c.pago > 0 && <Linha esquerda="Já pago" direita={formatarKz(c.pago)} />}
       {c.estado === 'fechado' && <Linha esquerda="Falta pagar" direita={formatarKz(c.por_pagar)} forte />}
       {c.numero_fatura && <Text style={{ color: cores.textoSuave }}>Fatura: {c.numero_fatura}</Text>}
+      {!!c.sem_fatura && (
+        <Text style={{ color: cores.aviso, fontWeight: '700' }}>
+          {c.sem_fatura === 1 ? '1 venda sem fatura' : `${c.sem_fatura} vendas sem fatura`} nesta semana
+        </Text>
+      )}
 
-      {c.estado === 'aberto' && p.podeFechar && (
+      {c.estado === 'aberto' && p.podeFechar && p.podeGerir && (
         <Botao titulo="Fechar a semana" aCarregar={p.ocupado} aoCarregar={p.aoFechar} />
       )}
 
@@ -201,6 +250,11 @@ function CartaoCozinha(p: {
             value={p.texto}
             onChangeText={p.setTexto}
           />
+          <Botao
+            titulo={p.foto ? '✓ Foto do comprovativo (tirar outra)' : 'Foto do comprovativo (opcional)'}
+            variante="secundario"
+            aoCarregar={p.aoFoto}
+          />
           <Botao titulo={t.saldo > 0 ? 'Registar o que a cozinha pagou' : 'Registar o que a plataforma pagou'} aCarregar={p.ocupado} aoCarregar={p.aoPagar} />
           <Botao titulo="Voltar" variante="texto" aoCarregar={p.aoVoltar} />
         </>
@@ -212,7 +266,8 @@ function CartaoCozinha(p: {
           <Botao titulo="Voltar" variante="texto" aoCarregar={p.aoVoltar} />
         </>
       )}
-      {!p.aberto && c.estado !== 'aberto' && (
+      {!p.aberto && <Botao titulo="Enviar a nota à cozinha" variante="texto" aoCarregar={p.aoPartilhar} />}
+      {!p.aberto && c.estado !== 'aberto' && p.podeGerir && (
         <View style={{ flexDirection: 'row', gap: espaco.s, flexWrap: 'wrap' }}>
           {c.estado === 'fechado' && (
             <View style={{ flex: 1 }}>

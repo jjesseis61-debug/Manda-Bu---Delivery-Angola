@@ -23,6 +23,7 @@ test('abre o ecrã de cada notificação da equipa', () => {
   expect(rotaDaNotificacao({ codigo: 'N40' })).toBe('/otp-codigos');
   expect(rotaDaNotificacao({ codigo: 'N41' })).toBe('/agendados');
   expect(rotaDaNotificacao({ codigo: 'N42' })).toBe('/relatorios');
+  expect(rotaDaNotificacao({ codigo: 'N45' })).toBe('/acertos');
   expect(rotaDaNotificacao({ codigo: 'N3' })).toBeNull();
   expect(rotaDaNotificacao(undefined)).toBeNull();
 });

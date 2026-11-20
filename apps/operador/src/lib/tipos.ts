@@ -1126,6 +1126,7 @@ export type AcertoTotais = {
   convida_plataforma: number;
   pago_pacote: number;
   valor_empresa: number;
+  compensacoes?: number;
   saldo: number;
 };
 
@@ -1139,11 +1140,64 @@ export type AcertoCozinha = {
   comissao_percent: number;
   pago: number;
   por_pagar: number;
+  sem_fatura?: number;
 };
 
 export type AcertosSemana = {
   semana_inicio: string;
   semana_fim: string;
   pode_fechar: boolean;
+  /** false para o gerente de cozinha: só vê */
+  pode_gerir?: boolean;
   cozinhas: AcertoCozinha[];
+};
+
+export type VendaSemFatura = {
+  pedido_id: string;
+  entregue_em: string;
+  cozinha_id: string;
+  cozinha_nome: string;
+  faturacao: 'plataforma' | 'cozinha';
+  cliente_nome: string | null;
+  cliente_nif: string | null;
+  valor: number;
+};
+
+export type Compensacao = {
+  id: string;
+  criado_em: string;
+  pedido_id: string;
+  cliente_nome: string;
+  cliente_telefone: string | null;
+  cozinha_nome: string | null;
+  tipo: 'desconto' | 'reembolso_parcial' | 'reembolso_total';
+  valor: number;
+  a_cargo: 'plataforma' | 'cozinha';
+  estado: 'por_pagar' | 'paga' | 'anulada';
+  metodo: string | null;
+  referencia: string | null;
+  pago_em: string | null;
+  categoria: string | null;
+  reclamacao: string;
+};
+
+export type ContaEmpresa = {
+  empresa_id: string;
+  nome: string;
+  valor: number;
+  pedidos: number;
+  fatura_id: string | null;
+  numero: string | null;
+  vencimento: string | null;
+  estado: 'por_faturar' | 'emitida' | 'paga' | 'anulada';
+  pago_em: string | null;
+  referencia: string | null;
+  em_atraso: boolean | null;
+};
+
+export type ContasEmpresas = {
+  mes: string;
+  pode_faturar: boolean;
+  empresas: ContaEmpresa[];
+  em_atraso_total: number;
 };

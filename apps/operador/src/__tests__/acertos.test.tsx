@@ -1,7 +1,9 @@
 /// <reference types="jest" />
 import { fireEvent, renderRouter, waitFor } from 'expo-router/testing-library';
 
-import Acertos, { nomeSemana, textoSaldo } from '@/app/acertos';
+import { Share } from 'react-native';
+
+import Acertos, { nomeSemana, notaAcerto, textoSaldo } from '@/app/acertos';
 import { acertosSemana, definirFaturaAcerto, fecharAcerto, registarPagamentoAcerto } from '@/lib/api';
 
 jest.mock('@/lib/api', () => ({
@@ -10,6 +12,7 @@ jest.mock('@/lib/api', () => ({
   registarPagamentoAcerto: jest.fn(),
   definirFaturaAcerto: jest.fn(),
 }));
+jest.mock('@/lib/fotos', () => ({ escolherFoto: jest.fn(), enviarComprovativoAcerto: jest.fn() }));
 jest.mock('@/lib/sessao', () => ({
   useSessao: () => ({ carregado: true, sessao: {}, funcionario: { id: 'f', cozinhas_equipa: [] }, pode: () => true }),
 }));
@@ -58,9 +61,37 @@ test('semana fechada: regista o pagamento e o número da fatura', async () => {
   fireEvent.press(ecra.getByText('Registar pagamento'));
   fireEvent.changeText(ecra.getByLabelText('Referência (obrigatória)'), 'TRF-0042');
   fireEvent.press(ecra.getByText('Registar o que a plataforma pagou'));
-  await waitFor(() => expect(registarPagamentoAcerto).toHaveBeenCalledWith('a1', 1700, 'Transferência', 'TRF-0042'));
+  await waitFor(() => expect(registarPagamentoAcerto).toHaveBeenCalledWith('a1', 1700, 'Transferência', 'TRF-0042', null));
   fireEvent.press(ecra.getByText('Número da fatura'));
   fireEvent.changeText(ecra.getByLabelText('Número da fatura (software certificado)'), 'FT 2026/118');
   fireEvent.press(ecra.getByText('Guardar o número'));
   await waitFor(() => expect(definirFaturaAcerto).toHaveBeenCalledWith('a1', 'FT 2026/118'));
+});
+
+test('gerente da cozinha: vê as contas, sem fechar nem pagar, e partilha a nota', async () => {
+  const d = semana('fechado');
+  (acertosSemana as jest.Mock).mockResolvedValue({
+    ...d,
+    pode_gerir: false,
+    cozinhas: d.cozinhas.map((c) => ({ ...c, sem_fatura: 2, totais: { ...c.totais, compensacoes: 800 } })),
+  });
+  const partilhar = jest.spyOn(Share, 'share').mockResolvedValue({ action: 'sharedAction' });
+  const ecra = renderRouter({ acertos: Acertos }, { initialUrl: '/acertos' });
+  await waitFor(() => expect(ecra.getByText('Tia Rosa')).toBeTruthy());
+  expect(ecra.queryByText('Registar pagamento')).toBeNull();
+  expect(ecra.queryByText('Número da fatura')).toBeNull();
+  expect(ecra.getByText('Compensações a clientes')).toBeTruthy();
+  expect(ecra.getByText('2 vendas sem fatura nesta semana')).toBeTruthy();
+  fireEvent.press(ecra.getByText('Enviar a nota à cozinha'));
+  expect(partilhar).toHaveBeenCalled();
+});
+
+test('nota do acerto', () => {
+  const c = semana('fechado').cozinhas[0];
+  const n = notaAcerto({ ...c, totais: { ...c.totais, compensacoes: 800 } }, '2026-11-09', '2026-11-15');
+  expect(n).toContain('*Manda Bué · Acerto da semana 9–15 nov 2026*');
+  expect(n).toContain('• Comissão (10%): 1.300 Kz');
+  expect(n).toContain('• Compensações a clientes: 800 Kz');
+  expect(n).toContain('*Saldo: A plataforma paga 1.700 Kz*');
+  expect(n).toContain('Falta pagar: 1.700 Kz');
 });

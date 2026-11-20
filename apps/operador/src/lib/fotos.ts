@@ -102,6 +102,17 @@ export async function enviarComprovativo(pedidoId: string, uri: string, n = 0): 
   return caminho;
 }
 
+/** Foto do comprovativo de um pagamento de acerto com uma cozinha: acertos/<acerto_id>/<data>.jpg */
+export async function enviarComprovativoAcerto(acertoId: string, uri: string): Promise<string> {
+  const caminho = `acertos/${acertoId}/${Date.now()}.jpg`;
+  const dados = await (await fetch(uri)).arrayBuffer();
+  const { error } = await supabase.storage
+    .from(BUCKET_COMPROVATIVOS)
+    .upload(caminho, dados, { contentType: 'image/jpeg', upsert: false });
+  if (error) throw error;
+  return caminho;
+}
+
 /** Endereço temporário (10 min) para ver a foto de um comprovativo */
 export async function enderecoComprovativo(caminho: string): Promise<string | null> {
   const { data } = await supabase.storage.from(BUCKET_COMPROVATIVOS).createSignedUrl(caminho, 600);
