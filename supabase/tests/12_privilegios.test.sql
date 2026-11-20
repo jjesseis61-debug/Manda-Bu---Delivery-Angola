@@ -32,7 +32,8 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 'metricas_turno', 'meu_desconto_indicacao', 'minha_posicao', 'moderar_foto',
                 'mudar_estado_pedido', 'ocultar_avaliacao', 'pedir_levantamento', 'pessoas_como_tu',
                 'pontos_entrega_proximos', 'registar_partilha', 'rejeitar_levantamento',
-                'relatorio_cozinha', 'relatorio_cozinha_detalhado', 'definir_comissao_cozinha', 'definir_convida_cozinha', 'rever_ganho', 'total_pago_mes', 'usar_credito',
+                'relatorio_cozinha', 'relatorio_cozinha_detalhado', 'definir_comissao_cozinha', 'definir_convida_cozinha',
+                'acertos_semana', 'fechar_acerto', 'registar_pagamento_acerto', 'definir_fatura_acerto', 'conta_corrente_cozinha', 'rever_ganho', 'total_pago_mes', 'usar_credito',
                 -- API da app do cliente (I2)
                 'registar_cliente', 'meu_perfil', 'orcamento_pedido', 'meus_amigos',
                 'registar_token_push', 'remover_token_push',

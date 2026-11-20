@@ -41,6 +41,7 @@ const ecras: {
   { rota: '/utilizadores', titulo: 'Utilizadores', descricao: 'Procurar clientes, equipa e contas de login por nome ou número; bloquear um número', permissoes: ['utilizadores.ver'] },
   { rota: '/otp-codigos', titulo: 'Códigos de login', descricao: 'Entregar os códigos de OTP manual aos clientes (WhatsApp/SMS)', permissoes: ['otp.entregar'] },
   { rota: '/estimulos', titulo: 'Estímulos do mês', descricao: 'Desempenho, metas e bónus da equipa e dos melhores clientes', permissoes: ['equipa.gerir'] },
+  { rota: '/acertos', titulo: 'Acertos com as cozinhas', descricao: 'Semana a semana: comissão e entregas a receber, Convida e pacotes a pagar', permissoes: ['financas.conferir'] },
   { rota: '/conferencia', titulo: 'Conferência', descricao: 'Fecho do dia e do mês, extratos e comprovativos', permissoes: ['financas.conferir'] },
   { rota: '/grupos', titulo: 'Grupos do dia', descricao: 'Pedidos de grupo juntos para preparar e expedir (O10)', permissoes: ['pedidos.gerir', 'entregas.registar'] },
   { rota: '/condominios', titulo: 'Condomínios', descricao: 'Cozinha só para moradores: área no mapa, lista com vagas, abrir/fechar', permissoes: ['cozinhas.gerir', 'pedidos.gerir'] },

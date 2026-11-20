@@ -3,6 +3,7 @@
 import type { RelatorioDetalhado, Rentabilidade, TemposEtapas } from './relatorio';
 import { supabase } from './supabase';
 import type {
+  AcertosSemana,
   Aviso,
   AuditoriaCardapio,
   ImpactoPreco,
@@ -111,6 +112,25 @@ export async function confirmarTodos(indicadorId: string): Promise<number> {
 }
 
 // ---------------------------------------------------------------- O3
+// ---------------------------------------------------------------- Acertos com as cozinhas
+export async function acertosSemana(semana: string | null): Promise<AcertosSemana> {
+  return verificar(await supabase.rpc('acertos_semana', { p_semana: semana })) as AcertosSemana;
+}
+
+export async function fecharAcerto(cozinhaId: string, semana: string): Promise<string> {
+  return verificar(await supabase.rpc('fechar_acerto', { p_cozinha: cozinhaId, p_semana: semana })) as string;
+}
+
+export async function registarPagamentoAcerto(acertoId: string, valor: number, metodo: string, referencia: string | null) {
+  return verificar(
+    await supabase.rpc('registar_pagamento_acerto', { p_acerto: acertoId, p_valor: valor, p_metodo: metodo, p_referencia: referencia }),
+  ) as { pago: number; falta: number; estado: string };
+}
+
+export async function definirFaturaAcerto(acertoId: string, numero: string) {
+  verificar(await supabase.rpc('definir_fatura_acerto', { p_acerto: acertoId, p_numero: numero }));
+}
+
 export async function levantamentos(estado: string | null): Promise<LevantamentoOperador[]> {
   return verificar(await supabase.rpc('levantamentos_operador', { p_estado: estado })) as LevantamentoOperador[];
 }

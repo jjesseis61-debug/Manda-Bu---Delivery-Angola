@@ -1116,3 +1116,34 @@ export type ConversaDetalhe = {
   mensagens: { id: string; autor: 'cliente' | 'agente' | 'funcionario' | 'sistema'; texto: string; criado_em: string; quem: string | null }[];
   pedidos: { pedido_id: string; feito_em: string; estado: string; itens: string | null; total_kz: number }[];
 };
+
+/** Acerto semanal com uma cozinha (a cozinha fica com o dinheiro; saldo > 0: a cozinha paga à plataforma) */
+export type AcertoTotais = {
+  pedidos: number;
+  vendas: number;
+  taxas_entrega: number;
+  comissao: number;
+  convida_plataforma: number;
+  pago_pacote: number;
+  valor_empresa: number;
+  saldo: number;
+};
+
+export type AcertoCozinha = {
+  cozinha_id: string;
+  cozinha_nome: string;
+  acerto_id: string | null;
+  estado: 'aberto' | 'fechado' | 'pago';
+  numero_fatura: string | null;
+  totais: AcertoTotais;
+  comissao_percent: number;
+  pago: number;
+  por_pagar: number;
+};
+
+export type AcertosSemana = {
+  semana_inicio: string;
+  semana_fim: string;
+  pode_fechar: boolean;
+  cozinhas: AcertoCozinha[];
+};
