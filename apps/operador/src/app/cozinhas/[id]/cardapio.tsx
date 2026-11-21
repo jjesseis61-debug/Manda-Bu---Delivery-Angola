@@ -105,6 +105,11 @@ export default function Cardapio() {
             aoOpcoes={() => router.push({ pathname: '/cozinhas/opcoes/[prato]', params: { prato: p.id, nome: p.nome } })}
             aoImpacto={() => router.push({ pathname: '/cozinhas/impacto-preco', params: { cardapio: p.id, nome: p.nome } })}
             aoHorarios={() => router.push({ pathname: '/cozinhas/horarios/[prato]', params: { prato: p.id, nome: p.nome } })}
+            aoPromocao={
+              pode('cozinhas.gerir') || pode('cardapio.gerir')
+                ? () => router.push({ pathname: '/campanhas', params: { cozinha: p.cozinha_id, prato: p.id } })
+                : undefined
+            }
           />
         ))}
 

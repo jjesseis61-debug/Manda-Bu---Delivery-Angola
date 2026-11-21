@@ -1,10 +1,10 @@
-import { useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, Switch, Text, View } from 'react-native';
 
 import { Guarda } from '@/components/Guarda';
 import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Escolha, Paragrafo, Subtitulo } from '@/components/ui';
-import { lerCardapio, lerCozinhas, lerZonasEntrega } from '@/lib/api';
+import { lerCardapio, lerCozinhas, lerFuncionalidades, lerZonasEntrega } from '@/lib/api';
 import {
   apagarCampanha,
   avisarCampanha,
@@ -85,8 +85,15 @@ function Chip({ rotulo, marcado, aoCarregar }: { rotulo: string; marcado: boolea
 
 /** Campanhas (promoções) por condomínio, por zona ou para todos. Não acumulam com o convite: vale o maior. */
 export default function Campanhas() {
-  const { pode } = useSessao();
+  const { pode, funcionario } = useSessao();
   const gestor = pode('cozinhas.gerir');
+  // Gerente do cardápio: põe em promoção os pratos da(s) sua(s) cozinha(s), para todos os clientes
+  const gerente = !gestor && pode('cardapio.gerir');
+  const minhas = funcionario?.cozinhas_equipa ?? [];
+  // Vindo do cardápio («Pôr em promoção»): abre logo a campanha com a cozinha e o prato
+  const params = useLocalSearchParams<{ cozinha?: string; prato?: string }>();
+  const atalhoAberto = useRef(false);
+  const [condominiosLigados, setCondominiosLigados] = useState<boolean | null>(null);
   const [lista, setLista] = useState<Campanha[] | null>(null);
   const [condominios, setCondominios] = useState<Condominio[]>([]);
   const [zonas, setZonas] = useState<ZonaEntrega[]>([]);
@@ -100,11 +107,33 @@ export default function Campanhas() {
   const carregar = useCallback(() => {
     lerCampanhas().then(setLista).catch((e) => setErro(msg(e)));
     lerCondominios().then(setCondominios).catch(() => setCondominios([]));
+    lerFuncionalidades()
+      .then((f) => setCondominiosLigados(!!f.find((x) => x.chave === 'condominios')?.activa))
+      .catch(() => setCondominiosLigados(false));
     if (gestor) {
       lerZonasEntrega().then(setZonas).catch(() => setZonas([]));
       lerCozinhas().then(setCozinhas).catch(() => setCozinhas([]));
+    } else if (gerente) {
+      lerCozinhas()
+        .then((l) => setCozinhas(l.filter((k) => minhas.includes(k.id))))
+        .catch(() => setCozinhas([]));
     }
-  }, [gestor]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gestor, gerente, minhas.join()]);
+
+  /** Campanha nova: começa em «Todos» quando os condomínios estão desligados (ou vem do cardápio) */
+  function novaCampanha(cozinha?: string, prato?: string) {
+    const podeTodos = gestor || gerente;
+    const todos = podeTodos && (!!cozinha || condominiosLigados === false || gerente);
+    const cozinhaInicial = cozinha ?? (gerente && minhas.length === 1 ? minhas[0] : '');
+    setEdicao({ ...NOVA, onde: todos ? 'todos' : 'condominio', cozinha_id: todos ? cozinhaInicial : '', pratos: prato ? [prato] : [] });
+  }
+  useEffect(() => {
+    if (atalhoAberto.current || !params.prato || !params.cozinha || condominiosLigados === null) return;
+    atalhoAberto.current = true;
+    novaCampanha(params.cozinha, params.prato);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.prato, params.cozinha, condominiosLigados]);
   useFocusEffect(carregar);
 
   // Cozinha da campanha: a escolhida, ou a do condomínio
@@ -143,6 +172,7 @@ export default function Campanhas() {
     (e.tipo !== 'preco' || e.pratos.length > 0) &&
     (e.onde !== 'condominio' || e.condominio_id !== '') &&
     (e.onde !== 'zona' || e.zona_id !== '') &&
+    (!gerente || e.onde !== 'todos' || e.cozinha_id !== '') &&
     inicioISO !== undefined && fimISO !== undefined && horasOk;
 
   function editar(c: Campanha) {
@@ -199,6 +229,7 @@ export default function Campanhas() {
         opcoes={[
           { valor: 'condominio' as Onde, rotulo: 'Um condomínio' },
           ...(gestor ? [{ valor: 'zona' as Onde, rotulo: 'Uma zona' }, { valor: 'todos' as Onde, rotulo: 'Todos' }] : []),
+          ...(gerente ? [{ valor: 'todos' as Onde, rotulo: 'Todos (pratos da minha cozinha)' }] : []),
         ]}
         valor={e.onde}
         aoMudar={(v) => setEdicao({ ...e, onde: v, pratos: [] })}
@@ -220,7 +251,7 @@ export default function Campanhas() {
         <>
           <Text style={{ fontWeight: '700' }}>Cozinha</Text>
           <Escolha
-            opcoes={[{ valor: '', rotulo: 'Todas' }, ...cozinhas.map((k) => ({ valor: k.id, rotulo: k.nome }))]}
+            opcoes={[...(gestor ? [{ valor: '', rotulo: 'Todas' }] : []), ...cozinhas.map((k) => ({ valor: k.id, rotulo: k.nome }))]}
             valor={e.cozinha_id}
             aoMudar={(v) => setEdicao({ ...e, cozinha_id: v, pratos: [] })}
           />
@@ -300,7 +331,7 @@ export default function Campanhas() {
   );
 
   return (
-    <Guarda permissoes={['cozinhas.gerir', 'pedidos.gerir']}>
+    <Guarda permissoes={['cozinhas.gerir', 'pedidos.gerir', 'cardapio.gerir']}>
       <Ecra>
         <Paragrafo suave>
           Promoções por condomínio, por zona ou para todos. O desconto entra no preço dos pratos e não acumula com o convite.
@@ -343,7 +374,7 @@ export default function Campanhas() {
             <Botao titulo="Editar" variante="texto" aoCarregar={() => editar(c)} />
           </Cartao>
         ))}
-        {edicao ? formulario : <Botao titulo="Nova campanha" aoCarregar={() => setEdicao({ ...NOVA })} />}
+        {edicao ? formulario : <Botao titulo="Nova campanha" aoCarregar={() => novaCampanha()} />}
       </Ecra>
     </Guarda>
   );

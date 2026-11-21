@@ -22,6 +22,7 @@ export function CartaoPrato({
   aoOpcoes,
   aoImpacto,
   aoHorarios,
+  aoPromocao,
 }: {
   p: PratoCardapio;
   doses?: DosesPrato;
@@ -33,6 +34,8 @@ export function CartaoPrato({
   aoOpcoes: () => void;
   aoImpacto: () => void;
   aoHorarios: () => void;
+  /** Abre uma campanha nova já com este prato (só para quem pode criar campanhas) */
+  aoPromocao?: () => void;
 }) {
   const [modo, setModo] = useState<null | 'acrescentar' | 'ajustar'>(null);
   const [valor, setValor] = useState('');
@@ -120,6 +123,7 @@ export function CartaoPrato({
         <Botao titulo="Opções" variante="texto" aoCarregar={aoOpcoes} />
         <Botao titulo="Horários" variante="texto" aoCarregar={aoHorarios} />
         {podeAuditoria && <Botao titulo="Impacto" variante="texto" aoCarregar={aoImpacto} />}
+        {aoPromocao && <Botao titulo="🏷️ Pôr em promoção" variante="texto" aoCarregar={aoPromocao} />}
       </View>
     </Cartao>
   );

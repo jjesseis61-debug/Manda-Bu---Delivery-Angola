@@ -79,7 +79,7 @@ export const ecras: EntradaMenu[] = [
   { rota: '/conferencia', grupos: ['financas'], titulo: 'Conferência', descricao: 'Fecho do dia e do mês, extratos e comprovativos', permissoes: ['financas.conferir'] },
   { rota: '/grupos', grupos: ['operacao'], titulo: 'Grupos do dia', descricao: 'Pedidos de grupo juntos para preparar e expedir (O10)', permissoes: ['pedidos.gerir', 'entregas.registar'] },
   { rota: '/condominios', grupos: ['cozinhas'], titulo: 'Condomínios', descricao: 'Cozinha só para moradores: área no mapa, lista com vagas, abrir/fechar', permissoes: ['cozinhas.gerir', 'pedidos.gerir'] },
-  { rota: '/campanhas', grupos: ['clientes'], titulo: 'Campanhas', descricao: 'Promoções por condomínio, zona ou para todos, com resultados', permissoes: ['cozinhas.gerir', 'pedidos.gerir'] },
+  { rota: '/campanhas', grupos: ['clientes'], titulo: 'Campanhas', descricao: 'Promoções por condomínio, zona ou para todos, com resultados', permissoes: ['cozinhas.gerir', 'pedidos.gerir', 'cardapio.gerir'] },
   { rota: '/zonas-vendas', grupos: ['clientes'], titulo: 'O que se compra em cada zona', descricao: 'Pratos mais pedidos por zona, em todas as cozinhas, e o que está a crescer', permissoes: ['relatorios.exportar'] },
   { rota: '/painel', grupos: ['convida'], titulo: 'Painel do programa', descricao: 'Custo, vendas por indicação, retenção (O1)', permissoes: ['indicacoes.ver'] },
   { rota: '/verificacao', grupos: ['convida'], titulo: 'Verificação', descricao: 'Ganhos em verificação (O2)', permissoes: ['indicacoes.verificar'] },
