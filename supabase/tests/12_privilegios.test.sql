@@ -35,7 +35,9 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 'relatorio_cozinha', 'relatorio_cozinha_detalhado', 'definir_comissao_cozinha', 'definir_convida_cozinha',
                 'acertos_semana', 'fechar_acerto', 'registar_pagamento_acerto', 'definir_fatura_acerto', 'conta_corrente_cozinha',
                 'acerto_caminho_valido', 'registar_fatura_pedido', 'vendas_sem_fatura', 'definir_faturacao_cozinha',
-                'compensacoes_lista', 'definir_cargo_compensacao', 'pagar_compensacao', 'contas_empresas', 'emitir_fatura_empresa', 'pagar_fatura_empresa', 'rever_ganho', 'total_pago_mes', 'usar_credito',
+                'compensacoes_lista', 'definir_cargo_compensacao', 'pagar_compensacao', 'contas_empresas', 'emitir_fatura_empresa', 'pagar_fatura_empresa',
+                'estafetas_pagamentos', 'definir_remuneracao_estafeta', 'definir_dias_estafeta', 'pagar_estafeta_mes',
+                'fornecedores_entrega_lista', 'guardar_fornecedor_entrega', 'pagar_fornecedor_entrega', 'resultados_mes', 'obrigacoes_resumo', 'rever_ganho', 'total_pago_mes', 'usar_credito',
                 -- API da app do cliente (I2)
                 'registar_cliente', 'meu_perfil', 'orcamento_pedido', 'meus_amigos',
                 'registar_token_push', 'remover_token_push',

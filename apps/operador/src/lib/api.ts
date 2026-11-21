@@ -4,6 +4,10 @@ import type { RelatorioDetalhado, Rentabilidade, TemposEtapas } from './relatori
 import { supabase } from './supabase';
 import type {
   AcertosSemana,
+  FolhaEstafetas,
+  Obrigacoes,
+  ResultadosMes,
+  ServicosEntrega,
   Compensacao,
   ContasEmpresas,
   VendaSemFatura,
@@ -162,6 +166,78 @@ export async function definirCargoCompensacao(id: string, aCargo: 'plataforma' |
 
 export async function pagarCompensacao(id: string, metodo: string, referencia: string | null) {
   verificar(await supabase.rpc('pagar_compensacao', { p_id: id, p_metodo: metodo, p_referencia: referencia }));
+}
+
+// Estafetas: remuneração (salário, dia, entrega), dias trabalhados e pagamento do mês
+export async function estafetasPagamentos(mes: string | null): Promise<FolhaEstafetas> {
+  return verificar(await supabase.rpc('estafetas_pagamentos', { p_mes: mes })) as FolhaEstafetas;
+}
+
+export async function definirRemuneracaoEstafeta(id: string, salario: number, dia: number, entrega: number) {
+  verificar(
+    await supabase.rpc('definir_remuneracao_estafeta', {
+      p_funcionario: id,
+      p_salario_mensal: salario,
+      p_valor_dia: dia,
+      p_valor_entrega: entrega,
+    }),
+  );
+}
+
+export async function definirDiasEstafeta(id: string, mes: string, dias: number | null) {
+  verificar(await supabase.rpc('definir_dias_estafeta', { p_funcionario: id, p_mes: mes, p_dias: dias }));
+}
+
+export async function pagarEstafetaMes(id: string, mes: string, metodo: string, referencia: string | null) {
+  return verificar(
+    await supabase.rpc('pagar_estafeta_mes', { p_funcionario: id, p_mes: mes, p_metodo: metodo, p_referencia: referencia }),
+  ) as number;
+}
+
+// Serviço de entregas contratado
+export async function fornecedoresEntrega(mes: string | null): Promise<ServicosEntrega> {
+  return verificar(await supabase.rpc('fornecedores_entrega_lista', { p_mes: mes })) as ServicosEntrega;
+}
+
+export async function guardarFornecedorEntrega(f: {
+  id: string | null;
+  nome: string;
+  valorEntrega: number;
+  valorMensal: number;
+  zonas: string[];
+  activo: boolean;
+}) {
+  return verificar(
+    await supabase.rpc('guardar_fornecedor_entrega', {
+      p_id: f.id,
+      p_nome: f.nome,
+      p_valor_entrega: f.valorEntrega,
+      p_valor_mensal: f.valorMensal,
+      p_zonas: f.zonas,
+      p_activo: f.activo,
+    }),
+  ) as string;
+}
+
+export async function pagarFornecedorEntrega(id: string, mes: string, metodo: string, referencia: string | null, fatura: string | null) {
+  return verificar(
+    await supabase.rpc('pagar_fornecedor_entrega', {
+      p_fornecedor: id,
+      p_mes: mes,
+      p_metodo: metodo,
+      p_referencia: referencia,
+      p_numero_fatura: fatura,
+    }),
+  ) as number;
+}
+
+// Resultados do mês e obrigações
+export async function resultadosMes(mes: string | null): Promise<ResultadosMes> {
+  return verificar(await supabase.rpc('resultados_mes', { p_mes: mes })) as ResultadosMes;
+}
+
+export async function obrigacoesResumo(): Promise<Obrigacoes> {
+  return verificar(await supabase.rpc('obrigacoes_resumo')) as Obrigacoes;
 }
 
 // Contas a receber das empresas (B2B)

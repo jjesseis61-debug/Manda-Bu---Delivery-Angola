@@ -1201,3 +1201,77 @@ export type ContasEmpresas = {
   empresas: ContaEmpresa[];
   em_atraso_total: number;
 };
+
+export type EstafetaFolha = {
+  funcionario_id: string;
+  nome: string;
+  salario_mensal: number;
+  valor_dia: number;
+  valor_entrega: number;
+  dias_sugeridos: number;
+  dias_trabalhados: number;
+  dias_ajustados: boolean;
+  entregas: number;
+  a_pagar: number;
+  valor_pago: number | null;
+  metodo: string | null;
+  referencia: string | null;
+  pago_em: string | null;
+};
+export type FolhaEstafetas = { mes: string; pode_pagar: boolean; estafetas: EstafetaFolha[] };
+
+export type ServicoEntrega = {
+  fornecedor_id: string;
+  nome: string;
+  valor_entrega: number;
+  valor_mensal: number;
+  activo: boolean;
+  zonas: { id: string; nome: string }[];
+  entregas: number;
+  a_pagar: number;
+  pago: boolean;
+  valor_pago: number | null;
+  metodo: string | null;
+  referencia: string | null;
+  numero_fatura: string | null;
+  pago_em: string | null;
+};
+export type ServicosEntrega = {
+  mes: string;
+  pode_pagar: boolean;
+  fornecedores: ServicoEntrega[];
+  zonas: { id: string; nome: string; fornecedor_id: string | null }[];
+};
+
+export type ResultadosMes = {
+  mes: string;
+  fechado: boolean;
+  pedidos: number;
+  vendas_cozinhas: number;
+  receitas: { comissoes: number; taxas_entrega: number; saldos_expirados: number; total: number };
+  custos: {
+    estafetas: number;
+    servico_entregas: number;
+    convida_descontos: number;
+    convida_ganhos: number;
+    compensacoes: number;
+    despesas_gerais: number;
+    total: number;
+  };
+  resultado: number;
+  custo_por_entrega: number | null;
+};
+
+export type Obrigacoes = {
+  a_pagar: {
+    saldos_convida: number;
+    levantamentos_pedidos: number;
+    pacotes_por_consumir: number;
+    acertos_cozinhas: number;
+    compensacoes: number;
+    estafetas_meses_anteriores: number;
+    servico_entregas_meses_anteriores: number;
+  };
+  a_receber: { acertos_cozinhas: number; empresas: number; empresas_em_atraso: number };
+  por_fechar: { semanas_acertos: number; vendas_sem_fatura: number };
+};
