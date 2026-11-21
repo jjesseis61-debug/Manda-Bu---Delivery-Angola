@@ -26,7 +26,7 @@ export const GRUPOS = [
   { id: 'financas', nome: 'Finanças' },
   { id: 'clientes', nome: 'Clientes e vendas' },
   { id: 'convida', nome: 'Programa Convida' },
-  { id: 'equipa', nome: 'Equipa' },
+  { id: 'equipa', nome: 'Recursos humanos' },
   { id: 'controlo', nome: 'Relatórios e controlo' },
 ] as const;
 export type GrupoId = (typeof GRUPOS)[number]['id'];

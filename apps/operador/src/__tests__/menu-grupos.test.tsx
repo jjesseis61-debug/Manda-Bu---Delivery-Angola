@@ -54,7 +54,7 @@ test('muitos atalhos: grupos fechados, abrir, favoritos e pesquisa', async () =>
   const ecra = renderRouter({ inicio: Inicio }, { initialUrl: '/inicio' });
   await waitFor(() => expect(ecra.getByText('Finanças (9)')).toBeTruthy());
   // grupos vazios não aparecem
-  expect(ecra.queryByText(/^Equipa \(/)).toBeNull();
+  expect(ecra.queryByText(/^Recursos humanos \(/)).toBeNull();
   expect(ecra.getByText('Programa Convida (1)')).toBeTruthy();
   expect(ecra.queryByText('Resultados do mês')).toBeNull();
   fireEvent.press(ecra.getByText('Finanças (9)'));
