@@ -49,6 +49,7 @@ export type Parametros = {
 
 export type ChaveFuncionalidade =
   | 'condominios'
+  | 'campanhas'
   | 'indicacao'
   | 'destaques'
   | 'pessoas_como_tu'

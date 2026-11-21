@@ -185,7 +185,7 @@ export default function Inicio() {
       setEnderecos(ends);
       // Prova social local: o que mais se pede na zona da morada (falha em silêncio)
       setMaisZona(ponto ? await maisPedidosNaZona(ponto).catch(() => []) : []);
-      setPromocoes(ponto && ligada('condominios') ? await promocoesParaMim(ponto).catch(() => []) : []);
+      setPromocoes(ponto && ligada('campanhas') ? await promocoesParaMim(ponto).catch(() => []) : []);
       // Preço riscado (só com campanha verdadeira) e entrega grátis da zona; falha em silêncio
       const cozinhaPrecos = itens[0]?.cozinha_id ?? escolhida;
       const precos = ponto && cozinhaPrecos ? await precosParaMim(ponto, cozinhaPrecos).catch(() => null) : null;

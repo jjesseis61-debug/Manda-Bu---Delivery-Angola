@@ -5,6 +5,7 @@ select plan(24);
 
 select testes.funcionalidade('multi_cozinha', true);
 select testes.funcionalidade('condominios', true);
+select testes.funcionalidade('campanhas', true);
 select testes.funcionalidade('indicacao', true);
 update parametros set entrega_gratis_acima = 0, desconto_subtotal_minimo = 0, desconto_indicado = 750 where unico;
 

@@ -304,7 +304,7 @@ export default function Campanhas() {
       <Ecra>
         <Paragrafo suave>
           Promoções por condomínio, por zona ou para todos. O desconto entra no preço dos pratos e não acumula com o convite.
-          Precisa do interruptor «condominios» ligado.
+          Precisa do interruptor «campanhas» ligado (as de um condomínio precisam também de «condominios»).
         </Paragrafo>
         {erro && <Aviso tipo="erro">{erro}</Aviso>}
         {sucesso && <Aviso tipo="sucesso">{sucesso}</Aviso>}

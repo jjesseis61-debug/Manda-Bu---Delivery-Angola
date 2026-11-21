@@ -2,8 +2,8 @@
 -- só com campanhas verdadeiras, e com o limiar da entrega grátis da zona.
 begin;
 \ir _helpers.psql
-select plan(9);
-select testes.funcionalidade('condominios', true);
+select plan(12);
+select testes.funcionalidade('campanhas', true);
 
 select testes.def('k', cozinha_padrao());
 with z as (insert into zonas (nome, tipo, taxa, modo_calculo, entrega_gratis_acima) values ('Zona Promo', 'Própria', 1000, 'Fixo', 10000) returning id)
@@ -55,6 +55,27 @@ set local role authenticated;
 select is((orcamento_pedido(jsonb_build_array(jsonb_build_object('cardapio_id', testes.u('muamba'), 'qtd', 1)),
                             testes.u('casa'), null, null) ->> 'subtotal')::int, 3200, 'o pedido cobra os mesmos 3.200');
 reset role;
+
+-- Interruptores: sem «campanhas» não há preço riscado; a de condomínio precisa também de «condominios»
+select testes.funcionalidade('campanhas', false);
+select testes.entrar(testes.u('ana'));
+set local role authenticated;
+select testes.def('r4', precos_para_mim(testes.u('casa'), testes.u('k'))::text);
+reset role;
+select is(jsonb_array_length(testes.v('r4')::jsonb -> 'pratos'), 0, 'interruptor «campanhas» desligado: sem preço riscado');
+select testes.funcionalidade('campanhas', true);
+select ok(not funcionalidade_activa('condominios'), 'condomínios desligados neste teste');
+with c as (insert into condominios (nome, codigo, centro_lat, centro_lng, raio_m, cozinha_id, zona_id)
+           values ('Cond Teste', 'CT01', -8.80, 13.30, 500, testes.u('k'), testes.u('z')) returning id)
+select testes.def('cond', id) from c;
+insert into campanhas (nome, condominio_id, tipo, valor, cardapio_ids)
+values ('Só no condomínio', testes.u('cond'), 'preco', 1000, array[testes.u('muamba')]);
+select testes.entrar(testes.u('ana'));
+set local role authenticated;
+select testes.def('r5', precos_para_mim(testes.u('casa'), testes.u('k'))::text);
+reset role;
+select is((select (p ->> 'preco_campanha')::int from jsonb_array_elements(testes.v('r5')::jsonb -> 'pratos') p
+            where p ->> 'cardapio_id' = testes.v('muamba')), 3200, 'campanha de condomínio não vale com os condomínios desligados');
 
 select * from finish();
 rollback;
