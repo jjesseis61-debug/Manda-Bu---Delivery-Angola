@@ -38,3 +38,32 @@ export function modoEstafetaInicial(o: {
   if (o.guardado !== null) return o.guardado;
   return o.entregar && !o.gerir;
 }
+
+const chaveFavoritos = (funcionario: string) => `op.favoritos.${funcionario}`;
+const CHAVE_GRUPOS_ABERTOS = 'op.grupos_abertos';
+
+async function lerLista(chave: string): Promise<string[]> {
+  try {
+    const v = await AsyncStorage.getItem(chave);
+    const l: unknown = v ? JSON.parse(v) : [];
+    return Array.isArray(l) ? l.filter((x): x is string => typeof x === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+async function guardarLista(chave: string, l: string[]): Promise<void> {
+  try {
+    await AsyncStorage.setItem(chave, JSON.stringify(l));
+  } catch {
+    // sem armazenamento: fica só para esta sessão
+  }
+}
+
+/** Ecrãs marcados como favoritos por este funcionário (neste aparelho) */
+export const lerFavoritos = (funcionario: string) => lerLista(chaveFavoritos(funcionario));
+export const guardarFavoritos = (funcionario: string, l: string[]) => guardarLista(chaveFavoritos(funcionario), l);
+
+/** Grupos do menu que ficaram abertos */
+export const lerGruposAbertos = () => lerLista(CHAVE_GRUPOS_ABERTOS);
+export const guardarGruposAbertos = (l: string[]) => guardarLista(CHAVE_GRUPOS_ABERTOS, l);
