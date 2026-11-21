@@ -19,7 +19,7 @@ import {
   type Campanha,
   type Condominio,
 } from '@/lib/condominios';
-import { formatarData, formatarKz, mensagemErro } from '@/lib/formatar';
+import { formatarData, formatarKz, mascaraData, mascaraHora, mensagemErro } from '@/lib/formatar';
 import { useSessao } from '@/lib/sessao';
 import { cores, espaco } from '@/lib/tema';
 import type { Cozinha, PratoCardapio, ZonaEntrega } from '@/lib/tipos';
@@ -173,7 +173,7 @@ export default function Campanhas() {
     (e.onde !== 'condominio' || e.condominio_id !== '') &&
     (e.onde !== 'zona' || e.zona_id !== '') &&
     (!gerente || e.onde !== 'todos' || e.cozinha_id !== '') &&
-    inicioISO !== undefined && fimISO !== undefined && horasOk;
+    inicioISO !== undefined && fimISO !== undefined && !(inicioISO && fimISO && fimISO < inicioISO) && horasOk;
 
   function editar(c: Campanha) {
     setEdicao({
@@ -295,9 +295,11 @@ export default function Campanhas() {
         onChangeText={(t) => setEdicao({ ...e, minimo: t.replace(/\D/g, '') })} />
       <Subtitulo>Quando</Subtitulo>
       <Campo rotulo={e.id ? 'Começa em (DD/MM/AAAA; vazio = mantém)' : 'Começa em (DD/MM/AAAA; vazio = já)'} value={e.inicio}
-        onChangeText={(t) => setEdicao({ ...e, inicio: t })} />
-      <Campo rotulo="Acaba em (DD/MM/AAAA, opcional)" value={e.fim} onChangeText={(t) => setEdicao({ ...e, fim: t })} />
-      {(inicioISO === undefined || fimISO === undefined) && <Aviso>Data inválida. Usa DD/MM/AAAA.</Aviso>}
+        keyboardType="number-pad" maxLength={10} placeholder="DD/MM/AAAA" onChangeText={(t) => setEdicao({ ...e, inicio: mascaraData(t) })} />
+      <Campo rotulo="Acaba em (DD/MM/AAAA, opcional)" value={e.fim} keyboardType="number-pad" maxLength={10} placeholder="DD/MM/AAAA"
+        onChangeText={(t) => setEdicao({ ...e, fim: mascaraData(t) })} />
+      {(inicioISO === undefined || fimISO === undefined) && <Aviso tipo="erro">Data inválida. Usa DD/MM/AAAA (ex.: 30/11/2026).</Aviso>}
+      {inicioISO && fimISO && fimISO < inicioISO && <Aviso tipo="erro">A campanha acaba antes de começar.</Aviso>}
       <Text style={{ fontWeight: '700' }}>Dias da semana (nenhum = todos)</Text>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: espaco.xs }}>
         {DIAS.map(([d, r]) => (
@@ -307,13 +309,15 @@ export default function Campanhas() {
       </View>
       <View style={{ flexDirection: 'row', gap: espaco.s }}>
         <View style={{ flex: 1 }}>
-          <Campo rotulo="Das (HH:MM)" value={e.horaIni} maxLength={5} onChangeText={(t) => setEdicao({ ...e, horaIni: t })} />
+          <Campo rotulo="Das (HH:MM)" value={e.horaIni} maxLength={5} keyboardType="number-pad" placeholder="HH:MM"
+            onChangeText={(t) => setEdicao({ ...e, horaIni: mascaraHora(t) })} />
         </View>
         <View style={{ flex: 1 }}>
-          <Campo rotulo="Às (HH:MM)" value={e.horaFim} maxLength={5} onChangeText={(t) => setEdicao({ ...e, horaFim: t })} />
+          <Campo rotulo="Às (HH:MM)" value={e.horaFim} maxLength={5} keyboardType="number-pad" placeholder="HH:MM"
+            onChangeText={(t) => setEdicao({ ...e, horaFim: mascaraHora(t) })} />
         </View>
       </View>
-      {!horasOk && <Aviso>Horas: preenche as duas (ex.: 12:00 e 15:00) ou deixa as duas em branco.</Aviso>}
+      {!horasOk && <Aviso tipo="erro">Horas: preenche as duas (ex.: 12:00 e 15:00) ou deixa as duas em branco.</Aviso>}
       <Subtitulo>Limites (opcional)</Subtitulo>
       <Campo rotulo="Pedidos por cliente" value={e.limCliente} keyboardType="number-pad"
         onChangeText={(t) => setEdicao({ ...e, limCliente: t.replace(/\D/g, '') })} />

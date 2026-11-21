@@ -4,6 +4,7 @@ import { Linking, Text, View } from 'react-native';
 
 import { Guarda } from '@/components/Guarda';
 import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Escolha, Linha, Paragrafo, Subtitulo } from '@/components/ui';
+import { CampoData } from '@/components/CamposData';
 import { relatorioSaldosExpirados, type RelatorioExpirados } from '@/lib/api';
 import { exportarCsv } from '@/lib/exportar';
 import { formatarData, formatarKz, mensagemErro, paraCsv } from '@/lib/formatar';
@@ -48,10 +49,10 @@ export default function SaldosExpirados() {
         {periodo === 'datas' && (
           <View style={{ flexDirection: 'row', gap: espaco.s }}>
             <View style={{ flex: 1 }}>
-              <Campo rotulo="De (aaaa-mm-dd)" value={de} onChangeText={setDe} maxLength={10} />
+              <CampoData rotulo="De" valor={de} aoMudar={(t) => setDe(t)} />
             </View>
             <View style={{ flex: 1 }}>
-              <Campo rotulo="Até (opcional)" value={ate} onChangeText={setAte} maxLength={10} />
+              <CampoData rotulo="Até" opcional valor={ate} aoMudar={(t) => setAte(t)} erro={ate && de && ate < de ? 'O fim é antes do início.' : null} />
             </View>
           </View>
         )}

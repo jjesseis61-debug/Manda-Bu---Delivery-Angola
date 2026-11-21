@@ -34,6 +34,7 @@ import { useSessao } from '@/lib/sessao';
 import { detalharItem, htmlTalaoCozinha, htmlTalaoEntrega, numeroCurto } from '@/lib/talao';
 import { cores, espaco } from '@/lib/tema';
 import type { AgendadoOperador, Cozinha } from '@/lib/tipos';
+import { CampoData, CampoHora } from '@/components/CamposData';
 
 const MOTIVOS_CANCELAMENTO = [
   'Acabou um ingrediente',
@@ -216,21 +217,20 @@ export default function Agendados() {
             <Text style={{ fontWeight: '700' }}>Nova hora (a pedido do cliente)</Text>
             <View style={{ flexDirection: 'row', gap: espaco.s }}>
               <View style={{ flex: 1 }}>
-                <Campo rotulo="Dia (aaaa-mm-dd)" value={emReagendar.dia} maxLength={10}
-                  onChangeText={(t) => setReagendar({ ...emReagendar, dia: t })} />
+                <CampoData rotulo="Dia" valor={emReagendar.dia} aoMudar={(t) => setReagendar((r) => (r ? { ...r, dia: t } : r))} />
               </View>
               <View style={{ flex: 1 }}>
-                <Campo rotulo="Hora (HH:MM)" value={emReagendar.hora} maxLength={5}
-                  onChangeText={(t) => setReagendar({ ...emReagendar, hora: t })} />
+                <CampoHora rotulo="Hora" valor={emReagendar.hora} aoMudar={(t) => setReagendar((r) => (r ? { ...r, hora: t } : r))} />
               </View>
             </View>
             <Campo rotulo="Motivo (opcional)" value={emReagendar.motivo} maxLength={200}
               onChangeText={(t) => setReagendar({ ...emReagendar, motivo: t })} />
-            {!novaHora && <Paragrafo suave>Escreve o dia e a hora (ex.: 2026-11-12 e 12:30).</Paragrafo>}
+            {!novaHora && <Paragrafo suave>Escreve o dia e a hora (ex.: 12/11/2026 e 12:30).</Paragrafo>}
+            {novaHora && Date.parse(novaHora) < Date.now() && <Aviso tipo="erro">Essa hora já passou. Escolhe uma hora futura.</Aviso>}
             <Paragrafo suave>O cliente recebe um aviso com a nova hora.</Paragrafo>
             <Botao
               titulo="Reagendar"
-              desactivado={!novaHora}
+              desactivado={!novaHora || Date.parse(novaHora) < Date.now()}
               aCarregar={ocupado === a.pedido_id}
               aoCarregar={() =>
                 novaHora &&
@@ -339,14 +339,14 @@ export default function Agendados() {
         {periodo === 'datas' && (
           <View style={{ flexDirection: 'row', gap: espaco.s }}>
             <View style={{ flex: 1 }}>
-              <Campo rotulo="De (aaaa-mm-dd)" value={de} onChangeText={setDe} placeholder="2026-11-12" maxLength={10} />
+              <CampoData rotulo="De" valor={de} aoMudar={(t) => setDe(t)} />
             </View>
             <View style={{ flex: 1 }}>
-              <Campo rotulo="Até (opcional)" value={ate} onChangeText={setAte} placeholder="2026-11-15" maxLength={10} />
+              <CampoData rotulo="Até" opcional valor={ate} aoMudar={(t) => setAte(t)} erro={ate && de && ate < de ? 'O fim é antes do início.' : null} />
             </View>
           </View>
         )}
-        {periodo === 'datas' && !intervalo && <Paragrafo suave>Escreve a data inicial (ex.: 2026-11-12).</Paragrafo>}
+        {periodo === 'datas' && !intervalo && <Paragrafo suave>Escreve a data inicial (ex.: 12/11/2026).</Paragrafo>}
         {cozinhas.length > 1 && (
           <Escolha
             opcoes={[{ valor: 'todas', rotulo: 'Todas' }, ...cozinhas.map((c) => ({ valor: c.id, rotulo: c.nome }))]}

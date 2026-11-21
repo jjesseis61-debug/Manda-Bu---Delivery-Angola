@@ -7,6 +7,8 @@ import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Escolha, Paragrafo, Subti
 import { apagarDespesa, despesasCozinha, lancarDespesa, type Despesa } from '@/lib/api';
 import { diaLuanda, formatarDia, formatarKz, mensagemErro } from '@/lib/formatar';
 import { cores, espaco } from '@/lib/tema';
+import { CampoData } from '@/components/CamposData';
+import { hojeIso } from '@/lib/datas';
 
 export const CATEGORIAS_DESPESA = ['Gás', 'Renda', 'Salários', 'Transporte', 'Embalagens', 'Água e luz', 'Manutenção', 'Outros'];
 
@@ -42,7 +44,7 @@ export default function Despesas() {
   useFocusEffect(carregar);
 
   const valor = Number(nova.valor);
-  const dataOk = /^\d{4}-\d{2}-\d{2}$/.test(nova.data);
+  const dataOk = /^\d{4}-\d{2}-\d{2}$/.test(nova.data) && nova.data <= hojeIso();
 
   async function lancar() {
     setOcupado(true);
@@ -72,7 +74,8 @@ export default function Despesas() {
           />
           <Campo rotulo="Valor (Kz)" value={nova.valor} keyboardType="number-pad" maxLength={9}
             onChangeText={(t) => setNova({ ...nova, valor: t.replace(/\D/g, '') })} />
-          <Campo rotulo="Data (aaaa-mm-dd)" value={nova.data} maxLength={10} onChangeText={(t) => setNova({ ...nova, data: t })} />
+          <CampoData rotulo="Data" valor={nova.data} aoMudar={(t) => setNova((n) => ({ ...n, data: t }))}
+            erro={nova.data > hojeIso() ? 'A despesa não pode ser no futuro.' : null} />
           <Campo rotulo="Descrição (opcional)" value={nova.descricao} maxLength={200}
             onChangeText={(t) => setNova({ ...nova, descricao: t })} />
           <Botao titulo="Lançar despesa" aCarregar={ocupado} desactivado={!(valor > 0) || !dataOk} aoCarregar={lancar} />

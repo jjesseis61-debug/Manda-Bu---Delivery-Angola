@@ -7,6 +7,7 @@ import { decidirEstimulo, estimulosDoMes, gerarEstimulos, pedirNovaAnalise } fro
 import { diaLuanda, formatarKz, mensagemErro, nomeMetrica } from '@/lib/formatar';
 import { cores, espaco } from '@/lib/tema';
 import type { Estimulo, MetricasEstimulo } from '@/lib/tipos';
+import { SeletorMes } from '@/components/CamposData';
 
 const MES = /^\d{4}-\d{2}$/;
 
@@ -164,7 +165,7 @@ export default function Estimulos() {
           Cada pessoa é comparada consigo própria no mês anterior e recebe uma meta pequena e alcançável. O bónus sugerido
           só aparece quando a meta combinada foi atingida. Ninguém recebe nada sem a tua aprovação.
         </Paragrafo>
-        <Campo rotulo="Mês (AAAA-MM)" value={mes} onChangeText={setMes} maxLength={7} />
+        <SeletorMes rotulo="Mês" valor={mes} aoMudar={setMes} />
         <Botao titulo="Ver estímulos" desactivado={!MES.test(mes)} aCarregar={ocupado} aoCarregar={ver} />
         <Botao titulo="Gerar ou actualizar propostas" variante="secundario" desactivado={!MES.test(mes)} aoCarregar={gerar} />
         {erro && <Aviso tipo="erro">{erro}</Aviso>}

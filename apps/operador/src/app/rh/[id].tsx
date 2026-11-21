@@ -30,14 +30,16 @@ import {
   type TipoContrato,
 } from '@/lib/rh';
 import { cores, espaco } from '@/lib/tema';
+import { CampoData } from '@/components/CamposData';
+import { anosEntre, biValido, hojeIso, ibanAgrupado, ibanValido, nifValido, telefoneAngolaValido } from '@/lib/datas';
 
 const numero = (t: string) => Number(t.replace(/\D/g, '') || '0');
 const CAMPOS_FICHA: [keyof Ficha, string][] = [
   ['bi', 'Bilhete de identidade'],
   ['nif', 'NIF'],
   ['inss_numero', 'N.º da Segurança Social (INSS)'],
-  ['data_nascimento', 'Data de nascimento (AAAA-MM-DD)'],
-  ['data_admissao', 'Data de admissão (AAAA-MM-DD)'],
+  ['data_nascimento', 'Data de nascimento'],
+  ['data_admissao', 'Data de admissão'],
   ['morada', 'Morada'],
   ['banco', 'Banco'],
   ['iban', 'IBAN'],
@@ -45,6 +47,26 @@ const CAMPOS_FICHA: [keyof Ficha, string][] = [
   ['emergencia_telefone', 'Contacto de emergência: telefone'],
   ['notas', 'Notas'],
 ];
+const DATAS_FICHA = new Set<keyof Ficha>(['data_nascimento', 'data_admissao']);
+
+/** Erros e avisos da ficha (formato do BI, NIF, IBAN e telefone; idade plausível) */
+export function validarFicha(f: Record<string, string>, hoje = hojeIso()): { erros: Record<string, string>; avisos: Record<string, string> } {
+  const erros: Record<string, string> = {};
+  const avisos: Record<string, string> = {};
+  const v = (k: string) => (f[k] ?? '').trim();
+  if (v('bi') && !biValido(v('bi'))) erros.bi = 'BI angolano: 9 algarismos, 2 letras e 3 algarismos (ex.: 001234567LA041).';
+  if (v('nif') && !nifValido(v('nif'))) erros.nif = 'NIF: o n.º do BI (pessoas) ou 10 algarismos (empresas).';
+  if (v('iban') && !ibanValido(v('iban'))) erros.iban = 'IBAN angolano: AO06 e 21 algarismos (25 no total).';
+  if (v('emergencia_telefone') && !telefoneAngolaValido(v('emergencia_telefone'))) erros.emergencia_telefone = 'Telefone: 9 algarismos (ex.: 923 000 000).';
+  const nasc = v('data_nascimento');
+  const adm = v('data_admissao');
+  if (nasc && nasc > hoje) erros.data_nascimento = 'A data de nascimento não pode ser no futuro.';
+  else if (nasc && anosEntre(nasc, hoje) > 100) erros.data_nascimento = 'Confirma o ano: mais de 100 anos.';
+  if (adm && nasc && adm <= nasc) erros.data_admissao = 'A admissão tem de ser depois do nascimento.';
+  else if (adm && nasc && anosEntre(nasc, adm) < 14) erros.data_admissao = `Admitido com ${anosEntre(nasc, adm)} anos: a lei não permite trabalho antes dos 14.`;
+  else if (adm && nasc && anosEntre(nasc, adm) < 18) avisos.data_admissao = `Admitido com ${anosEntre(nasc, adm)} anos (menor): confirma as condições do trabalho de menores.`;
+  return { erros, avisos };
+}
 
 type FormContrato = {
   tipo: TipoContrato;
@@ -72,6 +94,8 @@ export default function FichaRH() {
   const [terminar, setTerminar] = useState<{ data: string; motivo: string } | null>(null);
   const [equip, setEquip] = useState<{ tipo: string; descricao: string; matricula: string; propriedade: string } | null>(null);
   const [ocupado, setOcupado] = useState(false);
+  const [fimInvalido, setFimInvalido] = useState(false);
+  const [validadeInvalida, setValidadeInvalida] = useState(false);
 
   const carregar = useCallback(() => {
     setErro(null);
@@ -112,11 +136,14 @@ export default function FichaRH() {
   }
 
   const activo = d?.contratos.find((c) => c.activo) ?? null;
-  const datasFichaOk = dataValida(ficha.data_nascimento ?? '') && dataValida(ficha.data_admissao ?? '');
+  const [datasInvalidas, setDatasInvalidas] = useState<Record<string, boolean>>({});
+  const validacao = validarFicha(ficha);
+  const datasFichaOk = !Object.values(datasInvalidas).some(Boolean) && Object.keys(validacao.erros).length === 0;
   const contratoOk =
     !!contrato &&
     /^\d{4}-\d{2}-\d{2}$/.test(contrato.inicio) &&
-    dataValida(contrato.fim) &&
+    !fimInvalido &&
+    (contrato.fim === '' || contrato.fim >= contrato.inicio) &&
     (contrato.tipo !== 'termo_certo' || contrato.fim.trim() !== '');
 
   function novoContrato() {
@@ -183,11 +210,16 @@ export default function FichaRH() {
                     aoMudar={(v) => setContrato({ ...contrato, tipo: v, experimental: String(experimentalPadrao(v)) })}
                   />
                   <Campo rotulo="Função" value={contrato.funcao} onChangeText={(t) => setContrato({ ...contrato, funcao: t })} />
-                  <Campo rotulo="Início (AAAA-MM-DD)" value={contrato.inicio} onChangeText={(t) => setContrato({ ...contrato, inicio: t })} />
-                  <Campo
-                    rotulo={contrato.tipo === 'termo_certo' ? 'Fim (AAAA-MM-DD, obrigatório)' : 'Fim (AAAA-MM-DD, opcional)'}
-                    value={contrato.fim}
-                    onChangeText={(t) => setContrato({ ...contrato, fim: t })}
+                  <CampoData rotulo="Início" valor={contrato.inicio} aoMudar={(t) => setContrato((c) => (c ? { ...c, inicio: t } : c))} />
+                  <CampoData
+                    rotulo="Fim"
+                    opcional={contrato.tipo !== 'termo_certo'}
+                    valor={contrato.fim}
+                    aoMudar={(t, ok) => {
+                      setFimInvalido(!ok);
+                      setContrato((c) => (c ? { ...c, fim: t } : c));
+                    }}
+                    erro={contrato.fim && contrato.inicio && contrato.fim < contrato.inicio ? 'O fim é antes do início.' : null}
                   />
                   <Campo
                     rotulo="Período experimental (dias)"
@@ -248,11 +280,16 @@ export default function FichaRH() {
                 </View>
               ) : terminar && activo ? (
                 <View style={{ gap: espaco.s }}>
-                  <Campo rotulo="Data do fim (AAAA-MM-DD)" value={terminar.data} onChangeText={(t) => setTerminar({ ...terminar, data: t })} />
+                  <CampoData
+                    rotulo="Data do fim"
+                    valor={terminar.data}
+                    aoMudar={(t) => setTerminar((x) => (x ? { ...x, data: t } : x))}
+                    erro={terminar.data && terminar.data < activo.inicio ? 'O fim é antes do início do contrato.' : null}
+                  />
                   <Campo rotulo="Motivo" value={terminar.motivo} onChangeText={(t) => setTerminar({ ...terminar, motivo: t })} />
                   <Botao
                     titulo="Terminar o contrato"
-                    desactivado={!/^\d{4}-\d{2}-\d{2}$/.test(terminar.data)}
+                    desactivado={!/^\d{4}-\d{2}-\d{2}$/.test(terminar.data) || terminar.data < activo.inicio}
                     aCarregar={ocupado}
                     aoCarregar={() => accao(() => rhTerminarContrato(activo.id, terminar.data, terminar.motivo.trim() || null), 'Contrato terminado.', () => setTerminar(null))}
                   />
@@ -282,9 +319,37 @@ export default function FichaRH() {
             <Cartao>
               <Subtitulo>Dados pessoais</Subtitulo>
               <Paragrafo suave>Só quem tem a permissão de recursos humanos vê estes dados.</Paragrafo>
-              {CAMPOS_FICHA.map(([k, rotulo]) => (
-                <Campo key={k} rotulo={rotulo} value={ficha[k] ?? ''} onChangeText={(t) => setFicha({ ...ficha, [k]: t })} />
-              ))}
+              {CAMPOS_FICHA.map(([k, rotulo]) =>
+                DATAS_FICHA.has(k) ? (
+                  <CampoData
+                    key={k}
+                    rotulo={rotulo}
+                    opcional
+                    valor={ficha[k] ?? ''}
+                    aoMudar={(t, ok) => {
+                      setDatasInvalidas((x) => ({ ...x, [k]: !ok }));
+                      setFicha((f) => ({ ...f, [k]: t }));
+                    }}
+                    erro={validacao.erros[k] ?? validacao.avisos[k] ?? null}
+                  />
+                ) : (
+                  <View key={k}>
+                    <Campo
+                      rotulo={rotulo}
+                      value={ficha[k] ?? ''}
+                      autoCapitalize={k === 'bi' || k === 'nif' || k === 'iban' ? 'characters' : undefined}
+                      keyboardType={k === 'emergencia_telefone' ? 'phone-pad' : undefined}
+                      onChangeText={(t) => setFicha({ ...ficha, [k]: k === 'iban' ? ibanAgrupado(t) : t })}
+                    />
+                    {validacao.erros[k] && (
+                      <Text style={{ color: cores.erro, fontSize: 13, marginTop: -espaco.s, marginBottom: espaco.s }}>{validacao.erros[k]}</Text>
+                    )}
+                    {k === 'nif' && !(ficha.nif ?? '').trim() && biValido(ficha.bi ?? '') && (
+                      <Botao titulo="Usar o n.º do BI como NIF" variante="texto" aoCarregar={() => setFicha({ ...ficha, nif: (ficha.bi ?? '').trim().toUpperCase() })} />
+                    )}
+                  </View>
+                ),
+              )}
               <Botao
                 titulo="Guardar os dados"
                 desactivado={!datasFichaOk}
@@ -313,10 +378,19 @@ export default function FichaRH() {
                 <View style={{ gap: espaco.s }}>
                   <Escolha opcoes={TIPOS_DOCUMENTO.map((t) => ({ valor: t.valor, rotulo: t.rotulo }))} valor={doc.tipo} aoMudar={(v) => setDoc({ ...doc, tipo: v })} />
                   <Campo rotulo="Número" value={doc.numero} onChangeText={(t) => setDoc({ ...doc, numero: t })} />
-                  <Campo rotulo="Válido até (AAAA-MM-DD)" value={doc.validade} onChangeText={(t) => setDoc({ ...doc, validade: t })} />
+                  <CampoData
+                    rotulo="Válido até"
+                    opcional
+                    valor={doc.validade}
+                    aoMudar={(t, ok) => {
+                      setValidadeInvalida(!ok);
+                      setDoc((x) => (x ? { ...x, validade: t } : x));
+                    }}
+                    erro={doc.validade && doc.validade < hojeIso() ? 'Atenção: este documento já caducou.' : null}
+                  />
                   <Botao
                     titulo="Guardar o documento"
-                    desactivado={!dataValida(doc.validade)}
+                    desactivado={validadeInvalida}
                     aCarregar={ocupado}
                     aoCarregar={() =>
                       accao(

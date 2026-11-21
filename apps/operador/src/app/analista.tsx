@@ -8,6 +8,7 @@ import { lerPerguntasAnalista, pedirRelatorioAnalista, perguntarAnalista } from 
 import { diaLuanda, mensagemErro } from '@/lib/formatar';
 import { cores, espaco } from '@/lib/tema';
 import type { PerguntaAnalista } from '@/lib/tipos';
+import { SeletorMes } from '@/components/CamposData';
 
 const MES = /^\d{4}-\d{2}$/;
 const SUGESTOES = [
@@ -130,7 +131,7 @@ export default function Analista() {
             <Botao key={s} titulo={s} variante="texto" aoCarregar={() => setPergunta(s)} />
           ))}
         </View>
-        <Campo rotulo="Relatório do mês (AAAA-MM)" value={mes} onChangeText={setMes} maxLength={7} />
+        <SeletorMes rotulo="Relatório do mês" valor={mes} aoMudar={setMes} />
         <Botao titulo="Pedir relatório do mês" variante="secundario" desactivado={!MES.test(mes)} aoCarregar={relatorio} />
         {erro && <Aviso tipo="erro">{erro}</Aviso>}
         {lista === null ? <ACarregar /> : lista.length === 0 ? <Paragrafo suave>Ainda não fizeste perguntas.</Paragrafo> : lista.map(cartao)}

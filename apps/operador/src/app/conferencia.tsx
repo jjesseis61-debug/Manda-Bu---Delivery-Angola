@@ -21,6 +21,7 @@ import { diaLuanda, formatarDia, formatarKz, mensagemErro, nomeEstadoExtrato, te
 import { enviarExtrato, escolherFicheiroExtrato, escolherFoto, type FicheiroEscolhido } from '@/lib/fotos';
 import { cores, espaco } from '@/lib/tema';
 import type { AlertaFecho, Extrato, FechoDiario, FechoMensal, MovimentoExtrato } from '@/lib/tipos';
+import { CampoData, SeletorMes } from '@/components/CamposData';
 
 type Separador = 'dia' | 'mes' | 'extratos' | 'investigacoes';
 const DIA = /^\d{4}-\d{2}-\d{2}$/;
@@ -110,8 +111,8 @@ export default function Conferencia() {
   function separadorDia() {
     return (
       <>
-        <Campo rotulo="Dia (AAAA-MM-DD)" value={dia} onChangeText={setDia} maxLength={10} />
-        <Botao titulo="Ver fecho do dia" desactivado={!DIA.test(dia)} aCarregar={ocupado} aoCarregar={verDia} />
+        <CampoData rotulo="Dia" valor={dia} aoMudar={(t) => setDia(t)} erro={dia > diaLuanda() ? 'Esse dia ainda não chegou.' : null} />
+        <Botao titulo="Ver fecho do dia" desactivado={!DIA.test(dia) || dia > diaLuanda()} aCarregar={ocupado} aoCarregar={verDia} />
         {fechoDia && (
           <>
             <Cartao>
@@ -160,7 +161,7 @@ export default function Conferencia() {
     const c = fechoMes?.conciliacao;
     return (
       <>
-        <Campo rotulo="Mês (AAAA-MM)" value={mes} onChangeText={setMes} maxLength={7} />
+        <SeletorMes valor={mes} aoMudar={setMes} />
         <Botao titulo="Ver fecho do mês" desactivado={!MES.test(mes)} aCarregar={ocupado} aoCarregar={verMes} />
         {fechoMes && c && (
           <>
@@ -279,8 +280,13 @@ export default function Conferencia() {
           <Cartao>
             <Subtitulo>Novo extrato</Subtitulo>
             <Campo rotulo="Conta (ex.: Multicaixa Express BAI)" value={novo.conta} maxLength={80} onChangeText={(t) => setNovo({ ...novo, conta: t })} />
-            <Campo rotulo="De (AAAA-MM-DD)" value={novo.inicio} maxLength={10} onChangeText={(t) => setNovo({ ...novo, inicio: t })} />
-            <Campo rotulo="Até (AAAA-MM-DD)" value={novo.fim} maxLength={10} onChangeText={(t) => setNovo({ ...novo, fim: t })} />
+            <CampoData rotulo="De" valor={novo.inicio} aoMudar={(t) => setNovo((n) => (n ? { ...n, inicio: t } : n))} />
+            <CampoData
+              rotulo="Até"
+              valor={novo.fim}
+              aoMudar={(t) => setNovo((n) => (n ? { ...n, fim: t } : n))}
+              erro={novo.inicio && novo.fim && novo.fim < novo.inicio ? 'O fim é antes do início.' : null}
+            />
             {novo.ficheiro ? (
               <Aviso tipo="sucesso">{novo.ficheiro.tipo === 'application/pdf' ? 'PDF escolhido.' : 'Imagem escolhida.'}</Aviso>
             ) : (
@@ -300,7 +306,7 @@ export default function Conferencia() {
             </View>
             <Botao
               titulo="Guardar extrato"
-              desactivado={!novo.conta.trim() || !DIA.test(novo.inicio) || !DIA.test(novo.fim)}
+              desactivado={!novo.conta.trim() || !DIA.test(novo.inicio) || !DIA.test(novo.fim) || novo.fim < novo.inicio}
               aCarregar={ocupado}
               aoCarregar={guardarNovo}
             />
@@ -370,13 +376,14 @@ export default function Conferencia() {
                   </View>
                 ))}
                 <Subtitulo>Juntar entrada à mão</Subtitulo>
-                <Campo rotulo="Data (AAAA-MM-DD)" value={entrada.data} maxLength={10} onChangeText={(t) => setEntrada({ ...entrada, data: t })} />
+                <CampoData rotulo="Data" valor={entrada.data} aoMudar={(t) => setEntrada((x) => ({ ...x, data: t }))}
+                  erro={entrada.data > diaLuanda() ? 'O movimento não pode ser no futuro.' : null} />
                 <Campo rotulo="Valor (Kz)" value={entrada.valor} keyboardType="number-pad" onChangeText={(t) => setEntrada({ ...entrada, valor: t.replace(/\D/g, '') })} />
                 <Campo rotulo="Referência (opcional)" value={entrada.referencia} maxLength={60} autoCapitalize="characters" onChangeText={(t) => setEntrada({ ...entrada, referencia: t })} />
                 <Campo rotulo="Descrição (opcional)" value={entrada.descricao} maxLength={200} onChangeText={(t) => setEntrada({ ...entrada, descricao: t })} />
                 <Botao
                   titulo="Juntar entrada"
-                  desactivado={!DIA.test(entrada.data) || !Number(entrada.valor)}
+                  desactivado={!DIA.test(entrada.data) || entrada.data > diaLuanda() || !Number(entrada.valor)}
                   aCarregar={ocupado}
                   aoCarregar={() =>
                     correr(async () => {

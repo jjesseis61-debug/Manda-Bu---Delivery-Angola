@@ -4,6 +4,7 @@ import { Pressable, Text, View } from 'react-native';
 
 import { Guarda } from '@/components/Guarda';
 import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Escolha, Linha, Paragrafo } from '@/components/ui';
+import { CampoData } from '@/components/CamposData';
 import {
   indicadoresAgendados,
   pratosPorZonaCozinha,
@@ -195,10 +196,10 @@ export default function Relatorios() {
         {periodo === 'datas' && (
           <View style={{ flexDirection: 'row', gap: espaco.s }}>
             <View style={{ flex: 1 }}>
-              <Campo rotulo="De (aaaa-mm-dd)" value={de} onChangeText={(t) => { setDe(t); limpar(); }} placeholder="2026-11-01" maxLength={10} />
+              <CampoData rotulo="De" valor={de} aoMudar={(t) => { setDe(t); limpar(); }} />
             </View>
             <View style={{ flex: 1 }}>
-              <Campo rotulo="Até (aaaa-mm-dd)" value={ate} onChangeText={(t) => { setAte(t); limpar(); }} placeholder="2026-11-30" maxLength={10} />
+              <CampoData rotulo="Até" opcional valor={ate} aoMudar={(t) => { setAte(t); limpar(); }} erro={ate && de && ate < de ? 'O fim é antes do início.' : null} />
             </View>
           </View>
         )}

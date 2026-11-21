@@ -99,7 +99,7 @@ test('extratos: sem leitura automática, junta uma entrada à mão', async () =>
     fireEvent.press(ecra.getByText('Ver entradas'));
   });
   const vazios = ecra.getAllByDisplayValue('');
-  fireEvent.changeText(vazios[0], '2026-10-03');
+  fireEvent.changeText(vazios[0], '03/10/2026');
   fireEvent.changeText(vazios[1], '3000');
   fireEvent.changeText(vazios[2], 'um 2001');
   await act(async () => {

@@ -8,6 +8,7 @@ import { decidirReclamacao, lerReclamacoes, pedirNovaAnalise, relatorioReclamaco
 import { diaLuanda, formatarKz, mensagemErro, nomeCategoria, nomeCompensacao, textoAnalise } from '@/lib/formatar';
 import { cores, espaco } from '@/lib/tema';
 import type { Reclamacao, RelatorioReclamacoes } from '@/lib/tipos';
+import { SeletorMes } from '@/components/CamposData';
 
 type Separador = 'abertas' | 'resolvidas' | 'mes';
 type Decisao = { procedente: 'sim' | 'nao'; resposta: string; compensacao: string; valor: string };
@@ -201,7 +202,7 @@ export default function Reclamacoes() {
   function separadorMes() {
     return (
       <>
-        <Campo rotulo="Mês (AAAA-MM)" value={mes} onChangeText={setMes} maxLength={7} />
+        <SeletorMes rotulo="Mês" valor={mes} aoMudar={setMes} />
         <Botao
           titulo="Ver resumo"
           desactivado={!MES.test(mes)}

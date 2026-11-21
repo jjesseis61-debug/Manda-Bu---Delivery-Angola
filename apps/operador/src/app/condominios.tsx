@@ -27,7 +27,7 @@ import {
   relatorioCondominio,
   type RelatorioCondominio,
 } from '@/lib/condominios';
-import { formatarData, formatarKz, mensagemErro } from '@/lib/formatar';
+import { formatarData, formatarKz, mascaraData, mensagemErro } from '@/lib/formatar';
 import { useSessao } from '@/lib/sessao';
 import { cores, espaco } from '@/lib/tema';
 import type { Cozinha, ZonaEntrega } from '@/lib/tipos';
@@ -208,9 +208,12 @@ export default function Condominios() {
       <Campo
         rotulo="Inscrições até (DD/MM/AAAA, opcional)"
         value={edicao.ate}
-        onChangeText={(t) => setEdicao({ ...edicao, ate: t })}
+        keyboardType="number-pad"
+        maxLength={10}
+        placeholder="DD/MM/AAAA"
+        onChangeText={(t) => setEdicao({ ...edicao, ate: mascaraData(t) })}
       />
-      {ate === undefined && <Aviso>Data inválida. Usa DD/MM/AAAA ou deixa em branco.</Aviso>}
+      {ate === undefined && <Aviso tipo="erro">Data inválida. Usa DD/MM/AAAA ou deixa em branco.</Aviso>}
       <Interruptor rotulo="Inscrições abertas" valor={edicao.abertas} aoMudar={(v) => setEdicao({ ...edicao, abertas: v })} />
       <Interruptor
         rotulo="A cozinha aprova cada morador (senão entra logo até encher)"

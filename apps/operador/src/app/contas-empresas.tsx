@@ -8,6 +8,7 @@ import { contasEmpresas, emitirFaturaEmpresa, pagarFaturaEmpresa } from '@/lib/a
 import { formatarData, formatarKz, mensagemErro } from '@/lib/formatar';
 import { cores, espaco } from '@/lib/tema';
 import type { ContaEmpresa, ContasEmpresas as Contas } from '@/lib/tipos';
+import { CampoData } from '@/components/CamposData';
 
 const METODOS = ['Transferência', 'Multicaixa Express', 'Unitel Money', 'Dinheiro'] as const;
 type Metodo = (typeof METODOS)[number];
@@ -113,10 +114,11 @@ export default function ContasEmpresas() {
                   {aberto?.id === e.empresa_id && aberto.accao === 'faturar' && (
                     <View style={{ gap: espaco.s }}>
                       <Campo rotulo="Número da fatura" autoCapitalize="characters" value={numero} onChangeText={setNumero} />
-                      <Campo rotulo="Vencimento (AAAA-MM-DD)" value={vencimento} onChangeText={setVencimento} />
+                      <CampoData rotulo="Vencimento" valor={vencimento} aoMudar={(t) => setVencimento(t)}
+                        erro={vencimento && vencimento < mesAoLado(dados.mes, 1) ? 'O vencimento tem de ser depois do mês faturado.' : null} />
                       <Botao
                         titulo="Registar a fatura"
-                        desactivado={!numero.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(vencimento)}
+                        desactivado={!numero.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(vencimento) || vencimento < mesAoLado(dados.mes, 1)}
                         aCarregar={ocupado}
                         aoCarregar={() => accao(() => emitirFaturaEmpresa(e.empresa_id, dados.mes, numero.trim(), vencimento))}
                       />

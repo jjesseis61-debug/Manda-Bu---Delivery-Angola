@@ -66,8 +66,8 @@ test('abrir as investigações de um período', async () => {
   (abrirInvestigacoes as jest.Mock).mockResolvedValue(2);
   const ecra = renderRouter({ conferencia: Conferencia }, { initialUrl: '/conferencia' });
   fireEvent.press(ecra.getByText('Investigações'));
-  fireEvent.changeText(ecra.getByLabelText('De (AAAA-MM-DD)'), '2026-09-01');
-  fireEvent.changeText(ecra.getByLabelText('Até (AAAA-MM-DD)'), '2026-09-30');
+  fireEvent.changeText(ecra.getByLabelText('De (DD/MM/AAAA)'), '01/09/2026');
+  fireEvent.changeText(ecra.getByLabelText('Até (DD/MM/AAAA)'), '30092026');
   await act(async () => {
     fireEvent.press(ecra.getByText('Abrir investigações do período'));
   });

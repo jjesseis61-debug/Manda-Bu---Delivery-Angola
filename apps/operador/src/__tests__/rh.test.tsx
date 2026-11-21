@@ -71,7 +71,7 @@ test('ficha: novo contrato com o salário simulado (INSS e IRT)', async () => {
   await waitFor(() => expect(ecra.getByText('Sem contrato registado.')).toBeTruthy());
   fireEvent.press(ecra.getByText('Registar contrato'));
   expect(ecra.getByLabelText('Período experimental (dias)').props.value).toBe('60');
-  fireEvent.changeText(ecra.getByLabelText('Início (AAAA-MM-DD)'), '2026-11-01');
+  fireEvent.changeText(ecra.getByLabelText('Início (DD/MM/AAAA)'), '01112026');
   fireEvent.changeText(ecra.getByLabelText('Salário base (Kz)'), '200000');
   fireEvent.changeText(ecra.getByLabelText('Subsídio de alimentação (Kz)'), '30000');
   fireEvent.changeText(ecra.getByLabelText('Subsídio de transporte (Kz)'), '40000');

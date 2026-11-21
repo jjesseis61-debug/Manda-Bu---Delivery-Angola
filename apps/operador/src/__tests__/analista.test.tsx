@@ -42,9 +42,12 @@ test('pergunta (com sugestão) e pede o relatório do mês', async () => {
     fireEvent.press(ecra.getByText('Perguntar'));
   });
   expect(perguntarAnalista).toHaveBeenCalledWith('Quantos clientes voltaram a comprar e de que bairros são?');
-  fireEvent.changeText(ecra.getByLabelText('Relatório do mês (AAAA-MM)'), '2026-09');
+  // Mês com setas: começa no mês anterior ao de hoje; recua mais um
+  const hoje = new Date(Date.now() + 3600_000);
+  const alvo = new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth() - 2, 1));
+  fireEvent.press(ecra.getByLabelText('Mês anterior'));
   await act(async () => {
     fireEvent.press(ecra.getByText('Pedir relatório do mês'));
   });
-  expect(pedirRelatorioAnalista).toHaveBeenCalledWith(2026, 9);
+  expect(pedirRelatorioAnalista).toHaveBeenCalledWith(alvo.getUTCFullYear(), alvo.getUTCMonth() + 1);
 });

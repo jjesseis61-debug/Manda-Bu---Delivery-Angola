@@ -7,6 +7,7 @@ import { cores, espaco } from '@/lib/tema';
 import type { CasoAgente } from '@/lib/tipos';
 
 import { ACarregar, Aviso, Botao, Campo, Cartao, Escolha, Linha, Paragrafo, Subtitulo } from './ui';
+import { CampoData } from '@/components/CamposData';
 
 const DIA = /^\d{4}-\d{2}-\d{2}$/;
 const nomeRisco = { baixo: 'Risco baixo', medio: 'Risco médio', alto: 'Risco alto' } as const;
@@ -192,11 +193,16 @@ export function CasosAgente<C extends CasoAgente>({
   return (
     <>
       <Paragrafo suave>{opcoes.descricao}</Paragrafo>
-      <Campo rotulo="De (AAAA-MM-DD)" value={periodo.inicio} onChangeText={(t) => setPeriodo({ ...periodo, inicio: t })} maxLength={10} />
-      <Campo rotulo="Até (AAAA-MM-DD)" value={periodo.fim} onChangeText={(t) => setPeriodo({ ...periodo, fim: t })} maxLength={10} />
+      <CampoData rotulo="De" valor={periodo.inicio} aoMudar={(t) => setPeriodo((p) => ({ ...p, inicio: t }))} />
+      <CampoData
+        rotulo="Até"
+        valor={periodo.fim}
+        aoMudar={(t) => setPeriodo((p) => ({ ...p, fim: t }))}
+        erro={periodo.inicio && periodo.fim && periodo.fim < periodo.inicio ? 'O fim é antes do início.' : null}
+      />
       <Botao
         titulo={opcoes.textoAbrir}
-        desactivado={!DIA.test(periodo.inicio) || !DIA.test(periodo.fim)}
+        desactivado={!DIA.test(periodo.inicio) || !DIA.test(periodo.fim) || periodo.fim < periodo.inicio}
         aCarregar={ocupado}
         aoCarregar={abrir}
       />
