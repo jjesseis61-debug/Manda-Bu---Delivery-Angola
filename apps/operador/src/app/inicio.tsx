@@ -85,7 +85,7 @@ export const ecras: EntradaMenu[] = [
   { rota: '/verificacao', grupos: ['convida'], titulo: 'Verificação', descricao: 'Ganhos em verificação (O2)', permissoes: ['indicacoes.verificar'] },
   { rota: '/vigilancia', grupos: ['convida'], titulo: 'Vigilância do Convida', descricao: 'Redes de contas e abusos, investigados pelo agente', permissoes: ['indicacoes.verificar'] },
   { rota: '/saldos-expirados', grupos: ['convida'], titulo: 'Saldos expirados', descricao: 'Saldo do Convida que expirou (12 meses) e o que vai expirar', permissoes: ['indicacoes.verificar'] },
-  { rota: '/levantamentos', grupos: ['convida'], titulo: 'Levantamentos', descricao: 'Aprovar e pagar (O3)', permissoes: ['indicacoes.aprovar_pagamentos'] },
+  { rota: '/levantamentos', grupos: ['financas'], titulo: 'Levantamentos', descricao: 'Aprovar e pagar (O3)', permissoes: ['indicacoes.aprovar_pagamentos'] },
   { rota: '/pacotes', grupos: ['clientes'], titulo: 'Pacotes do mês', descricao: 'Confirmar pagamentos, reembolsos e catálogo (I12)', permissoes: ['pacotes.gerir'] },
   { rota: '/embaixadores', grupos: ['convida'], titulo: 'Embaixadores', descricao: 'Elegíveis e actuais (O4)', permissoes: ['plataforma.parametros'] },
   { rota: '/zonas', grupos: ['logistica'], titulo: 'Zonas de entrega', descricao: 'Bairros onde se entrega e a taxa de cada um', permissoes: ['plataforma.parametros'] },

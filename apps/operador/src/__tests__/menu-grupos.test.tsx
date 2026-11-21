@@ -36,7 +36,8 @@ test('cada ecrã está num grupo conhecido; o serviço de entregas está em Log�
   expect(servico?.grupos).toEqual(['logistica', 'financas']);
   const grupos = agruparMenu(ecras);
   expect(grupos.map((g) => g.id)).toEqual(ids);
-  expect(grupos.find((g) => g.id === 'convida')?.entradas.map((e) => e.titulo)).toContain('Levantamentos');
+  expect(grupos.find((g) => g.id === 'financas')?.entradas.map((e) => e.titulo)).toContain('Levantamentos');
+  expect(grupos.find((g) => g.id === 'convida')?.entradas.map((e) => e.titulo)).not.toContain('Levantamentos');
   expect(grupos.find((g) => g.id === 'clientes')?.entradas.map((e) => e.titulo)).toContain('Pacotes do mês');
 });
 
