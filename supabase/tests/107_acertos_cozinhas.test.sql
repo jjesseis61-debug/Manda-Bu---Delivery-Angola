@@ -25,7 +25,7 @@ update pedidos set cozinha_id = testes.u('cz'), subtotal = 5000, taxa_entrega = 
  where id = testes.u('p2');
 alter table pedidos enable trigger user;
 
-select testes.def('fin', testes.funcionario('Financeira', array['financas.conferir']));
+select testes.def('fin', testes.funcionario('Financeira', array['financas.conferir', 'financas.acertos', 'financas.faturas', 'financas.compensacoes', 'financas.empresas', 'financas.estafetas', 'financas.servico_entregas', 'financas.resultados', 'financas.obrigacoes']));
 select testes.def('outro', testes.funcionario('Sem finanças', array['pedidos.gerir']));
 
 -- Sem permissão
@@ -34,8 +34,8 @@ set local role authenticated;
 select testes.def('e_ver', testes.erro(format($$select acertos_semana(%L)$$, testes.v('semana'))));
 select testes.def('e_fechar', testes.erro(format($$select fechar_acerto(%L, %L)$$, testes.v('cz'), testes.v('semana'))));
 reset role; select testes.sair();
-select matches(testes.v('e_ver'), '^42501', 'sem financas.conferir não vê os acertos');
-select matches(testes.v('e_fechar'), '^42501', 'sem financas.conferir não fecha acertos');
+select matches(testes.v('e_ver'), '^42501', 'sem financas.acertos não vê os acertos');
+select matches(testes.v('e_fechar'), '^42501', 'sem financas.acertos não fecha acertos');
 
 -- Pré-visualização e fecho
 select testes.entrar_funcionario(testes.u('fin'));

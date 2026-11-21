@@ -122,7 +122,7 @@ export default function Acertos() {
   const aPagar = fechadas.filter((c) => c.totais.saldo < 0).reduce((s, c) => s + c.por_pagar, 0);
 
   return (
-    <Guarda permissoes={['financas.conferir', 'relatorios.exportar']}>
+    <Guarda permissoes={['financas.acertos', 'relatorios.exportar']}>
       <Ecra>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: espaco.s }}>
           <Botao titulo="‹ Anterior" variante="texto" aoCarregar={() => mudarSemana(-7)} desactivado={!dados} />

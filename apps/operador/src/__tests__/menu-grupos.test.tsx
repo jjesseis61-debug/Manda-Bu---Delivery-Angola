@@ -50,7 +50,7 @@ test('poucos atalhos: lista simples, sem grupos nem pesquisa', async () => {
 });
 
 test('muitos atalhos: grupos fechados, abrir, favoritos e pesquisa', async () => {
-  mockPermissoes = ['financas.conferir', 'pedidos.gerir', 'plataforma.parametros'];
+  mockPermissoes = ['financas.conferir', 'financas.acertos', 'financas.faturas', 'financas.compensacoes', 'financas.empresas', 'financas.estafetas', 'financas.servico_entregas', 'financas.resultados', 'financas.obrigacoes', 'pedidos.gerir', 'plataforma.parametros'];
   const ecra = renderRouter({ inicio: Inicio }, { initialUrl: '/inicio' });
   await waitFor(() => expect(ecra.getByText('Finanças (9)')).toBeTruthy());
   // grupos vazios não aparecem
@@ -70,6 +70,15 @@ test('muitos atalhos: grupos fechados, abrir, favoritos e pesquisa', async () =>
   fireEvent.changeText(ecra.getByLabelText('Procurar funcionalidade'), 'servico de entregas');
   expect(ecra.getByText('Serviço de entregas contratado')).toBeTruthy();
   expect(ecra.getByText('Logística · Finanças')).toBeTruthy();
+});
+
+test('só a permissão do pagamento dos estafetas: Finanças mostra só esse ecrã', async () => {
+  mockPermissoes = ['financas.estafetas', 'vendas.registar', 'stock.gerir', 'clientes.gerir', 'atendimento.responder', 'feira.gerir', 'avisos.enviar'];
+  const ecra = renderRouter({ inicio: Inicio }, { initialUrl: '/inicio' });
+  await waitFor(() => expect(ecra.getByText('Finanças (1)')).toBeTruthy());
+  fireEvent.press(ecra.getByText('Finanças (1)'));
+  expect(ecra.getByText('Pagamento dos estafetas')).toBeTruthy();
+  expect(ecra.queryByText('Resultados do mês')).toBeNull();
 });
 
 test('favoritos e grupos abertos voltam guardados', async () => {

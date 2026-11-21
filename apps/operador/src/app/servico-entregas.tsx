@@ -124,7 +124,7 @@ export default function ServicoEntregas() {
   }
 
   return (
-    <Guarda permissoes={['financas.conferir']}>
+    <Guarda permissoes={['financas.servico_entregas']}>
       <Ecra>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <Botao titulo="‹ Anterior" variante="texto" aoCarregar={() => setMes(mesAoLado(mes, -1))} />

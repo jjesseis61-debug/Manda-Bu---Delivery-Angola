@@ -47,7 +47,7 @@ export default function Faturas() {
   }
 
   return (
-    <Guarda permissoes={['financas.conferir', 'pedidos.gerir']}>
+    <Guarda permissoes={['financas.faturas', 'pedidos.gerir']}>
       <Ecra>
         <Paragrafo suave>Vendas dos últimos 30 dias entregues sem número de fatura.</Paragrafo>
         {erro && <Aviso tipo="erro">{erro}</Aviso>}

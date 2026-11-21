@@ -76,7 +76,7 @@ export default function EstafetasPagamentos() {
   const total = dados?.estafetas.reduce((s, e) => s + e.a_pagar, 0) ?? 0;
 
   return (
-    <Guarda permissoes={['financas.conferir']}>
+    <Guarda permissoes={['financas.estafetas']}>
       <Ecra>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <Botao titulo="‹ Anterior" variante="texto" aoCarregar={() => setMes(mesAoLado(mes, -1))} />

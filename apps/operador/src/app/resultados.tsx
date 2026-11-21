@@ -32,7 +32,7 @@ export default function Resultados() {
   useFocusEffect(carregar);
 
   return (
-    <Guarda permissoes={['financas.conferir']}>
+    <Guarda permissoes={['financas.resultados']}>
       <Ecra>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <Botao titulo="‹ Anterior" variante="texto" aoCarregar={() => setMes(mesAoLado(mes, -1))} />

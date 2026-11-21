@@ -56,7 +56,7 @@ export default function Compensacoes() {
   }
 
   return (
-    <Guarda permissoes={['financas.conferir']}>
+    <Guarda permissoes={['financas.compensacoes']}>
       <Ecra>
         <Escolha
           opcoes={[

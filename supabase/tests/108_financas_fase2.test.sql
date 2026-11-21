@@ -10,7 +10,7 @@ insert into cozinhas (nome, responsavel) values ('Cozinha Dois', 'Bia');
 select testes.def('cz2', (select id from cozinhas where nome = 'Cozinha Dois'));
 update cozinhas set comissao_percent = 10 where id in (testes.u('cz'), testes.u('cz2'));
 select testes.def('ana', testes.cliente('Ana Fatura'));
-select testes.def('fin', testes.funcionario('Financeira', array['financas.conferir']));
+select testes.def('fin', testes.funcionario('Financeira', array['financas.conferir', 'financas.acertos', 'financas.faturas', 'financas.compensacoes', 'financas.empresas', 'financas.estafetas', 'financas.servico_entregas', 'financas.resultados', 'financas.obrigacoes']));
 select testes.def('gerente', testes.funcionario('Gerente Um', array['relatorios.exportar', 'pedidos.gerir']));
 insert into equipa_cozinha (funcionario_id, cozinha_id) values (testes.u('gerente'), testes.u('cz'));
 select testes.def('rec', testes.funcionario('Reclamações', array['pedidos.gerir', 'clientes.gerir']));

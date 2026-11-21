@@ -80,7 +80,7 @@ export default function ContasEmpresas() {
   }
 
   return (
-    <Guarda permissoes={['financas.conferir']}>
+    <Guarda permissoes={['financas.empresas']}>
       <Ecra>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <Botao titulo="‹ Anterior" variante="texto" desactivado={!dados} aoCarregar={() => dados && setMes(mesAoLado(dados.mes, -1))} />

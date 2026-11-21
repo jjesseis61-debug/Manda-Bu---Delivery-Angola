@@ -13,7 +13,7 @@ select testes.def('pa', testes.ponto('residencial', null, null, testes.u('za')))
 select testes.def('pb', testes.ponto('residencial', null, null, testes.u('zb')));
 select testes.def('ana', testes.cliente('Ana Resultados'));
 select testes.def('carlos', testes.funcionario('Carlos Estafeta', array['entregas.registar']));
-select testes.def('fin', testes.funcionario('Financeira', array['financas.conferir']));
+select testes.def('fin', testes.funcionario('Financeira', array['financas.conferir', 'financas.acertos', 'financas.faturas', 'financas.compensacoes', 'financas.empresas', 'financas.estafetas', 'financas.servico_entregas', 'financas.resultados', 'financas.obrigacoes']));
 update funcionarios set criado_em = testes.v('mes')::date where id = testes.u('carlos');  -- contratado no início do mês passado
 
 -- 5 pedidos de 4.000 + entrega 2.000 no mês passado, todos levados pelo Carlos:

@@ -24,7 +24,7 @@ export default function Obrigacoes() {
   const totalReceber = d ? d.a_receber.acertos_cozinhas + d.a_receber.empresas : 0;
 
   return (
-    <Guarda permissoes={['financas.conferir']}>
+    <Guarda permissoes={['financas.obrigacoes']}>
       <Ecra>
         {erro && <Aviso tipo="erro">{erro}</Aviso>}
         {!d && !erro && <ACarregar />}
