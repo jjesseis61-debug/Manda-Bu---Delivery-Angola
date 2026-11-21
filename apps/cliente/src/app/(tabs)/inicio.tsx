@@ -9,7 +9,7 @@ import { LoginNecessario } from '@/components/LoginNecessario';
 import { FaixaConfianca } from '@/components/FaixaConfianca';
 import { ComoChegar } from '@/components/ComoChegar';
 import { MediaAvaliacao } from '@/components/MediaAvaliacao';
-import { Preco } from '@/components/Preco';
+import { Preco, PrecoDestaque } from '@/components/Preco';
 import { Aviso, Botao, Cartao, Escolha, Paragrafo, Subtitulo, estilos } from '@/components/ui';
 import {
   contadorZona,
@@ -509,24 +509,36 @@ export default function Inicio() {
                       accessibilityLabel={item.nome}
                     />
                   ) : null}
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: espaco.m }}>
-                    <Text style={{ fontSize: 16, fontWeight: '600', flex: 1 }}>{item.nome}</Text>
-                    <Preco
-                      preco={item.preco}
-                      desde={desde.get(item.id)}
-                      promo={desde.has(item.id) ? null : precosCampanha.get(item.id)?.preco}
-                    />
-                  </View>
                   {(() => {
+                    // Com campanha: o preço desce para debaixo do nome, à esquerda e em destaque (modo Meesho);
+                    // sem campanha fica discreto à direita do nome, como num cardápio.
                     const promo = desde.has(item.id) ? undefined : precosCampanha.get(item.id);
                     const final = promo?.preco ?? item.preco;
                     const gratis = entregaGratisAcima != null && !desde.has(item.id) && final >= entregaGratisAcima;
-                    return promo || gratis ? (
-                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: espaco.s }}>
-                        {promo && <Text style={{ color: cores.sucesso, fontSize: 13, fontWeight: '700' }}>🏷️ {promo.campanha}</Text>}
-                        {gratis && <Text style={{ color: cores.sucesso, fontSize: 13, fontWeight: '700' }}>🚚 Entrega grátis</Text>}
+                    const selo = (texto: string, fundo: string, cor: string) => (
+                      <Text style={{ backgroundColor: fundo, color: cor, fontSize: 12, fontWeight: '700', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, overflow: 'hidden' }}>
+                        {texto}
+                      </Text>
+                    );
+                    return promo ? (
+                      <View style={{ gap: 4 }}>
+                        <Text style={{ fontSize: 16, fontWeight: '600' }}>{item.nome}</Text>
+                        <PrecoDestaque preco={item.preco} promo={promo.preco} />
+                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: espaco.xs }}>
+                          {selo('✓ Desconto aplicado', cores.sucessoFundo, cores.sucesso)}
+                          {selo(`🏷️ ${promo.campanha}`, cores.fundo, cores.textoSuave)}
+                          {gratis && selo('🚚 Entrega grátis', cores.sucessoFundo, cores.sucesso)}
+                        </View>
                       </View>
-                    ) : null;
+                    ) : (
+                      <>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: espaco.m }}>
+                          <Text style={{ fontSize: 16, fontWeight: '600', flex: 1 }}>{item.nome}</Text>
+                          <Preco preco={item.preco} desde={desde.get(item.id)} />
+                        </View>
+                        {gratis && <View style={{ flexDirection: 'row' }}>{selo('🚚 Entrega grátis', cores.sucessoFundo, cores.sucesso)}</View>}
+                      </>
+                    );
                   })()}
                   {item.descricao ? <Text style={{ color: cores.textoSuave }} numberOfLines={2}>{item.descricao}</Text> : null}
                   {(() => {

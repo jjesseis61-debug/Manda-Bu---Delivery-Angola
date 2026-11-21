@@ -28,3 +28,21 @@ export function Preco({ preco, promo, desde }: { preco: number; promo?: number |
     </View>
   );
 }
+
+/**
+ * Preço em destaque, numa linha à esquerda e por baixo do nome (pratos em campanha, «modo Meesho»):
+ * o preço novo grande, o antigo riscado e a percentagem em verde, juntos para se lerem de uma vez.
+ */
+export function PrecoDestaque({ preco, promo }: { preco: number; promo: number }) {
+  const pct = percentagemDesconto(preco, promo);
+  return (
+    <View
+      accessible
+      accessibilityLabel={`${formatarKz(promo)}, antes ${formatarKz(preco)}, ${pct}% menos`}
+      style={{ flexDirection: 'row', alignItems: 'baseline', flexWrap: 'wrap', columnGap: 8 }}>
+      <Text style={{ fontSize: 22, fontWeight: '800', color: cores.texto }}>{formatarKz(promo)}</Text>
+      <Text style={{ fontSize: 14, color: cores.textoSuave, textDecorationLine: 'line-through' }}>{formatarKz(preco)}</Text>
+      {pct > 0 && <Text style={{ fontSize: 14, fontWeight: '800', color: cores.sucesso }}>{`${pct}% menos`}</Text>}
+    </View>
+  );
+}

@@ -28,3 +28,12 @@ test('sem campanha: só o preço; pratos para montar: desde', () => {
   expect(d.getByText('desde 2.500 Kz')).toBeTruthy();
   expect(d.queryByText(/menos/)).toBeNull();
 });
+
+test('preço em destaque (prato em campanha): novo, antigo riscado e percentagem numa linha', () => {
+  const { PrecoDestaque } = jest.requireActual('@/components/Preco');
+  const r = render(<PrecoDestaque preco={9000} promo={7200} />);
+  expect(r.getByText('7.200 Kz')).toBeTruthy();
+  expect(r.getByText('9.000 Kz').props.style).toMatchObject({ textDecorationLine: 'line-through' });
+  expect(r.getByText('20% menos')).toBeTruthy();
+  expect(r.getByLabelText('7.200 Kz, antes 9.000 Kz, 20% menos')).toBeTruthy();
+});

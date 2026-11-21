@@ -17,6 +17,8 @@ export const cores = {
   /** Contorno dos campos de texto (3,45:1, visível ao sol) */
   contorno: '#8A8A8A',
   sucesso: '#1E7D32',
+  /** Fundo dos selos verdes (texto «sucesso» por cima, 4,9:1) */
+  sucessoFundo: '#E3F3E5',
   aviso: '#8A5A00',
   avisoFundo: '#FFF4D6',
   erro: '#B3261E',
