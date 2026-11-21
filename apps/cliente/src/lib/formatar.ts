@@ -366,3 +366,9 @@ export function textoPromocao(p: { nome: string; descricao: string | null; tipo:
   const oferta = p.descricao ?? (p.tipo === 'percentagem' ? `${p.valor}% de desconto nos pratos` : `Preço especial: ${formatarKz(p.valor)}`);
   return `${oferta}${p.cozinha ? ` · ${p.cozinha}` : ''}${p.minimo_pedido > 0 ? ` · a partir de ${formatarKz(p.minimo_pedido)}` : ''}`;
 }
+
+/** Percentagem de desconto arredondada (ex.: 4.000 → 3.200 = 20) */
+export function percentagemDesconto(preco: number, promo: number): number {
+  if (!(preco > 0) || !(promo < preco)) return 0;
+  return Math.round(((preco - promo) / preco) * 100);
+}

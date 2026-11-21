@@ -9,6 +9,7 @@ import { LoginNecessario } from '@/components/LoginNecessario';
 import { FaixaConfianca } from '@/components/FaixaConfianca';
 import { ComoChegar } from '@/components/ComoChegar';
 import { MediaAvaliacao } from '@/components/MediaAvaliacao';
+import { Preco } from '@/components/Preco';
 import { Aviso, Botao, Cartao, Escolha, Paragrafo, Subtitulo, estilos } from '@/components/ui';
 import {
   contadorZona,
@@ -36,6 +37,7 @@ import {
   textoCondominioFechado,
   type CondominioAqui,
   type Promocao,
+  precosParaMim,
 } from '@/lib/condominio';
 import { corEstadoPedido, formatarData, formatarKz, horaLuanda, mensagemErro, nomeEstadoPedido, textoPediram, textoPromocao } from '@/lib/formatar';
 import { gruposEsgotados, precoMinimo } from '@/lib/opcoes';
@@ -78,6 +80,9 @@ export default function Inicio() {
   const [condominio, setCondominio] = useState<CondominioAqui | null>(null);
   // Promoções (campanhas) que valem agora para a morada principal
   const [promocoes, setPromocoes] = useState<Promocao[]>([]);
+  /** Preço com campanha de cada prato (riscado no cartão) e o limiar da entrega grátis da zona */
+  const [precosCampanha, setPrecosCampanha] = useState<Map<string, { preco: number; campanha: string }>>(new Map());
+  const [entregaGratisAcima, setEntregaGratisAcima] = useState<number | null>(null);
   // Troca de cozinha com carrinho cheio: confirma antes de esvaziar
   const [trocaPendente, setTrocaPendente] = useState<CozinhaParaPedir | null>(null);
   // Banner no topo: pedido ainda em andamento ("a tua entrega está a caminho, toca para acompanhar")
@@ -139,6 +144,8 @@ export default function Inicio() {
         setEnderecos([]);
         setMaisZona([]);
         setPromocoes([]);
+        setPrecosCampanha(new Map());
+        setEntregaGratisAcima(null);
         setCondominio(null);
         setContador(null);
         setMedias(null);
@@ -179,6 +186,11 @@ export default function Inicio() {
       // Prova social local: o que mais se pede na zona da morada (falha em silêncio)
       setMaisZona(ponto ? await maisPedidosNaZona(ponto).catch(() => []) : []);
       setPromocoes(ponto && ligada('condominios') ? await promocoesParaMim(ponto).catch(() => []) : []);
+      // Preço riscado (só com campanha verdadeira) e entrega grátis da zona; falha em silêncio
+      const cozinhaPrecos = itens[0]?.cozinha_id ?? escolhida;
+      const precos = ponto && cozinhaPrecos ? await precosParaMim(ponto, cozinhaPrecos).catch(() => null) : null;
+      setPrecosCampanha(new Map((precos?.pratos ?? []).map((p) => [p.cardapio_id, { preco: p.preco_campanha, campanha: p.campanha }])));
+      setEntregaGratisAcima(precos?.entrega_gratis_acima ?? null);
       // I9: pratos com opções abrem o ecrã de montar; um grupo obrigatório sem opções disponíveis esgota o prato
       const [grupos, componentes] = ligada('pratos_montaveis')
         ? await Promise.all([lerOpcoes(itens.map((i) => i.id)), lerComponentes(itens.map((i) => i.id)).catch(() => [])])
@@ -472,6 +484,11 @@ export default function Inicio() {
         )}
         {erro && <Aviso tipo="erro">{erro}</Aviso>}
         {cardapio !== null && cardapio.length === 0 && <Paragrafo suave>O cardápio de hoje ainda não está disponível.</Paragrafo>}
+        {entregaGratisAcima != null && cardapio !== null && cardapio.length > 0 && (
+          <Text style={{ color: cores.sucesso, fontWeight: '700' }}>
+            🚚 Entrega grátis em pedidos a partir de {formatarKz(entregaGratisAcima)}
+          </Text>
+        )}
         {categorias.map(([categoria, itens]) => (
           <View key={categoria} style={{ gap: espaco.s }}>
             {categoria === 'Prato do dia' ? (
@@ -494,10 +511,23 @@ export default function Inicio() {
                   ) : null}
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: espaco.m }}>
                     <Text style={{ fontSize: 16, fontWeight: '600', flex: 1 }}>{item.nome}</Text>
-                    <Text style={{ fontSize: 16, fontWeight: '700' }}>
-                      {desde.has(item.id) ? `desde ${formatarKz(desde.get(item.id))}` : formatarKz(item.preco)}
-                    </Text>
+                    <Preco
+                      preco={item.preco}
+                      desde={desde.get(item.id)}
+                      promo={desde.has(item.id) ? null : precosCampanha.get(item.id)?.preco}
+                    />
                   </View>
+                  {(() => {
+                    const promo = desde.has(item.id) ? undefined : precosCampanha.get(item.id);
+                    const final = promo?.preco ?? item.preco;
+                    const gratis = entregaGratisAcima != null && !desde.has(item.id) && final >= entregaGratisAcima;
+                    return promo || gratis ? (
+                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: espaco.s }}>
+                        {promo && <Text style={{ color: cores.sucesso, fontSize: 13, fontWeight: '700' }}>🏷️ {promo.campanha}</Text>}
+                        {gratis && <Text style={{ color: cores.sucesso, fontSize: 13, fontWeight: '700' }}>🚚 Entrega grátis</Text>}
+                      </View>
+                    ) : null;
+                  })()}
                   {item.descricao ? <Text style={{ color: cores.textoSuave }} numberOfLines={2}>{item.descricao}</Text> : null}
                   {(() => {
                     const m = item.prato_base_id ? medias?.pratos.find((p) => p.prato_base_id === item.prato_base_id) : undefined;

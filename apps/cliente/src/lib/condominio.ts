@@ -117,3 +117,14 @@ export function cozinhasComCondominio(cond: CondominioAqui | null, outras: Cozin
 export function textoCondominioFechado(cond: CondominioAqui, horaLuanda: (iso: string) => string): string {
   return `🔒 ${cond.cozinha} (${cond.nome}) está fechada${cond.reabre_em ? ` — volta às ${horaLuanda(cond.reabre_em)}` : ''}. Entretanto podes pedir noutra cozinha.`;
 }
+
+/** Preço com campanha de um prato (o mesmo que o servidor cobra por 1 unidade) */
+export type PrecoCampanha = { cardapio_id: string; preco: number; preco_campanha: number; campanha: string };
+export type PrecosParaMim = { entrega_gratis_acima: number | null; pratos: PrecoCampanha[] };
+
+/** Preços com campanha da cozinha para a morada do cliente e o limiar da entrega grátis da zona */
+export async function precosParaMim(ponto: string, cozinha: string): Promise<PrecosParaMim> {
+  const r = await supabase.rpc('precos_para_mim', { p_ponto: ponto, p_cozinha: cozinha });
+  if (r.error) throw r.error;
+  return (r.data as PrecosParaMim) ?? { entrega_gratis_acima: null, pratos: [] };
+}

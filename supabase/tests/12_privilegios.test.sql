@@ -119,7 +119,7 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 'condominio_adicionar_membro', 'condominio_decidir_membro', 'condominio_pelo_codigo', 'condominio_pedir_entrada',
                 'condominio_aqui', 'meus_condominios',
                 -- condomínios fase 2: campanhas e relatório
-                'guardar_campanha', 'apagar_campanha', 'campanhas_lista', 'campanha_avisar', 'campanhas_para_mim', 'relatorio_condominio',
+                'guardar_campanha', 'apagar_campanha', 'campanhas_lista', 'campanha_avisar', 'campanhas_para_mim', 'precos_para_mim', 'relatorio_condominio',
                 -- faixa de confiança (pontualidade agregada)
                 'pontualidade_entregas', 'visitante_prato', 'visitante_cardapio', 'visitante_cozinhas', 'visitante_zonas', 'visitante_convida', 'funcionalidades_publicas',
                 -- prato montável a partir do modelo (cozinhas.gerir)
