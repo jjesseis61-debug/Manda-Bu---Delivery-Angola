@@ -163,3 +163,16 @@ export function textoConviteVisitante(c: { desconto: number; minimo: number } | 
   const minimo = c.minimo > 0 ? ` (pedido a partir de ${formatar(c.minimo)})` : '';
   return `🎁 Convite aplicado: −${formatar(c.desconto)} no teu 1.º pedido${minimo}.`;
 }
+
+/** Preço riscado para o visitante: campanhas para todos e do bairro escolhido (o mesmo que se cobra) */
+export async function lerPrecosVisitante(
+  cozinhaId: string,
+  zonaId: string | null,
+): Promise<{ entrega_gratis_acima: number | null; pratos: { cardapio_id: string; preco: number; preco_campanha: number; campanha: string }[] }> {
+  const r = await supabase.rpc('visitante_precos', { p_cozinha: cozinhaId, p_zona: zonaId });
+  if (r.error) throw r.error;
+  return (r.data as { entrega_gratis_acima: number | null; pratos: { cardapio_id: string; preco: number; preco_campanha: number; campanha: string }[] }) ?? {
+    entrega_gratis_acima: null,
+    pratos: [],
+  };
+}

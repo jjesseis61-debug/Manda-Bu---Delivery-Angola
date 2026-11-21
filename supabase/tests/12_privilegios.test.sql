@@ -125,7 +125,7 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 'rh_terminar_contrato', 'rh_guardar_equipamento', 'rh_devolver_equipamento', 'rh_parametros_ler', 'rh_parametros_guardar',
                 'rh_simular_salario', 'rh_folha', 'rh_folha_ajustar', 'rh_folha_fechar', 'rh_folha_pagar',
                 -- faixa de confiança (pontualidade agregada)
-                'pontualidade_entregas', 'visitante_prato', 'visitante_cardapio', 'visitante_cozinhas', 'visitante_zonas', 'visitante_convida', 'funcionalidades_publicas',
+                'pontualidade_entregas', 'visitante_prato', 'visitante_cardapio', 'visitante_cozinhas', 'visitante_zonas', 'visitante_precos', 'visitante_convida', 'funcionalidades_publicas',
                 -- prato montável a partir do modelo (cozinhas.gerir)
                 'criar_montavel_do_modelo',
                 -- sugestão de despacho por proximidade
@@ -171,7 +171,7 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
             where p.pronamespace = 'public'::regnamespace and p.prosecdef
               and p.proname <> 'rls_auto_enable'
               and has_function_privilege('anon', p.oid, 'execute')),
-          'funcionalidades_publicas, visitante_cardapio, visitante_convida, visitante_cozinhas, visitante_prato, visitante_zonas',
+          'funcionalidades_publicas, visitante_cardapio, visitante_convida, visitante_cozinhas, visitante_prato, visitante_precos, visitante_zonas',
           'sem sessão (anon) só as leituras do visitante do link partilhado (prato e cardápio visíveis na app)');
 
 -- ---------------------------------------------------------------------------

@@ -52,6 +52,7 @@ import {
   ordenarCozinhasVisitante,
   type Destino,
   type ZonaVisitante,
+  lerPrecosVisitante,
 } from '@/lib/visitante';
 import { cores, espaco, raio } from '@/lib/tema';
 import type { CozinhaParaPedir, Endereco, ItemCardapio, MediasAvaliacoes, MeusSelos, Pedido } from '@/lib/tipos';
@@ -144,8 +145,10 @@ export default function Inicio() {
         setEnderecos([]);
         setMaisZona([]);
         setPromocoes([]);
-        setPrecosCampanha(new Map());
-        setEntregaGratisAcima(null);
+        // Preço riscado também para quem ainda não entrou (campanhas para todos e do bairro); falha em silêncio
+        const precosV = escolhida && ligada('campanhas') ? await lerPrecosVisitante(escolhida, z?.id ?? null).catch(() => null) : null;
+        setPrecosCampanha(new Map((precosV?.pratos ?? []).map((p) => [p.cardapio_id, { preco: p.preco_campanha, campanha: p.campanha }])));
+        setEntregaGratisAcima(z?.entrega_gratis_acima ?? null);
         setCondominio(null);
         setContador(null);
         setMedias(null);
