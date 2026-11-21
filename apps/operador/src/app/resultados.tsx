@@ -62,6 +62,7 @@ export default function Resultados() {
               <Linha esquerda="Convida: descontos e saldo usados" direita={formatarKz(r.custos.convida_descontos)} />
               <Linha esquerda="Convida: ganhos dos padrinhos" direita={formatarKz(r.custos.convida_ganhos)} />
               <Linha esquerda="Compensações a clientes" direita={formatarKz(r.custos.compensacoes)} />
+              <Linha esquerda="Pessoal (salários e Segurança Social)" direita={formatarKz(r.custos.pessoal ?? 0)} />
               <Linha esquerda="Despesas gerais" direita={formatarKz(r.custos.despesas_gerais)} />
               <Linha esquerda="Total" direita={formatarKz(r.custos.total)} forte />
             </Cartao>

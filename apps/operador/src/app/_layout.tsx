@@ -74,6 +74,18 @@ export default function LayoutRaiz() {
         <Stack.Screen name="auditoria" options={{ title: 'Auditoria' }} />
         <Stack.Screen name="equipa" options={{ title: 'Equipa' }} />
         <Stack.Screen name="grupos" options={{ title: 'Grupos do dia' }} />
+        <Stack.Screen name="acertos" options={{ title: 'Acertos com as cozinhas' }} />
+        <Stack.Screen name="faturas" options={{ title: 'Faturas das vendas' }} />
+        <Stack.Screen name="compensacoes" options={{ title: 'Compensações' }} />
+        <Stack.Screen name="contas-empresas" options={{ title: 'Contas das empresas' }} />
+        <Stack.Screen name="estafetas-pagamentos" options={{ title: 'Pagamento dos estafetas' }} />
+        <Stack.Screen name="servico-entregas" options={{ title: 'Serviço de entregas contratado' }} />
+        <Stack.Screen name="resultados" options={{ title: 'Resultados do mês' }} />
+        <Stack.Screen name="obrigacoes" options={{ title: 'Obrigações e tesouraria' }} />
+        <Stack.Screen name="rh/index" options={{ title: 'Fichas e contratos' }} />
+        <Stack.Screen name="rh/[id]" options={{ title: 'Ficha do trabalhador' }} />
+        <Stack.Screen name="rh-folha" options={{ title: 'Folha de salários' }} />
+        <Stack.Screen name="rh-parametros" options={{ title: 'Tabela do IRT e Segurança Social' }} />
       </Stack>
       <StatusBar style="dark" />
     </SessaoProvider>

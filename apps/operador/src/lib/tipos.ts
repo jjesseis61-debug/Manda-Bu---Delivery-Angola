@@ -167,6 +167,9 @@ export type Permissao =
   | 'financas.servico_entregas'
   | 'financas.resultados'
   | 'financas.obrigacoes'
+  | 'financas.salarios'
+  | 'rh.gerir'
+  | 'rh.salarios'
   | 'financas.gerir'
   | 'clientes.gerir'
   | 'equipa.gerir'
@@ -1263,6 +1266,8 @@ export type ResultadosMes = {
     convida_descontos: number;
     convida_ganhos: number;
     compensacoes: number;
+    /** Salários (bruto) + Segurança Social da empresa */
+    pessoal: number;
     despesas_gerais: number;
     total: number;
   };
