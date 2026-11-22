@@ -28,6 +28,7 @@ import {
   meusSelos,
   posicaoEntrega,
   maisPedidosNaZona,
+  visitaExperiencia,
   type MaisPedidoZona,
 } from '@/lib/api';
 import { useCarrinho } from '@/lib/carrinho';
@@ -92,7 +93,10 @@ export default function Inicio() {
   // Lista dos balcões aberta a partir do botão do título
   const [aEscolherBalcao, setAEscolherBalcao] = useState(false);
   /** Fotografia grande (como antes) ou média no cartão do prato: decidido pelo teste com grupo de controlo */
-  const [fotoGrande] = useState(false);
+  const [fotoGrande, setFotoGrande] = useState(false);
+  // Hora em que o Início abriu e se o primeiro «Adicionar» desta visita já foi contado (só com teste activo)
+  const abertoEm = useRef(0);
+  const tempoContado = useRef(true);
   // Banner no topo: pedido ainda em andamento ("a tua entrega está a caminho, toca para acompanhar")
   const [pedidoActivo, setPedidoActivo] = useState<Pedido | null>(null);
   // "O teu habitual": o último pedido entregue, para repetir num toque (só quando não há pedido em curso)
@@ -247,6 +251,30 @@ export default function Inicio() {
       void carregar();
     }, [carregar]),
   );
+
+  // Teste das fotografias (Skinner: medir com grupo de controlo). Cada cliente fica sempre no mesmo
+  // grupo; sem teste (desligado, sem conta ou erro) todos vêem a fotografia média.
+  const comTeste = !visitante && ligada('teste_fotos_inicio');
+  useFocusEffect(
+    useCallback(() => {
+      if (!comTeste) {
+        setFotoGrande(false);
+        tempoContado.current = true;
+        return;
+      }
+      abertoEm.current = Date.now();
+      tempoContado.current = false;
+      visitaExperiencia('fotos_inicio')
+        .then((g) => setFotoGrande(g === 'A'))
+        .catch(() => setFotoGrande(false));
+    }, [comTeste]),
+  );
+  /** Primeiro «Adicionar»/«Servir» desta visita: guarda quanto tempo levou (uma vez, falha em silêncio) */
+  const contarPrimeiroAdicionar = () => {
+    if (tempoContado.current) return;
+    tempoContado.current = true;
+    void visitaExperiencia('fotos_inicio', (Date.now() - abertoEm.current) / 1000).catch(() => undefined);
+  };
 
   // Tempo a mostrar no banner: o do mapa (estafeta) se existir, senão o que falta até à hora prometida.
   // Acima de 2 h (ex.: pedido agendado) não faz sentido em "minutos" — aí mostra-se a hora.
@@ -594,11 +622,11 @@ export default function Inicio() {
                     ) : (
                       <Pressable
                         accessibilityRole="button"
-                        onPress={() =>
-                          montaveis.has(item.id)
-                            ? router.push({ pathname: '/montar/[id]', params: { id: item.id } })
-                            : carrinho.adicionar(item)
-                        }
+                        onPress={() => {
+                          contarPrimeiroAdicionar();
+                          if (montaveis.has(item.id)) router.push({ pathname: '/montar/[id]', params: { id: item.id } });
+                          else carrinho.adicionar(item);
+                        }}
                         style={{ backgroundColor: cores.marcaClara, borderRadius: 20, paddingHorizontal: espaco.l, paddingVertical: 6 }}>
                         <Text style={{ color: cores.marca, fontWeight: '700' }}>{montaveis.has(item.id) ? 'Servir' : 'Adicionar'}</Text>
                       </Pressable>

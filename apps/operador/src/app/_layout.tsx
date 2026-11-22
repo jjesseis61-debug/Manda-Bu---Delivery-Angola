@@ -43,6 +43,7 @@ export default function LayoutRaiz() {
         <Stack.Screen name="conferencia" options={{ title: 'Conferência' }} />
         <Stack.Screen name="reclamacoes" options={{ title: 'Reclamações' }} />
         <Stack.Screen name="analista" options={{ title: 'Analista' }} />
+        <Stack.Screen name="teste-fotos" options={{ title: 'Teste das fotografias' }} />
         <Stack.Screen name="vigilancia" options={{ title: 'Vigilância do Convida' }} />
         <Stack.Screen name="saldos-expirados" options={{ title: 'Saldos expirados' }} />
         <Stack.Screen name="zonas-vendas" options={{ title: 'O que se compra em cada zona' }} />

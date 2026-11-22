@@ -606,6 +606,16 @@ export async function maisPedidosNaZona(ponto: string): Promise<MaisPedidoZona[]
   return (verificar(await supabase.rpc('mais_pedidos_na_zona', { p_ponto: ponto })) as MaisPedidoZona[]) ?? [];
 }
 
+/**
+ * Teste das fotografias do Início (grupo de controlo): sem segundos regista uma visita e devolve o grupo
+ * ('A' = fotografia grande, 'B' = média); com segundos guarda o tempo até ao primeiro «Adicionar».
+ * null = sem teste (interruptor desligado ou sem conta).
+ */
+export async function visitaExperiencia(experiencia: 'fotos_inicio', segundosAteAdicionar?: number): Promise<'A' | 'B' | null> {
+  const args = segundosAteAdicionar == null ? { p_experiencia: experiencia } : { p_experiencia: experiencia, p_segundos_ate_adicionar: Math.round(segundosAteAdicionar) };
+  return (verificar(await supabase.rpc('visita_experiencia', args)) as 'A' | 'B' | null) ?? null;
+}
+
 export async function registarPartilha(): Promise<void> {
   verificar(await supabase.rpc('registar_partilha'));
 }

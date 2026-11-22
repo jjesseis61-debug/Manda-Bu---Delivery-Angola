@@ -50,6 +50,7 @@ export type Parametros = {
 export type ChaveFuncionalidade =
   | 'condominios'
   | 'campanhas'
+  | 'teste_fotos_inicio'
   | 'indicacao'
   | 'destaques'
   | 'pessoas_como_tu'

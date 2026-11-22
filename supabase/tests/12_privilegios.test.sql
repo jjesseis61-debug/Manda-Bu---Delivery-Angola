@@ -123,7 +123,7 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 -- recursos humanos
                 'rh_lista', 'rh_ficha', 'rh_guardar_ficha', 'rh_guardar_documento', 'rh_apagar_documento', 'rh_guardar_contrato',
                 'rh_terminar_contrato', 'rh_guardar_equipamento', 'rh_devolver_equipamento', 'rh_parametros_ler', 'rh_parametros_guardar',
-                'rh_simular_salario', 'rh_folha', 'rh_folha_ajustar', 'rh_folha_fechar', 'rh_folha_pagar',
+                'rh_simular_salario', 'rh_folha', 'rh_folha_ajustar', 'rh_folha_fechar', 'rh_folha_pagar', 'visita_experiencia', 'resultado_experiencia',
                 -- faixa de confiança (pontualidade agregada)
                 'pontualidade_entregas', 'visitante_prato', 'visitante_cardapio', 'visitante_cozinhas', 'visitante_zonas', 'visitante_precos', 'visitante_convida', 'funcionalidades_publicas',
                 -- prato montável a partir do modelo (cozinhas.gerir)

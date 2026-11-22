@@ -59,6 +59,7 @@ export const ecras: EntradaMenu[] = [
   { rota: '/atendimento', grupos: ['operacao'], titulo: 'Atendimento', descricao: 'Conversas dos clientes que o assistente passou para uma pessoa', permissoes: ['atendimento.responder'] },
   { rota: '/caixa', grupos: ['operacao'], titulo: 'Caixa', descricao: 'Abrir, sangrias e fecho com a contagem do dinheiro', permissoes: ['vendas.registar'] },
   { rota: '/analista', grupos: ['controlo'], titulo: 'Analista', descricao: 'Pergunta sobre o negócio e lê o relatório do mês', permissoes: ['analista.usar'] },
+  { rota: '/teste-fotos', grupos: ['controlo'], titulo: 'Teste das fotografias', descricao: 'Fotografia grande ou média no Início do cliente: qual dá mais pedidos', permissoes: ['analista.usar'] },
   { rota: '/reclamacoes', grupos: ['operacao'], titulo: 'Reclamações', descricao: 'Análise automática, resposta ao cliente e resumo do mês', permissoes: ['pedidos.gerir', 'clientes.gerir'] },
   { rota: '/empresas', grupos: ['clientes'], titulo: 'Empresas (B2B)', descricao: 'Contas de empresa: almoços dos funcionários e fatura mensal', permissoes: ['clientes.gerir'] },
   { rota: '/feiras', grupos: ['cozinhas'], titulo: 'Feiras', descricao: 'Vendas por consignação em feiras (preço fixo, fora da app)', permissoes: ['feira.gerir'] },
