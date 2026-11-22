@@ -300,7 +300,39 @@ describe('promoções', () => {
   });
   it('cartaz no início', () => {
     expect(textoPromocao({ nome: 'S', descricao: null, tipo: 'percentagem', valor: 20, cozinha: 'Viana', minimo_pedido: 5000 })).toBe(
-      '20% de desconto nos pratos · Viana · a partir de 5.000 Kz',
+      '20% de desconto nos pratos · Viana · pedidos a partir de 5.000 Kz',
     );
+    // Um mínimo simbólico (ex.: 2 Kz) não aparece: parecia um preço errado
+    expect(textoPromocao({ nome: 'S', descricao: 'Promoção maluca', tipo: 'percentagem', valor: 50, cozinha: 'Viana', minimo_pedido: 2 })).toBe(
+      'Promoção maluca · Viana',
+    );
+  });
+});
+
+describe('Convida e Ganha sem ganhos', () => {
+  const { semGanhos, textoPrimeiroGanho } = jest.requireActual('../formatar');
+  const zero = { saldo_disponivel: 0, em_verificacao: 0, ganho_hoje: 0, ganho_semana: 0, total_recebido: 0 };
+  it('três «0 Kz» passam a uma meta próxima', () => {
+    expect(semGanhos(zero)).toBe(true);
+    expect(semGanhos({ ...zero, em_verificacao: 600 })).toBe(false);
+    expect(semGanhos({ ...zero, total_recebido: 1200 })).toBe(false);
+  });
+  it('diz o passo que falta, com o amigo mais perto', () => {
+    expect(textoPrimeiroGanho([], false)).toBe('O primeiro chega quando um amigo teu usar o teu código e pedir. Partilha-o acima.');
+    expect(textoPrimeiroGanho([{ primeiro_nome: 'Milhões', estado: 'aguarda_primeiro_pedido' }], false)).toBe(
+      'O primeiro chega quando Milhões fizer o 2.º pedido.',
+    );
+    expect(textoPrimeiroGanho([{ primeiro_nome: 'Milhões', estado: 'aguarda_primeiro_pedido' }], true)).toBe(
+      'O primeiro chega quando Milhões fizer o 1.º pedido.',
+    );
+    expect(
+      textoPrimeiroGanho(
+        [
+          { primeiro_nome: 'Milhões', estado: 'aguarda_primeiro_pedido' },
+          { primeiro_nome: 'Alexandra', estado: 'activo' },
+        ],
+        false,
+      ),
+    ).toBe('O primeiro chega quando Alexandra fizer o próximo pedido.');
   });
 });

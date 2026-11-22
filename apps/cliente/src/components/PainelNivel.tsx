@@ -51,7 +51,7 @@ export function PainelNivel() {
       ) : (
         <>
           {/* Barra de progresso para o próximo nível */}
-          <View style={{ height: 8, backgroundColor: cores.fundoSuave, borderRadius: 4, overflow: 'hidden', marginTop: 10 }}>
+          <View style={{ height: 8, backgroundColor: cores.marcaClara, borderRadius: 4, overflow: 'hidden', marginTop: 10 }}>
             <View style={{ width: `${pct * 100}%`, height: '100%', backgroundColor: cor }} />
           </View>
           <Text style={{ color: cores.texto, marginTop: 8 }}>

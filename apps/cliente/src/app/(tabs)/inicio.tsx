@@ -1,16 +1,18 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useMemo, useRef, useState } from 'react';
-import { Image, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Image, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 
 import { CartaoConvida } from '@/components/CartaoConvida';
 import { Confirmar } from '@/components/Confirmar';
+import { BotaoBalcao, FolhaBalcoes } from '@/components/EscolherBalcao';
 import { LoginNecessario } from '@/components/LoginNecessario';
 import { FaixaConfianca } from '@/components/FaixaConfianca';
 import { ComoChegar } from '@/components/ComoChegar';
 import { MediaAvaliacao } from '@/components/MediaAvaliacao';
-import { Preco, PrecoDestaque } from '@/components/Preco';
-import { Aviso, Botao, Cartao, Escolha, Paragrafo, Subtitulo, estilos } from '@/components/ui';
+import { PrecoCartao } from '@/components/Preco';
+import { Sino, SinoVisitante } from '@/components/Sino';
+import { Aviso, Botao, Cartao, Paragrafo, Subtitulo, estilos } from '@/components/ui';
 import {
   contadorZona,
   cozinhaPadrao,
@@ -61,6 +63,7 @@ const EM_ANDAMENTO = ['pendente', 'confirmado', 'em_preparacao', 'em_entrega'];
 
 export default function Inicio() {
   const router = useRouter();
+  const navigation = useNavigation();
   const { ligada, perfil, parametros, sessao } = useSessao();
   // Sem conta (a app abre no Início para todos): lê o que é público e pede o número só no «Pedir»
   const visitante = !sessao || !perfil;
@@ -86,6 +89,10 @@ export default function Inicio() {
   const [entregaGratisAcima, setEntregaGratisAcima] = useState<number | null>(null);
   // Troca de cozinha com carrinho cheio: confirma antes de esvaziar
   const [trocaPendente, setTrocaPendente] = useState<CozinhaParaPedir | null>(null);
+  // Lista dos balcões aberta a partir do botão do título
+  const [aEscolherBalcao, setAEscolherBalcao] = useState(false);
+  /** Fotografia grande (como antes) ou média no cartão do prato: decidido pelo teste com grupo de controlo */
+  const [fotoGrande] = useState(false);
   // Banner no topo: pedido ainda em andamento ("a tua entrega está a caminho, toca para acompanhar")
   const [pedidoActivo, setPedidoActivo] = useState<Pedido | null>(null);
   // "O teu habitual": o último pedido entregue, para repetir num toque (só quando não há pedido em curso)
@@ -266,6 +273,7 @@ export default function Inicio() {
   }
 
   function trocarCozinha(id: string) {
+    setAEscolherBalcao(false);
     const c = cozinhas.find((x) => x.cozinha_id === id);
     if (!c || c.cozinha_id === cozinhaId) return;
     if (carrinho.quantidade > 0) setTrocaPendente(c);
@@ -285,6 +293,21 @@ export default function Inicio() {
   // Montáveis em destaque (herói) e o primeiro servível (para a barra fixa)
   const herois = (cardapio ?? []).filter((i) => montaveis.has(i.id));
   const heroiServivel = herois.find((i) => !(esgotados.has(i.id) || doses.get(i.id) === 0));
+
+  // Balcão no título («📍 Viana ▾»): escolhe-se primeiro de onde se pede, e só depois vêm campanhas e pratos
+  const podeEscolherBalcao = ligada('multi_cozinha') && !carrinho.grupo && cozinhas.length > 1;
+  const balcaoActual = cozinhaId ?? cardapio?.[0]?.cozinha_id ?? null;
+  const nomeBalcao = cozinhas.find((c) => c.cozinha_id === balcaoActual)?.nome ?? null;
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          {podeEscolherBalcao && nomeBalcao ? <BotaoBalcao nome={nomeBalcao} aoCarregar={() => setAEscolherBalcao(true)} /> : null}
+          {visitante ? <SinoVisitante /> : <Sino />}
+        </View>
+      ),
+    });
+  }, [navigation, podeEscolherBalcao, nomeBalcao, visitante]);
 
   return (
     <View style={{ flex: 1, backgroundColor: cores.fundo }}>
@@ -369,43 +392,49 @@ export default function Inicio() {
             }}>
             {herois.map((item) => {
               const servivel = !(esgotados.has(item.id) || doses.get(item.id) === 0);
+              // Linha compacta (era um cartão grande com fotografia): a comida fica mais perto do topo
               return (
                 <Pressable
                   key={item.id}
                   accessibilityRole="button"
+                  accessibilityLabel={`${item.nome}. ${servivel ? 'Servir' : 'Esgotado'}`}
                   disabled={!servivel}
                   onPress={() => router.push({ pathname: '/montar/[id]', params: { id: item.id } })}
-                  style={{ backgroundColor: cores.marcaClara, borderRadius: raio, borderWidth: 1.5, borderColor: cores.marca, overflow: 'hidden' }}>
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: espaco.s,
+                    backgroundColor: cores.marcaClara,
+                    borderRadius: raio,
+                    borderWidth: 1.5,
+                    borderColor: cores.marca,
+                    padding: espaco.m,
+                  }}>
                   {item.foto_url ? (
-                    <Image source={{ uri: item.foto_url }} style={{ width: '100%', aspectRatio: 16 / 9 }} accessibilityLabel={item.nome} />
-                  ) : null}
-                  <View style={{ padding: espaco.m, gap: 4 }}>
-                    <Text style={{ color: cores.marca, fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.4 }}>
-                      Serve o teu próprio prato · à tua maneira
-                    </Text>
-                    <Text style={{ fontSize: 18, fontWeight: '800', color: cores.texto }}>{item.nome}</Text>
+                    <Image source={{ uri: item.foto_url }} style={{ width: 48, height: 48, borderRadius: 24 }} accessibilityLabel={item.nome} />
+                  ) : (
+                    <Text style={{ fontSize: 26 }}>🍽️</Text>
+                  )}
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <Text style={{ fontSize: 16, fontWeight: '800', color: cores.marcaEscura }} numberOfLines={1}>{item.nome}</Text>
                     {item.descricao ? (
-                      <Text style={{ color: cores.texto }} numberOfLines={2}>{item.descricao}</Text>
+                      <Text style={{ color: cores.textoSuave, fontSize: 13 }} numberOfLines={1}>{item.descricao}</Text>
                     ) : null}
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: espaco.m, marginTop: 4 }}>
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel={`Partilhar ${item.nome} no WhatsApp`}
-                        hitSlop={8}
-                        onPress={() => void partilhar(item.nome, item.id)}
-                        style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginRight: 'auto' }}>
-                        <Ionicons name="share-social-outline" size={18} color={cores.marca} />
-                        <Text style={{ color: cores.marca, fontWeight: '600' }}>Partilhar</Text>
-                      </Pressable>
-                      {servivel ? (
-                        <View style={{ backgroundColor: cores.marca, borderRadius: 20, paddingHorizontal: espaco.l, paddingVertical: 8 }}>
-                          <Text style={{ color: '#FFFFFF', fontWeight: '800' }}>Servir</Text>
-                        </View>
-                      ) : (
-                        <Text style={{ color: cores.textoSuave, fontWeight: '700' }}>Esgotado</Text>
-                      )}
-                    </View>
                   </View>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Partilhar ${item.nome} no WhatsApp`}
+                    hitSlop={8}
+                    onPress={() => void partilhar(item.nome, item.id)}>
+                    <Ionicons name="share-social-outline" size={20} color={cores.marca} />
+                  </Pressable>
+                  {servivel ? (
+                    <View style={{ backgroundColor: cores.marca, borderRadius: 20, paddingHorizontal: espaco.m, paddingVertical: 6 }}>
+                      <Text style={{ color: '#FFFFFF', fontWeight: '800' }}>Servir</Text>
+                    </View>
+                  ) : (
+                    <Text style={{ color: cores.textoSuave, fontWeight: '700' }}>Esgotado</Text>
+                  )}
                 </Pressable>
               );
             })}
@@ -428,19 +457,24 @@ export default function Inicio() {
         )}
         {/* "O teu habitual": repetir o último pedido entregue num toque (só sem pedido em curso e com o carrinho vazio) */}
         {ultimoTerminado && carrinho.quantidade === 0 && !carrinho.grupo && (
-          <Cartao>
-            <Text style={{ fontSize: 15, fontWeight: '700', color: cores.texto }}>O teu habitual</Text>
-            <Text style={{ color: cores.textoSuave }}>
-              {ultimoTerminado.itens.map((i) => `${i.qtd}× ${i.nome}`).join(', ')}
-            </Text>
-            <Botao titulo="Pedir de novo" aCarregar={aRepetir} aoCarregar={() => pedirDeNovo(ultimoTerminado)} />
-          </Cartao>
+          <View
+            style={{ flexDirection: 'row', alignItems: 'center', gap: espaco.s, backgroundColor: cores.fundoSuave, borderRadius: raio, padding: espaco.m }}>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={{ fontSize: 15, fontWeight: '700', color: cores.texto }}>↺ O teu habitual</Text>
+              <Text style={{ color: cores.textoSuave, fontSize: 13 }} numberOfLines={2}>
+                {ultimoTerminado.itens.map((i) => `${i.qtd}× ${i.nome}`).join(', ')}
+              </Text>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              disabled={aRepetir}
+              onPress={() => void pedirDeNovo(ultimoTerminado)}
+              style={{ backgroundColor: cores.marca, borderRadius: 20, paddingHorizontal: espaco.m, paddingVertical: 8, minWidth: 120, alignItems: 'center' }}>
+              {aRepetir ? <ActivityIndicator color="#FFFFFF" /> : <Text style={{ color: '#FFFFFF', fontWeight: '800' }}>Pedir de novo</Text>}
+            </Pressable>
+          </View>
         )}
-        {/* Convida e Ganha: desconto do 1.º pedido / ganhos / convite (adapta-se ao estado) */}
-        <CartaoConvida />
-        {/* I8: selector de cozinha por zona (só com multi_cozinha e mais de uma cozinha a aceitar pedidos).
-            A marca é a mesma; cada opção é um balcão/zona. O título dá a afordância de lugar e o ✓
-            reforça qual está escolhido. */}
+        {/* Cozinha de condomínio (o balcão escolhe-se no título, «📍 … ▾») */}
         {condominio && condominio.aberta && !carrinho.grupo && (
           <Cartao>
             <Text style={{ fontSize: 15, fontWeight: '700', color: cores.texto }}>🏘️ {condominio.cozinha}</Text>
@@ -455,20 +489,6 @@ export default function Inicio() {
             {p.fim && <Text style={{ color: cores.textoSuave, fontSize: 12 }}>Até {formatarData(p.fim)}</Text>}
           </Cartao>
         ))}
-        {ligada('multi_cozinha') && !carrinho.grupo && cozinhas.length > 1 && (
-          <View style={{ gap: espaco.s }}>
-            <Text style={{ fontSize: 15, fontWeight: '700', color: cores.texto }}>📍 De onde queres pedir?</Text>
-            {cozinhas.some((c) => c.distancia_km != null) && (
-              <Text style={{ fontSize: 12, color: cores.textoSuave, marginTop: -espaco.xs }}>Mais perto primeiro</Text>
-            )}
-            <Escolha
-              opcoes={cozinhas.map((c) => ({ valor: c.cozinha_id, rotulo: (c.cozinha_id === cozinhaId ? '✓ ' : '') + c.nome }))}
-              valor={cozinhaId ?? ''}
-              aoMudar={trocarCozinha}
-              horizontal
-            />
-          </View>
-        )}
         {!visitante && enderecos.length === 0 && cardapio !== null && (
           <Aviso>
             Antes do primeiro pedido, adiciona o endereço de entrega.{' '}
@@ -492,7 +512,7 @@ export default function Inicio() {
             🚚 Entrega grátis em pedidos a partir de {formatarKz(entregaGratisAcima)}
           </Text>
         )}
-        {categorias.map(([categoria, itens]) => (
+        {categorias.map(([categoria, itens], indice) => (
           <View key={categoria} style={{ gap: espaco.s }}>
             {categoria === 'Prato do dia' ? (
               <View style={{ alignSelf: 'flex-start', backgroundColor: cores.destaqueFundo, borderRadius: 14, paddingHorizontal: espaco.m, paddingVertical: 4, marginTop: espaco.s }}>
@@ -503,65 +523,58 @@ export default function Inicio() {
             )}
             {itens.map((item) => {
               const noCarrinho = carrinho.quantidadeDe(item.id);
+              // Preço sempre no mesmo sítio (por baixo do nome, grande); com campanha leva o riscado e os selos
+              const promo = desde.has(item.id) ? undefined : precosCampanha.get(item.id);
+              const final = promo?.preco ?? item.preco;
+              const gratis = entregaGratisAcima != null && !desde.has(item.id) && final >= entregaGratisAcima;
+              const selo = (texto: string, fundo: string, cor: string) => (
+                <Text
+                  key={texto}
+                  style={{ backgroundColor: fundo, color: cor, fontSize: 12, fontWeight: '700', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, overflow: 'hidden' }}>
+                  {texto}
+                </Text>
+              );
+              const media = item.prato_base_id ? medias?.pratos.find((p) => p.prato_base_id === item.prato_base_id) : undefined;
+              const foto = item.foto_url ? (
+                <Image
+                  source={{ uri: item.foto_url }}
+                  style={fotoGrande ? { width: '100%', aspectRatio: 4 / 3, borderRadius: raio } : { width: 112, height: 100, borderRadius: raio }}
+                  accessibilityLabel={item.nome}
+                />
+              ) : null;
               return (
-                <View key={item.id} style={{ backgroundColor: cores.fundoSuave, borderRadius: raio, padding: espaco.m, gap: 4 }}>
-                  {item.foto_url ? (
-                    <Image
-                      source={{ uri: item.foto_url }}
-                      style={{ width: '100%', aspectRatio: 4 / 3, borderRadius: raio, marginBottom: 4 }}
-                      accessibilityLabel={item.nome}
-                    />
-                  ) : null}
-                  {(() => {
-                    // Com campanha: o preço desce para debaixo do nome, à esquerda e em destaque (modo Meesho);
-                    // sem campanha fica discreto à direita do nome, como num cardápio.
-                    const promo = desde.has(item.id) ? undefined : precosCampanha.get(item.id);
-                    const final = promo?.preco ?? item.preco;
-                    const gratis = entregaGratisAcima != null && !desde.has(item.id) && final >= entregaGratisAcima;
-                    const selo = (texto: string, fundo: string, cor: string) => (
-                      <Text style={{ backgroundColor: fundo, color: cor, fontSize: 12, fontWeight: '700', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, overflow: 'hidden' }}>
-                        {texto}
-                      </Text>
-                    );
-                    return promo ? (
-                      <View style={{ gap: 4 }}>
-                        <Text style={{ fontSize: 16, fontWeight: '600' }}>{item.nome}</Text>
-                        <PrecoDestaque preco={item.preco} promo={promo.preco} />
+                <View key={item.id} style={{ backgroundColor: cores.fundoSuave, borderRadius: raio, padding: espaco.m, gap: espaco.s }}>
+                  {fotoGrande && foto}
+                  <View style={{ flexDirection: 'row', gap: espaco.m }}>
+                    {!fotoGrande && foto}
+                    <View style={{ flex: 1, gap: 4 }}>
+                      <Text style={{ fontSize: 16, fontWeight: '700', color: cores.texto }} numberOfLines={2}>{item.nome}</Text>
+                      <PrecoCartao preco={item.preco} promo={promo?.preco} desde={desde.get(item.id)} />
+                      {(promo || gratis) && (
                         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: espaco.xs }}>
-                          {selo('✓ Desconto aplicado', cores.sucessoFundo, cores.sucesso)}
-                          {selo(`🏷️ ${promo.campanha}`, cores.fundo, cores.textoSuave)}
+                          {promo && selo('✓ Desconto aplicado', cores.sucessoFundo, cores.sucesso)}
+                          {promo && selo(`🏷️ ${promo.campanha}`, cores.fundo, cores.textoSuave)}
                           {gratis && selo('🚚 Entrega grátis', cores.sucessoFundo, cores.sucesso)}
                         </View>
-                      </View>
-                    ) : (
-                      <>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: espaco.m }}>
-                          <Text style={{ fontSize: 16, fontWeight: '600', flex: 1 }}>{item.nome}</Text>
-                          <Preco preco={item.preco} desde={desde.get(item.id)} />
-                        </View>
-                        {gratis && <View style={{ flexDirection: 'row' }}>{selo('🚚 Entrega grátis', cores.sucessoFundo, cores.sucesso)}</View>}
-                      </>
-                    );
-                  })()}
+                      )}
+                      {media ? (
+                        <Pressable
+                          accessibilityRole="link"
+                          onPress={() =>
+                            router.push({
+                              pathname: '/avaliacoes',
+                              params: { cozinha: item.cozinha_id, prato: item.prato_base_id ?? '', nome: item.nome },
+                            })
+                          }>
+                          <MediaAvaliacao media={media.media} total={media.total} />
+                        </Pressable>
+                      ) : null}
+                      {parametros && item.pedidos_mes >= parametros.limiar_pediram && (
+                        <Text style={{ color: cores.textoSuave, fontSize: 13 }}>👍 {textoPediram(item.pedidos_mes)}</Text>
+                      )}
+                    </View>
+                  </View>
                   {item.descricao ? <Text style={{ color: cores.textoSuave }} numberOfLines={2}>{item.descricao}</Text> : null}
-                  {(() => {
-                    const m = item.prato_base_id ? medias?.pratos.find((p) => p.prato_base_id === item.prato_base_id) : undefined;
-                    return m ? (
-                      <Pressable
-                        accessibilityRole="link"
-                        onPress={() =>
-                          router.push({
-                            pathname: '/avaliacoes',
-                            params: { cozinha: item.cozinha_id, prato: item.prato_base_id ?? '', nome: item.nome },
-                          })
-                        }>
-                        <MediaAvaliacao media={m.media} total={m.total} />
-                      </Pressable>
-                    ) : null;
-                  })()}
-                  {parametros && item.pedidos_mes >= parametros.limiar_pediram && (
-                    <Text style={{ color: cores.textoSuave, fontSize: 13 }}>👍 {textoPediram(item.pedidos_mes)}</Text>
-                  )}
                   <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: espaco.m }}>
                     <Pressable
                       accessibilityRole="button"
@@ -594,8 +607,11 @@ export default function Inicio() {
                 </View>
               );
             })}
+            {/* Convida e Ganha entre os pratos (depois do primeiro grupo): a comida vem primeiro */}
+            {indice === 0 && <CartaoConvida />}
           </View>
         ))}
+        {categorias.length === 0 && <CartaoConvida />}
         {/* Promos e extras ficam DEPOIS do cardápio (comida primeiro): pacote, grupo, como chegar. */}
         {ligada('pacotes') && !carrinho.grupo && (
           <Botao
@@ -672,6 +688,13 @@ export default function Inicio() {
         motivo={login?.motivo ?? ''}
         destino={login?.destino ?? '/inicio'}
         aoFechar={() => setLogin(null)}
+      />
+      <FolhaBalcoes
+        visivel={aEscolherBalcao}
+        cozinhas={cozinhas}
+        actual={balcaoActual}
+        aoEscolher={trocarCozinha}
+        aoFechar={() => setAEscolherBalcao(false)}
       />
       <Confirmar
         visivel={trocaPendente !== null}

@@ -293,6 +293,11 @@ export default function Campanhas() {
       )}
       <Campo rotulo="Pedido mínimo (Kz, opcional)" value={e.minimo} keyboardType="number-pad"
         onChangeText={(t) => setEdicao({ ...e, minimo: t.replace(/\D/g, '') })} />
+      {(inteiro(e.minimo) ?? 0) > 0 && (inteiro(e.minimo) ?? 0) < 500 && (
+        <Text style={{ color: cores.aviso, fontSize: 13, marginTop: -espaco.s, marginBottom: espaco.s }}>
+          Mínimo muito baixo: não aparece ao cliente (parecia um preço errado). Deixa vazio se não há mínimo.
+        </Text>
+      )}
       <Subtitulo>Quando</Subtitulo>
       <Campo rotulo={e.id ? 'Começa em (DD/MM/AAAA; vazio = mantém)' : 'Começa em (DD/MM/AAAA; vazio = já)'} value={e.inicio}
         keyboardType="number-pad" maxLength={10} placeholder="DD/MM/AAAA" onChangeText={(t) => setEdicao({ ...e, inicio: mascaraData(t) })} />
@@ -351,7 +356,7 @@ export default function Campanhas() {
               {c.em_curso ? '🟢 ' : c.activa ? '🕒 ' : '⏸️ '}
               {c.nome}
             </Text>
-            <Text>{textoOferta(c)}{c.minimo_pedido ? ` · a partir de ${formatarKz(c.minimo_pedido)}` : ''}</Text>
+            <Text>{textoOferta(c)}{c.minimo_pedido ? ` · pedidos a partir de ${formatarKz(c.minimo_pedido)}` : ''}</Text>
             <Text style={{ color: cores.textoSuave }}>
               {c.condominio ? `Condomínio ${c.condominio}${c.so_membros ? ' (só membros)' : ''}` : c.zona ? `Zona ${c.zona}` : 'Todos'}
               {c.cozinha ? ` · ${c.cozinha}` : ''} · {textoQuando(c)}

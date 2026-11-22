@@ -1,4 +1,4 @@
-import type { EstadoPedido, Parametros } from './tipos';
+import type { Amigo, EstadoPedido, Parametros, Saldo } from './tipos';
 
 /** 125 -> "2:05" (contagem decrescente, minutos:segundos) */
 export function minutosSegundos(segundos: number): string {
@@ -362,13 +362,32 @@ export function textoCampanha(c: { nome: string; poupanca: number }, motivoDesco
 }
 
 /** Cartaz de promoção no início */
+/** Abaixo disto o «pedido mínimo» de uma campanha não diz nada ao cliente e parece um preço errado (ex.: «2 Kz») */
+export const MINIMO_CAMPANHA_VISIVEL = 500;
+
 export function textoPromocao(p: { nome: string; descricao: string | null; tipo: string; valor: number; cozinha: string | null; minimo_pedido: number }): string {
   const oferta = p.descricao ?? (p.tipo === 'percentagem' ? `${p.valor}% de desconto nos pratos` : `Preço especial: ${formatarKz(p.valor)}`);
-  return `${oferta}${p.cozinha ? ` · ${p.cozinha}` : ''}${p.minimo_pedido > 0 ? ` · a partir de ${formatarKz(p.minimo_pedido)}` : ''}`;
+  // «pedidos a partir de»: é o mínimo do pedido, não o preço de um prato
+  const minimo = p.minimo_pedido >= MINIMO_CAMPANHA_VISIVEL ? ` · pedidos a partir de ${formatarKz(p.minimo_pedido)}` : '';
+  return `${oferta}${p.cozinha ? ` · ${p.cozinha}` : ''}${minimo}`;
 }
 
 /** Percentagem de desconto arredondada (ex.: 4.000 → 3.200 = 20) */
 export function percentagemDesconto(preco: number, promo: number): number {
   if (!(preco > 0) || !(promo < preco)) return 0;
   return Math.round(((preco - promo) / preco) * 100);
+}
+
+/** Ainda não ganhou nada (nem está nada em verificação ou já recebido) */
+export const semGanhos = (s: Saldo) =>
+  s.saldo_disponivel <= 0 && s.ganho_semana <= 0 && s.ganho_hoje <= 0 && s.em_verificacao <= 0 && s.total_recebido <= 0;
+
+/** O passo que falta para o primeiro ganho, com o nome do amigo que está mais perto dele */
+export function textoPrimeiroGanho(activos: Pick<Amigo, 'primeiro_nome' | 'estado'>[], comissaoPrimeiroPedido: boolean): string {
+  // Quem já fez o 1.º pedido está mais perto: o próximo pedido dele já dá ganho
+  const jaPediu = activos.find((a) => a.estado === 'activo');
+  if (jaPediu) return `O primeiro chega quando ${jaPediu.primeiro_nome} fizer o próximo pedido.`;
+  const aEspera = activos[0];
+  if (aEspera) return `O primeiro chega quando ${aEspera.primeiro_nome} fizer ${comissaoPrimeiroPedido ? 'o 1.º pedido' : 'o 2.º pedido'}.`;
+  return 'O primeiro chega quando um amigo teu usar o teu código e pedir. Partilha-o acima.';
 }

@@ -46,3 +46,15 @@ export function PrecoDestaque({ preco, promo }: { preco: number; promo: number }
     </View>
   );
 }
+
+/**
+ * Preço no cartão do prato do Início: sempre no mesmo sítio (por baixo do nome, à esquerda e grande),
+ * com ou sem campanha, para o olho o encontrar sem procurar.
+ */
+export function PrecoCartao({ preco, promo, desde }: { preco: number; promo?: number | null; desde?: number | null }) {
+  if (desde != null) {
+    return <Text style={{ fontSize: 20, fontWeight: '800', color: cores.texto }}>{`desde ${formatarKz(desde)}`}</Text>;
+  }
+  if (promo != null && percentagemDesconto(preco, promo) > 0) return <PrecoDestaque preco={preco} promo={promo} />;
+  return <Text style={{ fontSize: 20, fontWeight: '800', color: cores.texto }}>{formatarKz(preco)}</Text>;
+}

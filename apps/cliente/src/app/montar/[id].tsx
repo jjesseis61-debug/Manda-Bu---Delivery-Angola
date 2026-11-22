@@ -258,8 +258,8 @@ export default function MontarPrato() {
             const satisfeito = g.minimo > 0 && noGrupo >= g.minimo;
             return (
               <View key={g.id} style={{ gap: espaco.s }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginTop: espaco.s }}>
-                  <Text style={{ color: cores.marca, fontSize: 14, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.3 }}>{g.nome}</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'baseline', columnGap: espaco.s, marginTop: espaco.s }}>
+                  <Text style={{ color: cores.marca, fontSize: 14, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.3, flexShrink: 1 }}>{g.nome}</Text>
                   <Text style={{ color: cores.textoSuave, fontSize: 12, textTransform: 'lowercase' }}>{regraGrupo(g)}{satisfeito ? ' ✓' : ''}</Text>
                 </View>
                 {g.opcoes.map((o) => {
@@ -388,7 +388,9 @@ export default function MontarPrato() {
             {esgotados.length === 0 && faltam.length === 0 && abaixoMinimo && (
               <View style={{ backgroundColor: cores.marcaClara, borderLeftWidth: 4, borderLeftColor: cores.marca, borderRadius: 8, padding: espaco.s }}>
                 <Text style={{ fontSize: 12, fontWeight: '600', color: cores.marcaEscura }}>
-                  Falta {formatarKz(minimo - total)} para o mínimo de {formatarKz(minimo)}.
+                  {total <= 0
+                    ? `Escolhe pelo menos ${formatarKz(minimo)} para servir.`
+                    : `Falta ${formatarKz(minimo - total)} para o mínimo de ${formatarKz(minimo)}.`}
                 </Text>
               </View>
             )}
@@ -406,7 +408,9 @@ export default function MontarPrato() {
                   ? 'Esgotado'
                   : pendente && pendente.qtd > 1
                     ? `Adicionar ${pendente.qtd}× · ${formatarKz(total * pendente.qtd)}`
-                    : `Adicionar · ${formatarKz(total)}`
+                    : total > 0
+                      ? `Adicionar · ${formatarKz(total)}`
+                      : 'Adicionar'
               }
               desactivado={faltam.length > 0 || esgotados.length > 0 || abaixoMinimo}
               aoCarregar={() => {

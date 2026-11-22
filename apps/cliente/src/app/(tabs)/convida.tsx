@@ -7,7 +7,7 @@ import { PartilharCodigo } from '@/components/PartilharCodigo';
 import { PessoasComoTu } from '@/components/PessoasComoTu';
 import { ACarregar, Aviso, Botao, Cartao, Ecra, Linha, Paragrafo, Subtitulo } from '@/components/ui';
 import { lerSaldo, meusAmigos } from '@/lib/api';
-import { formatarData, formatarKz, mensagemErro, textoAmigo } from '@/lib/formatar';
+import { formatarData, formatarKz, mensagemErro, semGanhos, textoAmigo, textoPrimeiroGanho } from '@/lib/formatar';
 import { useSessao } from '@/lib/sessao';
 import { cores } from '@/lib/tema';
 import type { Amigo, Saldo } from '@/lib/tipos';
@@ -87,7 +87,14 @@ function ConvidaCliente() {
 
       {erro && <Aviso tipo="erro">{erro}</Aviso>}
 
-      {saldo && (
+      {saldo && semGanhos(saldo) && (
+        <Cartao>
+          {/* Sem ganhos ainda: em vez de três «0 Kz», diz o que falta para o primeiro (meta próxima) */}
+          <Text style={{ fontSize: 16, fontWeight: '700', color: cores.texto }}>🎯 Ainda sem ganhos</Text>
+          <Text style={{ color: cores.textoSuave }}>{textoPrimeiroGanho(activos, !!parametros?.comissao_primeiro_pedido)}</Text>
+        </Cartao>
+      )}
+      {saldo && !semGanhos(saldo) && (
         <Cartao>
           <Linha esquerda="Ganho hoje" direita={formatarKz(saldo.ganho_hoje)} />
           <Linha esquerda="Ganho esta semana" direita={formatarKz(saldo.ganho_semana)} />
@@ -126,7 +133,7 @@ function ConvidaCliente() {
         <Paragrafo suave>Ainda não convidaste ninguém — partilha o teu código acima.</Paragrafo>
       ) : (
         activos.map((a, i) => (
-          <Linha key={`${a.primeiro_nome}-${i}`} esquerda={textoAmigo(a.primeiro_nome, a.estado, a.dias_restantes)} direita={formatarKz(a.ganho_total)} />
+          <Linha key={`${a.primeiro_nome}-${i}`} esquerda={textoAmigo(a.primeiro_nome, a.estado, a.dias_restantes)} direita={a.ganho_total > 0 ? formatarKz(a.ganho_total) : '—'} />
         ))
       )}
       {expirados.length > 0 && (

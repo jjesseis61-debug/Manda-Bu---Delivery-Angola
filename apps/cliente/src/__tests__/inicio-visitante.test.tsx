@@ -1,4 +1,5 @@
 /// <reference types="jest" />
+import { Tabs } from 'expo-router/js-tabs';
 import { act, fireEvent, renderRouter } from 'expo-router/testing-library';
 import { Text } from 'react-native';
 
@@ -59,10 +60,13 @@ beforeEach(() => {
 });
 
 test('sem conta, o Início abre com o cardápio e as cozinhas, sem pedir o número', async () => {
-  const ecra = renderRouter({ inicio: Inicio }, { initialUrl: '/inicio' });
+  const ecra = renderRouter({ _layout: () => <Tabs />, inicio: Inicio }, { initialUrl: '/inicio' });
   await act(async () => undefined);
   expect(ecra.getByText('Muamba')).toBeTruthy();
+  // O balcão escolhe-se no título («📍 Viana ▾») e abre a lista «De onde queres pedir?»
+  fireEvent.press(ecra.getByLabelText('A pedir de Viana. Toca para mudar'));
   expect(ecra.getByText('📍 De onde queres pedir?')).toBeTruthy();
+  expect(ecra.getByText('Rangel')).toBeTruthy();
   expect(ecra.queryByText(/adiciona o endereço/)).toBeNull();
   expect(ecra.getByText('desde 3.500 Kz')).toBeTruthy(); // como no Início com conta
   fireEvent.press(ecra.getAllByText('Adicionar')[0]);

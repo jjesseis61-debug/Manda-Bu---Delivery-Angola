@@ -73,9 +73,25 @@ function PedidosConta() {
                 Agendado: {rotuloAgendamento(p.agendado_para)}
               </Text>
             )}
-            {TERMINADO.includes(p.estado) && (
-              <Botao titulo="Pedir de novo" variante="texto" aCarregar={aRepetir === p.id} aoCarregar={() => pedirDeNovo(p)} />
-            )}
+            {p.estado === 'cancelado' && p.motivo_cancelamento ? (
+              <Text style={{ color: cores.textoSuave, fontSize: 13 }}>Motivo: {p.motivo_cancelamento}</Text>
+            ) : null}
+            {/* Repetir em destaque só nos entregues; num cancelado fica discreto (não é «o habitual») */}
+            {TERMINADO.includes(p.estado) &&
+              (p.estado === 'cancelado' ? (
+                <Pressable
+                  accessibilityRole="button"
+                  hitSlop={8}
+                  disabled={aRepetir === p.id}
+                  onPress={() => void pedirDeNovo(p)}
+                  style={{ alignSelf: 'flex-end' }}>
+                  <Text style={{ color: cores.textoSuave, fontWeight: '600', textDecorationLine: 'underline' }}>
+                    {aRepetir === p.id ? 'A preparar…' : 'Pedir de novo'}
+                  </Text>
+                </Pressable>
+              ) : (
+                <Botao titulo="Pedir de novo" variante="texto" aCarregar={aRepetir === p.id} aoCarregar={() => pedirDeNovo(p)} />
+              ))}
           </Cartao>
         </Pressable>
       ))}
