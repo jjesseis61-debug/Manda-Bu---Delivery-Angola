@@ -33,8 +33,8 @@ export default function Grupos() {
   return (
     <Ecra>
       <Paragrafo>
-        Organiza o almoço com os colegas: cada um escolhe e paga o seu pedido e chega tudo junto, numa só entrega. A taxa de entrega
-        é dividida por todos.
+        Organiza o almoço com os colegas, a família, os vizinhos ou o grupo da igreja: cada um escolhe o seu prato e chega tudo junto,
+        numa só entrega. A taxa de entrega é dividida por todos.
       </Paragrafo>
       <Botao titulo="Criar pedido de grupo" aoCarregar={() => router.push('/grupo/novo')} />
       {erro && <Aviso tipo="erro">{erro}</Aviso>}

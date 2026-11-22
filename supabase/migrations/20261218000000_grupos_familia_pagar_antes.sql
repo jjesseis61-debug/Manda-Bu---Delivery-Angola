@@ -259,6 +259,7 @@ declare
     jsonb_build_array('grupos_operador(date)', '- x.pago_pacote)::int', '- x.pago_pacote - x.pago_antes)::int'),
     jsonb_build_array('grupos_operador(date)', '- x.pago_pacote), 0)::int', '- x.pago_pacote - x.pago_antes), 0)::int'),
     jsonb_build_array('grupos_operador(date)', '''modo_pagamento'', g.modo_pagamento,', '''modo_pagamento'', g.modo_pagamento, ''tipo'', g.tipo,'),
+    jsonb_build_array('grupo_detalhe(text)', '''modo_pagamento'', g.modo_pagamento,', '''modo_pagamento'', g.modo_pagamento, ''tipo'', g.tipo,'),
     jsonb_build_array('usar_credito(uuid,integer)', '- ped.pago_pacote then', '- ped.pago_pacote - ped.pago_antes then'),
     -- a venda leva a parte paga antes como forma de pagamento (não é dinheiro da caixa)
     jsonb_build_array('gerar_venda_pedido()', '    || case when new.valor_empresa > 0',

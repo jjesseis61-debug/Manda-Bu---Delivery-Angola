@@ -40,6 +40,10 @@ import type {
   ReceitaResumo,
   Saldo,
   Zona,
+  MetodoAntes,
+  ModoGrupo,
+  PagamentoAntes,
+  TipoGrupo,
 } from './tipos';
 
 function verificar<T>(resultado: { data: T | null; error: { message: string } | null }): T {
@@ -616,6 +620,16 @@ export async function visitaExperiencia(experiencia: 'fotos_inicio', segundosAte
   return (verificar(await supabase.rpc('visita_experiencia', args)) as 'A' | 'B' | null) ?? null;
 }
 
+/** Pagar a parte antes: o que se pode fazer neste pedido e o estado do último envio */
+export async function meuPagamentoAntes(pedidoId: string): Promise<PagamentoAntes> {
+  return verificar(await supabase.rpc('meu_pagamento_antes', { p_pedido: pedidoId })) as PagamentoAntes;
+}
+
+/** «Já paguei»: fica a confirmar pelas Finanças */
+export async function pagarAntes(pedidoId: string, metodo: MetodoAntes, referencia: string): Promise<void> {
+  verificar(await supabase.rpc('pagar_antes', { p_pedido: pedidoId, p_metodo: metodo, p_referencia: referencia }));
+}
+
 export async function registarPartilha(): Promise<void> {
   verificar(await supabase.rpc('registar_partilha'));
 }
@@ -649,7 +663,8 @@ export async function criarGrupo(dados: {
   pontoEntregaId: string;
   horaEntrega: string;
   prazoAdesao: string;
-  modo: 'individual' | 'empresa';
+  modo: ModoGrupo;
+  tipo: TipoGrupo;
   cozinhaId?: string | null;
 }): Promise<string> {
   const r = await supabase
@@ -660,6 +675,7 @@ export async function criarGrupo(dados: {
       hora_entrega: dados.horaEntrega,
       prazo_adesao: dados.prazoAdesao,
       modo_pagamento: dados.modo,
+      tipo: dados.tipo,
       dispositivo_id: await dispositivoId(),
     })
     .select('codigo_convite')

@@ -204,6 +204,9 @@ describe('pedidos de grupo (C12, C13)', () => {
   it('mensagem de partilha do grupo', () => {
     expect(mensagemGrupo('12h30', 'Edifício Kilamba', 'mandabue://grupo/G-ABC123')).toBe(
       'Vamos pedir juntos o almoço na Cozinha da Alexandra! Entrega às 12h30 em Edifício Kilamba. Junta o teu pedido: mandabue://grupo/G-ABC123',
+    );    // Em família: a frase do convite muda (unidade)
+    expect(mensagemGrupo('13h00', 'Casa da avó', 'mandabue://grupo/G-F1', 'familia')).toBe(
+      'Almoço de família na Cozinha da Alexandra! Cada um escolhe o seu prato. Entrega às 13h00 em Casa da avó. Junta o teu pedido: mandabue://grupo/G-F1',
     );
   });
 });

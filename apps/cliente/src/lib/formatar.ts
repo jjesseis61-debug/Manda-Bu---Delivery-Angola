@@ -1,4 +1,4 @@
-import type { Amigo, EstadoPedido, Parametros, Saldo } from './tipos';
+import type { Amigo, EstadoPedido, MetodoAntes, ModoGrupo, Parametros, Saldo, TipoGrupo } from './tipos';
 
 /** 125 -> "2:05" (contagem decrescente, minutos:segundos) */
 export function minutosSegundos(segundos: number): string {
@@ -43,10 +43,31 @@ export function tempoEmFalta(iso: string, agora: Date = new Date()): string | nu
   return `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, '0')} min`;
 }
 
+/** Onde se junta o grupo: o rótulo e a frase do convite (Cialdini: unidade — «a nossa família») */
+export const TIPOS_GRUPO: { valor: TipoGrupo; rotulo: string; convite: string }[] = [
+  { valor: 'trabalho', rotulo: '💼 Trabalho', convite: 'Vamos pedir juntos o almoço na Cozinha da Alexandra!' },
+  { valor: 'familia', rotulo: '👨‍👩‍👧 Família', convite: 'Almoço de família na Cozinha da Alexandra! Cada um escolhe o seu prato.' },
+  { valor: 'vizinhos', rotulo: '🏘️ Vizinhos', convite: 'Vizinhos, vamos pedir juntos na Cozinha da Alexandra e dividir a entrega!' },
+  { valor: 'igreja', rotulo: '⛪ Igreja', convite: 'Almoço do nosso grupo da igreja na Cozinha da Alexandra! Cada um escolhe o seu prato.' },
+];
+
 /** Mensagem de partilha do grupo (C12) */
-export function mensagemGrupo(hora: string, local: string | null, link: string): string {
-  return `Vamos pedir juntos o almoço na Cozinha da Alexandra! Entrega às ${hora}${local ? ` em ${local}` : ''}. Junta o teu pedido: ${link}`;
+export function mensagemGrupo(hora: string, local: string | null, link: string, tipo: TipoGrupo = 'trabalho'): string {
+  const abertura = (TIPOS_GRUPO.find((t) => t.valor === tipo) ?? TIPOS_GRUPO[0]).convite;
+  return `${abertura} Entrega às ${hora}${local ? ` em ${local}` : ''}. Junta o teu pedido: ${link}`;
 }
+
+/** Quem paga no grupo, em poucas palavras */
+export const nomeModoGrupo: Record<ModoGrupo, string> = {
+  individual: 'cada um paga a sua parte',
+  quem_recebe: 'quem recebe paga tudo na entrega',
+  empresa: 'a empresa paga tudo',
+};
+
+export const nomeMetodoAntes: Record<MetodoAntes, string> = {
+  multicaixa_express: 'Multicaixa Express',
+  unitel_money: 'Unitel Money',
+};
 
 /** "★ 4,5 · 12 avaliações" */
 /** Texto da média de avaliações (sem a estrela — essa é um ícone dourado, ver MediaAvaliacao) */
@@ -243,7 +264,13 @@ const mensagens: Record<string, string> = {
   prato_fora_do_pedido: 'Só podes avaliar os pratos deste pedido.',
   limite_fotos: 'Podes juntar no máximo 2 fotos.',
   // pedidos de grupo (C12, C13)
-  grupo_ponto_invalido: 'O grupo é entregue num dos teus endereços de trabalho. Escolhe um endereço do tipo Trabalho.',
+  grupo_ponto_invalido: 'Escolhe um dos teus endereços. Para a empresa pagar, tem de ser um endereço do tipo Trabalho.',
+  pagar_antes_indisponivel: 'Neste grupo paga-se na entrega.',
+  pedido_ja_nao_aceita_pagamento: 'Este pedido já saiu para entrega: paga ao estafeta.',
+  pedido_ja_pago: 'Este pedido já está pago.',
+  pagamento_ja_enviado: 'Já enviaste um pagamento: está a ser confirmado.',
+  referencia_invalida: 'Escreve a referência da transferência (pelo menos 4 letras ou algarismos).',
+  referencia_ja_usada: 'Esta referência já foi usada noutro pagamento. Confirma-a no teu comprovativo.',
   grupo_horas_invalidas: 'O prazo para aderir tem de ser no futuro e pelo menos 15 minutos antes da entrega.',
   grupo_empresa_invalida: 'Só uma conta Empresa pode pagar o pedido de todo o grupo.',
   grupo_fechado: 'Este grupo já fechou. Já não é possível juntar pedidos.',

@@ -158,6 +158,27 @@ export type Orcamento = {
 
 export type EstadoGrupo = 'aberto' | 'fechado' | 'em_preparacao' | 'entregue' | 'cancelado';
 
+/** Quem paga no grupo: cada um a sua parte (antes, por transferência), quem recebe tudo, ou a empresa */
+export type ModoGrupo = 'individual' | 'quem_recebe' | 'empresa';
+export type TipoGrupo = 'trabalho' | 'familia' | 'vizinhos' | 'igreja';
+
+/** Pagar a parte antes da entrega (Multicaixa Express / Unitel Money), confirmado pelas Finanças */
+export type MetodoAntes = 'multicaixa_express' | 'unitel_money';
+export type PagamentoAntes = {
+  modo: ModoGrupo | null;
+  pode: boolean;
+  falta: number;
+  pago_antes: number;
+  ultimo: {
+    estado: 'pendente' | 'confirmado' | 'rejeitado' | 'devolvido';
+    valor: number;
+    metodo: MetodoAntes;
+    referencia: string;
+    motivo: string | null;
+    criado_em: string;
+  } | null;
+};
+
 /** C13: o grupo visto pelos colegas (primeiros nomes, sem ids de clientes) */
 export type GrupoDetalhe = {
   grupo_id: string;
@@ -167,7 +188,9 @@ export type GrupoDetalhe = {
   hora_entrega: string;
   prazo_adesao: string;
   estado: EstadoGrupo;
-  modo_pagamento: 'individual' | 'empresa';
+  modo_pagamento: ModoGrupo;
+  /** Onde se junta o grupo (desde 12/2026: também em casa) */
+  tipo?: TipoGrupo;
   local: string | null;
   organizador: string;
   sou_organizador: boolean;

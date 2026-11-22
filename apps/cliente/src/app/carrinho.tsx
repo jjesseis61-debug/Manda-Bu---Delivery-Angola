@@ -193,7 +193,7 @@ function CarrinhoConta() {
       {grupo && (
         <Cartao>
           <Text style={{ fontWeight: '700' }}>Pedido de grupo · entrega às {grupo.hora}</Text>
-          <Paragrafo suave>Chega com os pedidos dos colegas, no local do grupo.</Paragrafo>
+          <Paragrafo suave>Chega com os pedidos dos outros, no local do grupo.</Paragrafo>
           <Botao titulo="Pedir só para mim" variante="texto" aoCarregar={() => carrinho.definirGrupo(null)} />
         </Cartao>
       )}

@@ -652,10 +652,10 @@ export default function Inicio() {
         )}
         {ligada('pedidos_grupo') && !carrinho.grupo && (
           <Botao
-            titulo="Pedido de grupo com os colegas"
+            titulo="Pedido de grupo (colegas, família, vizinhos)"
             variante="secundario"
             aoCarregar={() =>
-              visitante ? setLogin({ motivo: 'Entra para fazeres um pedido de grupo com os colegas.', destino: '/grupos' }) : router.push('/grupos')
+              visitante ? setLogin({ motivo: 'Entra para fazeres um pedido de grupo.', destino: '/grupos' }) : router.push('/grupos')
             }
           />
         )}

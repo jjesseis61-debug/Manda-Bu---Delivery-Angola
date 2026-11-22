@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 
 import { AcompanharEntrega } from '@/components/AcompanharEntrega';
+import { PagarAntes } from '@/components/PagarAntes';
 import { PartilharCodigo } from '@/components/PartilharCodigo';
 import { PessoasComoTu } from '@/components/PessoasComoTu';
 import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Linha, Paragrafo, Subtitulo } from '@/components/ui';
@@ -158,6 +159,11 @@ export default function PedidoDetalhe() {
             ? `O teu pedido vai atrasar${atraso.mais_minutos ? ` cerca de ${atraso.mais_minutos} minutos` : ''}: ${atraso.motivo}. Pedimos desculpa pela espera.`
             : 'O teu pedido está a demorar mais do que o previsto. Já avisámos a cozinha.'}
         </Aviso>
+      )}
+
+      {/* Pedido de grupo em que cada um paga a sua parte: pagar antes por transferência */}
+      {['pendente', 'confirmado', 'em_preparacao', 'em_entrega'].includes(pedido.estado) && (
+        <PagarAntes pedidoId={pedido.id} />
       )}
 
       {/* I11: estafeta no mapa enquanto o pedido está a caminho */}
