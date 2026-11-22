@@ -1462,6 +1462,28 @@ export async function guardarReceita(
   return criada.id;
 }
 
+/** Pratos (de qualquer cozinha) que fazem a receita: o «Pedir» do cliente escolhe entre eles */
+export type PratoDaReceita = { cardapio_id: string; nome: string; preco: number; cozinha_id: string; cozinha_nome: string; disponivel: boolean };
+export async function pratosDaReceita(receitaId: string): Promise<PratoDaReceita[]> {
+  return (verificar(await supabase.rpc('receita_pratos_gerir', { p_receita: receitaId })) as PratoDaReceita[]) ?? [];
+}
+export async function guardarPratosDaReceita(receitaId: string, cardapioIds: string[]): Promise<number> {
+  return verificar(await supabase.rpc('receita_guardar_pratos', { p_receita: receitaId, p_cardapio: cardapioIds })) as number;
+}
+
+/** Números de cada receita: aberturas, toques em «Pedir», pedidos que vieram dela, «quero que façam» e quem a faz */
+export type MetricasReceita = { aberturas: number; toques: number; pedidos: number; interessados: number; cozinhas: string[] };
+export async function metricasReceitas(): Promise<Record<string, MetricasReceita>> {
+  return (verificar(await supabase.rpc('receitas_metricas')) as Record<string, MetricasReceita>) ?? {};
+}
+
+/** Todos os pratos de todas as cozinhas (para ligar a uma receita) */
+export async function lerTodosPratos(): Promise<PratoCardapio[]> {
+  return verificar(
+    await supabase.from('cardapio').select('id, cozinha_id, nome, preco, disponivel, visivel_online').is('deletado_em', null).order('nome'),
+  ) as PratoCardapio[];
+}
+
 export async function definirFotoReceita(id: string, foto_url: string | null): Promise<void> {
   verificar(await supabase.from('receitas').update({ foto_url, atualizado_em: new Date().toISOString() }).eq('id', id));
 }

@@ -1,24 +1,29 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { FotoEditavel } from '@/components/FotoEditavel';
 import { Guarda } from '@/components/Guarda';
-import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Escolha, Paragrafo, Subtitulo } from '@/components/ui';
+import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Paragrafo, Subtitulo } from '@/components/ui';
 import {
   arquivarReceita,
   avisarNovaReceita,
   definirFotoReceita,
   gerarRascunhoReceita,
+  guardarPratosDaReceita,
   guardarReceita,
   iaDasReceitasLigada,
   lerCozinhas,
   lerReceitasGerir,
+  lerTodosPratos,
+  metricasReceitas,
+  pratosDaReceita,
   publicarReceita,
+  type MetricasReceita,
 } from '@/lib/api';
-import { mensagemErro } from '@/lib/formatar';
+import { formatarKz, mensagemErro } from '@/lib/formatar';
 import { cores, espaco } from '@/lib/tema';
-import type { Cozinha, Receita } from '@/lib/tipos';
+import type { Cozinha, PratoCardapio, Receita } from '@/lib/tipos';
 
 const ESTADO: Record<Receita['estado'], string> = {
   rascunho: 'Rascunho',
@@ -39,6 +44,11 @@ export default function Receitas() {
   const [aGerar, setAGerar] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
   const [iaLigada, setIaLigada] = useState(false);
+  const [metricas, setMetricas] = useState<Record<string, MetricasReceita>>({});
+  // Pratos que fazem a receita (de qualquer cozinha): o «Pedir» do cliente escolhe o do balcão dele
+  const [pratos, setPratos] = useState<PratoCardapio[]>([]);
+  const [escolhidos, setEscolhidos] = useState<string[]>([]);
+  const [filtro, setFiltro] = useState('');
 
   const carregar = useCallback(() => {
     Promise.all([lerReceitasGerir(), lerCozinhas(), iaDasReceitasLigada()])
@@ -48,9 +58,20 @@ export default function Receitas() {
         setIaLigada(ia);
       })
       .catch((e) => setErro(mensagemErro(e)));
+    // Métricas e pratos falham em silêncio (servidor antigo): o resto do ecrã funciona
+    metricasReceitas().then(setMetricas).catch(() => setMetricas({}));
+    lerTodosPratos().then(setPratos).catch(() => setPratos([]));
   }, []);
 
   useFocusEffect(useCallback(() => carregar(), [carregar]));
+
+  /** Abre o editor e carrega os pratos ligados à receita */
+  function abrir(e: Edicao) {
+    setEdicao(e);
+    setFiltro('');
+    setEscolhidos([]);
+    if (e.id) pratosDaReceita(e.id).then((ps) => setEscolhidos(ps.map((p) => p.cardapio_id))).catch(() => undefined);
+  }
 
   async function guardar() {
     if (!edicao) return;
@@ -66,8 +87,10 @@ export default function Receitas() {
         titulo: edicao.titulo.trim(),
         resumo: edicao.resumo.trim() || null,
         corpo: edicao.corpo.trim(),
-        cozinha_id: edicao.cozinha_id || null,
+        // Para as apps antigas (botão com uma cozinha fixa): a cozinha do primeiro prato escolhido
+        cozinha_id: pratos.find((p) => p.id === escolhidos[0])?.cozinha_id ?? null,
       });
+      await guardarPratosDaReceita(id, escolhidos);
       // Fica em edição com o id, para já poder anexar a foto
       setEdicao({ ...edicao, id });
       carregar();
@@ -91,7 +114,7 @@ export default function Receitas() {
       setLista(rs);
       setTema('');
       const r = rs.find((x) => x.id === id);
-      if (r) setEdicao({ id: r.id, titulo: r.titulo, resumo: r.resumo ?? '', corpo: r.corpo, cozinha_id: r.cozinha_id ?? '', foto_url: r.foto_url });
+      if (r) abrir({ id: r.id, titulo: r.titulo, resumo: r.resumo ?? '', corpo: r.corpo, cozinha_id: r.cozinha_id ?? '', foto_url: r.foto_url });
     } catch (e) {
       setErro(mensagemErro(e));
     } finally {
@@ -116,7 +139,14 @@ export default function Receitas() {
 
   // ---- Editor ----
   if (edicao) {
-    const opcoesCozinha = [{ valor: '', rotulo: 'Sem cozinha (sem botão de pedir)' }, ...cozinhas.map((c) => ({ valor: c.id, rotulo: c.nome }))];
+    const nomeCozinha = (id: string) => cozinhas.find((c) => c.id === id)?.nome ?? '';
+    const termo = filtro.trim().toLowerCase();
+    const visiveis = [
+      ...pratos.filter((p) => escolhidos.includes(p.id)),
+      ...(termo.length >= 2
+        ? pratos.filter((p) => !escolhidos.includes(p.id) && `${p.nome} ${nomeCozinha(p.cozinha_id)}`.toLowerCase().includes(termo)).slice(0, 20)
+        : []),
+    ];
     return (
       <Guarda permissoes={['receitas.gerir']}>
         <Ecra>
@@ -133,8 +163,31 @@ export default function Receitas() {
             numberOfLines={10}
             style={{ minHeight: 160, textAlignVertical: 'top' }}
           />
-          <Text style={{ fontWeight: '700' }}>Quem faz por ti (CTA)</Text>
-          <Escolha opcoes={opcoesCozinha} valor={edicao.cozinha_id} aoMudar={(v) => setEdicao({ ...edicao, cozinha_id: v })} />
+          <Text style={{ fontWeight: '700' }}>Pratos que fazem esta receita</Text>
+          <Paragrafo suave>
+            Escolhe o prato em cada cozinha que o vende. O cliente pede no balcão dele; se lá não houver, no mais perto que o faça.
+          </Paragrafo>
+          <Campo rotulo="Procurar prato ou cozinha" value={filtro} onChangeText={setFiltro} placeholder="Ex.: mufete" />
+          {visiveis.map((p) => {
+            const marcado = escolhidos.includes(p.id);
+            return (
+              <Pressable
+                key={p.id}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: marcado }}
+                onPress={() => setEscolhidos(marcado ? escolhidos.filter((x) => x !== p.id) : [...escolhidos, p.id])}
+                style={{ flexDirection: 'row', gap: espaco.s, paddingVertical: 6 }}>
+                <Text style={{ fontSize: 16 }}>{marcado ? '☑' : '☐'}</Text>
+                <Text style={{ flex: 1, color: p.disponivel ? cores.texto : cores.textoSuave }}>
+                  {p.nome} · {nomeCozinha(p.cozinha_id)} · {formatarKz(p.preco)}
+                  {p.disponivel ? '' : ' (indisponível)'}
+                </Text>
+              </Pressable>
+            );
+          })}
+          {escolhidos.length === 0 && (
+            <Aviso>Nenhum prato escolhido: o cliente vê «Quero que façam» em vez de «Pedir» (e tu vês quantos o querem).</Aviso>
+          )}
           <Botao titulo={edicao.id ? 'Guardar alterações' : 'Guardar (para poder pôr foto)'} aCarregar={ocupado} aoCarregar={guardar} />
           {edicao.id ? (
             <FotoEditavel
@@ -162,7 +215,7 @@ export default function Receitas() {
       <Ecra>
         {erro && <Aviso tipo="erro">{erro}</Aviso>}
         {aviso && <Aviso>{aviso}</Aviso>}
-        <Botao titulo="Nova receita" aoCarregar={() => setEdicao(VAZIA)} />
+        <Botao titulo="Nova receita" aoCarregar={() => abrir(VAZIA)} />
         {iaLigada && (
           <Cartao>
             <Campo rotulo="Gerar rascunho com IA" value={tema} onChangeText={setTema} placeholder="Tema ou prato (ex.: Calulu de peixe)" />
@@ -178,13 +231,23 @@ export default function Receitas() {
               <Text style={{ color: r.estado === 'publicada' ? cores.marca : cores.textoSuave, fontWeight: '600' }}>{ESTADO[r.estado]}</Text>
             </View>
             {r.resumo ? <Text style={{ color: cores.textoSuave }}>{r.resumo}</Text> : null}
+            {metricas[r.id] && (
+              <>
+                <Text style={{ color: cores.textoSuave, fontSize: 13 }}>
+                  {`${metricas[r.id].aberturas} aberturas · ${metricas[r.id].toques} tocaram em «Pedir» · ${metricas[r.id].pedidos} pedidos · ${metricas[r.id].interessados} querem que façam`}
+                </Text>
+                <Text style={{ color: metricas[r.id].cozinhas.length > 0 ? cores.textoSuave : cores.aviso, fontSize: 13 }}>
+                  {metricas[r.id].cozinhas.length > 0 ? `Feita por: ${metricas[r.id].cozinhas.join(', ')}` : '⚠ Nenhuma cozinha faz este prato'}
+                </Text>
+              </>
+            )}
             <View style={{ flexDirection: 'row', gap: espaco.s, flexWrap: 'wrap', marginTop: espaco.s }}>
               <View style={{ flex: 1 }}>
                 <Botao
                   titulo="Editar"
                   variante="leve"
                   desactivado={ocupado}
-                  aoCarregar={() => setEdicao({ id: r.id, titulo: r.titulo, resumo: r.resumo ?? '', corpo: r.corpo, cozinha_id: r.cozinha_id ?? '', foto_url: r.foto_url })}
+                  aoCarregar={() => abrir({ id: r.id, titulo: r.titulo, resumo: r.resumo ?? '', corpo: r.corpo, cozinha_id: r.cozinha_id ?? '', foto_url: r.foto_url })}
                 />
               </View>
               <View style={{ flex: 1 }}>
