@@ -73,6 +73,7 @@ export const ecras: EntradaMenu[] = [
   { rota: '/rh-parametros', grupos: ['equipa'], titulo: 'Tabela do IRT e Segurança Social', descricao: 'Taxas, isenções e escalões do IRT (editáveis quando a lei mudar)', permissoes: ['rh.salarios'] },
   { rota: '/estimulos', grupos: ['equipa'], titulo: 'Estímulos do mês', descricao: 'Desempenho, metas e bónus da equipa e dos melhores clientes', permissoes: ['equipa.gerir'] },
   { rota: '/acertos', grupos: ['financas'], titulo: 'Acertos com as cozinhas', descricao: 'Semana a semana: comissão e entregas a receber, Convida e pacotes a pagar', permissoes: ['financas.acertos', 'relatorios.exportar'] },
+  { rota: '/pagamentos-antes', grupos: ['financas'], titulo: 'Pagamentos antes', descricao: 'Grupos em que cada um paga a sua parte: confirmar, rejeitar ou devolver', permissoes: ['financas.acertos'] },
   { rota: '/faturas', grupos: ['financas'], titulo: 'Faturas das vendas', descricao: 'Vendas entregues sem número de fatura (plataforma ou cozinha)', permissoes: ['financas.faturas', 'pedidos.gerir'] },
   { rota: '/compensacoes', grupos: ['financas'], titulo: 'Compensações', descricao: 'Pagar aos clientes o que se decidiu nas reclamações; a cargo de quem', permissoes: ['financas.compensacoes'] },
   { rota: '/contas-empresas', grupos: ['financas'], titulo: 'Contas das empresas', descricao: 'Fatura do mês de cada empresa (B2B), vencimento e pagamento', permissoes: ['financas.empresas'] },

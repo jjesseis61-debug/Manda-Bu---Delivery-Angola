@@ -52,12 +52,12 @@ test('poucos atalhos: lista simples, sem grupos nem pesquisa', async () => {
 test('muitos atalhos: grupos fechados, abrir, favoritos e pesquisa', async () => {
   mockPermissoes = ['financas.conferir', 'financas.acertos', 'financas.faturas', 'financas.compensacoes', 'financas.empresas', 'financas.estafetas', 'financas.servico_entregas', 'financas.resultados', 'financas.obrigacoes', 'pedidos.gerir', 'plataforma.parametros'];
   const ecra = renderRouter({ inicio: Inicio }, { initialUrl: '/inicio' });
-  await waitFor(() => expect(ecra.getByText('Finanças (9)')).toBeTruthy());
+  await waitFor(() => expect(ecra.getByText('Finanças (10)')).toBeTruthy());
   // grupos vazios não aparecem
   expect(ecra.queryByText(/^Recursos humanos \(/)).toBeNull();
   expect(ecra.getByText('Programa Convida (1)')).toBeTruthy();
   expect(ecra.queryByText('Resultados do mês')).toBeNull();
-  fireEvent.press(ecra.getByText('Finanças (9)'));
+  fireEvent.press(ecra.getByText('Finanças (10)'));
   expect(ecra.getByText('Resultados do mês')).toBeTruthy();
   await waitFor(async () => expect(await AsyncStorage.getItem('op.grupos_abertos')).toBe('["financas"]'));
 

@@ -10,6 +10,13 @@ import { useSessao } from '@/lib/sessao';
 import { cores, espaco } from '@/lib/tema';
 import type { GrupoOperador } from '@/lib/tipos';
 
+const TIPO_GRUPO = { trabalho: '💼 Trabalho', familia: '👨‍👩‍👧 Família', vizinhos: '🏘️ Vizinhos', igreja: '⛪ Igreja' } as const;
+const MODO_GRUPO: Record<string, string> = {
+  individual: 'cada um paga a sua parte (ver «Pagamentos antes»)',
+  quem_recebe: 'quem recebe paga tudo na entrega',
+  empresa: 'a empresa paga tudo',
+};
+
 /** O10. Grupos do dia: todos os pedidos juntos para a preparação e a expedição */
 export default function Grupos() {
   const { pode } = useSessao();
@@ -93,7 +100,7 @@ export default function Grupos() {
               <Text style={{ color: cores.textoSuave }}>
                 Organizador: {g.organizador}
                 {g.organizador_telefone ? ` · ${g.organizador_telefone}` : ''} ·{' '}
-                {g.modo_pagamento === 'empresa' ? 'a empresa paga tudo' : 'cada um paga o seu'}
+                {TIPO_GRUPO[g.tipo ?? 'trabalho']} · {MODO_GRUPO[g.modo_pagamento] ?? g.modo_pagamento}
                 {g.estado === 'aberto' ? ` · adesão até às ${horaLuanda(g.prazo_adesao)}` : ''}
               </Text>
 

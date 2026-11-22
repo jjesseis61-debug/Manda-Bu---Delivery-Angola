@@ -97,7 +97,8 @@ export default function Entrega() {
 
   function comecarFecho() {
     if (!pedido) return;
-    setParcelas([novaParcela(pedido.a_pagar)]);
+    // Já pago antes (transferência confirmada, pacote…): não há nada a cobrar
+    setParcelas(pedido.a_pagar > 0 ? [novaParcela(pedido.a_pagar)] : []);
     const daCozinha = caixas.filter((c) => c.cozinha_id === pedido.cozinha_id);
     setCaixa(daCozinha[0]?.id ?? null);
     setAFechar(true);
@@ -162,7 +163,8 @@ export default function Entrega() {
   const local = pedido.ponto_referencia || pedido.zona_nome || 'Ponto de entrega';
   const hp = horaPrometida(pedido.hora_prometida);
   const daCozinha = caixas.filter((c) => c.cozinha_id === pedido.cozinha_id);
-  const podeEntregar = parcelas.length > 0 && parcelas.every(parcelaCompleta) && !!caixa;
+  const jaPago = pedido.a_pagar <= 0;
+  const podeEntregar = (jaPago || (parcelas.length > 0 && parcelas.every(parcelaCompleta))) && !!caixa;
 
   return (
     <Guarda permissoes={['entregas.registar']}>
@@ -236,6 +238,7 @@ export default function Entrega() {
               <Escolha opcoes={daCozinha.map((c) => ({ valor: c.id, rotulo: c.posto }))} valor={caixa ?? ''} aoMudar={setCaixa} />
             )}
 
+            {jaPago && <Aviso tipo="sucesso">✓ Já está pago. Não cobres nada ao cliente.</Aviso>}
             {parcelas.map((x, i) => (
               <Cartao key={i} estilo={{ gap: espaco.xs }}>
                 <Escolha opcoes={METODOS.map((m) => ({ valor: m, rotulo: m }))} valor={x.metodo} aoMudar={(m) => setParcelas((ps) => ps.map((y, j) => (j === i ? { ...y, metodo: m } : y)))} />
@@ -258,7 +261,7 @@ export default function Entrega() {
               </Cartao>
             ))}
 
-            <Botao titulo="+ Outro pagamento" variante="texto" aoCarregar={() => setParcelas((ps) => [...ps, novaParcela(0)])} />
+            {!jaPago && <Botao titulo="+ Outro pagamento" variante="texto" aoCarregar={() => setParcelas((ps) => [...ps, novaParcela(0)])} />}
             {!podeEntregar && <Aviso>Confirma a caixa, o valor e (nos electrónicos) a referência e a foto.</Aviso>}
             <Botao titulo="Confirmar entrega" aCarregar={ocupado} desactivado={!podeEntregar} aoCarregar={entregar} />
             <Botao titulo="Cancelar" variante="texto" aoCarregar={() => setAFechar(false)} />

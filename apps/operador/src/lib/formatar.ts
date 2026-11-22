@@ -193,6 +193,10 @@ export function paraCsv(linhas: (string | number | null | undefined)[][]): strin
 
 const mensagens: Record<string, string> = {
   sem_permissao: 'Não tens permissão para esta acção.',
+  pagamento_ja_decidido: 'Este pagamento já foi confirmado ou rejeitado.',
+  pedido_ja_fechado: 'O pedido já foi entregue ou cancelado: devolve o dinheiro ao cliente.',
+  referencia_ja_usada: 'Esta referência já foi usada noutro pagamento.',
+  nada_a_devolver: 'Não há nada a devolver neste pagamento.',
   pedido_nao_em_preparacao: 'Só se marca como pronto um pedido em preparação.',
   sem_modelo: 'Ainda não há um prato montável modelo. Cria um "Serve o teu próprio prato" com grupos e opções.',
   montavel_ja_existe: 'Esta cozinha já tem o prato montável.',

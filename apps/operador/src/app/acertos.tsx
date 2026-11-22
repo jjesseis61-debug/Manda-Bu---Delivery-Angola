@@ -55,7 +55,7 @@ export function notaAcerto(c: AcertoCozinha, inicio: string, fim: string): strin
     '',
     'A plataforma deve à cozinha:',
     `• Convida (descontos e saldo): ${formatarKz(t.convida_plataforma)}`,
-    `• Refeições de pacotes: ${formatarKz(t.pago_pacote)}`,
+    `• Pago antes (pacotes e transferências): ${formatarKz(t.pago_pacote)}`,
     `• Parte das empresas: ${formatarKz(t.valor_empresa)}`,
     '',
     `*Saldo: ${textoSaldo(t.saldo)}*`,
@@ -225,7 +225,7 @@ function CartaoCozinha(p: {
       {!!t.compensacoes && <Linha esquerda="Compensações a clientes" direita={formatarKz(t.compensacoes)} />}
       <Text style={{ color: cores.textoSuave, marginTop: espaco.xs }}>A plataforma deve à cozinha</Text>
       <Linha esquerda="Convida (descontos e saldo)" direita={formatarKz(t.convida_plataforma)} />
-      <Linha esquerda="Refeições de pacotes" direita={formatarKz(t.pago_pacote)} />
+      <Linha esquerda="Pago antes (pacotes e transferências)" direita={formatarKz(t.pago_pacote)} />
       <Linha esquerda="Parte das empresas" direita={formatarKz(t.valor_empresa)} />
       <Linha esquerda="Saldo" direita={textoSaldo(t.saldo)} forte />
       {c.estado !== 'aberto' && c.pago > 0 && <Linha esquerda="Já pago" direita={formatarKz(c.pago)} />}

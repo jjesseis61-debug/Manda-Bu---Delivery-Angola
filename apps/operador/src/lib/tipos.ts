@@ -765,7 +765,9 @@ export type GrupoOperador = {
   hora_entrega: string;
   prazo_adesao: string;
   estado: 'aberto' | 'fechado' | 'em_preparacao' | 'entregue' | 'cancelado';
-  modo_pagamento: 'individual' | 'empresa';
+  modo_pagamento: 'individual' | 'empresa' | 'quem_recebe';
+  /** Onde se junta o grupo (desde 12/2026) */
+  tipo?: 'trabalho' | 'familia' | 'vizinhos' | 'igreja';
   organizador: string;
   organizador_telefone: string | null;
   local: { referencia: string | null; lat: number | null; lng: number | null; zona: string | null };
