@@ -124,6 +124,7 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 'rh_lista', 'rh_ficha', 'rh_guardar_ficha', 'rh_guardar_documento', 'rh_apagar_documento', 'rh_guardar_contrato',
                 'rh_terminar_contrato', 'rh_guardar_equipamento', 'rh_devolver_equipamento', 'rh_parametros_ler', 'rh_parametros_guardar',
                 'rh_simular_salario', 'rh_folha', 'rh_folha_ajustar', 'rh_folha_fechar', 'rh_folha_pagar', 'visita_experiencia', 'resultado_experiencia',
+                'receita_pratos_gerir', 'receita_guardar_pratos', 'receita_onde_pedir', 'receita_quero', 'receitas_metricas',
                 'meu_pagamento_antes', 'pagar_antes', 'pagamentos_antes_lista', 'decidir_pagamento_antes', 'devolver_pagamento_antes',
                 -- faixa de confiança (pontualidade agregada)
                 'pontualidade_entregas', 'visitante_prato', 'visitante_cardapio', 'visitante_cozinhas', 'visitante_zonas', 'visitante_precos', 'visitante_convida', 'funcionalidades_publicas',
