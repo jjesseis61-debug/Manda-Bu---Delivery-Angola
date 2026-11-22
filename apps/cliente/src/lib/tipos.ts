@@ -89,6 +89,20 @@ export type ReceitaResumo = {
 
 export type Receita = ReceitaResumo & { corpo: string };
 
+/** Onde pedir o prato de uma receita: no balcão escolhido, noutro perto, ou ninguém o faz */
+export type OndePedirReceita =
+  | {
+      estado: 'aqui' | 'perto';
+      cozinha_id: string;
+      cozinha_nome: string;
+      cardapio_id: string;
+      prato_nome: string;
+      preco: number;
+      distancia_km: number | null;
+      quero: boolean;
+    }
+  | { estado: 'ninguem'; quero: boolean; interessados: number };
+
 export type Funcionalidades = Partial<Record<ChaveFuncionalidade, boolean>>;
 
 export type ItemCardapio = {

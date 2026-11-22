@@ -42,6 +42,7 @@ import type {
   Zona,
   MetodoAntes,
   ModoGrupo,
+  OndePedirReceita,
   PagamentoAntes,
   TipoGrupo,
 } from './tipos';
@@ -758,6 +759,18 @@ export async function meusSelos(): Promise<MeusSelos | null> {
 export async function receitaAbriu(id: string): Promise<void> {
   await supabase.rpc('receita_abriu', { p_id: id }).then(() => undefined, () => undefined);
 }
+/** Onde pedir o prato da receita, a partir do balcão escolhido e da morada principal */
+export async function receitaOndePedir(id: string, cozinhaId: string | null, pontoId: string | null): Promise<OndePedirReceita> {
+  return verificar(
+    await supabase.rpc('receita_onde_pedir', { p_receita: id, p_cozinha: cozinhaId, p_ponto: pontoId }),
+  ) as OndePedirReceita;
+}
+
+/** «Quero que façam»: devolve quantos já pediram */
+export async function receitaQuero(id: string): Promise<number> {
+  return (verificar(await supabase.rpc('receita_quero', { p_receita: id })) as number) ?? 0;
+}
+
 export async function receitaTocouPedir(id: string): Promise<void> {
   await supabase.rpc('receita_tocou_pedir', { p_id: id }).then(() => undefined, () => undefined);
 }
