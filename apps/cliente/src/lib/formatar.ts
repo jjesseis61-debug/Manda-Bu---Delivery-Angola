@@ -266,6 +266,7 @@ const mensagens: Record<string, string> = {
   // pedidos de grupo (C12, C13)
   grupo_ponto_invalido: 'Escolhe um dos teus endereços. Para a empresa pagar, tem de ser um endereço do tipo Trabalho.',
   pagar_antes_indisponivel: 'Neste grupo paga-se na entrega.',
+  receita_inexistente: 'Esta receita já não está disponível.',
   encomendas_inactivas: 'As encomendas ainda não estão abertas.',
   encomenda_data: 'Escolhe um dia e hora com pelo menos 24 horas de antecedência (e até 30 dias).',
   encomenda_pessoas: 'Há um mínimo de pessoas para encomendar: aumenta o número de pessoas.',
