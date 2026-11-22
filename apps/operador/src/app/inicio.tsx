@@ -82,6 +82,7 @@ export const ecras: EntradaMenu[] = [
   { rota: '/resultados', grupos: ['financas'], titulo: 'Resultados do mês', descricao: 'Receitas, custos e resultado da plataforma', permissoes: ['financas.resultados'] },
   { rota: '/obrigacoes', grupos: ['financas'], titulo: 'Obrigações e tesouraria', descricao: 'O que a plataforma deve e tem a receber, num só sítio', permissoes: ['financas.obrigacoes'] },
   { rota: '/conferencia', grupos: ['financas'], titulo: 'Conferência', descricao: 'Fecho do dia e do mês, extratos e comprovativos', permissoes: ['financas.conferir'] },
+  { rota: '/encomendas', grupos: ['operacao'], titulo: 'Encomendas', descricao: 'Receitas encomendadas com 24 h: escolher a cozinha, preço da cozinha, aprovar', permissoes: ['pedidos.gerir', 'cozinhas.gerir', 'vendas.registar'] },
   { rota: '/grupos', grupos: ['operacao'], titulo: 'Grupos do dia', descricao: 'Pedidos de grupo juntos para preparar e expedir (O10)', permissoes: ['pedidos.gerir', 'entregas.registar'] },
   { rota: '/condominios', grupos: ['cozinhas'], titulo: 'Condomínios', descricao: 'Cozinha só para moradores: área no mapa, lista com vagas, abrir/fechar', permissoes: ['cozinhas.gerir', 'pedidos.gerir'] },
   { rota: '/campanhas', grupos: ['clientes'], titulo: 'Campanhas', descricao: 'Promoções por condomínio, zona ou para todos, com resultados', permissoes: ['cozinhas.gerir', 'pedidos.gerir', 'cardapio.gerir'] },

@@ -16,6 +16,7 @@ const km = (d: number) => `${d.toLocaleString('pt-PT', { maximumFractionDigits: 
  * Receita da terra. O «Pedir» segue o prato e o balcão do cliente: pede-se no balcão escolhido se ele o
  * fizer; senão no mais perto que o faça (dizendo-o); se ninguém o faz, não se promete — «Quero que façam».
  * O prato abre no ecrã do prato, que pergunta antes de trocar de cozinha com o carrinho cheio.
+ * Com as encomendas ligadas, o prato que ninguém faz pode encomendar-se (o operador põe uma cozinha a fazê-lo).
  */
 export default function ReceitaDetalhe() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -110,6 +111,15 @@ export default function ReceitaDetalhe() {
             <>
               <Paragrafo suave>Diz-nos que queres: quando houver pedidos suficientes, mostramos às cozinhas da tua zona.</Paragrafo>
               <Botao titulo="Quero que façam" variante="secundario" aCarregar={aEnviar} aoCarregar={quero} />
+            </>
+          )}
+          {ligada('encomendas') && (
+            <>
+              <Paragrafo suave>É para uma festa ou um almoço de família? Encomenda com 24 horas de antecedência e uma cozinha faz para ti.</Paragrafo>
+              <Botao
+                titulo="Encomendar para 4 ou mais pessoas"
+                aoCarregar={() => router.push({ pathname: '/encomenda/nova', params: { receita: receita.id, titulo: receita.titulo } })}
+              />
             </>
           )}
         </Cartao>

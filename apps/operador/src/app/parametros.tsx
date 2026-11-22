@@ -67,6 +67,14 @@ const CAMPOS: { grupo: string; chaves: [string, string][] }[] = [
     chaves: [['entrega_gratis_acima', 'Entrega grátis a partir de (Kz, depois dos descontos; 0 = desligado). Cada zona pode ter o seu valor em Zonas de entrega']],
   },
   {
+    grupo: 'Encomendas',
+    chaves: [
+      ['encomenda_antecedencia_horas', 'Antecedência mínima de uma encomenda (horas)'],
+      ['encomenda_minimo_pessoas', 'Mínimo de pessoas numa encomenda'],
+      ['encomenda_sinal_pct', 'Sinal pago antes (% do total)'],
+    ],
+  },
+  {
     grupo: 'Cartão de selos',
     chaves: [['selos_necessarios', 'Pedidos para ganhar frete grátis (liga o interruptor «selos»)']],
   },
@@ -110,7 +118,8 @@ export default function Parametros() {
   const alterados: Record<string, number | string | boolean | null> = {};
   for (const g of CAMPOS)
     for (const [k] of g.chaves)
-      if (originais && valores[k] !== String(originais[k])) alterados[k] = Number(valores[k]);
+      // Chaves que o servidor ainda não tem (migração por aplicar) não contam como alteradas
+      if (originais && k in originais && valores[k] !== String(originais[k])) alterados[k] = Number(valores[k]);
   for (const [k] of INTERRUPTORES)
     if (originais && valores[k] !== String(originais[k])) alterados[k] = valores[k] === 'true';
   const numerosInvalidos = Object.values(alterados).some((v) => typeof v !== 'boolean' && (!Number.isInteger(v) || (v as number) < 0));

@@ -51,6 +51,7 @@ export type ChaveFuncionalidade =
   | 'condominios'
   | 'campanhas'
   | 'teste_fotos_inicio'
+  | 'encomendas'
   | 'indicacao'
   | 'destaques'
   | 'pessoas_como_tu'
