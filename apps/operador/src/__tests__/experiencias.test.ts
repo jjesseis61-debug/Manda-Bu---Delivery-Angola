@@ -1,5 +1,5 @@
 /// <reference types="jest" />
-import { veredictoExperiencia, type GrupoExperiencia } from '@/lib/experiencias';
+import { TEXTOS, veredictoExperiencia, type GrupoExperiencia } from '@/lib/experiencias';
 
 jest.mock('@/lib/supabase', () => ({ supabase: {} }));
 
@@ -27,4 +27,12 @@ test('vencedor claro para cada lado', () => {
   expect(veredictoExperiencia(g(150, 31.2), g(150, 25))).toEqual({
     vencedor: 'A', claro: true, texto: 'A fotografia grande converte mais: +6,2 pontos (31,2% contra 25%).',
   });
+});
+
+test('balcão de panelas: sem diferença clara fica a lista; com diferença diz qual converte mais', () => {
+  const t = TEXTOS.balcao_panelas;
+  expect(veredictoExperiencia(g(150, 20), g(150, 21), t)).toEqual({
+    vencedor: 'A', claro: false, texto: 'Sem diferença clara (1 ponto). Fica a lista: é a que os clientes já conhecem (Rogers) e é mais leve.',
+  });
+  expect(veredictoExperiencia(g(150, 20), g(150, 25), t).texto).toBe('O balcão de panelas converte mais: +5 pontos (25% contra 20%).');
 });

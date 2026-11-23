@@ -51,6 +51,7 @@ export type ChaveFuncionalidade =
   | 'condominios'
   | 'campanhas'
   | 'teste_fotos_inicio'
+  | 'teste_balcao_panelas'
   | 'encomendas'
   | 'indicacao'
   | 'destaques'
@@ -366,6 +367,8 @@ export type GrupoOpcoes = {
   maximo: number;
   ordem: number;
   opcoes: Opcao[];
+  /** Opções que a cozinha desligou hoje (só para o balcão mostrar a panela vazia; nunca se escolhem) */
+  acabaram?: Opcao[];
 };
 export type OpcaoEscolhida = { id: string; nome: string; preco_extra: number };
 /** Ingrediente da receita que o cliente pode tirar; valor = o que deixa de pagar (calculado no servidor) */

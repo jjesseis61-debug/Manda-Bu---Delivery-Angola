@@ -53,6 +53,7 @@ jest.mock('@/lib/api', () => ({
   }),
   lerComponentes: async () => mockComponentes.valor,
   lerDoses: async () => mockDoses.valor,
+  visitaExperiencia: async () => null,
   lerOpcoes: async () => mockItem.semOpcoes ? [] : [
     { id: 'g1', cardapio_id: 'm', nome: 'Base', minimo: 1, maximo: 1, ordem: 1,
       opcoes: mockBaseEsgotada.valor ? [] : [{ id: 'funge', nome: 'Funge', preco_extra: 0, ordem: 1 }, { id: 'arroz', nome: 'Arroz', preco_extra: 0, ordem: 2 }] },

@@ -3,11 +3,12 @@ import { useEffect, useRef, useState } from 'react';
 import { Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { BalcaoPanelas } from '@/components/BalcaoPanelas';
 import { BotaoPartilhar } from '@/components/BotaoPartilhar';
 import { Confirmar } from '@/components/Confirmar';
 import { FaixaConfianca } from '@/components/FaixaConfianca';
 import { ACarregar, Aviso, Botao, Ecra, Paragrafo, Subtitulo } from '@/components/ui';
-import { lerComponentes, lerDoses, lerItemCardapio, lerOpcoes } from '@/lib/api';
+import { lerComponentes, lerDoses, lerItemCardapio, lerOpcoes, visitaExperiencia } from '@/lib/api';
 import { lerCodigoPendente } from '@/lib/convite';
 import { type PendenteMontar, useCarrinho } from '@/lib/carrinho';
 import { formatarKz, mensagemErro } from '@/lib/formatar';
@@ -41,6 +42,7 @@ export default function MontarPrato() {
   const [componentes, setComponentes] = useState<ComponentePrato[]>([]);
   const [tirados, setTirados] = useState<string[]>([]);
   const [semDoses, setSemDoses] = useState(false);
+  const [restantes, setRestantes] = useState<number | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   // "Pedir de novo" de um prato que mudou: chega com rever=1 e o prato pendente à frente da fila
   const [pendente, setPendente] = useState<PendenteMontar | null>(null);
@@ -82,7 +84,12 @@ export default function MontarPrato() {
     Promise.all([lerItemCardapio(String(id)), lerOpcoes([String(id)]), lerComponentes([String(id)]).catch(() => [])])
       .then(([i, g, c]) => {
         setItem(i);
-        if (i) lerDoses(i.cozinha_id).then((ds) => setSemDoses(ds.some((d) => d.cardapio_id === i.id && d.restantes === 0)), () => undefined);
+        if (i)
+          lerDoses(i.cozinha_id).then((ds) => {
+            const d = ds.find((x) => x.cardapio_id === i.id);
+            setSemDoses(d?.restantes === 0);
+            setRestantes(d ? d.restantes : null);
+          }, () => undefined);
         // Só se pode tirar ingredientes quando a receita tem mais do que um (não se tira tudo)
         setComponentes(c.length > 1 ? c : []);
         // Grupos opcionais sem opções disponíveis não aparecem; os obrigatórios ficam para mostrar que esgotaram
@@ -103,6 +110,39 @@ export default function MontarPrato() {
       });
   }, [id, rever, carregado, visitante]);
 
+  // Teste do balcão de panelas (Skinner: grupo de controlo antes de adoptar). Cada cliente fica sempre
+  // no mesmo grupo: B vê o balcão, A a lista. Desligado, sem conta, a rever um pedido ou com erro: a lista.
+  const comTeste = carregado && !visitante && ligada('teste_balcao_panelas') && rever !== '1';
+  // null enquanto o servidor diz o grupo (evita mostrar a lista e trocar logo a seguir)
+  const [balcao, setBalcao] = useState<boolean | null>(false);
+  const abertoEm = useRef(Date.now());
+  useEffect(() => {
+    if (!comTeste) {
+      setBalcao(false);
+      return;
+    }
+    let vivo = true;
+    abertoEm.current = Date.now();
+    setBalcao(null);
+    // Rede fraca (Prahalad): se o grupo não chega em 2,5 s, abre a lista e não volta a trocar
+    const limite = setTimeout(() => {
+      if (vivo) setBalcao(false);
+      vivo = false;
+    }, 2500);
+    visitaExperiencia('balcao_panelas')
+      .then((g) => vivo && setBalcao(g === 'B'))
+      .catch(() => vivo && setBalcao(false))
+      .finally(() => clearTimeout(limite));
+    return () => {
+      vivo = false;
+      clearTimeout(limite);
+    };
+  }, [comTeste, id]);
+  /** Tempo até «Adicionar» nos dois grupos (falha em silêncio; o servidor guarda o mais rápido do dia) */
+  const contarAdicionar = () => {
+    if (comTeste) void visitaExperiencia('balcao_panelas', (Date.now() - abertoEm.current) / 1000).catch(() => undefined);
+  };
+
   useEffect(() => {
     if (!carregado || visitante) return;
     let vivo = true;
@@ -115,7 +155,7 @@ export default function MontarPrato() {
   // Aberto por link: espera pelos interruptores antes de decidir
   if (!carregado) return <ACarregar />;
   if (!visitante && !ligada('pratos_montaveis')) return <Redirect href="/inicio" />;
-  if (item === undefined) return <ACarregar />;
+  if (item === undefined || balcao === null) return <ACarregar />;
   if (item === null) return <Ecra><Aviso tipo="erro">{erro ?? 'Este prato já não está disponível.'}</Aviso></Ecra>;
 
   const opcoes = opcoesEscolhidas(grupos, escolhidas);
@@ -222,6 +262,65 @@ export default function MontarPrato() {
     const seguinte = carrinho.avancarFila();
     if (seguinte) router.replace({ pathname: '/montar/[id]', params: { id: seguinte.itemId, rever: '1' } });
     else router.replace({ pathname: '/carrinho', params: faltamRepeticao.length > 0 ? { faltam: faltamRepeticao.join(', ') } : {} });
+  }
+
+  const tituloAdicionar =
+    esgotados.length > 0
+      ? 'Esgotado'
+      : pendente && pendente.qtd > 1
+        ? `Adicionar ${pendente.qtd}× · ${formatarKz(total * pendente.qtd)}`
+        : total > 0
+          ? `Adicionar · ${formatarKz(total)}`
+          : 'Adicionar';
+
+  if (balcao && !pendente) {
+    return (
+      <BalcaoPanelas
+        caixas={caixaTroca}
+        grupos={grupos}
+        componentes={componentes}
+        escolhidas={escolhidas}
+        tirados={tirados}
+        aoEscolher={(g, opcaoId) => setEscolhidas((e) => alternar(g, e, opcaoId))}
+        aoTirar={(produtoId) =>
+          setTirados((t) =>
+            t.includes(produtoId) ? t.filter((x) => x !== produtoId) : t.length >= componentes.length - 1 ? t : [...t, produtoId],
+          )
+        }
+        total={total}
+        restantes={restantes}
+        faltam={faltam}
+        tituloAdicionar={tituloAdicionar}
+        adicionarDesactivado={faltam.length > 0 || esgotados.length > 0 || abaixoMinimo}
+        aoAdicionar={() => {
+          contarAdicionar();
+          adicionarNaCozinha(voltar);
+        }}
+        topo={
+          <View style={{ gap: espaco.s }}>
+            <Text style={{ fontSize: 20, fontWeight: '700', color: cores.texto }}>{item.nome.trim()}</Text>
+            {item.descricao && <Paragrafo suave>{item.descricao}</Paragrafo>}
+            {convite && <Aviso tipo="sucesso">{convite}</Aviso>}
+            {minimo > 0 && (
+              <Text style={{ color: cores.marca, fontSize: 13, fontWeight: '600' }}>O valor mínimo para servir é {formatarKz(minimo)}.</Text>
+            )}
+          </View>
+        }
+        avisos={
+          <>
+            {avisoCozinha && <Aviso>{avisoCozinha}</Aviso>}
+            {esgotados.length > 0 && (
+              <Aviso>{semDoses ? 'Esgotado: acabaram as doses de hoje.' : `Esgotado de momento: não há nenhuma opção disponível em ${esgotados.join(', ')}.`}</Aviso>
+            )}
+            {esgotados.length === 0 && faltam.length === 0 && abaixoMinimo && (
+              <Aviso>
+                {total <= 0 ? `Escolhe pelo menos ${formatarKz(minimo)} para servir.` : `Falta ${formatarKz(minimo - total)} para o mínimo de ${formatarKz(minimo)}.`}
+              </Aviso>
+            )}
+          </>
+        }
+      />
+    );
   }
 
   return (
@@ -403,15 +502,7 @@ export default function MontarPrato() {
               <Text style={{ fontSize: 17, fontWeight: '800', color: cores.texto }}>{formatarKz(total)}</Text>
             </View>
             <Botao
-              titulo={
-                esgotados.length > 0
-                  ? 'Esgotado'
-                  : pendente && pendente.qtd > 1
-                    ? `Adicionar ${pendente.qtd}× · ${formatarKz(total * pendente.qtd)}`
-                    : total > 0
-                      ? `Adicionar · ${formatarKz(total)}`
-                      : 'Adicionar'
-              }
+              titulo={tituloAdicionar}
               desactivado={faltam.length > 0 || esgotados.length > 0 || abaixoMinimo}
               aoCarregar={() => {
                 if (pendente) {
@@ -419,6 +510,7 @@ export default function MontarPrato() {
                   seguirFila();
                   return;
                 }
+                contarAdicionar();
                 adicionarNaCozinha(voltar);
               }}
             />

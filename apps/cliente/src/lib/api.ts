@@ -224,6 +224,10 @@ export async function lerOpcoes(cardapioIds: string[]): Promise<GrupoOpcoes[]> {
       .filter((o) => o.disponivel && !o.deletado_em)
       .sort((a, b) => a.ordem - b.ordem || a.nome.localeCompare(b.nome))
       .map(({ id, nome, preco_extra, ordem, foto_url }) => ({ id, nome, preco_extra, ordem, foto_url })),
+    acabaram: g.opcoes
+      .filter((o) => !o.disponivel && !o.deletado_em)
+      .sort((a, b) => a.ordem - b.ordem || a.nome.localeCompare(b.nome))
+      .map(({ id, nome, preco_extra, ordem, foto_url }) => ({ id, nome, preco_extra, ordem, foto_url })),
   }));
 }
 
@@ -631,7 +635,7 @@ export async function maisPedidosNaZona(ponto: string): Promise<MaisPedidoZona[]
  * ('A' = fotografia grande, 'B' = média); com segundos guarda o tempo até ao primeiro «Adicionar».
  * null = sem teste (interruptor desligado ou sem conta).
  */
-export async function visitaExperiencia(experiencia: 'fotos_inicio', segundosAteAdicionar?: number): Promise<'A' | 'B' | null> {
+export async function visitaExperiencia(experiencia: 'fotos_inicio' | 'balcao_panelas', segundosAteAdicionar?: number): Promise<'A' | 'B' | null> {
   const args = segundosAteAdicionar == null ? { p_experiencia: experiencia } : { p_experiencia: experiencia, p_segundos_ate_adicionar: Math.round(segundosAteAdicionar) };
   return (verificar(await supabase.rpc('visita_experiencia', args)) as 'A' | 'B' | null) ?? null;
 }
