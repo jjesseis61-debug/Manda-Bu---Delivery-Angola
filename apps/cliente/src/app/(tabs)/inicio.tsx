@@ -466,7 +466,7 @@ export default function Inicio() {
                   disabled={!daqui}
                   onPress={() => router.push({ pathname: '/montar/[id]', params: { id: m.cardapio_id } })}>
                   <Text style={{ color: daqui ? cores.marca : cores.texto, fontWeight: daqui ? '700' : '400' }}>
-                    {`${m.nome}${daqui ? '' : ` · ${m.cozinha}`} — ${m.pedidos} pedidos nos últimos 30 dias`}
+                    {`${m.nome}${daqui ? '' : ` · ${m.cozinha}`}: ${m.pedidos} pedidos nos últimos 30 dias`}
                   </Text>
                 </Pressable>
               );

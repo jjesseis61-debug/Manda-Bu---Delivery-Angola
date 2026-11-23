@@ -57,8 +57,8 @@ export function PainelNivel() {
           <Text style={{ color: cores.texto, marginTop: 8 }}>
             {faltam === 0
               ? nivel === 'normal'
-                ? 'Já tens amigos para Embaixador — o nível sobe sozinho no próximo pedido confirmado.'
-                : 'Já tens amigos para Ouro — o nível sobe sozinho no próximo pedido confirmado.'
+                ? 'Já tens amigos para Embaixador: o nível sobe sozinho no próximo pedido confirmado.'
+                : 'Já tens amigos para Ouro: o nível sobe sozinho no próximo pedido confirmado.'
               : nivel === 'normal'
                 ? `Falta${faltam === 1 ? '' : 'm'} ${amigos(faltam)} para seres Embaixador.`
                 : `Falta${faltam === 1 ? '' : 'm'} ${amigos(faltam)} para Embaixador Ouro.`}

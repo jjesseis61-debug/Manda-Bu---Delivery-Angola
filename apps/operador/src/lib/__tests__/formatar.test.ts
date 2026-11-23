@@ -9,7 +9,7 @@ describe('formatar (operador)', () => {
 
   it('percentagem com vírgula e sem divisão por zero', () => {
     expect(formatarPercentagem(1, 3)).toBe('33,3 %');
-    expect(formatarPercentagem(1, 0)).toBe('—');
+    expect(formatarPercentagem(1, 0)).toBe('-');
   });
 
   it('dia em Luanda (UTC+1) e início do mês', () => {

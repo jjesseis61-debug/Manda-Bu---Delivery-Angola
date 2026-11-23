@@ -362,7 +362,7 @@ export function mensagemPartilhaPrato(
       `Com o meu código *${convite.codigo}* ganhas *${formatarKz(convite.desconto)} de desconto* no teu 1.º pedido${cond} 👇\n${link}`
     );
   }
-  return `🍲 ${nome} — ${marca}\nInstala a app e faz o teu pedido 👇\n${link}`;
+  return `🍲 ${nome} · ${marca}\nInstala a app e faz o teu pedido 👇\n${link}`;
 }
 
 /** Prova social: "X pessoas pediram este mês" (singular quando é 1) */

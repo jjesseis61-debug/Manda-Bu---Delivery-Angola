@@ -126,7 +126,7 @@ export default function Conferencia() {
               <Cartao key={c.caixa_id}>
                 <Text style={{ fontWeight: '700' }}>{c.posto} · {c.cozinha}</Text>
                 <Text style={{ color: cores.textoSuave }}>
-                  {c.fechada ? `Fechada por ${c.fechada_por ?? '—'}` : `Aberta por ${c.aberta_por ?? '—'} · ainda não fechou`}
+                  {c.fechada ? `Fechada por ${c.fechada_por ?? '-'}` : `Aberta por ${c.aberta_por ?? '-'} · ainda não fechou`}
                 </Text>
                 {c.fechada && (
                   <>
@@ -195,7 +195,7 @@ export default function Conferencia() {
                     <Linha esquerda={`${k.metodo} · ${k.cliente_nome}`} direita={formatarKz(k.valor)} />
                     <Text>{formatarDia(k.dia)} · ref. {k.referencia}</Text>
                     <Text style={{ color: cores.textoSuave }}>
-                      Registou: {k.registado_por ?? '—'} · {k.estado === 'conferido' ? `conferiu: ${k.conferido_por ?? '—'}` : k.estado === 'rejeitado' ? 'rejeitado' : 'por conferir'}
+                      Registou: {k.registado_por ?? '-'} · {k.estado === 'conferido' ? `conferiu: ${k.conferido_por ?? '-'}` : k.estado === 'rejeitado' ? 'rejeitado' : 'por conferir'}
                     </Text>
                     {textoLeitura(k.ia_estado).alerta && <Text style={{ color: cores.erro }}>{textoLeitura(k.ia_estado).texto}</Text>}
                     <Botao titulo="Histórico do pedido" variante="texto" aoCarregar={() => historico(k.pedido_id)} />

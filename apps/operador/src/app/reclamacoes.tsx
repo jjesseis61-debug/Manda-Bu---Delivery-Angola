@@ -139,7 +139,7 @@ export default function Reclamacoes() {
               {r.compensacao_valor ? ` ${formatarKz(r.compensacao_valor)}` : ''}
             </Text>
             <Text>Resposta: {r.resposta}</Text>
-            <Text style={{ color: cores.textoSuave }}>Por {r.decidido_por ?? '—'}</Text>
+            <Text style={{ color: cores.textoSuave }}>Por {r.decidido_por ?? '-'}</Text>
           </View>
         ) : (
           <>
@@ -220,11 +220,11 @@ export default function Reclamacoes() {
               <Linha esquerda="Reclamações" direita={String(relatorio.total)} forte />
               <Linha esquerda="Com razão" direita={String(relatorio.procedentes)} />
               <Linha esquerda="Por responder" direita={String(relatorio.abertas)} />
-              <Linha esquerda="Horas até responder (média)" direita={relatorio.horas_ate_responder != null ? String(relatorio.horas_ate_responder) : '—'} />
+              <Linha esquerda="Horas até responder (média)" direita={relatorio.horas_ate_responder != null ? String(relatorio.horas_ate_responder) : '-'} />
               <Linha esquerda="Compensações" direita={formatarKz(relatorio.compensacoes_kz)} />
               <Linha
                 esquerda="Análise automática de acordo com o gerente"
-                direita={relatorio.ia_com_opiniao > 0 ? `${relatorio.ia_concordou}/${relatorio.ia_com_opiniao}` : '—'}
+                direita={relatorio.ia_com_opiniao > 0 ? `${relatorio.ia_concordou}/${relatorio.ia_com_opiniao}` : '-'}
               />
             </Cartao>
             <Cartao>

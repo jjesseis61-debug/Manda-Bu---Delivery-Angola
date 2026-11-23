@@ -458,7 +458,7 @@ export default function Entregas() {
               />
             )}
             {aceitarEntrega && (
-              <Paragrafo suave>Mantém a app aberta — é assim que o cliente te acompanha no mapa.</Paragrafo>
+              <Paragrafo suave>Mantém a app aberta: é assim que o cliente te acompanha no mapa.</Paragrafo>
             )}
             {gerir && !modoEstafeta && (p.estado === 'confirmado' || p.estado === 'em_preparacao') && (
               <Botao
@@ -571,7 +571,7 @@ export default function Entregas() {
                   </Text>
                 </View>
               ))}
-              <Paragrafo suave>Preparar na altura certa — entram na fila cerca de 90 min antes.</Paragrafo>
+              <Paragrafo suave>Preparar na altura certa: entram na fila cerca de 90 min antes.</Paragrafo>
             </Cartao>
           );
         })()}
@@ -585,7 +585,7 @@ export default function Entregas() {
             </Text>
             <Text style={{ color: cores.textoSuave, textAlign: 'center', maxWidth: 280, lineHeight: 20 }}>
               {modoEstafeta
-                ? 'Quando te atribuírem uma entrega, aparece aqui — e recebes um aviso 🔔.'
+                ? 'Quando te atribuírem uma entrega, aparece aqui e recebes um aviso 🔔.'
                 : 'Os novos pedidos aparecem aqui assim que entram.'}
             </Text>
           </View>

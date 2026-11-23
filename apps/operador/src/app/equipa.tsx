@@ -98,7 +98,7 @@ export default function Equipa() {
         {metricas?.map((m) => (
           <Cartao key={m.periodo}>
             <Text style={{ fontSize: 17, fontWeight: '700' }}>Turno da {nomePeriodo[m.periodo]?.toLowerCase()}</Text>
-            <Linha2 rotulo="Entregas a horas" valor={m.entregas > 0 ? `${m.entregas_a_horas} de ${m.entregas}${m.pct_a_horas !== null ? ` (${String(m.pct_a_horas).replace('.', ',')}%)` : ''}` : '—'} />
+            <Linha2 rotulo="Entregas a horas" valor={m.entregas > 0 ? `${m.entregas_a_horas} de ${m.entregas}${m.pct_a_horas !== null ? ` (${String(m.pct_a_horas).replace('.', ',')}%)` : ''}` : '-'} />
             <Linha2 rotulo="Quebras registadas" valor={m.quebras > 0 ? `${m.quebras} (${String(m.quantidade_quebra).replace('.', ',')})` : 'nenhuma'} />
             <Linha2 rotulo="Diferença de caixa" valor={Number(m.diferenca_caixa) === 0 ? 'certa' : `${m.diferenca_caixa} Kz`} />
           </Cartao>

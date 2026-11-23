@@ -21,7 +21,7 @@ describe('cozinha de condomínio', () => {
   });
   it('texto do cartão fechado, com a hora de reabrir', () => {
     const t = textoCondominioFechado({ ...COND, aberta: false, reabre_em: '2026-11-16T17:00:00Z' }, () => '18:00');
-    expect(t).toBe('🔒 Cozinha Jardim (Jardim do Éden) está fechada — volta às 18:00. Entretanto podes pedir noutra cozinha.');
+    expect(t).toBe('🔒 Cozinha Jardim (Jardim do Éden) está fechada e volta às 18:00. Entretanto podes pedir noutra cozinha.');
     expect(textoCondominioFechado({ ...COND, aberta: false }, () => '')).not.toContain('volta às');
   });
 });

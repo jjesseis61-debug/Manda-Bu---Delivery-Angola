@@ -160,7 +160,7 @@ export default function Inicio() {
               <Text style={{ color: emServico ? cores.sucesso : cores.textoSuave, fontSize: 13, fontWeight: emServico ? '700' : '400' }}>
                 {emServico
                   ? `Em serviço · ${aCaminho} a caminho`
-                  : 'Em serviço — liga ao começar o turno'}
+                  : 'Em serviço: liga ao começar o turno'}
               </Text>
             </View>
             <Switch thumbColor="#FFFFFF" value={emServico} onValueChange={alternarServico} trackColor={{ true: cores.marca, false: cores.contorno }} />
@@ -186,7 +186,7 @@ export default function Inicio() {
         {pendentes > 0 && (
           <Cartao>
             <Text style={{ fontWeight: '700', color: cores.texto }}>{pendentes} por sincronizar</Text>
-            <Text style={{ color: cores.textoSuave, fontSize: 13 }}>Entregas guardadas sem rede — envia quando tiveres ligação.</Text>
+            <Text style={{ color: cores.textoSuave, fontSize: 13 }}>Entregas guardadas sem rede: envia quando tiveres ligação.</Text>
             <Botao titulo="Sincronizar agora" variante="leve" aCarregar={aSincronizar} aoCarregar={sincronizarAgora} />
           </Cartao>
         )}
@@ -194,7 +194,7 @@ export default function Inicio() {
         {pontos.length > 0 && <MapaEntregas pontos={pontos} />}
 
         <Subtitulo>Entregas de hoje</Subtitulo>
-        {semRede && <Aviso>Sem ligação — a mostrar a última lista. Puxa para baixo quando tiveres rede.</Aviso>}
+        {semRede && <Aviso>Sem ligação: a mostrar a última lista. Puxa para baixo quando tiveres rede.</Aviso>}
         {erro && <Aviso tipo="erro">{erro}</Aviso>}
         {!lista && !erro && <ACarregar />}
         {lista && ordenada.length === 0 && <Paragrafo suave>Sem entregas por fazer neste momento.</Paragrafo>}
@@ -231,7 +231,7 @@ export default function Inicio() {
                   )}
                 </View>
                 {p.pronto_em && p.estado !== 'em_entrega' && (
-                  <Text style={{ color: cores.sucesso, fontWeight: '700' }}>✅ Pronto — podes ir buscar</Text>
+                  <Text style={{ color: cores.sucesso, fontWeight: '700' }}>✅ Pronto: podes ir buscar</Text>
                 )}
                 <Text style={{ color: cores.textoSuave }}>{local}{p.zona_nome && p.ponto_referencia ? ` · ${p.zona_nome}` : ''}</Text>
                 {hp && (
@@ -239,7 +239,7 @@ export default function Inicio() {
                     {hp.atrasado ? `⚠ atrasado · ${hp.texto}` : hp.texto}
                   </Text>
                 )}
-                {naFila.has(p.pedido_id) && <Text style={{ color: cores.sucesso, fontSize: 12, fontWeight: '700' }}>✓ guardado — a enviar</Text>}
+                {naFila.has(p.pedido_id) && <Text style={{ color: cores.sucesso, fontSize: 12, fontWeight: '700' }}>✓ guardado, a enviar</Text>}
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Text style={{ color: cores.textoSuave }}>{p.itens.reduce((n, i) => n + i.qtd, 0)} itens</Text>
                   <Text style={{ fontWeight: '700' }}>{formatarKz(p.a_pagar)}</Text>
@@ -309,7 +309,7 @@ export default function Inicio() {
           </>
         ) : (
           <Botao
-            titulo="Proteger a conta — sair em todos os dispositivos"
+            titulo="Proteger a conta: sair em todos os dispositivos"
             variante="secundario"
             aoCarregar={() => setProtegerConfirmar(true)}
           />

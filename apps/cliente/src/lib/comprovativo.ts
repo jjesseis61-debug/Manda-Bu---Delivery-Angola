@@ -46,7 +46,7 @@ function html(pedido: Pedido, cliente: { nome?: string; telefone?: string | null
 </style></head><body>
   <h1><span class="marca">Cozinha da Alexandra</span></h1>
   <p class="meta">Comprovativo do pedido · entregue por Manda Bué</p>
-  <div class="aviso"><b>Documento informativo — não é fatura fiscal.</b> A fatura é emitida na cozinha, na entrega.</div>
+  <div class="aviso"><b>Documento informativo, não é fatura fiscal.</b> A fatura é emitida na cozinha, na entrega.</div>
   <p class="meta">Pedido n.º <b>${esc(numero)}</b></p>
   <p class="meta">Data: ${esc(quando)}</p>
   ${cliente.nome ? `<p class="meta">Cliente: ${esc(cliente.nome)}</p>` : ''}

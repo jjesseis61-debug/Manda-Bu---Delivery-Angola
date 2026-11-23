@@ -100,7 +100,7 @@ export default function OtpCodigos() {
       <Ecra>
         <Paragrafo suave>Entrega o código ao cliente por WhatsApp ou SMS. Cada código serve uma vez e expira.</Paragrafo>
         {ligado === false && (
-          <Aviso tipo="erro">O serviço de OTP manual está desligado — não chegam códigos novos. Liga em Parâmetros.</Aviso>
+          <Aviso tipo="erro">O serviço de OTP manual está desligado: não chegam códigos novos. Liga em Parâmetros.</Aviso>
         )}
         {erro && <Aviso tipo="erro">{erro}</Aviso>}
         {!lista && !erro && <ACarregar />}

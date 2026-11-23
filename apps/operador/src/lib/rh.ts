@@ -17,7 +17,7 @@ export const TIPOS_CONTRATO = [
   { valor: 'prestacao_servicos', rotulo: 'Prestação de serviços (fora da folha)' },
 ] as const;
 export type TipoContrato = (typeof TIPOS_CONTRATO)[number]['valor'];
-export const nomeContrato = (t: string | null | undefined) => TIPOS_CONTRATO.find((x) => x.valor === t)?.rotulo ?? '—';
+export const nomeContrato = (t: string | null | undefined) => TIPOS_CONTRATO.find((x) => x.valor === t)?.rotulo ?? '-';
 /** Período experimental por defeito: 60 dias sem prazo; 30 a prazo (máximo legal); nada na prestação de serviços */
 export const experimentalPadrao = (t: TipoContrato) =>
   t === 'prestacao_servicos' ? 0 : t === 'termo_certo' || t === 'termo_incerto' || t === 'temporario' ? 30 : 60;

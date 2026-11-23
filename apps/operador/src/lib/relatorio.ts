@@ -125,7 +125,7 @@ export type TemposEtapas = {
 
 /** "8 min", "1 h 05", "45 s" */
 export function duracao(min: number | null | undefined): string {
-  if (min === null || min === undefined) return '—';
+  if (min === null || min === undefined) return '-';
   if (min < 1) return `${Math.round(min * 60)} s`;
   if (min < 60) return `${Math.round(min)} min`;
   const h = Math.floor(min / 60);
@@ -139,7 +139,7 @@ const NOME_ETAPA: Record<Exclude<ChaveEtapa, 'total'>, string> = {
   esperar: 'esperar o estafeta',
   entregar: 'caminho da entrega',
 };
-export const nomeEtapa = (c: Exclude<ChaveEtapa, 'total'> | null) => (c ? NOME_ETAPA[c] : '—');
+export const nomeEtapa = (c: Exclude<ChaveEtapa, 'total'> | null) => (c ? NOME_ETAPA[c] : '-');
 
 /** O que fazer quando a etapa que mais pesa é esta */
 export function conselhoEtapa(c: Exclude<ChaveEtapa, 'total'> | null): string | null {
@@ -200,7 +200,7 @@ export function variacao(actual: number | null | undefined, anterior: number | n
 const DIAS_SEMANA = ['', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
 export const nomeDiaSemana = (dow: number) => DIAS_SEMANA[dow] ?? String(dow);
 
-const pct = (v: number | null | undefined) => (v == null ? '—' : `${String(v).replace('.', ',')}%`);
+const pct = (v: number | null | undefined) => (v == null ? '-' : `${String(v).replace('.', ',')}%`);
 
 /** Indicadores principais (secção A), com o valor anterior para a variação */
 export function indicadores(r: RelatorioDetalhado): { rotulo: string; valor: string; variacao: string }[] {
@@ -209,7 +209,7 @@ export function indicadores(r: RelatorioDetalhado): { rotulo: string; valor: str
   return [
     { rotulo: 'Vendas brutas (comida)', valor: formatarKz(a.vendas_brutas), variacao: variacao(a.vendas_brutas, b.vendas_brutas) },
     { rotulo: 'Pedidos entregues', valor: String(a.pedidos), variacao: variacao(a.pedidos, b.pedidos) },
-    { rotulo: 'Ticket médio', valor: a.ticket_medio == null ? '—' : formatarKz(a.ticket_medio), variacao: variacao(a.ticket_medio, b.ticket_medio) },
+    { rotulo: 'Ticket médio', valor: a.ticket_medio == null ? '-' : formatarKz(a.ticket_medio), variacao: variacao(a.ticket_medio, b.ticket_medio) },
     {
       rotulo: `Descontos Convida (${Number(a.convida_cozinha_percent ?? 0) > 0 ? `cozinha paga ${formatarKz(a.convida_a_cargo_cozinha ?? 0)}` : 'pagos pela plataforma'})`,
       valor: formatarKz(a.descontos),
@@ -226,7 +226,7 @@ export function indicadores(r: RelatorioDetalhado): { rotulo: string; valor: str
     { rotulo: 'Clientes · novos', valor: `${a.clientes} · ${a.clientes_novos}`, variacao: variacao(a.clientes, b.clientes) },
     {
       rotulo: 'Avaliação média',
-      valor: a.avaliacao_media == null ? `— (${a.avaliacoes})` : `★ ${String(a.avaliacao_media).replace('.', ',')} (${a.avaliacoes})`,
+      valor: a.avaliacao_media == null ? `- (${a.avaliacoes})` : `★ ${String(a.avaliacao_media).replace('.', ',')} (${a.avaliacoes})`,
       variacao: '',
     },
     { rotulo: 'Entregas a horas', valor: pct(a.a_horas_pct), variacao: '' },
@@ -313,7 +313,7 @@ export function linhasCsvRelatorio(
 function tabela(cab: string[], linhas: Celula[][]): string {
   if (linhas.length === 0) return '<p class="suave">Sem dados.</p>';
   const th = cab.map((c) => `<th>${escaparHtml(c)}</th>`).join('');
-  const tr = linhas.map((l) => `<tr>${l.map((c) => `<td>${escaparHtml(String(c ?? '—'))}</td>`).join('')}</tr>`).join('');
+  const tr = linhas.map((l) => `<tr>${l.map((c) => `<td>${escaparHtml(String(c ?? '-'))}</td>`).join('')}</tr>`).join('');
   return `<table><tr>${th}</tr>${tr}</table>`;
 }
 
@@ -355,15 +355,15 @@ export function htmlRelatorio(
           tabela(['Indicador', 'Valor'], [
             ['Custo dos pratos', `${formatarKz(rent.cmv)} (${pct(rent.cmv_pct)} das vendas)`],
             ['Vendas com custo definido', pct(rent.cobertura_pct)],
-            ['Margem bruta', rent.margem_bruta == null ? '—' : formatarKz(rent.margem_bruta)],
+            ['Margem bruta', rent.margem_bruta == null ? '-' : formatarKz(rent.margem_bruta)],
             ['Despesas', formatarKz(rent.despesas)],
-            ['Resultado aproximado', rent.resultado == null ? '— (faltam custos)' : formatarKz(rent.resultado)],
+            ['Resultado aproximado', rent.resultado == null ? '- (faltam custos)' : formatarKz(rent.resultado)],
           ]),
         )
       : '',
     rent?.doses.length
       ? sec('Doses: esgotados e sobras', tabela(['Prato', 'Esgotou', 'Às (média)', 'Sobras', 'Desperdício'],
-          rent.doses.map((d) => [d.nome, `${d.dias_esgotou} de ${d.dias} dias`, d.hora_media_esgotou ?? '—', d.sobras, formatarKz(d.desperdicio)])))
+          rent.doses.map((d) => [d.nome, `${d.dias_esgotou} de ${d.dias} dias`, d.hora_media_esgotou ?? '-', d.sobras, formatarKz(d.desperdicio)])))
       : '',
   ].join('');
   return `<html><head><meta charset="utf-8"><style>

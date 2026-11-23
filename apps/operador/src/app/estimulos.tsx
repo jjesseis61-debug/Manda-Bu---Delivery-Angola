@@ -19,7 +19,7 @@ function mesAnterior(): string {
 
 function numero(m: MetricasEstimulo, chave: string): string {
   const v = m?.[chave];
-  if (v == null) return '—';
+  if (v == null) return '-';
   return chave === 'pct_a_horas' ? `${v}%` : chave === 'gasto' || chave === 'valor_balcao' ? formatarKz(v) : String(v);
 }
 

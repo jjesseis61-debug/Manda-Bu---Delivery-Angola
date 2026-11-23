@@ -71,7 +71,7 @@ export default function ZonasVendas() {
               />
             ))}
             {z.opcoes.length > 0 && (
-              <Paragrafo suave>{`Montados — opções preferidas: ${z.opcoes.map((o) => `${o.nome} (${o.qtd})`).join(', ')}`}</Paragrafo>
+              <Paragrafo suave>{`Montados, opções preferidas: ${z.opcoes.map((o) => `${o.nome} (${o.qtd})`).join(', ')}`}</Paragrafo>
             )}
             {(z.a_crescer ?? []).length > 0 && (
               <Text style={{ color: cores.sucesso, fontWeight: '700' }}>

@@ -24,7 +24,7 @@ const ESCALOES = [
     diasMin: 30,
     diasMax: 59 as number | null,
     titulo: 'O seu prato preferido espera por si',
-    corpo: 'Sentimos a sua falta! Repetir o último pedido é rápido — está tudo onde deixou. 🍲',
+    corpo: 'Sentimos a sua falta! Repetir o último pedido é rápido: está tudo onde deixou. 🍲',
   },
   {
     valor: 'frio',
@@ -32,7 +32,7 @@ const ESCALOES = [
     diasMin: 60,
     diasMax: 89 as number | null,
     titulo: 'Há novidades na Manda Bué',
-    corpo: 'Muitos clientes voltaram esta semana — volte também. É fácil e rápido, e temos algo para si no próximo pedido.',
+    corpo: 'Muitos clientes voltaram esta semana. Volte também. É fácil e rápido, e temos algo para si no próximo pedido.',
   },
   {
     valor: 'adormecido',
@@ -40,7 +40,7 @@ const ESCALOES = [
     diasMin: 90,
     diasMax: null as number | null,
     titulo: 'Preparámos algo só para si',
-    corpo: 'Já passou algum tempo! Volte ao sabor de casa — tratamos de tudo. Tem uma oferta de regresso à sua espera.',
+    corpo: 'Já passou algum tempo! Volte ao sabor de casa, nós tratamos de tudo. Tem uma oferta de regresso à sua espera.',
   },
 ];
 
@@ -114,7 +114,7 @@ export default function Reconquista() {
       });
       setSucesso(
         `Campanha criada. ${r.enviados} para enviar (${r.enviados_push} por notificação), ${r.controlo} no controlo. ` +
-          `${r.enviados - r.enviados_push} sem app — use a lista para telefonar.`,
+          `${r.enviados - r.enviados_push} sem app: use a lista para telefonar.`,
       );
       setLista(null);
       recarregar();
@@ -205,7 +205,7 @@ export default function Reconquista() {
           <Campo rotulo="Título" value={titulo} onChangeText={setTitulo} maxLength={80} />
           <Campo rotulo="Mensagem" value={corpo} onChangeText={setCorpo} multiline maxLength={500} />
           <Campo
-            rotulo="Grupo de controlo (%) — fica de fora para medir o efeito"
+            rotulo="Grupo de controlo (%): fica de fora para medir o efeito"
             value={controlo}
             onChangeText={setControlo}
             keyboardType="number-pad"

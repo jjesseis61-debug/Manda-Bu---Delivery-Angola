@@ -76,7 +76,7 @@ export default function Ganhar() {
           <Text style={{ color: cores.textoSuave, textAlign: 'center' }}>🔒 O teu código aparece quando criares conta.</Text>
         </View>
         <Botao titulo="Criar conta e começar a ganhar" aoCarregar={() => setFolha(true)} />
-        <Text style={{ color: cores.textoSuave, fontSize: 13 }}>Só ganhas com o teu código — partilhar o site sem ele não conta.</Text>
+        <Text style={{ color: cores.textoSuave, fontSize: 13 }}>Só ganhas com o teu código: partilhar o site sem ele não conta.</Text>
       </Cartao>
 
       {niveis && (

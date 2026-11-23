@@ -143,7 +143,7 @@ export default function HorariosPrato() {
 
         {erro && <Aviso tipo="erro">{erro}</Aviso>}
         {!lista && !erro && <ACarregar />}
-        {lista && lista.length === 0 && <Paragrafo suave>Sem horários — sempre disponível.</Paragrafo>}
+        {lista && lista.length === 0 && <Paragrafo suave>Sem horários: sempre disponível.</Paragrafo>}
         {lista?.map((h) => (
           <Cartao key={h.id} estilo={h.id === editId ? { borderWidth: 1, borderColor: cores.marca } : undefined}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>

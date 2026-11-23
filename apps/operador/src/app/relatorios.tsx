@@ -42,7 +42,7 @@ import { cores, espaco } from '@/lib/tema';
 import type { Cozinha, LinhaComparativo } from '@/lib/tipos';
 
 function percentagem(v: number | null | undefined) {
-  return v === null || v === undefined ? '—' : `${String(v).replace('.', ',')}%`;
+  return v === null || v === undefined ? '-' : `${String(v).replace('.', ',')}%`;
 }
 
 const COMPARAR = 'comparar';
@@ -61,7 +61,7 @@ function linhasComparativo(inicio: string, fim: string, l: LinhaComparativo[]) {
 
 function htmlTabela(titulo: string, linhas: (string | number | null)[][]) {
   const corpo = linhas
-    .map((l) => (l.length ? `<tr>${l.map((c) => `<td>${escaparHtml(String(c ?? '—'))}</td>`).join('')}</tr>` : '<tr><td>&nbsp;</td></tr>'))
+    .map((l) => (l.length ? `<tr>${l.map((c) => `<td>${escaparHtml(String(c ?? '-'))}</td>`).join('')}</tr>` : '<tr><td>&nbsp;</td></tr>'))
     .join('');
   return `<html><head><meta charset="utf-8"><style>
     body{font-family:sans-serif;padding:24px} h1{color:#B5121B} td{padding:4px 8px;border-bottom:1px solid #eee;font-size:12px}
@@ -215,13 +215,13 @@ export default function Relatorios() {
             {comp.map((c) => (
               <Cartao key={c.cozinha_id}>
                 <Linha esquerda={c.nome} direita={formatarKz(c.vendas)} forte />
-                <Linha esquerda="Pedidos · ticket médio" direita={`${c.pedidos} · ${c.ticket_medio !== null ? formatarKz(c.ticket_medio) : '—'}`} />
+                <Linha esquerda="Pedidos · ticket médio" direita={`${c.pedidos} · ${c.ticket_medio !== null ? formatarKz(c.ticket_medio) : '-'}`} />
                 <Linha esquerda="Clientes · novos · por indicação" direita={`${c.clientes} · ${c.clientes_novos} · ${c.clientes_indicacao}`} />
                 <Linha esquerda="Cancelados" direita={String(c.cancelados)} />
                 <Linha esquerda="Entregas a horas" direita={percentagem(c.pct_a_horas)} />
                 <Linha
                   esquerda="Média das avaliações"
-                  direita={c.media_avaliacao === null ? `— (${c.avaliacoes})` : `${String(c.media_avaliacao).replace('.', ',')} (${c.avaliacoes})`}
+                  direita={c.media_avaliacao === null ? `- (${c.avaliacoes})` : `${String(c.media_avaliacao).replace('.', ',')} (${c.avaliacoes})`}
                 />
                 {c.estado !== 'activa' && <Paragrafo suave>Cozinha {c.estado}</Paragrafo>}
               </Cartao>
@@ -310,7 +310,7 @@ export default function Relatorios() {
                         : 'Custo da comida acima da referência (28–35%): rever preços, doses ou compras.'}
                     </Text>
                   )}
-                  <Linha esquerda="Margem bruta" direita={rent.margem_bruta == null ? '—' : formatarKz(rent.margem_bruta)} forte />
+                  <Linha esquerda="Margem bruta" direita={rent.margem_bruta == null ? '-' : formatarKz(rent.margem_bruta)} forte />
                   <Linha esquerda="Despesas da cozinha" direita={formatarKz(rent.despesas)} />
                   {rent.despesas_por_categoria.map((d) => (
                     <Linha key={d.categoria} esquerda={`  · ${d.categoria}`} direita={formatarKz(d.valor)} />
@@ -318,7 +318,7 @@ export default function Relatorios() {
                   {rent.compras > 0 && <Linha esquerda="Compras registadas (informação)" direita={formatarKz(rent.compras)} />}
                   <Linha
                     esquerda="Resultado aproximado"
-                    direita={rent.resultado == null ? '— (faltam custos)' : formatarKz(rent.resultado)}
+                    direita={rent.resultado == null ? '- (faltam custos)' : formatarKz(rent.resultado)}
                     forte
                   />
                   <Paragrafo suave>
@@ -441,11 +441,11 @@ export default function Relatorios() {
                   />
                   <Linha
                     esquerda="Entregues a horas (até 10 min)"
-                    direita={agend.entregues ? `${agend.a_tempo} de ${agend.entregues}` : '—'}
+                    direita={agend.entregues ? `${agend.a_tempo} de ${agend.entregues}` : '-'}
                   />
                   <Linha
                     esquerda="Antecedência normal"
-                    direita={agend.antecedencia_horas == null ? '—' : `${String(agend.antecedencia_horas).replace('.', ',')} h`}
+                    direita={agend.antecedencia_horas == null ? '-' : `${String(agend.antecedencia_horas).replace('.', ',')} h`}
                   />
                   {agend.horas.length > 0 && (
                     <Linha esquerda="Horas mais pedidas" direita={agend.horas.map((h) => `${h.hora}h (${h.pedidos})`).join(' · ')} />
@@ -455,7 +455,7 @@ export default function Relatorios() {
             </Seccao>
 
             <Seccao titulo="Operação e serviço">
-              <Linha esquerda="Tempo médio até entregar" direita={rel.tempo_medio_min == null ? '—' : `${rel.tempo_medio_min} min`} />
+              <Linha esquerda="Tempo médio até entregar" direita={rel.tempo_medio_min == null ? '-' : `${rel.tempo_medio_min} min`} />
               <Linha esquerda="Agendados · grupo/empresa" direita={`${rel.agendados} · ${rel.grupo_empresa}`} />
               {rel.cancelamentos_motivos.length > 0 && <Text style={{ fontWeight: '700', color: cores.texto }}>Cancelamentos por motivo</Text>}
               {rel.cancelamentos_motivos.map((c) => <Linha key={c.motivo} esquerda={c.motivo} direita={String(c.n)} />)}

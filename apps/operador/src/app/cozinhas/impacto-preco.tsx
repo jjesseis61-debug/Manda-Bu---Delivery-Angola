@@ -43,7 +43,7 @@ export default function ImpactoPrecoEcra() {
                 <Linha esquerda="Clientes distintos" direita={String(r.clientes)} />
                 <Linha esquerda="Total recebido" direita={formatarKz(r.total_kz)} />
                 {r.pedidos_cancelados > 0 && (
-                  <Text style={{ color: cores.textoSuave }}>{r.pedidos_cancelados} cancelado(s)/estornado(s) — não contam no total</Text>
+                  <Text style={{ color: cores.textoSuave }}>{r.pedidos_cancelados} cancelado(s)/estornado(s), não contam no total</Text>
                 )}
               </Cartao>
             ))}

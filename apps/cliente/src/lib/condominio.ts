@@ -115,7 +115,7 @@ export function cozinhasComCondominio(cond: CondominioAqui | null, outras: Cozin
 
 /** Texto do cartão da cozinha do condomínio fechada */
 export function textoCondominioFechado(cond: CondominioAqui, horaLuanda: (iso: string) => string): string {
-  return `🔒 ${cond.cozinha} (${cond.nome}) está fechada${cond.reabre_em ? ` — volta às ${horaLuanda(cond.reabre_em)}` : ''}. Entretanto podes pedir noutra cozinha.`;
+  return `🔒 ${cond.cozinha} (${cond.nome}) está fechada${cond.reabre_em ? ` e volta às ${horaLuanda(cond.reabre_em)}` : ''}. Entretanto podes pedir noutra cozinha.`;
 }
 
 /** Preço com campanha de um prato (o mesmo que o servidor cobra por 1 unidade) */

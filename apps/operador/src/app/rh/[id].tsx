@@ -185,7 +185,7 @@ export default function FichaRH() {
                 <>
                   <Text style={{ fontWeight: '700' }}>{nomeContrato(activo.tipo)}</Text>
                   <Text style={{ color: cores.textoSuave }}>
-                    {activo.funcao ?? '—'} · desde {formatarData(activo.inicio)}
+                    {activo.funcao ?? '-'} · desde {formatarData(activo.inicio)}
                     {activo.fim ? ` até ${formatarData(activo.fim)}` : ''}
                     {activo.periodo_experimental_dias ? ` · ${activo.periodo_experimental_dias} dias de experiência` : ''}
                   </Text>
@@ -309,7 +309,7 @@ export default function FichaRH() {
               )}
               {d.contratos.filter((c) => !c.activo).map((c) => (
                 <Text key={c.id} style={{ color: cores.textoSuave, fontSize: 13 }}>
-                  Anterior: {nomeContrato(c.tipo)} · {formatarData(c.inicio)} a {c.terminado_em ? formatarData(c.terminado_em) : '—'}
+                  Anterior: {nomeContrato(c.tipo)} · {formatarData(c.inicio)} a {c.terminado_em ? formatarData(c.terminado_em) : '-'}
                   {c.motivo_fim ? ` · ${c.motivo_fim}` : ''}
                 </Text>
               ))}

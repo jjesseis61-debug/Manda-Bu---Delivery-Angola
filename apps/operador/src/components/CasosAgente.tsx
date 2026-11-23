@@ -114,7 +114,7 @@ export function CasosAgente<C extends CasoAgente>({
         )}
         {c.decisao ? (
           <Text style={{ fontWeight: '700' }}>
-            {nomeDecisao[c.decisao]} · por {c.decidido_por ?? '—'}: {c.decisao_nota}
+            {nomeDecisao[c.decisao]} · por {c.decidido_por ?? '-'}: {c.decisao_nota}
           </Text>
         ) : (
           <Botao titulo={expandido ? 'Fechar' : 'Ver dossiê e decidir'} variante="texto" aoCarregar={() => setAberto(expandido ? null : c.id)} />

@@ -223,7 +223,7 @@ export default function Receitas() {
             <Paragrafo suave>O Claude escreve um rascunho; tu revês e publicas.</Paragrafo>
           </Cartao>
         )}
-        {lista.length === 0 && <Paragrafo suave>Ainda não há receitas. Cria a primeira — aparece aos clientes quando a publicares (e com o interruptor «receitas» ligado).</Paragrafo>}
+        {lista.length === 0 && <Paragrafo suave>Ainda não há receitas. Cria a primeira: aparece aos clientes quando a publicares (e com o interruptor «receitas» ligado).</Paragrafo>}
         {lista.map((r) => (
           <Cartao key={r.id}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>

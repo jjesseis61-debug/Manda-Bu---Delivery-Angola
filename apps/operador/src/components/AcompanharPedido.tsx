@@ -87,7 +87,7 @@ export function AcompanharPedido({ pedidoId, altura = 320 }: { pedidoId: string;
         🔴 {pos.estafeta_nome ?? 'Estafeta'} · 🔵 Entrega.
         {pos.distancia_km != null ? ` A ${String(pos.distancia_km).replace('.', ',')} km` : ''}
         {pos.minutos != null ? ` · chega a ~${pos.minutos} min` : ''}
-        {pos.estafeta ? '' : ' — à espera da localização do estafeta.'}
+        {pos.estafeta ? '' : ': à espera da localização do estafeta.'}
       </Paragrafo>
     </View>
   );

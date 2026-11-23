@@ -131,10 +131,10 @@ function ConvidaCliente() {
 
       <Subtitulo>Os teus Kambas</Subtitulo>
       {activos.length === 0 && expirados.length === 0 ? (
-        <Paragrafo suave>Ainda não trouxeste nenhum kamba — partilha o teu código acima.</Paragrafo>
+        <Paragrafo suave>Ainda não trouxeste nenhum kamba. Partilha o teu código acima.</Paragrafo>
       ) : (
         activos.map((a, i) => (
-          <Linha key={`${a.primeiro_nome}-${i}`} esquerda={textoAmigo(a.primeiro_nome, a.estado, a.dias_restantes)} direita={a.ganho_total > 0 ? formatarKz(a.ganho_total) : '—'} />
+          <Linha key={`${a.primeiro_nome}-${i}`} esquerda={textoAmigo(a.primeiro_nome, a.estado, a.dias_restantes)} direita={a.ganho_total > 0 ? formatarKz(a.ganho_total) : '-'} />
         ))
       )}
       {expirados.length > 0 && (

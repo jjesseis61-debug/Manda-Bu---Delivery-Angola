@@ -92,7 +92,7 @@ test('CSV e PDF levam a rentabilidade e as doses quando existem', () => {
 describe('tempos por etapa', () => {
   const { duracao, conselhoEtapa, pesoEtapas, nomeEtapa } = jest.requireActual('../relatorio') as typeof import('../relatorio');
   it('duracao em s, min e h', () => {
-    expect(duracao(null)).toBe('—');
+    expect(duracao(null)).toBe('-');
     expect(duracao(0.5)).toBe('30 s');
     expect(duracao(14.4)).toBe('14 min');
     expect(duracao(65)).toBe('1 h 05');

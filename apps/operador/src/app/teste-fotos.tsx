@@ -9,8 +9,8 @@ import { resultadoExperiencia, veredictoExperiencia, type GrupoExperiencia, type
 import { diaLuanda, formatarKz, mensagemErro } from '@/lib/formatar';
 import { cores, espaco } from '@/lib/tema';
 
-const pct = (v: number | null) => (v == null ? '—' : `${v.toLocaleString('pt-PT')}%`);
-const seg = (v: number | null) => (v == null ? '—' : v < 60 ? `${v} s` : `${Math.floor(v / 60)} min ${v % 60} s`);
+const pct = (v: number | null) => (v == null ? '-' : `${v.toLocaleString('pt-PT')}%`);
+const seg = (v: number | null) => (v == null ? '-' : v < 60 ? `${v} s` : `${Math.floor(v / 60)} min ${v % 60} s`);
 
 function CartaoGrupo({ letra, nome, g, vence }: { letra: 'A' | 'B'; nome: string; g: GrupoExperiencia; vence: boolean }) {
   return (
@@ -23,7 +23,7 @@ function CartaoGrupo({ letra, nome, g, vence }: { letra: 'A' | 'B'; nome: string
       <Linha esquerda="Dias com visita ao Início" direita={String(g.dias_visita)} />
       <Linha esquerda="Visitas que acabam em pedido" direita={pct(g.conversao_pct)} forte />
       <Linha esquerda="Pedidos" direita={String(g.pedidos)} />
-      <Linha esquerda="Valor médio do pedido" direita={g.valor_medio == null ? '—' : formatarKz(g.valor_medio)} />
+      <Linha esquerda="Valor médio do pedido" direita={g.valor_medio == null ? '-' : formatarKz(g.valor_medio)} />
       <Linha esquerda="Tempo até ao 1.º «Adicionar» (mediana)" direita={seg(g.mediana_segundos)} />
     </Cartao>
   );

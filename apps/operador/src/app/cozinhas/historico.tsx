@@ -52,7 +52,7 @@ function rotuloCampo(c: string): string {
 }
 
 function valorLegivel(v: unknown): string {
-  if (v === null || v === undefined || v === '') return '—';
+  if (v === null || v === undefined || v === '') return '-';
   if (typeof v === 'boolean') return v ? 'Sim' : 'Não';
   if (typeof v === 'string' && /^https?:\/\//.test(v)) return '(foto)';
   if (typeof v === 'string' && v.length > 60) return `${v.slice(0, 60)}…`;

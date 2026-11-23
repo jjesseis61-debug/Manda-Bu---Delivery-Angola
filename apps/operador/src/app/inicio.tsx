@@ -321,7 +321,7 @@ export default function Inicio() {
         </>
       ) : (
         <Botao
-          titulo="Proteger a conta — sair em todos os dispositivos"
+          titulo="Proteger a conta: sair em todos os dispositivos"
           variante="secundario"
           aoCarregar={() => setProtegerConfirmar(true)}
         />

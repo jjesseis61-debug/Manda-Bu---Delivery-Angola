@@ -173,7 +173,7 @@ export default function Agendados() {
           </Text>
         </Text>
         {alerta === 'urgente' && <Aviso tipo="erro">URGENTE: já entrou na fila e ainda não foi confirmado.</Aviso>}
-        {alerta === 'por_confirmar' && <Aviso>Por confirmar — liga ao cliente ou confirma.</Aviso>}
+        {alerta === 'por_confirmar' && <Aviso>Por confirmar: liga ao cliente ou confirma.</Aviso>}
         {meusAlertas.map((x) => (
           <Aviso key={x.tipo + x.detalhe}>{`${NOME_ALERTA[x.tipo] ?? x.tipo}: ${x.detalhe}`}</Aviso>
         ))}
@@ -437,7 +437,7 @@ export default function Agendados() {
                   <Botao
                     titulo="🖨 Imprimir lista de produção"
                     variante="leve"
-                    aoCarregar={() => imprimir(htmlProducao(`Produção — ${tituloPeriodo}`, producao))}
+                    aoCarregar={() => imprimir(htmlProducao(`Produção · ${tituloPeriodo}`, producao))}
                   />
                 )}
               </View>

@@ -42,7 +42,7 @@ describe('og', () => {
   it('injecta as etiquetas no <head>, troca o título e escapa o texto', () => {
     const out = injectarOg(html, prato, 'https://site/p/1?r=MB-4812');
     expect(out).toContain('<meta property="og:image" content="https://x/foto.jpg">');
-    expect(out).toContain('<title>Choco &quot;frito&quot; — Cozinha da Alexandra</title>');
+    expect(out).toContain('<title>Choco &quot;frito&quot; · Cozinha da Alexandra</title>');
     expect(out).not.toContain('<title>Manda Bué</title>');
     expect(out).toContain('summary_large_image');
     expect(out.indexOf('og:title')).toBeLessThan(out.indexOf('</head>'));

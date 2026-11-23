@@ -38,7 +38,7 @@ export default function ApagarConta() {
     <Ecra>
       <Subtitulo>O que acontece</Subtitulo>
       <Paragrafo>
-        A tua conta fica desativada e podes recuperá-la durante 60 dias — com o nome, o histórico e o saldo. Ao fim
+        A tua conta fica desativada e podes recuperá-la durante 60 dias, com o nome, o histórico e o saldo. Ao fim
         de 60 dias é apagada definitivamente.
       </Paragrafo>
       <Paragrafo>

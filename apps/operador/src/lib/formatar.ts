@@ -14,7 +14,7 @@ export function textoGratisZona(v: number | null): string {
 
 /** 12.345 -> "12,3 %" */
 export function formatarPercentagem(parte: number, total: number): string {
-  if (!total) return '—';
+  if (!total) return '-';
   return `${((100 * parte) / total).toFixed(1).replace('.', ',')} %`;
 }
 

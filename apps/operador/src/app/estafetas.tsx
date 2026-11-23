@@ -149,7 +149,7 @@ export default function Estafetas() {
               );
             })}
             <Paragrafo suave>
-              A posição só se actualiza enquanto o estafeta tem o ecrã de Entregas aberto e está em entrega — por isso
+              A posição só se actualiza enquanto o estafeta tem o ecrã de Entregas aberto e está em entrega. Por isso
               parar é normal. Só marcamos “desatualizada” acima de 10 minutos (provável app fechada ou sem rede).
             </Paragrafo>
           </>
@@ -171,14 +171,14 @@ export default function Estafetas() {
                     <Text style={{ color: d.sugestao ? cores.sucesso : cores.textoSuave, fontSize: 13 }}>
                       {d.sugestao
                         ? `Sugerido: ${d.sugestao.nome} (${String(d.sugestao.distancia_km).replace('.', ',')} km · ${d.sugestao.pedidos_a_levar} a levar)`
-                        : 'Sem estafeta online perto — atribui manualmente'}
+                        : 'Sem estafeta online perto: atribui manualmente'}
                     </Text>
                   </View>
                 ))}
               </Cartao>
             ))}
             <Paragrafo suave>
-              Pedidos da mesma zona com o mesmo estafeta sugerido podem ir na mesma viagem. É só sugestão — o estafeta
+              Pedidos da mesma zona com o mesmo estafeta sugerido podem ir na mesma viagem. É só sugestão: o estafeta
               marca "em entrega" como sempre.
             </Paragrafo>
           </>

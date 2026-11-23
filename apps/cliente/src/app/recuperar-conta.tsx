@@ -39,7 +39,7 @@ export default function RecuperarConta() {
     <Ecra>
       <Subtitulo>Bem-vindo de volta</Subtitulo>
       <Paragrafo>
-        A tua conta está em processo de apagamento. Podes recuperá-la com tudo — nome, histórico e saldo.
+        A tua conta está em processo de apagamento. Podes recuperá-la com tudo: nome, histórico e saldo.
       </Paragrafo>
       {perfil?.recuperar_ate && (
         <Paragrafo suave>Podes recuperar até {formatarData(perfil.recuperar_ate)}.</Paragrafo>

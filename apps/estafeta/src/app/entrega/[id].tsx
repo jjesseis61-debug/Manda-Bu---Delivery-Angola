@@ -235,7 +235,7 @@ export default function Entrega() {
 
         {erro && <Aviso tipo="erro">{erro}</Aviso>}
 
-        {naFila && <Aviso tipo="sucesso">Guardado — será enviado assim que houver rede.</Aviso>}
+        {naFila && <Aviso tipo="sucesso">Guardado. Será enviado assim que houver rede.</Aviso>}
 
         {/* Acção conforme o estado (escondida se já está na fila à espera de envio) */}
         {!naFila && !aFechar && (pedido.estado === 'confirmado' || pedido.estado === 'em_preparacao') && (
