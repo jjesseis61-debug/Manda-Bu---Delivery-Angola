@@ -84,7 +84,7 @@ export function CapturarPonto({
     }
   }
 
-  // Procurar por morada/nome (geocoder do próprio telemóvel — sem chave Google)
+  // Procurar por morada/nome (geocoder do próprio telemóvel: sem chave Google)
   async function procurarMorada() {
     const q = procura.trim();
     if (!q || aProcurar) return;
@@ -97,7 +97,7 @@ export function CapturarPonto({
         const r = await Location.geocodeAsync(q);
         if (r[0]) ponto = [r[0].latitude, r[0].longitude];
       } catch {
-        /* alguns telemóveis não têm geocoder — segue para o recurso online */
+        /* alguns telemóveis não têm geocoder: segue para o recurso online */
       }
       if (!ponto) ponto = await geocodarOnline(q);
       if (ponto) definir(ponto[0], ponto[1]);

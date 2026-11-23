@@ -1,6 +1,6 @@
 // Talões do pedido (impressora de talões 58/80 mm, Wi-Fi ou PDF):
-// - COZINHA: o que preparar — pratos com as opções uma por linha, ingredientes a tirar e observações. Sem preços.
-// - ENTREGA: para o estafeta — cliente, telefone, morada, pratos, valores e o que receber.
+// - COZINHA: o que preparar: pratos com as opções uma por linha, ingredientes a tirar e observações. Sem preços.
+// - ENTREGA: para o estafeta: cliente, telefone, morada, pratos, valores e o que receber.
 import { escaparHtml } from './exportar';
 import { formatarData, formatarKz } from './formatar';
 import type { PedidoOperador } from './tipos';

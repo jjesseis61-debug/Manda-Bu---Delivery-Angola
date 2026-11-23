@@ -8,7 +8,7 @@ import { useSessao } from '@/lib/sessao';
 
 /**
  * Conta suspensa (apagada há menos de 60 dias): o único caminho é RECUPERAR.
- * Não há opção de "conta nova" aqui — isso protege os 60 dias. Só depois da purga
+ * Não há opção de "conta nova" aqui: isso protege os 60 dias. Só depois da purga
  * é que o mesmo número pode criar uma conta nova.
  */
 export default function RecuperarConta() {

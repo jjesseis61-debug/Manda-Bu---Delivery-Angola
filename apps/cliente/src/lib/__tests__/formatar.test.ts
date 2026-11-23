@@ -231,7 +231,7 @@ describe('mensagemPartilhaPrato', () => {
     expect(msg).toContain('*Bitoque* da Cozinha da Alexandra');
     expect(msg).not.toContain('Bitoque *');
   });
-  it('inclui nome, marca, chamada à ação e link (sem repetir o preço — vem no cartão)', () => {
+  it('inclui nome, marca, chamada à ação e link (sem repetir o preço: vem no cartão)', () => {
     const msg = mensagemPartilhaPrato('Choco frito', 'Cozinha da Alexandra', 'https://x/prato?id=1');
     expect(msg).toContain('Choco frito');
     expect(msg).toContain('Cozinha da Alexandra');

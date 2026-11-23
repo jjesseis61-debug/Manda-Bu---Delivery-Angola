@@ -134,7 +134,7 @@ export default function Inicio() {
     };
   }, [idFuncionario]);
   // Enquanto o ecrã está aberto, reconta as notificações a cada 15 s (quase instantâneo,
-  // sem gastar bateria a mais) — senão o badge só mudava ao sair e voltar.
+  // sem gastar bateria a mais): senão o badge só mudava ao sair e voltar.
   useFocusEffect(
     useCallback(() => {
       let activo = true;

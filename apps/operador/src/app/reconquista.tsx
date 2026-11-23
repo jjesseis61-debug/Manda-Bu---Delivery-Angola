@@ -44,7 +44,7 @@ const ESCALOES = [
   },
 ];
 
-/** Reconquista: clientes que pararam de comprar — lista (com telefone), campanha de regresso e resultados. */
+/** Reconquista de clientes que pararam de comprar: lista (com telefone), campanha de regresso e resultados. */
 export default function Reconquista() {
   const [resumo, setResumo] = useState<ResumoInativos | null>(null);
   const [zonas, setZonas] = useState<ZonaEntrega[]>([]);

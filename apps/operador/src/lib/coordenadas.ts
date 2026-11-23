@@ -1,7 +1,7 @@
 // Extrai um par (latitude, longitude) de texto colado do Google Maps: coordenadas soltas
 // ("-8.944707, 13.376525") ou um endereço/URL que as contenha (?q=, /@lat,lng, !3dlat!4dlng).
 // Devolve null quando não há um par válido. Links curtos (maps.app.goo.gl) não têm coordenadas
-// no texto, por isso não dão aqui — é preciso colar os números.
+// no texto, por isso não dão aqui: é preciso colar os números.
 const DEC = '(-?\\d{1,3}(?:\\.\\d+)?)';
 
 const PADROES = [

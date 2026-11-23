@@ -294,7 +294,7 @@ export default function Inicio() {
   };
 
   // Tempo a mostrar no banner: o do mapa (estafeta) se existir, senão o que falta até à hora prometida.
-  // Acima de 2 h (ex.: pedido agendado) não faz sentido em "minutos" — aí mostra-se a hora.
+  // Acima de 2 h (ex.: pedido agendado) não faz sentido em "minutos": aí mostra-se a hora.
   const minutosBanner = useMemo(() => {
     if (minutosEstafeta != null) return minutosEstafeta;
     if (!pedidoActivo?.hora_prometida) return null;
@@ -426,7 +426,7 @@ export default function Inicio() {
         <Text style={{ color: cores.textoSuave, marginTop: -espaco.xs }}>O que vais almoçar hoje?</Text>
         {/* Faixa de confiança: o contador do bairro passa a alternar dentro dela */}
         <FaixaConfianca contador={contador} />
-        {/* Banner: pedido em andamento — toca para acompanhar a entrega */}
+        {/* Banner: pedido em andamento, toca para acompanhar a entrega */}
         {pedidoActivo && (
           <Pressable
             accessibilityRole="button"
@@ -753,7 +753,7 @@ export default function Inicio() {
         {!visitante && ligada('como_chegar') && (cozinhaId ?? cardapio?.[0]?.cozinha_id) && (
           <ComoChegar cozinhaId={(cozinhaId ?? cardapio?.[0]?.cozinha_id) as string} />
         )}
-        {/* No fim do cardápio: convite às receitas — "comida primeiro, conteúdo depois".
+        {/* No fim do cardápio: convite às receitas («comida primeiro, conteúdo depois»).
             Cartão (não botão de rodapé solto) para ser discreto mas descoberto. */}
         {ligada('receitas') && !carrinho.grupo && cardapio !== null && cardapio.length > 0 && (
           <Cartao>

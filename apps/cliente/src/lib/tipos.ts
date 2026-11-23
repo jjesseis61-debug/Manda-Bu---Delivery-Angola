@@ -12,7 +12,7 @@ export type Perfil = {
   recuperar_ate: string | null;
   /** Nível no programa de indicação: normal → embaixador (≥ limiar) → ouro */
   nivel?: 'normal' | 'embaixador' | 'ouro';
-  /** Indicados activos (com ganho confirmado e vínculo vivo) — para o painel */
+  /** Indicados activos (com ganho confirmado e vínculo vivo): para o painel */
   indicados_activos?: number;
 };
 

@@ -1,4 +1,4 @@
-// Comprovativo do pedido em PDF (via impressão). É um documento informativo — NÃO é fatura fiscal
+// Comprovativo do pedido em PDF (via impressão). É um documento informativo: NÃO é fatura fiscal
 // (em Angola a fatura sai de software certificado; é emitida na cozinha, na entrega).
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';

@@ -416,7 +416,7 @@ export type PedidoOperador = {
   atribuido_a: string | null;
   atribuido_a_nome: string | null;
   atribuido_a_mim: boolean;
-  /** Reservado a mim (reserva activa) ou já a entregar por mim — para o modo estafeta */
+  /** Reservado a mim (reserva activa) ou já a entregar por mim: para o modo estafeta */
   minha: boolean;
   /** Quando a cozinha marcou o pedido como pronto (null = ainda não) */
   pronto_em?: string | null;

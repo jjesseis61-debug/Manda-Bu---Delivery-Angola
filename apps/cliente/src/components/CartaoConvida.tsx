@@ -10,7 +10,7 @@ import { cores, espaco, raio } from '@/lib/tema';
 import type { Saldo } from '@/lib/tipos';
 
 /**
- * Cartão "Convida e Ganha" no Início — teaser que leva à tab Convida.
+ * Cartão "Convida e Ganha" no Início: teaser que leva à tab Convida.
  * Adapta-se (teoria de Bandura): mostra o desconto do 1.º pedido; senão os ganhos com
  * submeta até ao levantamento; senão o convite. Só usa dados que já existem, nunca
  * mostra "0 Kz" (evita o estado afectivo negativo) e respeita o `ocultar_ganhos`.
@@ -24,7 +24,7 @@ export function CartaoConvida() {
 
   const activo = ligada('indicacao') && !!perfil;
   const clienteId = perfil?.cliente_id;
-  // Visitante (sem conta): o desconto do 1.º pedido vale para qualquer cliente novo — mostra-se igual
+  // Visitante (sem conta): o desconto do 1.º pedido vale para qualquer cliente novo, mostra-se igual
   const [regrasVisitante, setRegrasVisitante] = useState<{ desconto: number; minimo: number } | null>(null);
 
   useFocusEffect(
@@ -87,7 +87,7 @@ export function CartaoConvida() {
   let progresso: number | null = null;
 
   if (desconto && desconto > 0) {
-    // 1) Desconto do 1.º pedido ainda por usar — a prioridade (expectativa + posse)
+    // 1) Desconto do 1.º pedido ainda por usar: a prioridade (expectativa + posse)
     titulo = `🎁 Tens ${formatarKz(desconto)} no teu 1.º pedido`;
     linha = minimo > 0 ? `Em pedidos acima de ${formatarKz(minimo)}. Toca para saber como.` : 'Toca para saber como.';
   } else if (!ocultar && saldoDisp > 0) {
@@ -99,7 +99,7 @@ export function CartaoConvida() {
         : 'Já podes levantar o teu saldo.';
     if (minimoLevantar > 0) progresso = Math.min(1, saldoDisp / minimoLevantar);
   } else {
-    // 3) Convite (CTA) — nunca mostra "0 Kz"
+    // 3) Convite (CTA): nunca mostra "0 Kz"
     titulo = porPedido > 0 ? `🎁 Convida e ganha ${formatarKz(porPedido)} por cada pedido` : '🎁 Convida e ganha';
     linha = 'Partilha o teu código com os amigos. Toca para convidar.';
   }

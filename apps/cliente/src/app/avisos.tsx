@@ -18,7 +18,7 @@ function quando(iso: string): string {
   return d.toLocaleDateString('pt-PT');
 }
 
-/** Na versão web: ligar os avisos no telemóvel (push) — explica o caso do iPhone */
+/** Na versão web: ligar os avisos no telemóvel (push): explica o caso do iPhone */
 function LigarAvisosWeb() {
   const [estado, setEstado] = useState<EstadoPushWeb | null>(null);
   const [ocupado, setOcupado] = useState(false);

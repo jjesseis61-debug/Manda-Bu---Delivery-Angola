@@ -9,7 +9,7 @@ import { telefoneInternacional } from '@/lib/formatar';
 import { supabase } from '@/lib/supabase';
 import { cores, espaco } from '@/lib/tema';
 
-const VALIDADE_SEG = 600; // 10 min — igual ao OTP Expiry do servidor
+const VALIDADE_SEG = 600; // 10 min: igual ao OTP Expiry do servidor
 const ESPERA_REENVIO_SEG = 60;
 
 // Sem rede, o supabase-js devolve um AuthRetryableFetchError com status 0 (o fetch falhou antes de
@@ -20,7 +20,7 @@ function semLigacao(error: { name?: string; status?: number } | null): boolean {
 
 const mmss = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
-/** Entrar com o número de telefone e o código recebido por SMS (Supabase Auth) — app do estafeta */
+/** Entrar com o número de telefone e o código recebido por SMS (Supabase Auth), app do estafeta */
 export default function Entrar() {
   const router = useRouter();
   const [telefone, setTelefone] = useState('');

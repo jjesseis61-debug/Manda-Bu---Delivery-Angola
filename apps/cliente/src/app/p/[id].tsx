@@ -9,7 +9,7 @@ import { useSessao } from '@/lib/sessao';
 /**
  * Prato partilhado: {site}/p/{prato}?r={código} (ou mandabue://p/{prato}?r=…).
  * Guarda o código de quem partilhou (o registo usa-o) e, se o cliente já tem conta e ainda pode
- * ser convidado, liga a indicação em silêncio. Depois abre o prato — com ou sem conta: o visitante
+ * ser convidado, liga a indicação em silêncio. Depois abre o prato, com ou sem conta: o visitante
  * vê o prato e o cardápio da cozinha e só entra/cria conta ao carregar em «Pedir» (o código fica
  * guardado para o registo).
  */

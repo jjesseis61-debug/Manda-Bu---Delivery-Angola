@@ -247,7 +247,7 @@ export async function refrescarRota(pedidoId: string): Promise<void> {
   try {
     await supabase.functions.invoke('rota-estafeta', { body: { pedido: pedidoId } });
   } catch {
-    // Sem rota do Google, fica a estimativa por distância — não é erro para o cliente
+    // Sem rota do Google, fica a estimativa por distância: não é erro para o cliente
   }
 }
 
@@ -755,7 +755,7 @@ export async function lerDoses(cozinhaId: string): Promise<{ cardapio_id: string
   return verificar(await supabase.rpc('doses_cardapio', { p_cozinha: cozinhaId })) as { cardapio_id: string; restantes: number }[];
 }
 
-// Receitas (Cozinha de casa) — só aparecem com o interruptor 'receitas' ligado (garantido no servidor)
+// Receitas (Cozinha de casa): só aparecem com o interruptor 'receitas' ligado (garantido no servidor)
 export async function lerReceitas(): Promise<ReceitaResumo[]> {
   return (verificar(await supabase.rpc('receitas_publicas')) as ReceitaResumo[]) ?? [];
 }

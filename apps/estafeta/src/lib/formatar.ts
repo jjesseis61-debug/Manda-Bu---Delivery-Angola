@@ -61,7 +61,7 @@ export function horaPrometida(iso: string | null | undefined): { texto: string; 
   return { texto: `para as ${horaLuanda(iso)}`, atrasado: new Date(iso).getTime() < Date.now() };
 }
 
-/** "agora mesmo", "há 3 min", "há 2 h" — tempo decorrido desde um instante (ms). */
+/** "agora mesmo", "há 3 min", "há 2 h": tempo decorrido desde um instante (ms). */
 export function haQuantoTempo(desde: number): string {
   const min = Math.floor((Date.now() - desde) / 60000);
   if (min < 1) return 'agora mesmo';

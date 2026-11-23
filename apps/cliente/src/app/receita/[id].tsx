@@ -14,7 +14,7 @@ const km = (d: number) => `${d.toLocaleString('pt-PT', { maximumFractionDigits: 
 
 /**
  * Receita da terra. O «Pedir» segue o prato e o balcão do cliente: pede-se no balcão escolhido se ele o
- * fizer; senão no mais perto que o faça (dizendo-o); se ninguém o faz, não se promete — «Quero que façam».
+ * fizer; senão no mais perto que o faça (dizendo-o); se ninguém o faz, não se promete: «Quero que façam».
  * O prato abre no ecrã do prato, que pergunta antes de trocar de cozinha com o carrinho cheio.
  * Com as encomendas ligadas, o prato que ninguém faz pode encomendar-se (o operador põe uma cozinha a fazê-lo).
  */

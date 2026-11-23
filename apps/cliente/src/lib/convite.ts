@@ -64,7 +64,7 @@ const PACOTE_ANDROID = 'ao.mandabue.cliente';
 /**
  * Link de convite: a página da Play Store com o código no `referrer`. É um https (clicável no
  * WhatsApp) e, ao instalar pela Play Store, a Google entrega o código à app no 1.º arranque
- * (Install Referrer — Fase 2). Quem já tem a app continua a poder usar o código em texto.
+ * (Install Referrer: Fase 2). Quem já tem a app continua a poder usar o código em texto.
  */
 export function linkConvite(codigo: string): string {
   const normalizado = normalizarCodigo(codigo) ?? codigo;
@@ -91,8 +91,8 @@ export function siteApp(): string {
 
 /**
  * Link de partilha de um prato: `{site}/p/{prato}?r={código}`. O site devolve a página com a
- * pré-visualização (foto + nome + preço + desconto do amigo, via Open Graph) — é o que faz o
- * cartão aparecer no WhatsApp — e, para quem toca, abre a app web no prato com o código guardado.
+ * pré-visualização (foto + nome + preço + desconto do amigo, via Open Graph): é o que faz o
+ * cartão aparecer no WhatsApp e, para quem toca, abre a app web no prato com o código guardado.
  */
 export function linkPartilhaPrato(cardapioId: string, codigo?: string | null): string {
   const r = codigo ? normalizarCodigo(codigo) : null;

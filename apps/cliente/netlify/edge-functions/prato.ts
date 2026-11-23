@@ -1,6 +1,6 @@
 // Netlify Edge Function: /p/{prato}?r={código}
 // O WhatsApp (e outras redes) lê esta página para montar o cartão com a FOTO do prato, o nome,
-// o preço e — quando o link traz o código de quem partilhou — o desconto do 1.º pedido.
+// o preço e, quando o link traz o código de quem partilhou, o desconto do 1.º pedido.
 // Para pessoas, a página é a própria app web (PWA): a rota /p/[id] guarda o código e abre o prato.
 // Os dados vêm da função `prato` do Supabase (modo JSON). Se falhar, serve a app sem cartão.
 import { codigoDoLink, idDoCaminho, injectarOg, type PratoPartilhado } from '../../src/lib/og.ts';

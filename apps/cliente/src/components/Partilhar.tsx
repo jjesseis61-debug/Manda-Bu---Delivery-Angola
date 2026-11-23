@@ -15,7 +15,7 @@ type Ganhos = { amigo: number; tu: number; aPartirDoSegundo: boolean };
 /**
  * Partilhar um prato. Com conta: abre o WhatsApp com o código de convite. Sem conta: antes de
  * partilhar, a folha «🎁 Partilha e ganha» (no máximo 1× por 24 h) propõe entrar para o link levar
- * o código — «Entrar e partilhar» (depois de entrar a partilha continua sozinha) ou «Partilhar sem
+ * o código: «Entrar e partilhar» (depois de entrar a partilha continua sozinha) ou «Partilhar sem
  * código». Nunca bloqueia a partilha.
  */
 export function usePartilhar() {

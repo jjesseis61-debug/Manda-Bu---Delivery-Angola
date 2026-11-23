@@ -34,7 +34,7 @@ export function FaixaConfianca({
       ? urlTelefone(CONTACTO_AJUDA.telefone)
       : null;
   const abrirAjuda = perfil
-    ? // Com conta: o assistente (se ligado) ou os contactos (WhatsApp/ligar) — nunca um toque sem resposta
+    ? // Com conta: o assistente (se ligado) ou os contactos (WhatsApp/ligar): nunca um toque sem resposta
       () => router.push(ligada('agente_atendimento') ? '/ajuda' : '/contactos')
     : contactoVisitante
       ? () => void Linking.openURL(contactoVisitante).catch(() => undefined)

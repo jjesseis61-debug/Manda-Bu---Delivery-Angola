@@ -67,7 +67,7 @@ export default function Inicio() {
     void lerModoEstafeta().then((v) => setEmServico(v ?? false));
   }, []);
 
-  // Posição atual (uma leitura), só se a permissão já estiver dada — para mostrar a distância a cada
+  // Posição atual (uma leitura), só se a permissão já estiver dada: para mostrar a distância a cada
   // entrega sem pedir autorização neste ecrã (a autorização é pedida no "Em serviço").
   useEffect(() => {
     void (async () => {

@@ -43,7 +43,7 @@ export function tempoEmFalta(iso: string, agora: Date = new Date()): string | nu
   return `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, '0')} min`;
 }
 
-/** Onde se junta o grupo: o rótulo e a frase do convite (Cialdini: unidade — «a nossa família») */
+/** Onde se junta o grupo: o rótulo e a frase do convite (Cialdini, unidade: «a nossa família») */
 export const TIPOS_GRUPO: { valor: TipoGrupo; rotulo: string; convite: string }[] = [
   { valor: 'trabalho', rotulo: '💼 Trabalho', convite: 'Vamos pedir juntos o almoço na Cozinha da Alexandra!' },
   { valor: 'familia', rotulo: '👨‍👩‍👧 Família', convite: 'Almoço de família na Cozinha da Alexandra! Cada um escolhe o seu prato.' },
@@ -70,7 +70,7 @@ export const nomeMetodoAntes: Record<MetodoAntes, string> = {
 };
 
 /** "★ 4,5 · 12 avaliações" */
-/** Texto da média de avaliações (sem a estrela — essa é um ícone dourado, ver MediaAvaliacao) */
+/** Texto da média de avaliações (sem a estrela: essa é um ícone dourado, ver MediaAvaliacao) */
 export function formatarMedia(media: number, total: number): string {
   return `${media.toFixed(1).replace('.', ',')} · ${total} ${total === 1 ? 'avaliação' : 'avaliações'}`;
 }
@@ -174,13 +174,13 @@ export const nomeEstadoPedido: Record<EstadoPedido, string> = {
 
 /** Cor de cada estado, para um sinal visual na lista e no detalhe (sempre a par do texto, nunca só a cor) */
 export const corEstadoPedido: Record<EstadoPedido, string> = {
-  pendente: '#1565C0', // Recebido — azul
-  confirmado: '#00695C', // Confirmado — verde-azulado
-  em_preparacao: '#8A5A00', // Em preparação — âmbar
-  em_entrega: '#6A1B9A', // A caminho — roxo
-  entregue_pago: '#1E7D32', // Entregue — verde
-  cancelado: '#5F6368', // Cancelado — cinzento
-  estornado: '#5F6368', // Estornado — cinzento
+  pendente: '#1565C0', // Recebido: azul
+  confirmado: '#00695C', // Confirmado: verde-azulado
+  em_preparacao: '#8A5A00', // Em preparação: âmbar
+  em_entrega: '#6A1B9A', // A caminho: roxo
+  entregue_pago: '#1E7D32', // Entregue: verde
+  cancelado: '#5F6368', // Cancelado: cinzento
+  estornado: '#5F6368', // Estornado: cinzento
 };
 
 export const nomeMetodo: Record<string, string> = {

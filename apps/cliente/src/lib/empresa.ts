@@ -10,7 +10,7 @@ export const EMPRESA = {
   instrucoesPagamento: process.env.EXPO_PUBLIC_INSTRUCOES_PAGAMENTO ?? '',
 };
 
-// Contacto de ajuda mostrado no ecrã de entrar — ANTES do login e, por isso, também
+// Contacto de ajuda mostrado no ecrã de entrar: ANTES do login e, por isso, também
 // offline. Vem da config da app (não do servidor, que exige sessão). Se as variáveis
 // não estiverem preenchidas, o bloco simplesmente não aparece (temContacto === false).
 export const CONTACTO_AJUDA: Contacto = {

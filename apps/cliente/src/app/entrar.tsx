@@ -18,7 +18,7 @@ function semLigacao(error: { name?: string; status?: number } | null): boolean {
   return error?.name === 'AuthRetryableFetchError' && error?.status === 0;
 }
 
-const VALIDADE_SEG = 600; // 10 min — igual ao OTP Expiry do servidor
+const VALIDADE_SEG = 600; // 10 min: igual ao OTP Expiry do servidor
 const ESPERA_REENVIO_SEG = 60;
 
 /** Entrar com o número de telefone e o código recebido por SMS (Supabase Auth) */

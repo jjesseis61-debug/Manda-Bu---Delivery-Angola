@@ -25,7 +25,7 @@ export function mesDe(desvio: number, agora = new Date()): { inicio: string; fim
   return { inicio, fim: f.toISOString().slice(0, 10), nome: `${meses[d.getUTCMonth()]} ${d.getUTCFullYear()}` };
 }
 
-/** Despesas da cozinha (gás, renda, salários...) — entram no resultado do relatório */
+/** Despesas da cozinha (gás, renda, salários...): entram no resultado do relatório */
 export default function Despesas() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [desvio, setDesvio] = useState(0);

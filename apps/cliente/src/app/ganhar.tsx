@@ -12,7 +12,7 @@ import { lerRegrasConvida } from '@/lib/visitante';
 
 /**
  * «Convida e ganha» para quem ainda não tem conta: uma montra das regras (quanto ganhas, quanto
- * o amigo ganha, níveis). Sem conta não há código nem ganhos — o botão leva a criar conta e,
+ * o amigo ganha, níveis). Sem conta não há código nem ganhos: o botão leva a criar conta e,
  * depois, volta ao Convida já com o código pronto a partilhar.
  */
 export default function Ganhar() {

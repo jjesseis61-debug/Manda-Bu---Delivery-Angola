@@ -1437,7 +1437,7 @@ export async function listarCampanhasReconquista(limite = 50): Promise<CampanhaR
   );
 }
 
-// ---------------------------------------------------------------- Receitas (Cozinha de casa) — R1
+// ---------------------------------------------------------------- Receitas (Cozinha de casa): R1
 export async function lerReceitasGerir(): Promise<Receita[]> {
   return verificar(
     await supabase

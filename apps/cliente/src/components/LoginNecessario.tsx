@@ -11,7 +11,7 @@ import { supabase } from '@/lib/supabase';
 import { cores, espaco } from '@/lib/tema';
 import { guardarDestino, type Destino } from '@/lib/visitante';
 
-const VALIDADE_SEG = 600; // 10 min — igual ao OTP Expiry do servidor
+const VALIDADE_SEG = 600; // 10 min: igual ao OTP Expiry do servidor
 const ESPERA_REENVIO_SEG = 60;
 
 // Sem rede, o supabase-js devolve um AuthRetryableFetchError com status 0

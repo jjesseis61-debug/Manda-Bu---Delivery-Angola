@@ -1,7 +1,7 @@
 // Fila de acções feitas sem rede, guardada no telemóvel (sobrevive a reinícios). Quando a rede volta,
 // sincronizar.ts reproduz as acções por ordem. Cobre as mudanças de estado e a entrega paga em
 // DINHEIRO (sem foto). O pagamento electrónico precisa de enviar a foto do comprovativo, por isso
-// exige rede no momento — não entra na fila.
+// exige rede no momento: não entra na fila.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const CHAVE = 'manda-bue-estafeta:fila-offline';
