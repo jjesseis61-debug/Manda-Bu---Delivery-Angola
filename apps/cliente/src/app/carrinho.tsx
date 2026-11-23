@@ -8,6 +8,7 @@ import { faixasAgendamento } from '@/lib/agendar';
 import { cozinhasPertoParaPedir, criarPedido, lerEnderecos, lerSaldo, meuPacote, minhaEmpresa, orcamento as pedirOrcamento, usarCredito, usarPacote } from '@/lib/api';
 import { balcaoLonge, cardapioMaisTarde, pratoDoErro, textoQuandoVolta, type PratoMaisTarde } from '@/lib/balcao';
 import { type LinhaCarrinho, useCarrinho } from '@/lib/carrinho';
+import { moradaComPinoLonge, textoFicaA } from '@/lib/pinZona';
 import { novoId } from '@/lib/dispositivo';
 import { formatarKz, mensagemCodigo, mensagemErro, textoCampanha, textoEntregaGratis } from '@/lib/formatar';
 import { useSessao } from '@/lib/sessao';
@@ -142,7 +143,9 @@ function CarrinhoConta() {
   }, [pontoId, grupo, ligada]);
 
   const pagarComPacote = !!pacote && comPacote;
-  const longe = !grupo ? balcaoLonge(balcoesMorada, carrinho.cozinhaActual?.id ?? null) : null;
+  // Morada com o pino longe do bairro: as distâncias dela não são de confiança, não se propõe outro balcão
+  const moradaEscolhida = (enderecos ?? []).find((e) => e.ponto_entrega_id === pontoId);
+  const longe = !grupo && !moradaComPinoLonge(moradaEscolhida) ? balcaoLonge(balcoesMorada, carrinho.cozinhaActual?.id ?? null) : null;
   const foraDoHorario = maisTarde.filter((p) => carrinho.linhas.some((l) => l.item.id === p.cardapio_id));
   const nomeRecusado = pratoRecusado ? (carrinho.linhas.find((l) => l.item.id === pratoRecusado)?.item.nome ?? null) : null;
   const valorSaldo = orc && usarSaldo ? Math.min(saldo, orc.total) : 0;
@@ -253,7 +256,7 @@ function CarrinhoConta() {
       {longe && (
         <Cartao>
           <Text style={{ color: cores.texto }}>
-            {`📍 ${longe.actual.nome} fica a ${textoDistancia(longe.actual.distancia_km ?? 0)} desta morada. ${longe.perto.nome} fica a ${textoDistancia(longe.perto.distancia_km ?? 0)}.`}
+            {`📍 ${longe.actual.nome} ${textoFicaA(longe.actual.distancia_km ?? 0, textoDistancia)} desta morada. ${longe.perto.nome} ${textoFicaA(longe.perto.distancia_km ?? 0, textoDistancia)}.`}
           </Text>
           {mudarPendente ? (
             <>

@@ -326,7 +326,7 @@ export async function lerEnderecos(clienteId: string | null | undefined): Promis
   if (!clienteId) return [];
   const r = await supabase
     .from('enderecos_cliente')
-    .select('id, nome, principal, ponto_entrega_id, pontos_entrega(id, tipo, referencia, zona_id, zonas(nome))')
+    .select('id, nome, principal, ponto_entrega_id, pontos_entrega(id, tipo, referencia, zona_id, lat, lng, zonas(nome, centro_lat, centro_lng))')
     .eq('cliente_id', clienteId)
     .is('deletado_em', null)
     .order('principal', { ascending: false })

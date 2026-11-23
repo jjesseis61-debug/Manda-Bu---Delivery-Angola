@@ -10,7 +10,7 @@ export const textoDistancia = (km: number) => `${km.toLocaleString('pt-PT', { ma
  * Botão do título com o balcão de onde se está a pedir («📍 Viana ▾»): a primeira decisão fica no topo,
  * antes das campanhas e do cardápio, em vez de aparecer a meio da página.
  */
-export function BotaoBalcao({ nome, aoCarregar }: { nome: string; aoCarregar: () => void }) {
+export function BotaoBalcao({ nome, aoCarregar, estreito = false }: { nome: string; aoCarregar: () => void; estreito?: boolean }) {
   return (
     <Pressable
       accessibilityRole="button"
@@ -25,8 +25,8 @@ export function BotaoBalcao({ nome, aoCarregar }: { nome: string; aoCarregar: ()
         borderRadius: 16,
         paddingHorizontal: 10,
         paddingVertical: 4,
-        maxWidth: 150,
-        marginRight: 12,
+        maxWidth: estreito ? 120 : 150,
+        marginRight: estreito ? 8 : 12,
       }}>
       <Text numberOfLines={1} style={{ color: cores.marca, fontWeight: '700', fontSize: 13, flexShrink: 1 }}>
         {`📍 ${nome}`}

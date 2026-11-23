@@ -268,7 +268,10 @@ export type Endereco = {
     tipo: 'residencial' | 'empresa';
     referencia: string | null;
     zona_id: string | null;
-    zonas: { nome: string } | null;
+    /** Pino da morada (pode faltar em respostas antigas) */
+    lat?: number | null;
+    lng?: number | null;
+    zonas: { nome: string; centro_lat?: number | null; centro_lng?: number | null } | null;
   } | null;
 };
 

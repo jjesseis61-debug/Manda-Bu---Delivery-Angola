@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, RefreshControl, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 
 import { CartaoConvida } from '@/components/CartaoConvida';
 import { Confirmar } from '@/components/Confirmar';
@@ -33,6 +33,7 @@ import {
 } from '@/lib/api';
 import { balcaoLonge, cardapioMaisTarde, cozinhasPertoDe, posicaoActual, textoQuandoVolta, type PratoMaisTarde } from '@/lib/balcao';
 import { useCarrinho } from '@/lib/carrinho';
+import { moradaComPinoLonge, textoFicaA } from '@/lib/pinZona';
 import {
   condominioAqui,
   cozinhasComCondominio,
@@ -367,9 +368,10 @@ export default function Inicio() {
   const nomeBalcao = cozinhas.find((c) => c.cozinha_id === balcaoActual)?.nome ?? null;
   // De onde se medem as distâncias: o telemóvel («de ti») ou a morada principal
   const morada = enderecos[0];
+  // Morada com o pino longe do bairro (registada noutro sítio): as distâncias dela não são de confiança, não se avisa
   const referenciaBalcoes = gps
     ? 'de ti'
-    : morada
+    : morada && !moradaComPinoLonge(morada)
       ? `de ${[morada.nome ?? 'Casa', morada.pontos_entrega?.zonas?.nome].filter(Boolean).join(' · ')}`
       : null;
   // Aviso «há um balcão mais perto» (o carrinho guarda o balcão de antes, mesmo que o cliente já esteja noutro sítio)
@@ -377,16 +379,25 @@ export default function Inicio() {
   const mostrarLonge = longe && ficarEm !== longe.actual.cozinha_id;
   const idsMaisTarde = new Map(maisTarde.map((p) => [p.cardapio_id, p]));
   const soMaisTarde = maisTarde.filter((p) => !(cardapio ?? []).some((i) => i.id === p.cardapio_id));
+  // Com o botão do balcão (e o «Entrar» do visitante), o título encolhe com «…» em vez de ficar tapado
+  const { width: larguraEcra } = useWindowDimensions();
+  const comBalcao = podeEscolherBalcao && !!nomeBalcao;
+  const larguraTitulo = Math.max(90, larguraEcra - (comBalcao ? (visitante ? 290 : 220) : visitante ? 140 : 80));
   useLayoutEffect(() => {
     navigation.setOptions({
+      headerTitle: () => (
+        <Text numberOfLines={1} style={{ fontSize: 20, fontWeight: '600', color: cores.texto, maxWidth: larguraTitulo }}>
+          Cozinha da Alexandra
+        </Text>
+      ),
       headerRight: () => (
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          {podeEscolherBalcao && nomeBalcao ? <BotaoBalcao nome={nomeBalcao} aoCarregar={() => setAEscolherBalcao(true)} /> : null}
+          {podeEscolherBalcao && nomeBalcao ? <BotaoBalcao nome={nomeBalcao} estreito={visitante} aoCarregar={() => setAEscolherBalcao(true)} /> : null}
           {visitante ? <SinoVisitante /> : <Sino />}
         </View>
       ),
     });
-  }, [navigation, podeEscolherBalcao, nomeBalcao, visitante]);
+  }, [navigation, podeEscolherBalcao, nomeBalcao, visitante, larguraTitulo]);
 
   return (
     <View style={{ flex: 1, backgroundColor: cores.fundo }}>
@@ -588,10 +599,10 @@ export default function Inicio() {
         {mostrarLonge && longe && (
           <Cartao estilo={{ gap: espaco.s }}>
             <Text style={{ fontWeight: '700', color: cores.texto }}>
-              {`📍 ${longe.actual.nome} fica a ${textoDistancia(longe.actual.distancia_km ?? 0)} ${referenciaBalcoes}.`}
+              {`📍 ${longe.actual.nome} ${textoFicaA(longe.actual.distancia_km ?? 0, textoDistancia)} ${referenciaBalcoes}.`}
             </Text>
             <Text style={{ color: cores.texto }}>
-              {`${longe.perto.nome} fica a ${textoDistancia(longe.perto.distancia_km ?? 0)}: a comida chega mais depressa.`}
+              {`${longe.perto.nome} ${textoFicaA(longe.perto.distancia_km ?? 0, textoDistancia)}: a comida chega mais depressa.`}
             </Text>
             <Botao titulo={`Pedir em ${longe.perto.nome}`} aoCarregar={() => trocarCozinha(longe.perto.cozinha_id)} />
             <Botao titulo={`Ficar em ${longe.actual.nome}`} variante="texto" aoCarregar={() => setFicarEm(longe.actual.cozinha_id)} />

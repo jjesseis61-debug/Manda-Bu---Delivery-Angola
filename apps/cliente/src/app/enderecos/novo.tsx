@@ -9,6 +9,7 @@ import { Aviso, Botao, Campo, Cartao, Ecra, Escolha, Paragrafo, Subtitulo } from
 import { criarEndereco, lerEnderecos, lerZonas, pontosProximos, type PontoProximo } from '@/lib/api';
 import { mensagemErro } from '@/lib/formatar';
 import { HA_MAPA } from '@/lib/mapaNativo';
+import { pinoLongeDaZona } from '@/lib/pinZona';
 import { useSessao } from '@/lib/sessao';
 import type { Zona } from '@/lib/tipos';
 
@@ -35,6 +36,8 @@ export default function NovoEndereco() {
   const [aGuardar, setAGuardar] = useState(false);
   const [aLocalizar, setALocalizar] = useState(false);
   const [pesquisado, setPesquisado] = useState(false);
+  // Pino longe do bairro: o cliente confirma que está certo (ex.: bairro novo sem centro rigoroso)
+  const [pinoConfirmado, setPinoConfirmado] = useState<string | null>(null);
 
   useEffect(() => {
     lerZonas()
@@ -134,6 +137,10 @@ export default function NovoEndereco() {
   }
 
   const precisaZona = !(usarProximo && proximo);
+  // O pino e o bairro têm de bater certo: senão a distância aos balcões e o estafeta vão ao sítio errado
+  const longe = precisaZona && marcado && zonaId ? pinoLongeDaZona({ lat: ponto.latitude, lng: ponto.longitude }, zonaId, zonas) : null;
+  const chaveLonge = `${zonaId}|${ponto.latitude.toFixed(4)}|${ponto.longitude.toFixed(4)}`;
+  const longePorResolver = !!longe && pinoConfirmado !== chaveLonge;
 
   return (
     <Ecra>
@@ -212,12 +219,36 @@ export default function NovoEndereco() {
         </>
       )}
 
+      {longePorResolver && longe && (
+        <Cartao>
+          <Text style={{ fontSize: 15, fontWeight: '700' }}>
+            {`📍 O pino está a ${Math.round(longe.km)} km do bairro ${longe.zona}${longe.maisPerto ? ` (fica mais perto de ${longe.maisPerto.nome})` : ''}.`}
+          </Text>
+          <Paragrafo suave>Onde é a entrega? Se registaste a morada a partir de outro sítio, o mapa pôs o pino onde estás agora.</Paragrafo>
+          {longe.maisPerto && (
+            <Botao titulo={`O bairro é ${longe.maisPerto.nome}`} variante="secundario" aoCarregar={() => setZonaId(longe.maisPerto!.id)} />
+          )}
+          <Botao
+            titulo={`Pôr o pino em ${longe.zona}`}
+            variante="secundario"
+            aoCarregar={() => {
+              const z = zonas.find((x) => x.id === zonaId);
+              if (z?.centro_lat == null || z.centro_lng == null) return;
+              const p = { latitude: z.centro_lat, longitude: z.centro_lng };
+              setPonto(p);
+              setCentrarEm(p);
+              setMarcado(false);
+            }}
+          />
+          <Botao titulo="Está certo assim" variante="texto" aoCarregar={() => setPinoConfirmado(chaveLonge)} />
+        </Cartao>
+      )}
       {erro && <Aviso tipo="erro">{erro}</Aviso>}
       <Botao
         titulo="Guardar endereço"
         aoCarregar={guardar}
         aCarregar={aGuardar}
-        desactivado={!marcado || (precisaZona && (!zonaId || !referencia.trim()))}
+        desactivado={!marcado || longePorResolver || (precisaZona && (!zonaId || !referencia.trim()))}
       />
     </Ecra>
   );
