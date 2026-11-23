@@ -1,11 +1,14 @@
 import { Redirect, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 
-import { ACarregar, Aviso, Botao, Ecra, Escolha, Paragrafo, Subtitulo } from '@/components/ui';
+import { Text } from 'react-native';
+
+import { ACarregar, Aviso, Botao, Cartao, Ecra, Escolha, Paragrafo, Subtitulo } from '@/components/ui';
 import { criarGrupo, lerEnderecos } from '@/lib/api';
 import { useCarrinho } from '@/lib/carrinho';
 import { horaLuanda, mensagemErro, TIPOS_GRUPO } from '@/lib/formatar';
 import { useSessao } from '@/lib/sessao';
+import { cores } from '@/lib/tema';
 import type { Endereco, ModoGrupo, TipoGrupo } from '@/lib/tipos';
 
 const PRAZOS = [
@@ -99,6 +102,10 @@ export default function NovoGrupo() {
 
   return (
     <Ecra>
+      <Cartao>
+        <Text style={{ fontSize: 20, fontWeight: '900', color: cores.marca }}>🤝 Junta Bué</Text>
+        <Text style={{ color: cores.texto }}>Junta a família, os vizinhos ou a igreja: tudo chega junto e a entrega fica mais barata.</Text>
+      </Cartao>
       {ligada('multi_cozinha') && carrinho.cozinha && <Paragrafo>Cozinha: {carrinho.cozinha.nome}</Paragrafo>}
       <Subtitulo>Onde</Subtitulo>
       {enderecos && enderecos.length === 0 ? (
@@ -153,7 +160,7 @@ export default function NovoGrupo() {
       </Paragrafo>
 
       {erro && <Aviso tipo="erro">{erro}</Aviso>}
-      <Botao titulo="Criar grupo" aCarregar={aCriar} desactivado={!pontoId || !hora || prazoPassado} aoCarregar={criar} />
+      <Botao titulo="Criar Junta Bué" aCarregar={aCriar} desactivado={!pontoId || !hora || prazoPassado} aoCarregar={criar} />
     </Ecra>
   );
 }

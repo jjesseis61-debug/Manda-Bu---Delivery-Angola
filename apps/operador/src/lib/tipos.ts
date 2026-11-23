@@ -646,6 +646,8 @@ export type Cozinha = {
   historia: string | null;
   estado: 'activa' | 'pausada' | 'inactiva';
   consentimento_publico: boolean;
+  /** Selo «Kota da Cozinha» no perfil público; ausente se o servidor ainda não tem a coluna */
+  selo_kota?: boolean;
   /** Contactos mostrados aos clientes (Contactos e página da cozinha) */
   telefone_publico: string | null;
   whatsapp_publico: string | null;

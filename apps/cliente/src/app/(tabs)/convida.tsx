@@ -14,7 +14,7 @@ import type { Amigo, Saldo } from '@/lib/tipos';
 import { limparDestino } from '@/lib/visitante';
 import Ganhar from '@/app/ganhar';
 
-/** C1. Convida e Ganha */
+/** C1. Convida e Ganha: «traz os teus Kambas» (kamba = amigo; pertença em vez de «indicar utilizadores») */
 function ConvidaCliente() {
   const router = useRouter();
   const { carregado, perfil, parametros, ligada } = useSessao();
@@ -55,6 +55,7 @@ function ConvidaCliente() {
 
   return (
     <Ecra>
+      <Text style={{ fontSize: 22, fontWeight: '900', color: cores.marca }}>👋 Traz os teus Kambas</Text>
       {!jaGanhou ? (
         <Cartao>
           <Subtitulo>A tua primeira vitória</Subtitulo>
@@ -64,7 +65,7 @@ function ConvidaCliente() {
           <View style={{ gap: 6, marginVertical: 4 }}>
             <Text style={{ color: cores.texto }}>1. Partilha o teu código no WhatsApp.</Text>
             <Text style={{ color: cores.texto }}>
-              2. O teu amigo pede e ganha{descInd ? ` ${formatarKz(descInd)}` : ''} de desconto.
+              2. O teu kamba pede e ganha{descInd ? ` ${formatarKz(descInd)}` : ''} de desconto.
             </Text>
             <Text style={{ color: cores.texto }}>3. Ganhas{gpp ? ` ${formatarKz(gpp)}` : ''} por cada pedido dele{parametros?.comissao_primeiro_pedido ? '' : ', a partir do 2.º'}.</Text>
           </View>
@@ -128,9 +129,9 @@ function ConvidaCliente() {
         )}
       </View>
 
-      <Subtitulo>Os teus amigos</Subtitulo>
+      <Subtitulo>Os teus Kambas</Subtitulo>
       {activos.length === 0 && expirados.length === 0 ? (
-        <Paragrafo suave>Ainda não convidaste ninguém — partilha o teu código acima.</Paragrafo>
+        <Paragrafo suave>Ainda não trouxeste nenhum kamba — partilha o teu código acima.</Paragrafo>
       ) : (
         activos.map((a, i) => (
           <Linha key={`${a.primeiro_nome}-${i}`} esquerda={textoAmigo(a.primeiro_nome, a.estado, a.dias_restantes)} direita={a.ganho_total > 0 ? formatarKz(a.ganho_total) : '—'} />

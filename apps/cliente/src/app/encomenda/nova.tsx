@@ -63,7 +63,7 @@ export default function NovaEncomenda() {
 
   return (
     <Ecra>
-      <Subtitulo>{titulo ? `Encomendar ${titulo}` : 'Encomendar'}</Subtitulo>
+      <Subtitulo>{titulo ? `🎉 Boda Bué · ${titulo}` : '🎉 Boda Bué'}</Subtitulo>
       <Paragrafo suave>
         Escolhemos uma cozinha que o faça e mandamos-te o preço. Só depois de confirmares pagas um sinal de 50%; o resto paga-se na entrega.
       </Paragrafo>

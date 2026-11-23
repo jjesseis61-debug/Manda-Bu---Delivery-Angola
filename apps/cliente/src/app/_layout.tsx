@@ -84,7 +84,7 @@ export default function LayoutRaiz() {
           <Stack.Screen name="avaliar/[id]" options={{ title: 'Avaliar pedido' }} />
           <Stack.Screen name="avaliacoes" options={{ title: 'Avaliações' }} />
           <Stack.Screen name="grupos" options={{ title: 'Pedidos de grupo' }} />
-          <Stack.Screen name="grupo/novo" options={{ title: 'Novo pedido de grupo' }} />
+          <Stack.Screen name="grupo/novo" options={{ title: 'Junta Bué' }} />
           <Stack.Screen name="grupo/[codigo]" options={{ title: 'Pedido de grupo' }} />
           <Stack.Screen name="enderecos/index" options={{ title: 'Endereços' }} />
           <Stack.Screen name="montar/[id]" options={{ title: 'Servir o prato' }} />
@@ -96,8 +96,8 @@ export default function LayoutRaiz() {
           <Stack.Screen name="contactos" options={{ title: 'Contactos' }} />
           <Stack.Screen name="receitas" options={{ title: 'Cozinha de casa' }} />
           <Stack.Screen name="receita/[id]" options={{ title: 'Receita' }} />
-          <Stack.Screen name="encomenda/nova" options={{ title: 'Encomendar' }} />
-          <Stack.Screen name="encomendas" options={{ title: 'As minhas encomendas' }} />
+          <Stack.Screen name="encomenda/nova" options={{ title: 'Boda Bué' }} />
+          <Stack.Screen name="encomendas" options={{ title: 'Boda Bué · as minhas encomendas' }} />
           <Stack.Screen name="apagar-conta" options={{ title: 'Apagar a conta' }} />
           <Stack.Screen name="conta/cadeado" options={{ title: 'Cadeado da app' }} />
           <Stack.Screen name="recuperar-conta" options={{ title: 'Recuperar a conta' }} />

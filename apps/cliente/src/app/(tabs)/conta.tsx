@@ -49,7 +49,7 @@ function ContaCliente() {
           aoCarregar={() => router.push('/conta/cadeado')}
         />
       )}
-      {ligada('encomendas') && <Botao titulo="As minhas encomendas" variante="secundario" aoCarregar={() => router.push('/encomendas')} />}
+      {ligada('encomendas') && <Botao titulo="Boda Bué · as minhas encomendas" variante="secundario" aoCarregar={() => router.push('/encomendas')} />}
       {ligada('pacotes') && <Botao titulo="Pacote do mês" variante="secundario" aoCarregar={() => router.push('/pacotes')} />}
       {(ligada('indicacao') || ligada('destaques')) && (
         <Botao titulo="Notificações" variante="secundario" aoCarregar={() => router.push('/notificacoes')} />

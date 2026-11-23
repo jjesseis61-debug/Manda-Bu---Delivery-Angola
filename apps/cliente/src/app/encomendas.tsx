@@ -141,7 +141,7 @@ export default function Encomendas() {
       {!lista && !erro && <ACarregar />}
       {lista && lista.length === 0 && (
         <>
-          <Paragrafo suave>Ainda não fizeste encomendas. Nas receitas que nenhuma cozinha tem no cardápio, podes encomendar para 4 ou mais pessoas.</Paragrafo>
+          <Paragrafo suave>Ainda não fizeste nenhuma Boda Bué. Nas receitas que nenhuma cozinha tem no cardápio, podes encomendar para 4 ou mais pessoas.</Paragrafo>
           <Botao titulo="Ver receitas" variante="secundario" aoCarregar={() => router.push('/receitas')} />
         </>
       )}

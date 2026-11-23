@@ -179,14 +179,19 @@ export async function lerCardapio(cozinhaId?: string | null): Promise<ItemCardap
   });
 }
 
-export type Cozinha = { id: string; nome: string; foto_url: string | null; historia: string | null };
+export type Cozinha = { id: string; nome: string; foto_url: string | null; historia: string | null; selo_kota?: boolean };
 
 /** Só devolve cozinhas com consentimento público (RLS); com cozinhaId, essa cozinha */
 export async function lerCozinhaPublica(cozinhaId?: string | null): Promise<Cozinha | null> {
-  let q = supabase.from('cozinhas').select('id, nome, foto_url, historia').eq('estado', 'activa');
-  if (cozinhaId) q = q.eq('id', cozinhaId);
-  const r = await q.limit(1);
-  return ((verificar(r) as Cozinha[])[0] ?? null) as Cozinha | null;
+  const ler = (campos: string) => {
+    let q = supabase.from('cozinhas').select(campos).eq('estado', 'activa');
+    if (cozinhaId) q = q.eq('id', cozinhaId);
+    return q.limit(1);
+  };
+  let r = await ler('id, nome, foto_url, historia, selo_kota');
+  // Servidor ainda sem o selo «Kota da Cozinha»: lê sem ele (o perfil não pode partir por isso)
+  if (r.error) r = await ler('id, nome, foto_url, historia');
+  return ((verificar(r) as unknown as Cozinha[])[0] ?? null) as Cozinha | null;
 }
 
 /** Um prato do cardápio (ecrã de montar o prato) */

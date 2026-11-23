@@ -1,6 +1,6 @@
 import { Redirect, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Image } from 'react-native';
+import { Image, Text, View } from 'react-native';
 
 import { BlocoContactos, temContacto } from '@/components/BlocoContactos';
 import { ComoChegar } from '@/components/ComoChegar';
@@ -10,10 +10,11 @@ import { lerCardapio, lerContactos, lerCozinhaPublica, mediasAvaliacoes, type Co
 import { formatarKz } from '@/lib/formatar';
 import { useCarrinho } from '@/lib/carrinho';
 import { useSessao } from '@/lib/sessao';
-import { raio } from '@/lib/tema';
+import { cores, raio } from '@/lib/tema';
 import type { Contacto, ItemCardapio } from '@/lib/tipos';
 
-/** C8. Perfil da cozinha: só com o interruptor e o consentimento público da responsável */
+/** C8. Perfil da cozinha: só com o interruptor e o consentimento público da responsável.
+ * «Kota da Cozinha»: selo de respeito dado pelo operador (Cialdini: autoridade de quem cozinha há anos). */
 export default function PerfilCozinha() {
   const router = useRouter();
   const { carregado, ligada } = useSessao();
@@ -54,7 +55,13 @@ export default function PerfilCozinha() {
       {cozinha.foto_url && (
         <Image source={{ uri: cozinha.foto_url }} style={{ width: '100%', height: 200, borderRadius: raio }} accessibilityLabel={cozinha.nome} />
       )}
+      {cozinha.selo_kota && (
+        <View style={{ alignSelf: 'flex-start', backgroundColor: cores.destaqueFundo, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 }}>
+          <Text style={{ color: cores.texto, fontWeight: '800', fontSize: 12, letterSpacing: 0.5 }}>KOTA DA COZINHA</Text>
+        </View>
+      )}
       <Titulo>{cozinha.nome}</Titulo>
+      {cozinha.selo_kota && <Paragrafo suave>Cozinheira de casa com muitos anos de panela, reconhecida pela Manda Bué.</Paragrafo>}
       {/* A média só aparece com o mínimo de avaliações (o servidor não a devolve abaixo disso) */}
       {media && <MediaAvaliacao media={media.media} total={media.total} suave />}
       {cozinha.historia && <Paragrafo>{cozinha.historia}</Paragrafo>}

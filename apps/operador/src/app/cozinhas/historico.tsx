@@ -33,6 +33,7 @@ const CAMPO: Record<string, string> = {
   estado: 'Estado',
   responsavel: 'Responsável',
   consentimento_publico: 'Perfil público autorizado',
+  selo_kota: 'Selo Kota da Cozinha',
   telefone_publico: 'Telefone',
   whatsapp_publico: 'WhatsApp',
   horario_publico: 'Horário',

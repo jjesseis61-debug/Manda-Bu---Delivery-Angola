@@ -36,7 +36,7 @@ export default function Grupos() {
         Organiza o almoço com os colegas, a família, os vizinhos ou o grupo da igreja: cada um escolhe o seu prato e chega tudo junto,
         numa só entrega. A taxa de entrega é dividida por todos.
       </Paragrafo>
-      <Botao titulo="Criar pedido de grupo" aoCarregar={() => router.push('/grupo/novo')} />
+      <Botao titulo="Criar Junta Bué" aoCarregar={() => router.push('/grupo/novo')} />
       {erro && <Aviso tipo="erro">{erro}</Aviso>}
       {lista?.map((g) => (
         <Pressable key={g.codigo_convite} onPress={() => router.push({ pathname: '/grupo/[codigo]', params: { codigo: g.codigo_convite } })}>

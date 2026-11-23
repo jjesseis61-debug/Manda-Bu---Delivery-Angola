@@ -183,6 +183,13 @@ export default function EditarCozinha() {
           valor={cozinha.consentimento_publico}
           aoMudar={(v) => setCozinha({ ...cozinha, consentimento_publico: v })}
         />
+        {cozinha.selo_kota !== undefined && (
+          <Interruptor
+            rotulo="Selo «Kota da Cozinha» no perfil público (cozinheira de casa com muitos anos de experiência)"
+            valor={cozinha.selo_kota}
+            aoMudar={(v) => setCozinha({ ...cozinha, selo_kota: v })}
+          />
+        )}
         <Subtitulo>Contactos para os clientes</Subtitulo>
         <Paragrafo suave>Aparecem em Contactos e na página da cozinha. Deixa em branco o que não quiseres mostrar.</Paragrafo>
         <Campo rotulo="Telefone da cozinha" value={cozinha.telefone_publico ?? ''} keyboardType="phone-pad" maxLength={20} onChangeText={(t) => setCozinha({ ...cozinha, telefone_publico: t.trim() ? t : null })} />

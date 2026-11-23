@@ -1,6 +1,6 @@
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Image, Text } from 'react-native';
+import { Image, Text, View } from 'react-native';
 
 import { ACarregar, Aviso, Botao, Cartao, Ecra, Paragrafo, Subtitulo } from '@/components/ui';
 import { lerEnderecos, lerReceita, receitaAbriu, receitaOndePedir, receitaQuero, receitaTocouPedir } from '@/lib/api';
@@ -114,13 +114,17 @@ export default function ReceitaDetalhe() {
             </>
           )}
           {ligada('encomendas') && (
-            <>
-              <Paragrafo suave>É para uma festa ou um almoço de família? Encomenda com 24 horas de antecedência e uma cozinha faz para ti.</Paragrafo>
+            <View style={{ backgroundColor: cores.avisoFundo, borderColor: cores.destaqueFundo, borderWidth: 2, borderRadius: raio, padding: 12, gap: 8 }}>
+              <Text style={{ fontSize: 20, fontWeight: '900', color: cores.marca }}>🎉 Boda Bué</Text>
+              <Text style={{ color: cores.texto }}>
+                É para uma festa ou um almoço de família? Encomenda com 24 horas de antecedência e uma cozinha faz para ti.
+              </Text>
               <Botao
                 titulo="Encomendar para 4 ou mais pessoas"
                 aoCarregar={() => router.push({ pathname: '/encomenda/nova', params: { receita: receita.id, titulo: receita.titulo } })}
               />
-            </>
+              <Text style={{ color: cores.textoSuave, fontSize: 13 }}>Pedir preço não te compromete a nada.</Text>
+            </View>
           )}
         </Cartao>
       )}

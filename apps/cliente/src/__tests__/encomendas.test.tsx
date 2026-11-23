@@ -52,7 +52,7 @@ test('encomendar: envia pessoas, dia, hora (Luanda) e morada, e abre a lista', a
     { initialUrl: '/encomenda/nova?receita=r1&titulo=Mufete' },
   );
   await act(async () => undefined);
-  expect(ecra.getByText('Encomendar Mufete')).toBeTruthy();
+  expect(ecra.getByText('🎉 Boda Bué · Mufete')).toBeTruthy();
   fireEvent.press(ecra.getByText('10'));
   fireEvent.press(ecra.getByText('19h00'));
   await act(async () => {

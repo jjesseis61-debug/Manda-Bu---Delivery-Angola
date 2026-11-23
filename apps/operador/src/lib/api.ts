@@ -307,13 +307,12 @@ export async function alterarFuncionalidade(chave: string, activa: boolean) {
 
 // ---------------------------------------------------------------- O6
 export async function lerCozinhas(): Promise<Cozinha[]> {
-  return verificar(
-    await supabase
-      .from('cozinhas')
-      .select('id, nome, responsavel, foto_url, historia, estado, consentimento_publico, telefone_publico, whatsapp_publico, horario_publico')
-      .is('deletado_em', null)
-      .order('criado_em'),
-  ) as Cozinha[];
+  const campos = 'id, nome, responsavel, foto_url, historia, estado, consentimento_publico, telefone_publico, whatsapp_publico, horario_publico';
+  const ler = (c: string) => supabase.from('cozinhas').select(c).is('deletado_em', null).order('criado_em');
+  let r = await ler(campos + ', selo_kota');
+  // Servidor ainda sem o selo «Kota da Cozinha»: lê sem ele (e o ecrã esconde o interruptor)
+  if (r.error) r = await ler(campos);
+  return verificar(r) as unknown as Cozinha[];
 }
 
 export async function guardarCozinha(c: Omit<Cozinha, 'id'> & { id?: string }) {

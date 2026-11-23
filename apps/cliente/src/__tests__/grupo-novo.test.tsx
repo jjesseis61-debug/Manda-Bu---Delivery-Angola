@@ -41,7 +41,7 @@ test('só com endereços de casa: o grupo é de família e cada um paga a sua pa
   expect(ecra.queryByText('A empresa paga tudo')).toBeNull();
   fireEvent.press(ecra.getByText('13h00')); // às 9h de Luanda: fecha às 12h00
   await act(async () => {
-    fireEvent.press(ecra.getByText('Criar grupo'));
+    fireEvent.press(ecra.getByText('Criar Junta Bué'));
   });
   expect(mockCriar).toHaveBeenCalledWith(expect.objectContaining({ pontoEntregaId: 'pc', tipo: 'familia', modo: 'individual' }));
 });
@@ -55,7 +55,7 @@ test('vizinhos e quem recebe paga tudo', async () => {
   expect(ecra.getByText('Quem recebe a entrega paga tudo ao estafeta (dinheiro ou Multicaixa) e acerta depois com os outros.')).toBeTruthy();
   fireEvent.press(ecra.getByText('13h00')); // às 9h de Luanda: fecha às 12h00
   await act(async () => {
-    fireEvent.press(ecra.getByText('Criar grupo'));
+    fireEvent.press(ecra.getByText('Criar Junta Bué'));
   });
   expect(mockCriar).toHaveBeenCalledWith(expect.objectContaining({ tipo: 'vizinhos', modo: 'quem_recebe' }));
 });
