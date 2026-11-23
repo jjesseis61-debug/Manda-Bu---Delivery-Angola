@@ -372,6 +372,15 @@ export async function criarEndereco(dados: {
       .single();
     pontoId = (verificar(r) as { id: string }).id;
   }
+  // A mesma morada não fica guardada duas vezes (o servidor também o impede)
+  const ja = await supabase
+    .from('enderecos_cliente')
+    .select('id')
+    .eq('cliente_id', dados.clienteId)
+    .eq('ponto_entrega_id', pontoId as string)
+    .is('deletado_em', null)
+    .limit(1);
+  if (!ja.error && (ja.data ?? []).length > 0) throw new Error('endereco_repetido');
   const r = await supabase.from('enderecos_cliente').insert({
     cliente_id: dados.clienteId,
     ponto_entrega_id: pontoId,
@@ -379,6 +388,7 @@ export async function criarEndereco(dados: {
     principal: dados.principal,
     dispositivo_id: await dispositivoId(),
   });
+  if (r.error?.code === '23505') throw new Error('endereco_repetido');
   verificar(r);
 }
 

@@ -5,15 +5,17 @@ import { Pressable, Switch, Text, View } from 'react-native';
 import { CampoCodigo } from '@/components/CampoCodigo';
 import { Aviso, Botao, Campo, Cartao, Ecra, Escolha, Linha, Paragrafo, Subtitulo } from '@/components/ui';
 import { faixasAgendamento } from '@/lib/agendar';
-import { criarPedido, lerEnderecos, lerSaldo, meuPacote, minhaEmpresa, orcamento as pedirOrcamento, usarCredito, usarPacote } from '@/lib/api';
+import { cozinhasPertoParaPedir, criarPedido, lerEnderecos, lerSaldo, meuPacote, minhaEmpresa, orcamento as pedirOrcamento, usarCredito, usarPacote } from '@/lib/api';
+import { balcaoLonge, cardapioMaisTarde, pratoDoErro, textoQuandoVolta, type PratoMaisTarde } from '@/lib/balcao';
 import { type LinhaCarrinho, useCarrinho } from '@/lib/carrinho';
 import { novoId } from '@/lib/dispositivo';
 import { formatarKz, mensagemCodigo, mensagemErro, textoCampanha, textoEntregaGratis } from '@/lib/formatar';
 import { useSessao } from '@/lib/sessao';
 import { limparDestino } from '@/lib/visitante';
 import { cores, espaco } from '@/lib/tema';
-import type { Endereco, MeuPacote, MinhaEmpresa, Orcamento } from '@/lib/tipos';
+import type { CozinhaParaPedir, Endereco, MeuPacote, MinhaEmpresa, Orcamento } from '@/lib/tipos';
 import { CarrinhoVisitante } from '@/components/CarrinhoVisitante';
+import { textoDistancia } from '@/components/EscolherBalcao';
 import { ACarregar as ACarregarVisitante } from '@/components/ui';
 
 /** I12: quantas refeições o pacote vai pagar (o valor exacto é calculado no servidor) */
@@ -58,6 +60,13 @@ function CarrinhoConta() {
   const [erro, setErro] = useState<string | null>(null);
   const [aEnviar, setAEnviar] = useState(false);
   const [versao, setVersao] = useState(0);
+  // Prato que o servidor recusou (fora do horário ou já não disponível): o carrinho diz qual é
+  const [pratoRecusado, setPratoRecusado] = useState<string | null>(null);
+  // Pratos fora do horário agora (com a hora a que voltam), para avisar antes de confirmar
+  const [maisTarde, setMaisTarde] = useState<PratoMaisTarde[]>([]);
+  // Balcões ordenados pela morada escolhida: avisa se há um bem mais perto dela
+  const [balcoesMorada, setBalcoesMorada] = useState<CozinhaParaPedir[]>([]);
+  const [mudarPendente, setMudarPendente] = useState<CozinhaParaPedir | null>(null);
   // Chegou aqui depois de entrar (carrinho montado como visitante): o destino já foi cumprido
   useEffect(() => {
     void limparDestino();
@@ -112,9 +121,30 @@ function CarrinhoConta() {
 
   useEffect(() => {
     idPedido.current = null;
+    setPratoRecusado(null);
   }, [carrinho.linhas, pontoId, grupo]);
 
+  // Pratos do balcão fora do horário agora (falha em silêncio: o servidor confirma na mesma)
+  const cozinhaDoCarrinho = carrinho.cozinhaActual?.id ?? null;
+  useEffect(() => {
+    if (!cozinhaDoCarrinho) return setMaisTarde([]);
+    cardapioMaisTarde(cozinhaDoCarrinho)
+      .then(setMaisTarde)
+      .catch(() => setMaisTarde([]));
+  }, [cozinhaDoCarrinho]);
+
+  // Trocar de morada volta a medir os balcões a partir dela
+  useEffect(() => {
+    if (!pontoId || grupo || !ligada('multi_cozinha')) return setBalcoesMorada([]);
+    cozinhasPertoParaPedir(pontoId)
+      .then(setBalcoesMorada)
+      .catch(() => setBalcoesMorada([]));
+  }, [pontoId, grupo, ligada]);
+
   const pagarComPacote = !!pacote && comPacote;
+  const longe = !grupo ? balcaoLonge(balcoesMorada, carrinho.cozinhaActual?.id ?? null) : null;
+  const foraDoHorario = maisTarde.filter((p) => carrinho.linhas.some((l) => l.item.id === p.cardapio_id));
+  const nomeRecusado = pratoRecusado ? (carrinho.linhas.find((l) => l.item.id === pratoRecusado)?.item.nome ?? null) : null;
   const valorSaldo = orc && usarSaldo ? Math.min(saldo, orc.total) : 0;
 
   async function confirmar() {
@@ -154,10 +184,18 @@ function CarrinhoConta() {
       if (grupo) router.replace({ pathname: '/grupo/[codigo]', params: { codigo: grupo.codigo } });
       else router.replace({ pathname: '/pedido/[id]', params: { id, fim: '1', ...(saldoFalhou ? { saldo: 'falhou' } : {}), ...(pacoteFalhou ? { pacote: 'falhou' } : {}) } });
     } catch (e) {
-      setErro(mensagemErro(e));
+      const id = pratoDoErro(e);
+      if (id && carrinho.linhas.some((l) => l.item.id === id)) setPratoRecusado(id);
+      else setErro(mensagemErro(e));
     } finally {
       setAEnviar(false);
     }
+  }
+
+  /** Tira todas as linhas de um prato do carrinho */
+  function tirar(id: string) {
+    for (const l of carrinho.linhas.filter((x) => x.item.id === id)) carrinho.alterar(l.chave, 0);
+    setPratoRecusado(null);
   }
 
   if (carrinho.linhas.length === 0) {
@@ -212,6 +250,29 @@ function CarrinhoConta() {
         />
       )}
       {!grupo && <Botao titulo="Adicionar endereço" variante="texto" aoCarregar={() => router.push('/enderecos/novo')} />}
+      {longe && (
+        <Cartao>
+          <Text style={{ color: cores.texto }}>
+            {`📍 ${longe.actual.nome} fica a ${textoDistancia(longe.actual.distancia_km ?? 0)} desta morada. ${longe.perto.nome} fica a ${textoDistancia(longe.perto.distancia_km ?? 0)}.`}
+          </Text>
+          {mudarPendente ? (
+            <>
+              <Paragrafo suave>{`Os pratos do carrinho são de ${longe.actual.nome} e saem do carrinho.`}</Paragrafo>
+              <Botao
+                titulo="Mudar e esvaziar"
+                aoCarregar={() => {
+                  carrinho.definirCozinha({ id: mudarPendente.cozinha_id, nome: mudarPendente.nome });
+                  setMudarPendente(null);
+                  router.replace('/inicio');
+                }}
+              />
+              <Botao titulo="Ficar" variante="texto" aoCarregar={() => setMudarPendente(null)} />
+            </>
+          ) : (
+            <Botao titulo={`Pedir em ${longe.perto.nome}`} variante="secundario" aoCarregar={() => setMudarPendente(longe.perto)} />
+          )}
+        </Cartao>
+      )}
 
       {/* C2: no checkout do 1.º pedido; depois de ligar, o orçamento é pedido de novo ao servidor */}
       <CampoCodigo aoLigar={() => setVersao((v) => v + 1)} />
@@ -326,6 +387,23 @@ function CarrinhoConta() {
         multiline
         maxLength={300}
       />
+      {foraDoHorario.map((p) => (
+        <Cartao key={p.cardapio_id}>
+          <Text style={{ color: cores.texto }}>
+            {`⏰ «${p.nome}» só está à venda ${textoQuandoVolta(p.proxima)}.`}
+            {agendarMaisTarde ? ' Escolhe uma hora a partir dessa.' : ' Liga «Entregar mais tarde» para essa hora, ou tira-o do carrinho.'}
+          </Text>
+          <Botao titulo={`Tirar «${p.nome}» do carrinho`} variante="texto" aoCarregar={() => tirar(p.cardapio_id)} />
+        </Cartao>
+      ))}
+      {nomeRecusado && pratoRecusado && (
+        <Aviso tipo="erro">
+          {`«${nomeRecusado}» não está à venda ${agendarMaisTarde ? 'à hora escolhida' : 'agora'}.`}{' '}
+          <Text style={{ fontWeight: '700' }} onPress={() => tirar(pratoRecusado)}>
+            {`Tirar «${nomeRecusado}» do carrinho`}
+          </Text>
+        </Aviso>
+      )}
       {erro && <Aviso tipo="erro">{erro}</Aviso>}
       <Botao titulo="Confirmar pedido" aoCarregar={confirmar} aCarregar={aEnviar} desactivado={!orc || (!pontoId && !grupo)} />
       <Paragrafo suave>

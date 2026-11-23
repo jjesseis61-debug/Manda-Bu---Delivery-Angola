@@ -214,6 +214,7 @@ const mensagens: Record<string, string> = {
   // pedidos
   pedido_vazio: 'O carrinho está vazio.',
   item_indisponivel: 'Um dos pratos já não está disponível. Actualiza o carrinho.',
+  endereco_repetido: 'Já tens esta morada guardada. Escolhe-a na lista.',
   opcao_invalida: 'Uma das opções escolhidas já não está disponível. Volta a montar o prato.',
   doses_esgotadas: 'Já não há doses suficientes de um dos pratos. Reduz a quantidade ou escolhe outro prato.',
   item_sem_preco: 'Um dos pratos tem de ser montado (escolhe as opções) antes de o pedires.',

@@ -5,7 +5,7 @@ import { ActivityIndicator, Image, Pressable, RefreshControl, ScrollView, Text, 
 
 import { CartaoConvida } from '@/components/CartaoConvida';
 import { Confirmar } from '@/components/Confirmar';
-import { BotaoBalcao, FolhaBalcoes } from '@/components/EscolherBalcao';
+import { BotaoBalcao, FolhaBalcoes, textoDistancia } from '@/components/EscolherBalcao';
 import { LoginNecessario } from '@/components/LoginNecessario';
 import { FaixaConfianca } from '@/components/FaixaConfianca';
 import { ComoChegar } from '@/components/ComoChegar';
@@ -31,6 +31,7 @@ import {
   visitaExperiencia,
   type MaisPedidoZona,
 } from '@/lib/api';
+import { balcaoLonge, cardapioMaisTarde, cozinhasPertoDe, posicaoActual, textoQuandoVolta, type PratoMaisTarde } from '@/lib/balcao';
 import { useCarrinho } from '@/lib/carrinho';
 import {
   condominioAqui,
@@ -92,6 +93,14 @@ export default function Inicio() {
   const [trocaPendente, setTrocaPendente] = useState<CozinhaParaPedir | null>(null);
   // Lista dos balcões aberta a partir do botão do título
   const [aEscolherBalcao, setAEscolherBalcao] = useState(false);
+  // «Perto de mim»: com a posição do telemóvel, os balcões ordenam-se a partir dela (e não da morada)
+  const [gps, setGps] = useState<{ lat: number; lng: number } | null>(null);
+  const [aLocalizar, setALocalizar] = useState(false);
+  const [erroGps, setErroGps] = useState<string | null>(null);
+  // Aviso «há um balcão mais perto»: o cliente pode dizer que quer ficar neste
+  const [ficarEm, setFicarEm] = useState<string | null>(null);
+  // Pratos fora do horário agora, com a hora a que voltam (para não desaparecerem sem explicação)
+  const [maisTarde, setMaisTarde] = useState<PratoMaisTarde[]>([]);
   /** Fotografia grande (como antes) ou média no cartão do prato: decidido pelo teste com grupo de controlo */
   const [fotoGrande, setFotoGrande] = useState(false);
   // Hora em que o Início abriu e se o primeiro «Adicionar» desta visita já foi contado (só com teste activo)
@@ -154,6 +163,7 @@ export default function Inicio() {
         setDoses(new Map());
         setDesde(new Map(itens.filter((i) => i.desde != null).map((i) => [i.id, i.desde as number])));
         setEnderecos([]);
+        setMaisTarde([]);
         setMaisZona([]);
         setPromocoes([]);
         // Preço riscado também para quem ainda não entrou (campanhas para todos e do bairro); falha em silêncio
@@ -175,7 +185,12 @@ export default function Inicio() {
       // I8: com multi_cozinha, o cliente escolhe a cozinha; por defeito a primeira da lista (a mais perto)
       let escolhida = cozinhaId;
       if (ligada('multi_cozinha')) {
-        const gerais = ponto ? await cozinhasPertoParaPedir(ponto) : await cozinhasParaPedir();
+        // Ordem: a posição do telemóvel («perto de mim»), senão a morada principal, senão a lista geral
+        const gerais = gps
+          ? await cozinhasPertoDe(gps.lat, gps.lng)
+          : ponto
+            ? await cozinhasPertoParaPedir(ponto)
+            : await cozinhasParaPedir();
         let cond: CondominioAqui | null = null;
         if (ligada('condominios')) {
           const pos = await posicaoParaCondominio();
@@ -195,6 +210,7 @@ export default function Inicio() {
       }
       const itens = await lerCardapio(escolhida);
       setCardapio(itens);
+      setMaisTarde(escolhida ? await cardapioMaisTarde(escolhida).catch(() => []) : []);
       setDoses(new Map(itens[0] ? (await lerDoses(itens[0].cozinha_id).catch(() => [])).map((d) => [d.cardapio_id, d.restantes]) : []));
       setEnderecos(ends);
       // Prova social local: o que mais se pede na zona da morada (falha em silêncio)
@@ -243,7 +259,7 @@ export default function Inicio() {
     } catch (e) {
       setErro(mensagemErro(e));
     }
-  }, [ligada, cozinhaId, emGrupo, visitante]);
+  }, [ligada, cozinhaId, emGrupo, visitante, gps]);
 
 
   useFocusEffect(
@@ -300,12 +316,35 @@ export default function Inicio() {
     }
   }
 
-  function trocarCozinha(id: string) {
+  function trocarCozinha(id: string, lista: CozinhaParaPedir[] = cozinhas) {
     setAEscolherBalcao(false);
-    const c = cozinhas.find((x) => x.cozinha_id === id);
+    const c = lista.find((x) => x.cozinha_id === id);
     if (!c || c.cozinha_id === cozinhaId) return;
     if (carrinho.quantidade > 0) setTrocaPendente(c);
     else carrinho.definirCozinha({ id: c.cozinha_id, nome: c.nome });
+  }
+
+  // «Perto de mim»: pede a posição, ordena os balcões a partir dela e propõe o mais perto
+  async function pertoDeMim() {
+    setErroGps(null);
+    setALocalizar(true);
+    try {
+      const pos = await posicaoActual();
+      if (!pos) {
+        setErroGps('Não conseguimos a tua localização. Autoriza a localização no telemóvel ou escolhe da lista.');
+        return;
+      }
+      const lista = await cozinhasPertoDe(pos.lat, pos.lng);
+      setGps(pos);
+      setCozinhas(lista);
+      setFicarEm(null);
+      if (lista[0]) trocarCozinha(lista[0].cozinha_id, lista);
+      else setAEscolherBalcao(false);
+    } catch (e) {
+      setErroGps(mensagemErro(e));
+    } finally {
+      setALocalizar(false);
+    }
   }
 
   const categorias = useMemo(() => {
@@ -326,6 +365,18 @@ export default function Inicio() {
   const podeEscolherBalcao = ligada('multi_cozinha') && !carrinho.grupo && cozinhas.length > 1;
   const balcaoActual = cozinhaId ?? cardapio?.[0]?.cozinha_id ?? null;
   const nomeBalcao = cozinhas.find((c) => c.cozinha_id === balcaoActual)?.nome ?? null;
+  // De onde se medem as distâncias: o telemóvel («de ti») ou a morada principal
+  const morada = enderecos[0];
+  const referenciaBalcoes = gps
+    ? 'de ti'
+    : morada
+      ? `de ${[morada.nome ?? 'Casa', morada.pontos_entrega?.zonas?.nome].filter(Boolean).join(' · ')}`
+      : null;
+  // Aviso «há um balcão mais perto» (o carrinho guarda o balcão de antes, mesmo que o cliente já esteja noutro sítio)
+  const longe = podeEscolherBalcao && referenciaBalcoes ? balcaoLonge(cozinhas, balcaoActual) : null;
+  const mostrarLonge = longe && ficarEm !== longe.actual.cozinha_id;
+  const idsMaisTarde = new Map(maisTarde.map((p) => [p.cardapio_id, p]));
+  const soMaisTarde = maisTarde.filter((p) => !(cardapio ?? []).some((i) => i.id === p.cardapio_id));
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
@@ -534,6 +585,18 @@ export default function Inicio() {
           </Aviso>
         )}
         {erro && <Aviso tipo="erro">{erro}</Aviso>}
+        {mostrarLonge && longe && (
+          <Cartao estilo={{ gap: espaco.s }}>
+            <Text style={{ fontWeight: '700', color: cores.texto }}>
+              {`📍 ${longe.actual.nome} fica a ${textoDistancia(longe.actual.distancia_km ?? 0)} ${referenciaBalcoes}.`}
+            </Text>
+            <Text style={{ color: cores.texto }}>
+              {`${longe.perto.nome} fica a ${textoDistancia(longe.perto.distancia_km ?? 0)}: a comida chega mais depressa.`}
+            </Text>
+            <Botao titulo={`Pedir em ${longe.perto.nome}`} aoCarregar={() => trocarCozinha(longe.perto.cozinha_id)} />
+            <Botao titulo={`Ficar em ${longe.actual.nome}`} variante="texto" aoCarregar={() => setFicarEm(longe.actual.cozinha_id)} />
+          </Cartao>
+        )}
         {cardapio !== null && cardapio.length === 0 && <Paragrafo suave>O cardápio de hoje ainda não está disponível.</Paragrafo>}
         {entregaGratisAcima != null && cardapio !== null && cardapio.length > 0 && (
           <Text style={{ color: cores.sucesso, fontWeight: '700' }}>
@@ -617,7 +680,9 @@ export default function Inicio() {
                     {!esgotados.has(item.id) && doses.has(item.id) && doses.get(item.id)! > 0 && doses.get(item.id)! <= 5 && (
                       <Text style={{ color: cores.aviso, fontWeight: '600' }}>{`Restam ${doses.get(item.id)}`}</Text>
                     )}
-                    {esgotados.has(item.id) || doses.get(item.id) === 0 ? (
+                    {idsMaisTarde.has(item.id) ? (
+                      <Text style={{ color: cores.aviso, fontWeight: '700' }}>{`À venda ${textoQuandoVolta(idsMaisTarde.get(item.id)!.proxima)}`}</Text>
+                    ) : esgotados.has(item.id) || doses.get(item.id) === 0 ? (
                       <Text style={{ color: cores.textoSuave, fontWeight: '700' }}>Esgotado</Text>
                     ) : (
                       <Pressable
@@ -658,6 +723,21 @@ export default function Inicio() {
               visitante ? setLogin({ motivo: 'Entra para fazeres um pedido de grupo.', destino: '/grupos' }) : router.push('/grupos')
             }
           />
+        )}
+        {/* Pratos fora do horário agora: dizem quando voltam, em vez de desaparecerem sem explicação */}
+        {soMaisTarde.length > 0 && (
+          <View style={{ gap: espaco.s }}>
+            <Subtitulo>Mais tarde</Subtitulo>
+            {soMaisTarde.map((p) => (
+              <Cartao key={p.cardapio_id} estilo={{ flexDirection: 'row', alignItems: 'center', gap: espaco.m }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontWeight: '700', color: cores.texto }}>{p.nome}</Text>
+                  <Text style={{ color: cores.textoSuave }}>{formatarKz(p.preco)}</Text>
+                </View>
+                <Text style={{ color: cores.aviso, fontWeight: '700' }}>{`À venda ${textoQuandoVolta(p.proxima)}`}</Text>
+              </Cartao>
+            ))}
+          </View>
         )}
         {!visitante && ligada('como_chegar') && (cozinhaId ?? cardapio?.[0]?.cozinha_id) && (
           <ComoChegar cozinhaId={(cozinhaId ?? cardapio?.[0]?.cozinha_id) as string} />
@@ -721,7 +801,11 @@ export default function Inicio() {
         visivel={aEscolherBalcao}
         cozinhas={cozinhas}
         actual={balcaoActual}
-        aoEscolher={trocarCozinha}
+        referencia={referenciaBalcoes}
+        aoPertoDeMim={() => void pertoDeMim()}
+        aLocalizar={aLocalizar}
+        erroLocalizacao={erroGps}
+        aoEscolher={(id) => trocarCozinha(id)}
         aoFechar={() => setAEscolherBalcao(false)}
       />
       <Confirmar

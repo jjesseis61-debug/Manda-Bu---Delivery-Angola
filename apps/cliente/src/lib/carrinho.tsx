@@ -146,6 +146,8 @@ export function CarrinhoProvider({ children }: { children: ReactNode }) {
         setLinhas([]);
         setGrupo(null);
         setRepeticao(null);
+        // O balcão escolhido não fica preso: no próximo pedido volta a ser o mais perto da morada
+        setCozinha(null);
       },
       grupo,
       definirGrupo: (g) => {

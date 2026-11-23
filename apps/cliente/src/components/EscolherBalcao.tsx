@@ -1,4 +1,4 @@
-import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { cores, espaco, raio } from '@/lib/tema';
 import type { CozinhaParaPedir } from '@/lib/tipos';
@@ -41,12 +41,22 @@ export function FolhaBalcoes({
   visivel,
   cozinhas,
   actual,
+  referencia,
+  aoPertoDeMim,
+  aLocalizar = false,
+  erroLocalizacao,
   aoEscolher,
   aoFechar,
 }: {
   visivel: boolean;
   cozinhas: CozinhaParaPedir[];
   actual: string | null;
+  /** De onde se medem as distâncias: «de ti» (GPS) ou «de Casa · Maianga» (morada principal) */
+  referencia?: string | null;
+  /** «Perto de mim»: ordenar pela posição do telemóvel (para quem está fora de casa) */
+  aoPertoDeMim?: () => void;
+  aLocalizar?: boolean;
+  erroLocalizacao?: string | null;
   aoEscolher: (id: string) => void;
   aoFechar: () => void;
 }) {
@@ -58,7 +68,20 @@ export function FolhaBalcoes({
           onPress={() => {}}
           style={{ backgroundColor: cores.fundo, borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: espaco.l, gap: espaco.s, maxHeight: '75%' }}>
           <Text style={{ fontSize: 18, fontWeight: '700', color: cores.texto }}>📍 De onde queres pedir?</Text>
-          {comDistancia && <Text style={{ color: cores.textoSuave, marginTop: -espaco.xs }}>Mais perto primeiro</Text>}
+          {comDistancia && (
+            <Text style={{ color: cores.textoSuave, marginTop: -espaco.xs }}>{referencia ? `Mais perto ${referencia} primeiro` : 'Mais perto primeiro'}</Text>
+          )}
+          {aoPertoDeMim && (
+            <Pressable
+              accessibilityRole="button"
+              disabled={aLocalizar}
+              onPress={aoPertoDeMim}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: espaco.s, paddingVertical: espaco.s }}>
+              {aLocalizar ? <ActivityIndicator color={cores.marca} /> : <Text style={{ fontSize: 16 }}>🧭</Text>}
+              <Text style={{ color: cores.marca, fontWeight: '700', fontSize: 15 }}>Estou noutro sítio: usar a minha localização</Text>
+            </Pressable>
+          )}
+          {erroLocalizacao ? <Text style={{ color: cores.erro }}>{erroLocalizacao}</Text> : null}
           <ScrollView contentContainerStyle={{ gap: espaco.s, paddingBottom: espaco.l }}>
             {cozinhas.map((c) => {
               const escolhida = c.cozinha_id === actual;
