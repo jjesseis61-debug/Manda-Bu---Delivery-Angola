@@ -8,7 +8,8 @@ import { BotaoPartilhar } from '@/components/BotaoPartilhar';
 import { Confirmar } from '@/components/Confirmar';
 import { FaixaConfianca } from '@/components/FaixaConfianca';
 import { ACarregar, Aviso, Botao, Ecra, Paragrafo, Subtitulo } from '@/components/ui';
-import { lerComponentes, lerDoses, lerItemCardapio, lerOpcoes, visitaExperiencia } from '@/lib/api';
+import { lerComponentes, lerDoses, lerItemCardapio, lerOpcoes, lerUnidadesOpcoes, visitaExperiencia } from '@/lib/api';
+import { gruposComStock } from '@/lib/balcaoPanelas';
 import { lerCodigoPendente } from '@/lib/convite';
 import { type PendenteMontar, useCarrinho } from '@/lib/carrinho';
 import { formatarKz, mensagemErro } from '@/lib/formatar';
@@ -37,12 +38,14 @@ export default function MontarPrato() {
   const [convite, setConvite] = useState<string | null>(null);
   const carrinho = useCarrinho();
   const [item, setItem] = useState<ItemCardapio | null | undefined>(undefined);
-  const [grupos, setGrupos] = useState<GrupoOpcoes[]>([]);
+  const [gruposLidos, setGrupos] = useState<GrupoOpcoes[]>([]);
   const [escolhidas, setEscolhidas] = useState<string[]>([]);
   const [componentes, setComponentes] = useState<ComponentePrato[]>([]);
   const [tirados, setTirados] = useState<string[]>([]);
   const [semDoses, setSemDoses] = useState(false);
   const [restantes, setRestantes] = useState<number | null>(null);
+  // Latas e garrafas que restam (opções que contam o stock); 0 = acabou e não se escolhe
+  const [unidades, setUnidades] = useState<Record<string, number>>({});
   const [erro, setErro] = useState<string | null>(null);
   // "Pedir de novo" de um prato que mudou: chega com rever=1 e o prato pendente à frente da fila
   const [pendente, setPendente] = useState<PendenteMontar | null>(null);
@@ -90,6 +93,7 @@ export default function MontarPrato() {
             setSemDoses(d?.restantes === 0);
             setRestantes(d ? d.restantes : null);
           }, () => undefined);
+        if (i) lerUnidadesOpcoes(i.cozinha_id).then(setUnidades, () => undefined);
         // Só se pode tirar ingredientes quando a receita tem mais do que um (não se tira tudo)
         setComponentes(c.length > 1 ? c : []);
         // Grupos opcionais sem opções disponíveis não aparecem; os obrigatórios ficam para mostrar que esgotaram
@@ -158,6 +162,8 @@ export default function MontarPrato() {
   if (item === undefined || balcao === null) return <ACarregar />;
   if (item === null) return <Ecra><Aviso tipo="erro">{erro ?? 'Este prato já não está disponível.'}</Aviso></Ecra>;
 
+  // As opções que acabaram no stock saem da escolha (lista e balcão): o servidor recusaria o pedido
+  const grupos = gruposComStock(gruposLidos, unidades);
   const opcoes = opcoesEscolhidas(grupos, escolhidas);
   const fotoDaOpcao = (id: string) => grupos.flatMap((g) => g.opcoes).find((x) => x.id === id)?.foto_url ?? null;
   const semEstes = componentes.filter((c) => tirados.includes(c.produto_id));
@@ -289,6 +295,7 @@ export default function MontarPrato() {
         }
         total={total}
         restantes={restantes}
+        unidades={unidades}
         faltam={faltam}
         tituloAdicionar={tituloAdicionar}
         adicionarDesactivado={faltam.length > 0 || esgotados.length > 0 || abaixoMinimo}

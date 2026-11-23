@@ -826,6 +826,8 @@ export type OpcaoPrato = {
   componentes: ComponenteOpcao[];
   /** Foto própria da opção (bucket fotos-pratos); a app mostra-a no lugar do emoji */
   foto_url?: string | null;
+  /** O cliente vê o que resta pelo stock dos ingredientes (latas, garrafas); undefined = servidor ainda sem a coluna */
+  contar_stock?: boolean;
 };
 export type ProdutoStock = { id: string; nome: string; categoria_medida: 'Peso' | 'Volume' | 'Unidade' | null; tipo_estoque: string | null };
 export type GrupoOpcoesPrato = {

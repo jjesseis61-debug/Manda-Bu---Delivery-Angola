@@ -5,7 +5,8 @@ import { Pressable, Switch, Text, View } from 'react-native';
 import { CampoCodigo } from '@/components/CampoCodigo';
 import { Aviso, Botao, Campo, Cartao, Ecra, Escolha, Linha, Paragrafo, Subtitulo } from '@/components/ui';
 import { faixasAgendamento } from '@/lib/agendar';
-import { cozinhasPertoParaPedir, criarPedido, lerEnderecos, lerSaldo, meuPacote, minhaEmpresa, orcamento as pedirOrcamento, usarCredito, usarPacote } from '@/lib/api';
+import { cozinhasPertoParaPedir, criarPedido, lerCardapio, lerEnderecos, lerSaldo, meuPacote, minhaEmpresa, orcamento as pedirOrcamento, usarCredito, usarPacote } from '@/lib/api';
+import { bebidaSugerida, textoBebidaSugerida } from '@/lib/bebidas';
 import { balcaoLonge, cardapioMaisTarde, pratoDoErro, textoQuandoVolta, type PratoMaisTarde } from '@/lib/balcao';
 import { type LinhaCarrinho, useCarrinho } from '@/lib/carrinho';
 import { moradaComPinoLonge, textoFicaA } from '@/lib/pinZona';
@@ -14,7 +15,7 @@ import { formatarKz, mensagemCodigo, mensagemErro, textoCampanha, textoEntregaGr
 import { useSessao } from '@/lib/sessao';
 import { limparDestino } from '@/lib/visitante';
 import { cores, espaco } from '@/lib/tema';
-import type { CozinhaParaPedir, Endereco, MeuPacote, MinhaEmpresa, Orcamento } from '@/lib/tipos';
+import type { CozinhaParaPedir, Endereco, ItemCardapio, MeuPacote, MinhaEmpresa, Orcamento } from '@/lib/tipos';
 import { CarrinhoVisitante } from '@/components/CarrinhoVisitante';
 import { textoDistancia } from '@/components/EscolherBalcao';
 import { ACarregar as ACarregarVisitante } from '@/components/ui';
@@ -65,6 +66,9 @@ function CarrinhoConta() {
   const [pratoRecusado, setPratoRecusado] = useState<string | null>(null);
   // Pratos fora do horário agora (com a hora a que voltam), para avisar antes de confirmar
   const [maisTarde, setMaisTarde] = useState<PratoMaisTarde[]>([]);
+  // Bebidas sozinhas da cozinha do carrinho (para «Falta a bebida?»); o cliente pode dispensar
+  const [cardapioCozinha, setCardapioCozinha] = useState<ItemCardapio[]>([]);
+  const [semBebida, setSemBebida] = useState(false);
   // Balcões ordenados pela morada escolhida: avisa se há um bem mais perto dela
   const [balcoesMorada, setBalcoesMorada] = useState<CozinhaParaPedir[]>([]);
   const [mudarPendente, setMudarPendente] = useState<CozinhaParaPedir | null>(null);
@@ -134,6 +138,13 @@ function CarrinhoConta() {
       .catch(() => setMaisTarde([]));
   }, [cozinhaDoCarrinho]);
 
+  useEffect(() => {
+    if (!cozinhaDoCarrinho) return setCardapioCozinha([]);
+    lerCardapio(cozinhaDoCarrinho)
+      .then(setCardapioCozinha)
+      .catch(() => setCardapioCozinha([]));
+  }, [cozinhaDoCarrinho]);
+
   // Trocar de morada volta a medir os balcões a partir dela
   useEffect(() => {
     if (!pontoId || grupo || !ligada('multi_cozinha')) return setBalcoesMorada([]);
@@ -147,6 +158,7 @@ function CarrinhoConta() {
   const moradaEscolhida = (enderecos ?? []).find((e) => e.ponto_entrega_id === pontoId);
   const longe = !grupo && !moradaComPinoLonge(moradaEscolhida) ? balcaoLonge(balcoesMorada, carrinho.cozinhaActual?.id ?? null) : null;
   const foraDoHorario = maisTarde.filter((p) => carrinho.linhas.some((l) => l.item.id === p.cardapio_id));
+  const bebida = semBebida ? null : bebidaSugerida(cardapioCozinha, carrinho.linhas);
   const nomeRecusado = pratoRecusado ? (carrinho.linhas.find((l) => l.item.id === pratoRecusado)?.item.nome ?? null) : null;
   const valorSaldo = orc && usarSaldo ? Math.min(saldo, orc.total) : 0;
 
@@ -230,6 +242,20 @@ function CarrinhoConta() {
           </Pressable>
         </View>
       ))}
+
+      {/* Prahalad/Cialdini: uma linha discreta, sem janela; some quando há bebida ou o cliente dispensa */}
+      {bebida && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: espaco.s, backgroundColor: '#E3F0F7', borderRadius: 10, padding: espaco.s }}>
+          <Text style={{ fontSize: 18 }}>🥤</Text>
+          <Text style={{ flex: 1, fontSize: 13, color: cores.texto }}>{textoBebidaSugerida(bebida, formatarKz(bebida.preco))}</Text>
+          <Pressable accessibilityRole="button" accessibilityLabel={`Juntar ${bebida.nome.trim()}`} onPress={() => carrinho.adicionar(bebida)} hitSlop={6}>
+            <Text style={{ color: cores.marca, fontWeight: '800', fontSize: 14 }}>Juntar</Text>
+          </Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel="Não, obrigado" onPress={() => setSemBebida(true)} hitSlop={6}>
+            <Text style={{ color: cores.textoSuave, fontSize: 16, paddingHorizontal: 4 }}>✕</Text>
+          </Pressable>
+        </View>
+      )}
 
       {grupo && (
         <Cartao>

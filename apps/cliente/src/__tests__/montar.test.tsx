@@ -9,6 +9,7 @@ const mockBaseEsgotada = { valor: false };
 const mockComponentes: { valor: unknown[] } = { valor: [] };
 const mockDoses: { valor: unknown[] } = { valor: [] };
 const mockSessao = { visitante: false };
+const mockUnidades: { valor: Record<string, number> } = { valor: {} };
 jest.mock('@/lib/sessao', () => ({
   useSessao: () => ({
     carregado: true,
@@ -52,6 +53,7 @@ jest.mock('@/lib/api', () => ({
     id: 'm', nome: 'Muamba ', descricao: null, categoria: null, preco: 2500, foto_url: null, do_dia: false, cozinha_id: mockItem.cozinha, prato_base_id: null,
   }),
   lerComponentes: async () => mockComponentes.valor,
+  lerUnidadesOpcoes: async () => mockUnidades.valor,
   lerDoses: async () => mockDoses.valor,
   visitaExperiencia: async () => null,
   lerOpcoes: async () => mockItem.semOpcoes ? [] : [

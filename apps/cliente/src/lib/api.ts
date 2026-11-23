@@ -755,6 +755,12 @@ export async function lerComponentes(cardapioIds: string[]): Promise<ComponenteP
 }
 
 /** Doses que restam hoje dos pratos com limite (a cozinha lançou quantas tem) */
+/** Unidades que restam das opções que contam o stock (latas, garrafas) de uma cozinha */
+export async function lerUnidadesOpcoes(cozinhaId: string): Promise<Record<string, number>> {
+  const r = verificar(await supabase.rpc('unidades_opcoes', { p_cozinha: cozinhaId })) as { opcao_id: string; restantes: number }[] | null;
+  return Object.fromEntries((r ?? []).map((x) => [x.opcao_id, x.restantes]));
+}
+
 export async function lerDoses(cozinhaId: string): Promise<{ cardapio_id: string; restantes: number }[]> {
   return verificar(await supabase.rpc('doses_cardapio', { p_cozinha: cozinhaId })) as { cardapio_id: string; restantes: number }[];
 }

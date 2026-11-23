@@ -77,7 +77,7 @@ const EMOJIS: [RegExp, string][] = [
   [/p[aã]o|broa/, '🍞'],
   [/ging(u|ú)ba|amendoim/, '🥜'],
   [/mel[aã]o|melancia/, '🍈'],
-  [/m[uú]cua|sumo|refresco|refriger|cola/, '🥤'],
+  [/m[uú]cua|sumo|refresco|refriger|cola|gasosa|fanta|sprite|pepsi|blue|nocal/, '🥤'],
   [/[aá]gua/, '💧'],
   [/cocada|doce|sobremesa|gelado|bolo|pudim/, '🍮'],
 ];

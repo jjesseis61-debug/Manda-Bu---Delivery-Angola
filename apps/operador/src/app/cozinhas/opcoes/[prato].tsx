@@ -22,6 +22,8 @@ type OpcaoEditada = {
   ordem: string;
   componentes: ComponenteEditado[];
   foto_url: string | null;
+  /** undefined = servidor ainda sem a coluna (não se envia) */
+  contar_stock?: boolean;
 };
 
 const numero = (t: string) => t.replace(/\D/g, '');
@@ -54,6 +56,10 @@ export default function OpcoesPrato() {
     if (opcao && produtos === null) lerProdutos().then(setProdutos).catch(() => setProdutos([]));
   }, [opcao, produtos]);
   const nomeProduto = (id: string) => produtos?.find((p) => p.id === id)?.nome ?? 'Produto';
+  // Contar o stock só faz sentido com um produto de longo prazo nos ingredientes (é o que tem movimentos)
+  const temLongoPrazo = !!opcao?.componentes.some((c) => produtos?.find((p) => p.id === c.produto_id)?.tipo_estoque === 'Longo Prazo');
+  // O servidor já tem a coluna quando alguma opção lida a traz
+  const comColunaStock = !!grupos?.some((g) => g.opcoes.some((o) => o.contar_stock !== undefined));
   const encontrados =
     procura.trim().length >= 2
       ? (produtos ?? [])
@@ -117,6 +123,7 @@ export default function OpcoesPrato() {
                   {o.nome}
                   {o.preco_extra > 0 ? ` · +${formatarKz(o.preco_extra)}` : ''}
                   {o.disponivel ? '' : ' · esgotada'}
+                  {o.contar_stock ? ' · conta stock' : ''}
                 </Text>
                 <Botao
                   titulo="Editar"
@@ -137,7 +144,9 @@ export default function OpcoesPrato() {
               <Botao
                 titulo="Nova opção"
                 variante="secundario"
-                aoCarregar={() => setOpcao({ grupo_id: g.id, nome: '', preco_extra: '0', disponivel: true, ordem: '0', componentes: [], foto_url: null })}
+                aoCarregar={() =>
+                  setOpcao({ grupo_id: g.id, nome: '', preco_extra: '0', disponivel: true, ordem: '0', componentes: [], foto_url: null, ...(comColunaStock ? { contar_stock: false } : {}) })
+                }
               />
               <Botao
                 titulo="Editar grupo"
@@ -208,6 +217,24 @@ export default function OpcoesPrato() {
                 />
               </View>
             ))}
+            {opcao.contar_stock !== undefined && (
+              <View style={{ gap: espaco.xs }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: espaco.s }}>
+                  <Text style={{ flex: 1 }}>Contar o stock (latas, garrafas)</Text>
+                  <Switch thumbColor="#FFFFFF"
+                    value={opcao.contar_stock}
+                    disabled={!temLongoPrazo}
+                    onValueChange={(v) => setOpcao({ ...opcao, contar_stock: v })}
+                    trackColor={{ true: cores.marca, false: cores.contorno }}
+                  />
+                </View>
+                <Paragrafo suave>
+                  {temLongoPrazo
+                    ? 'O cliente vê quantas restam («Restam 4») e, quando acabam, «Hoje não há». Conta o stock da cozinha menos os pedidos ainda por entregar.'
+                    : 'Para contar o stock, junta como ingrediente o produto de longo prazo (ex.: Gasosa lata, 1 un).'}
+                </Paragrafo>
+              </View>
+            )}
             {opcao.componentes.length < 20 && (
               <Campo rotulo="Adicionar ingrediente (escreve o nome do produto)" value={procura} onChangeText={setProcura} />
             )}
@@ -253,6 +280,7 @@ export default function OpcoesPrato() {
                     preco_extra: Number(opcao.preco_extra || 0),
                     ordem: Number(opcao.ordem || 0),
                     componentes: componentesParaGuardar(opcao.componentes),
+                    ...(opcao.contar_stock === undefined ? {} : { contar_stock: opcao.contar_stock && temLongoPrazo }),
                   });
                   setOpcao(null);
                 })

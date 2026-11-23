@@ -217,6 +217,7 @@ const mensagens: Record<string, string> = {
   endereco_repetido: 'Já tens esta morada guardada. Escolhe-a na lista.',
   opcao_invalida: 'Uma das opções escolhidas já não está disponível. Volta a montar o prato.',
   doses_esgotadas: 'Já não há doses suficientes de um dos pratos. Reduz a quantidade ou escolhe outro prato.',
+  opcao_esgotada: 'Acabou uma das escolhas do teu prato (por exemplo a bebida). Volta ao prato e escolhe outra.',
   item_sem_preco: 'Um dos pratos tem de ser montado (escolhe as opções) antes de o pedires.',
   componentes_todos_excluidos: 'Não podes tirar todos os ingredientes de um prato.',
   componentes_invalidos: 'Um dos ingredientes que tiraste já não faz parte do prato. Volta a montá-lo.',
