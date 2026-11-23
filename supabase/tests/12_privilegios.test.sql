@@ -126,6 +126,7 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 'rh_simular_salario', 'rh_folha', 'rh_folha_ajustar', 'rh_folha_fechar', 'rh_folha_pagar', 'visita_experiencia', 'resultado_experiencia',
                 'encomendar', 'minhas_encomendas', 'encomenda_responder', 'encomenda_pagar_sinal', 'encomenda_cancelar_cliente', 'encomendas_lista', 'encomenda_enviar_cozinha', 'encomenda_resposta_cozinha', 'encomenda_aprovar', 'encomenda_cancelar',
                 'cozinhas_perto_de', 'cardapio_fora_da_janela_em', 'cardapio_mais_tarde',
+                'registar_ausencia', 'meu_grupo_compromisso', 'confirmar_presenca', 'resultado_compromisso',
                 'receita_pratos_gerir', 'receita_guardar_pratos', 'receita_onde_pedir', 'receita_quero', 'receitas_metricas',
                 'meu_pagamento_antes', 'pagar_antes', 'pagamentos_antes_lista', 'decidir_pagamento_antes', 'devolver_pagamento_antes',
                 -- faixa de confiança (pontualidade agregada)

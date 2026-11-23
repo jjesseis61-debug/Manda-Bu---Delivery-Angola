@@ -6,7 +6,7 @@ import { Image, Linking, Text, View } from 'react-native';
 import { Guarda } from '@/components/Guarda';
 import { MapaEntregas } from '@/components/MapaEntregas';
 import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Escolha, Paragrafo, Subtitulo } from '@/components/ui';
-import { caixasAbertas, mudarEstado, pedidosOperador } from '@/lib/api';
+import { caixasAbertas, mudarEstado, pedidosOperador, registarAusencia } from '@/lib/api';
 import { guardarCaixasCache, lerCaixasCache, lerEntregasCache } from '@/lib/entregasCache';
 import { enfileirar, pedidosNaFila } from '@/lib/filaOffline';
 import { formatarKz, horaPrometida, mensagemErro } from '@/lib/formatar';
@@ -46,6 +46,10 @@ export default function Entrega() {
   const [aFechar, setAFechar] = useState(false);
   const [caixa, setCaixa] = useState<string | null>(null);
   const [parcelas, setParcelas] = useState<Parcela[]>([]);
+  // Cliente ausente / não atende: regista a tentativa falhada (mede as ausências; o operador decide o resto)
+  const [aRegistarAusencia, setARegistarAusencia] = useState(false);
+  const [notaAusencia, setNotaAusencia] = useState('');
+  const [tentativas, setTentativas] = useState<number | null>(null);
 
   const carregar = useCallback(async () => {
     if (!id) return;
@@ -92,6 +96,21 @@ export default function Entrega() {
         setErro(mensagemErro(e));
         setOcupado(false);
       }
+    }
+  }
+
+  async function ausente() {
+    if (!pedido) return;
+    setOcupado(true);
+    setErro(null);
+    try {
+      setTentativas(await registarAusencia(pedido.pedido_id, notaAusencia));
+      setARegistarAusencia(false);
+      setNotaAusencia('');
+    } catch (e) {
+      setErro(semRede(e) ? 'Sem rede: tenta registar quando tiveres ligação (liga ao cliente entretanto).' : mensagemErro(e));
+    } finally {
+      setOcupado(false);
     }
   }
 
@@ -226,6 +245,23 @@ export default function Entrega() {
         {!naFila && !aFechar && pedido.estado === 'em_entrega' && (
           <Botao titulo="Marcar como entregue" aCarregar={ocupado} aoCarregar={comecarFecho} />
         )}
+
+        {tentativas != null && (
+          <Aviso>
+            {`Registado: cliente ausente (${tentativas}.ª vez). Liga ou manda WhatsApp ao cliente; se não responder, fala com o operador antes de voltar.`}
+          </Aviso>
+        )}
+        {!naFila && !aFechar && pedido.estado === 'em_entrega' &&
+          (aRegistarAusencia ? (
+            <Cartao estilo={{ gap: espaco.s }}>
+              <Text style={{ fontWeight: '700' }}>O cliente não está ou não atende?</Text>
+              <Campo rotulo="Nota (opcional): ex. portão fechado, telefone desligado" value={notaAusencia} onChangeText={setNotaAusencia} />
+              <Botao titulo="Registar cliente ausente" variante="secundario" aCarregar={ocupado} aoCarregar={ausente} />
+              <Botao titulo="Voltar" variante="texto" aoCarregar={() => setARegistarAusencia(false)} />
+            </Cartao>
+          ) : (
+            <Botao titulo="Cliente ausente / não atende" variante="texto" aoCarregar={() => setARegistarAusencia(true)} />
+          ))}
 
         {/* Fecho da entrega: caixa + pagamento + foto do comprovativo */}
         {aFechar && (

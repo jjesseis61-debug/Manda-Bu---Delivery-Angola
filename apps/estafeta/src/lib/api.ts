@@ -570,6 +570,11 @@ export async function gruposDoDia(dia: string): Promise<GrupoOperador[]> {
   return verificar(await supabase.rpc('grupos_operador', { p_dia: dia })) as GrupoOperador[];
 }
 
+/** O cliente não está / não atende: fica registado (o pedido continua em entrega). Devolve quantas tentativas há. */
+export async function registarAusencia(pedidoId: string, nota: string): Promise<number> {
+  return verificar(await supabase.rpc('registar_ausencia', { p_pedido: pedidoId, p_nota: nota.trim() || null })) as number;
+}
+
 export async function mudarEstadoGrupo(grupoId: string, estado: 'confirmado' | 'em_preparacao' | 'em_entrega'): Promise<number> {
   return verificar(await supabase.rpc('mudar_estado_grupo', { p_grupo: grupoId, p_estado: estado })) as number;
 }

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 
 import { AcompanharEntrega } from '@/components/AcompanharEntrega';
+import { CompromissoPresenca } from '@/components/CompromissoPresenca';
 import { PagarAntes } from '@/components/PagarAntes';
 import { PartilharCodigo } from '@/components/PartilharCodigo';
 import { PessoasComoTu } from '@/components/PessoasComoTu';
@@ -159,6 +160,11 @@ export default function PedidoDetalhe() {
             ? `O teu pedido vai atrasar${atraso.mais_minutos ? ` cerca de ${atraso.mais_minutos} minutos` : ''}: ${atraso.motivo}. Pedimos desculpa pela espera.`
             : 'O teu pedido está a demorar mais do que o previsto. Já avisámos a cozinha.'}
         </Aviso>
+      )}
+
+      {/* Agendado: «Vais estar em … às …?» (teste do compromisso, grupo A) */}
+      {agendadoFuturo && pedido.agendado_para && ['pendente', 'confirmado', 'em_preparacao'].includes(pedido.estado) && (
+        <CompromissoPresenca pedidoId={pedido.id} agendadoPara={pedido.agendado_para} />
       )}
 
       {/* Pedido de grupo em que cada um paga a sua parte: pagar antes por transferência */}
