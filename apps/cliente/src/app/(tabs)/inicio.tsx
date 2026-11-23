@@ -802,7 +802,7 @@ export default function Inicio() {
         cozinhas={cozinhas}
         actual={balcaoActual}
         referencia={referenciaBalcoes}
-        aoPertoDeMim={() => void pertoDeMim()}
+        aoPertoDeMim={visitante ? undefined : () => void pertoDeMim()}
         aLocalizar={aLocalizar}
         erroLocalizacao={erroGps}
         aoEscolher={(id) => trocarCozinha(id)}
