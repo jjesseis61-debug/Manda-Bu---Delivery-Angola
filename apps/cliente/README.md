@@ -1,4 +1,4 @@
-# Manda Bué — app do cliente
+# Manda Bué: app do cliente
 
 Expo (SDK 57) com Expo Router e TypeScript. Backend: o projecto Supabase descrito em `../../supabase/`.
 
