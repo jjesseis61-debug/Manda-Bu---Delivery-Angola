@@ -35,6 +35,8 @@ export default function OpcoesPrato() {
   const [grupo, setGrupo] = useState<GrupoEditado | null>(null);
   const [opcao, setOpcao] = useState<OpcaoEditada | null>(null);
   const [erro, setErro] = useState<string | null>(null);
+  // Confirmação do que se guardou e em que grupo (para não se perder uma opção no grupo errado)
+  const [guardado, setGuardado] = useState<string | null>(null);
   const [produtos, setProdutos] = useState<ProdutoStock[] | null>(null);
   const [procura, setProcura] = useState('');
   const [ocupado, setOcupado] = useState(false);
@@ -55,6 +57,7 @@ export default function OpcoesPrato() {
   useEffect(() => {
     if (opcao && produtos === null) lerProdutos().then(setProdutos).catch(() => setProdutos([]));
   }, [opcao, produtos]);
+  const nomeGrupo = (id: string) => grupos?.find((g) => g.id === id)?.nome ?? 'grupo';
   const nomeProduto = (id: string) => produtos?.find((p) => p.id === id)?.nome ?? 'Produto';
   // Contar o stock só faz sentido com um produto de longo prazo nos ingredientes (é o que tem movimentos)
   const temLongoPrazo = !!opcao?.componentes.some((c) => produtos?.find((p) => p.id === c.produto_id)?.tipo_estoque === 'Longo Prazo');
@@ -70,6 +73,7 @@ export default function OpcoesPrato() {
 
   async function correr(f: () => Promise<void>) {
     setErro(null);
+    setGuardado(null);
     setOcupado(true);
     try {
       await f();
@@ -106,6 +110,7 @@ export default function OpcoesPrato() {
           preço do prato. Só aparece aos clientes com o interruptor &quot;pratos_montaveis&quot; ligado.
         </Paragrafo>
         {erro && <Aviso tipo="erro">{erro}</Aviso>}
+        {guardado && <Aviso tipo="sucesso">{guardado}</Aviso>}
         {grupos === null && !erro && <ACarregar />}
         {grupos?.length === 0 && <Paragrafo suave>Este prato ainda não tem opções.</Paragrafo>}
 
@@ -161,7 +166,9 @@ export default function OpcoesPrato() {
 
         {opcao && (
           <Cartao>
-            <Subtitulo>{opcao.id ? 'Editar opção' : 'Nova opção'}</Subtitulo>
+            <Subtitulo>
+              {opcao.id ? 'Editar opção' : 'Nova opção'} em «{nomeGrupo(opcao.grupo_id)}»
+            </Subtitulo>
             <Campo rotulo="Nome (ex.: Funge, Ovo estrelado)" value={opcao.nome} onChangeText={(t) => setOpcao({ ...opcao, nome: t })} />
             <Campo
               rotulo="Preço extra (Kz, 0 se não acrescenta)"
@@ -219,20 +226,28 @@ export default function OpcoesPrato() {
             ))}
             {opcao.contar_stock !== undefined && (
               <View style={{ gap: espaco.xs }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: espaco.s }}>
-                  <Text style={{ flex: 1 }}>Contar o stock (latas, garrafas)</Text>
-                  <Switch thumbColor="#FFFFFF"
-                    value={opcao.contar_stock}
-                    disabled={!temLongoPrazo}
-                    onValueChange={(v) => setOpcao({ ...opcao, contar_stock: v })}
-                    trackColor={{ true: cores.marca, false: cores.contorno }}
-                  />
-                </View>
-                <Paragrafo suave>
-                  {temLongoPrazo
-                    ? 'O cliente vê quantas restam («Restam 4») e, quando acabam, «Hoje não há». Conta o stock da cozinha menos os pedidos ainda por entregar.'
-                    : 'Para contar o stock, junta como ingrediente o produto de longo prazo (ex.: Gasosa lata, 1 un).'}
-                </Paragrafo>
+                <Text style={{ fontWeight: '700' }}>Contar o stock (latas, garrafas)</Text>
+                {temLongoPrazo ? (
+                  <>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: espaco.s }}>
+                      <Text style={{ flex: 1 }}>Mostrar ao cliente quantas restam</Text>
+                      <Switch thumbColor="#FFFFFF"
+                        value={opcao.contar_stock}
+                        onValueChange={(v) => setOpcao({ ...opcao, contar_stock: v })}
+                        trackColor={{ true: cores.marca, false: cores.contorno }}
+                      />
+                    </View>
+                    <Paragrafo suave>
+                      O cliente vê quantas restam («Restam 4») e, quando acabam, «Hoje não há». Conta as entradas no stock da cozinha
+                      menos os pedidos ainda por entregar: sem entradas registadas, a opção aparece como «Hoje não há».
+                    </Paragrafo>
+                  </>
+                ) : (
+                  <Paragrafo suave>
+                    Ainda não se pode ligar: junta primeiro, nos ingredientes abaixo, o produto de longo prazo que se gasta (ex.: Gasosa
+                    lata, 1 un). O produto tem de existir no stock da cozinha, com as entradas registadas.
+                  </Paragrafo>
+                )}
               </View>
             )}
             {opcao.componentes.length < 20 && (
@@ -253,7 +268,10 @@ export default function OpcoesPrato() {
               />
             ))}
             {procura.trim().length >= 2 && encontrados.length === 0 && produtos !== null && (
-              <Paragrafo suave>Nenhum produto com esse nome.</Paragrafo>
+              <Paragrafo suave>
+                Nenhum produto com esse nome no stock. A opção guarda-se na mesma; para contar latas, o produto tem de ser registado
+                primeiro no stock (longo prazo, por unidade).
+              </Paragrafo>
             )}
             {opcao.id ? (
               <FotoEditavel
@@ -282,7 +300,9 @@ export default function OpcoesPrato() {
                     componentes: componentesParaGuardar(opcao.componentes),
                     ...(opcao.contar_stock === undefined ? {} : { contar_stock: opcao.contar_stock && temLongoPrazo }),
                   });
+                  const nome = opcao.nome.trim();
                   setOpcao(null);
+                  setTimeout(() => setGuardado(`«${nome}» guardada no grupo «${nomeGrupo(opcao.grupo_id)}».`), 0);
                 })
               }
             />
