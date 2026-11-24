@@ -2,7 +2,7 @@
 -- o pedido da app não passa do que resta, cancelar devolve e a venda não conta duas vezes.
 begin;
 \ir _helpers.psql
-select plan(9);
+select plan(10);
 
 with z as (insert into zonas (nome, tipo, taxa) values ('Talatona', 'Própria', 300) returning id) select testes.def('zona', id) from z;
 select testes.funcionalidade('pratos_montaveis', true);
@@ -66,6 +66,10 @@ select testes.def('p2', pg_temp.pedir('gasosa', 2));
 select testes.pagar(testes.u('p2'));
 select is(unidades_opcao(testes.u('gasosa')), 1, 'depois da venda: 3 - 2 = 1, sem contar duas vezes');
 select is(pg_temp.pedir('agua', 5) ~ '^[0-9a-f-]{36}$', true, 'opção sem contagem de stock pede-se à vontade');
+
+-- A dona da cozinha também tem conta de cliente: quando pede para si própria na app, também é travada
+insert into funcionarios (nome, auth_user_id) select 'Ana Sousa', auth_user_id from clientes where id = testes.u('ana');
+select is(pg_temp.pedir('gasosa', 2), 'P0001:opcao_esgotada', 'cliente que também é funcionária: pedido para si própria travado');
 
 select * from finish();
 rollback;
