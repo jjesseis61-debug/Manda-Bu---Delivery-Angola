@@ -52,6 +52,7 @@ export type ChaveFuncionalidade =
   | 'campanhas'
   | 'teste_fotos_inicio'
   | 'teste_balcao_panelas'
+  | 'teste_balcao_recipientes'
   | 'encomendas'
   | 'indicacao'
   | 'destaques'
@@ -358,7 +359,22 @@ export type CozinhaParaPedir = {
 };
 
 // I9 · Pratos montáveis
-export type Opcao = { id: string; nome: string; preco_extra: number; ordem: number; foto_url?: string | null };
+/** Onde a comida está servida no balcão (null: deduzido pelo nome) */
+export type Recipiente =
+  | 'panela'
+  | 'barro'
+  | 'tigela'
+  | 'cartucho'
+  | 'travessa'
+  | 'saladeira'
+  | 'malga'
+  | 'cesto'
+  | 'molheira'
+  | 'taca'
+  | 'fruteira'
+  | 'copo'
+  | 'lata';
+export type Opcao = { id: string; nome: string; preco_extra: number; ordem: number; foto_url?: string | null; recipiente?: Recipiente | null };
 export type GrupoOpcoes = {
   id: string;
   cardapio_id: string;
@@ -367,10 +383,20 @@ export type GrupoOpcoes = {
   maximo: number;
   ordem: number;
   opcoes: Opcao[];
+  /** Recipiente escolhido pela cozinha para o grupo (null: deduzido pelo nome) */
+  recipiente?: Recipiente | null;
   /** Opções que a cozinha desligou hoje (só para o balcão mostrar a panela vazia; nunca se escolhem) */
   acabaram?: Opcao[];
 };
-export type OpcaoEscolhida = { id: string; nome: string; preco_extra: number };
+/** Opção escolhida (no carrinho leva também a fotografia e o sítio no prato, para o desenhar) */
+export type OpcaoEscolhida = {
+  id: string;
+  nome: string;
+  preco_extra: number;
+  foto_url?: string | null;
+  zona?: 'base' | 'proteina' | 'acompanhamento' | 'lado' | 'sobremesa' | 'bebida';
+  recipiente?: Recipiente;
+};
 /** Ingrediente da receita que o cliente pode tirar; valor = o que deixa de pagar (calculado no servidor) */
 export type ComponentePrato = { cardapio_id: string; produto_id: string; nome: string; quantidade: number; unidade: string | null; valor: number };
 

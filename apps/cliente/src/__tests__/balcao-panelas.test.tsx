@@ -13,8 +13,11 @@ import {
   textoRestamOpcao,
   textoSeguinte,
   tipoDoGrupo,
+  zonaDaOpcao,
+  zonasDasPecas,
   zonasDoPrato,
 } from '@/lib/balcaoPanelas';
+import { opcoesEscolhidas } from '@/lib/opcoes';
 import type { GrupoOpcoes } from '@/lib/tipos';
 
 const mockAdicionar = jest.fn();
@@ -81,7 +84,8 @@ describe('regras do balcão', () => {
     expect(tipoDoGrupo({ nome: 'Escolhe', maximo: 1 })).toBe('base');
     expect(recipienteDaOpcao({ nome: 'Base', maximo: 3 }, { nome: 'Arroz' })).toBe('panela');
     expect(recipienteDaOpcao({ nome: 'Acompanhamentos', maximo: 3 }, { nome: 'Feijão de óleo de palma' })).toBe('barro');
-    expect(recipienteDaOpcao({ nome: 'Acompanhamentos', maximo: 3 }, { nome: 'Salada' })).toBe('tigela');
+    expect(recipienteDaOpcao({ nome: 'Acompanhamentos', maximo: 3 }, { nome: 'Salada' })).toBe('saladeira');
+    expect(recipienteDaOpcao({ nome: 'Acompanhamentos', maximo: 3 }, { nome: 'Couve' })).toBe('tigela');
     expect(recipienteDaOpcao({ nome: 'Sumo Natural', maximo: 3 }, { nome: 'Sumo de Ananás' })).toBe('copo');
     expect(recipienteDaOpcao({ nome: 'Bebida', maximo: 1 }, { nome: 'Gasosa de laranja' })).toBe('lata');
   });
@@ -132,6 +136,68 @@ describe('regras do balcão', () => {
   });
 });
 
+describe('recipientes próprios (fase 2)', () => {
+  test('cada comida no seu recipiente, pelo nome (Rogers: o que se vê na cantina)', () => {
+    const acomp = { nome: 'Acompanhamentos', maximo: 3 };
+    expect(recipienteDaOpcao(acomp, { nome: 'Batata frita' })).toBe('cartucho');
+    expect(recipienteDaOpcao(acomp, { nome: 'Mandioca frita' })).toBe('cartucho');
+    expect(recipienteDaOpcao({ nome: 'Proteína', maximo: 1 }, { nome: 'Frango grelhado' })).toBe('travessa');
+    expect(recipienteDaOpcao({ nome: 'Proteína', maximo: 1 }, { nome: 'Frango guisado' })).toBe('panela');
+    expect(recipienteDaOpcao({ nome: 'Proteína', maximo: 1 }, { nome: 'Muamba de galinha' })).toBe('barro');
+    expect(recipienteDaOpcao(acomp, { nome: 'Sopa de legumes' })).toBe('malga');
+    expect(recipienteDaOpcao(acomp, { nome: 'Pão' })).toBe('cesto');
+    expect(recipienteDaOpcao(acomp, { nome: 'Molho de jindungo' })).toBe('molheira');
+    expect(recipienteDaOpcao({ nome: 'Sobremesa', maximo: 1 }, { nome: 'Pudim' })).toBe('taca');
+    expect(recipienteDaOpcao({ nome: 'Sobremesa', maximo: 1 }, { nome: 'Papaia' })).toBe('fruteira');
+  });
+
+  test('a escolha da cozinha manda: na opção, depois no grupo; o recipiente decide o sítio no tabuleiro', () => {
+    expect(recipienteDaOpcao({ nome: 'Extras', maximo: 2, recipiente: 'tigela' }, { nome: 'Batata frita', recipiente: 'cesto' })).toBe('cesto');
+    expect(recipienteDaOpcao({ nome: 'Extras', maximo: 2, recipiente: 'tigela' }, { nome: 'Batata frita' })).toBe('tigela');
+    expect(tipoDoGrupo({ nome: 'Para terminar', maximo: 1, recipiente: 'taca' })).toBe('sobremesa');
+    expect(tipoDoGrupo({ nome: 'Fritos', maximo: 2, recipiente: 'cartucho' })).toBe('acompanhamento');
+    expect(zonaDaOpcao({ nome: 'Acompanhamentos', maximo: 3 }, { nome: 'Sopa do dia' })).toBe('lado');
+    expect(zonaDaOpcao({ nome: 'Acompanhamentos', maximo: 3 }, { nome: 'Couve' })).toBe('acompanhamento');
+  });
+
+  test('passos pela ordem da refeição; perguntas da sobremesa, da fruta e do que vai ao lado', () => {
+    const passos = passosDoBalcao(
+      [
+        grupo({ id: 'b', nome: 'Bebida', maximo: 1, opcoes: [op('c', 'Cola')] }),
+        grupo({ id: 's', nome: 'Sobremesa', maximo: 1, minimo: 0, opcoes: [op('p', 'Pudim'), op('m', 'Mousse')] }),
+        grupo({ id: 'f', nome: 'Fruta', maximo: 1, minimo: 0, opcoes: [op('pa', 'Papaia')] }),
+        grupo({ id: 'so', nome: 'Sopa', maximo: 1, minimo: 0, opcoes: [op('sl', 'Sopa de legumes'), op('sc', 'Caldo')] }),
+        grupo({ id: 'pr', nome: 'Proteína', opcoes: [op('fr', 'Frango')] }),
+        grupo({ id: 'ba', nome: 'Base', opcoes: [op('ar', 'Arroz')] }),
+      ],
+      [],
+    );
+    expect(passos.map((p) => p.titulo)).toEqual(['Base', 'Proteína', 'Sopa', 'Sobremesa', 'Fruta', 'Bebida']);
+    expect(perguntaDoPasso(passos[2])).toBe('Uma sopa?');
+    expect(perguntaDoPasso(passos[3])).toBe('Pudim ou mousse?');
+    expect(perguntaDoPasso(passos[4])).toBe('Uma fruta?');
+    expect(dicaDoPasso(passos[4])).toBe('Toca para pôr no prato da sobremesa. Só uma, se quiseres.');
+  });
+
+  test('a linha do carrinho leva a fotografia, o sítio e o recipiente para desenhar o prato', () => {
+    const grupos = [
+      grupo({ id: 'ba', nome: 'Base', opcoes: [{ ...op('ar', 'Arroz'), foto_url: 'https://x/arroz.jpg' }] }),
+      grupo({ id: 's', nome: 'Sobremesa', minimo: 0, opcoes: [op('p', 'Pudim')] }),
+      grupo({ id: 'b', nome: 'Bebida', minimo: 0, opcoes: [op('c', 'Coca-Cola')] }),
+    ];
+    const escolhidas = opcoesEscolhidas(grupos, ['ar', 'p', 'c']);
+    expect(escolhidas).toEqual([
+      { id: 'ar', nome: 'Arroz', preco_extra: 0, foto_url: 'https://x/arroz.jpg', zona: 'base', recipiente: 'panela' },
+      { id: 'p', nome: 'Pudim', preco_extra: 0, foto_url: null, zona: 'sobremesa', recipiente: 'taca' },
+      { id: 'c', nome: 'Coca-Cola', preco_extra: 0, foto_url: null, zona: 'bebida', recipiente: 'lata' },
+    ]);
+    const z = zonasDasPecas(escolhidas);
+    expect(z.sobremesa.map((o) => o.id)).toEqual(['p']);
+    // Linhas antigas do carrinho (sem zona) não se perdem: vão para o acompanhamento
+    expect(zonasDasPecas<{ id: string; zona?: 'base' }>([{ id: 'x' }]).acompanhamento).toHaveLength(1);
+  });
+});
+
 describe('ecrã Servir o prato', () => {
   beforeEach(() => {
     mockAdicionar.mockClear();
@@ -145,7 +211,7 @@ describe('ecrã Servir o prato', () => {
     mockUnidades.valor = { gasosa: 2, cola: 0 };
     const ecra = renderRouter({ 'montar/[id]': MontarPrato, inicio: () => <Text>Início</Text> }, { initialUrl: '/montar/m' });
     await act(async () => undefined);
-    expect(mockVisita).toHaveBeenCalledWith('balcao_panelas');
+    expect(mockVisita).toHaveBeenCalledWith('balcao_recipientes');
     expect(ecra.getByText('Arroz ou funje?')).toBeTruthy();
     expect(ecra.getByText('Restam 4 pratos hoje')).toBeTruthy();
     // Sem base não se segue
@@ -184,14 +250,14 @@ describe('ecrã Servir o prato', () => {
     expect(mockAdicionar).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'm' }),
       [
-        { id: 'arroz', nome: 'Arroz', preco_extra: 700 },
-        { id: 'frango', nome: 'Frango', preco_extra: 1200 },
-        { id: 'feijao', nome: 'Feijão', preco_extra: 400 },
-        { id: 'ananas', nome: 'Sumo de Ananás', preco_extra: 1000 },
+        expect.objectContaining({ id: 'arroz', nome: 'Arroz', preco_extra: 700 }),
+        expect.objectContaining({ id: 'frango', nome: 'Frango', preco_extra: 1200 }),
+        expect.objectContaining({ id: 'feijao', nome: 'Feijão', preco_extra: 400 }),
+        expect.objectContaining({ id: 'ananas', nome: 'Sumo de Ananás', preco_extra: 1000 }),
       ],
       [],
     );
-    expect(mockVisita).toHaveBeenCalledWith('balcao_panelas', expect.any(Number));
+    expect(mockVisita).toHaveBeenCalledWith('balcao_recipientes', expect.any(Number));
   });
 
   test('grupo A: fica a lista de sempre e também conta o tempo até Adicionar', async () => {
@@ -204,6 +270,6 @@ describe('ecrã Servir o prato', () => {
     fireEvent.press(ecra.getByText('Frango'));
     fireEvent.press(ecra.getByText('Adicionar · 1.900 Kz'));
     expect(mockAdicionar).toHaveBeenCalled();
-    expect(mockVisita).toHaveBeenCalledWith('balcao_panelas', expect.any(Number));
+    expect(mockVisita).toHaveBeenCalledWith('balcao_recipientes', expect.any(Number));
   });
 });

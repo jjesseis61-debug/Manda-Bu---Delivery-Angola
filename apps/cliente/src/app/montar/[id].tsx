@@ -116,7 +116,7 @@ export default function MontarPrato() {
 
   // Teste do balcão de panelas (Skinner: grupo de controlo antes de adoptar). Cada cliente fica sempre
   // no mesmo grupo: B vê o balcão, A a lista. Desligado, sem conta, a rever um pedido ou com erro: a lista.
-  const comTeste = carregado && !visitante && ligada('teste_balcao_panelas') && rever !== '1';
+  const comTeste = carregado && !visitante && ligada('teste_balcao_recipientes') && rever !== '1';
   // null enquanto o servidor diz o grupo (evita mostrar a lista e trocar logo a seguir)
   const [balcao, setBalcao] = useState<boolean | null>(false);
   const abertoEm = useRef(Date.now());
@@ -133,7 +133,7 @@ export default function MontarPrato() {
       if (vivo) setBalcao(false);
       vivo = false;
     }, 2500);
-    visitaExperiencia('balcao_panelas')
+    visitaExperiencia('balcao_recipientes')
       .then((g) => vivo && setBalcao(g === 'B'))
       .catch(() => vivo && setBalcao(false))
       .finally(() => clearTimeout(limite));
@@ -144,7 +144,7 @@ export default function MontarPrato() {
   }, [comTeste, id]);
   /** Tempo até «Adicionar» nos dois grupos (falha em silêncio; o servidor guarda o mais rápido do dia) */
   const contarAdicionar = () => {
-    if (comTeste) void visitaExperiencia('balcao_panelas', (Date.now() - abertoEm.current) / 1000).catch(() => undefined);
+    if (comTeste) void visitaExperiencia('balcao_recipientes', (Date.now() - abertoEm.current) / 1000).catch(() => undefined);
   };
 
   useEffect(() => {

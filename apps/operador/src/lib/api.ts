@@ -382,18 +382,19 @@ export async function lerModeloMontavel(): Promise<string | null> {
 }
 
 export async function lerGruposOpcoes(cardapioId: string): Promise<GrupoOpcoesPrato[]> {
-  const ler = (campos: string) =>
+  const ler = (grupo: string, campos: string) =>
     supabase
       .from('opcoes_grupos')
-      .select(`id, cardapio_id, nome, minimo, maximo, ordem, opcoes(${campos})`)
+      .select(`id, cardapio_id, nome, minimo, maximo, ordem${grupo}, opcoes(${campos})`)
       .eq('cardapio_id', cardapioId)
       .is('deletado_em', null)
       .order('ordem')
       .order('nome');
   const base = 'id, grupo_id, nome, preco_extra, disponivel, ordem, componentes, foto_url, deletado_em';
-  let r = await ler(`${base}, contar_stock`);
-  // Servidor ainda sem «contar_stock» (SQL por aplicar): lê sem ela e o ecrã esconde o interruptor
-  if (r.error?.code === '42703') r = await ler(base);
+  // Colunas que só existem depois do SQL respectivo (sem elas, 42703): o ecrã esconde o que não há
+  let r = await ler(', recipiente', `${base}, contar_stock, recipiente`);
+  if (r.error?.code === '42703') r = await ler('', `${base}, contar_stock`);
+  if (r.error?.code === '42703') r = await ler('', base);
   type Linha = Omit<GrupoOpcoesPrato, 'opcoes'> & { opcoes: (OpcaoPrato & { deletado_em: string | null })[] };
   return (verificar(r) as unknown as Linha[]).map((g) => ({
     ...g,

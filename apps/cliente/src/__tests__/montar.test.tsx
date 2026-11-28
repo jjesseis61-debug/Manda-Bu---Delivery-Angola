@@ -76,7 +76,7 @@ test('só adiciona com a base escolhida, com o preço dos extras', async () => {
   fireEvent.press(ecra.getByText('Adicionar · 2.700 Kz'));
   expect(mockAdicionar).toHaveBeenCalledWith(
     expect.objectContaining({ id: 'm' }),
-    [{ id: 'funge', nome: 'Funge', preco_extra: 0 }, { id: 'ovo', nome: 'Ovo', preco_extra: 200 }],
+    [expect.objectContaining({ id: 'funge', nome: 'Funge', preco_extra: 0 }), expect.objectContaining({ id: 'ovo', nome: 'Ovo', preco_extra: 200 })],
     [],
   );
 });
@@ -108,7 +108,7 @@ test('tirar ingredientes: o preço desce pelo valor de cada um e fica sempre pel
   fireEvent.press(ecra.getByText('Adicionar · 2.475 Kz'));
   expect(mockAdicionar).toHaveBeenCalledWith(
     expect.objectContaining({ id: 'm' }),
-    [{ id: 'funge', nome: 'Funge', preco_extra: 0 }],
+    [expect.objectContaining({ id: 'funge', nome: 'Funge', preco_extra: 0 })],
     [expect.objectContaining({ produto_id: 'cebola', valor: 25 })],
   );
   mockComponentes.valor = [];
@@ -147,7 +147,7 @@ describe('"Pedir de novo" de um prato que mudou', () => {
     expect(ecra.getByText('Do teu pedido anterior já não temos: Bacon. Escolhe outra opção ou continua sem ela.')).toBeTruthy();
     expect(mockAdicionar).not.toHaveBeenCalled();
     fireEvent.press(ecra.getByText('Adicionar 2× · 5.000 Kz'));
-    expect(mockAdicionar).toHaveBeenCalledWith(expect.objectContaining({ id: 'm' }), [{ id: 'funge', nome: 'Funge', preco_extra: 0 }], [], 2);
+    expect(mockAdicionar).toHaveBeenCalledWith(expect.objectContaining({ id: 'm' }), [expect.objectContaining({ id: 'funge', nome: 'Funge', preco_extra: 0 })], [], 2);
     expect(mockAvancarFila).toHaveBeenCalled();
     await act(async () => undefined);
     expect(ecra.getByText('Carrinho')).toBeTruthy();

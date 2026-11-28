@@ -828,7 +828,24 @@ export type OpcaoPrato = {
   foto_url?: string | null;
   /** O cliente vê o que resta pelo stock dos ingredientes (latas, garrafas); undefined = servidor ainda sem a coluna */
   contar_stock?: boolean;
+  /** Recipiente no balcão do cliente (null = o do grupo); undefined = servidor ainda sem a coluna */
+  recipiente?: RecipienteBalcao | null;
 };
+/** Recipientes do balcão de panelas (app do cliente) */
+export type RecipienteBalcao =
+  | 'panela'
+  | 'barro'
+  | 'tigela'
+  | 'cartucho'
+  | 'travessa'
+  | 'saladeira'
+  | 'malga'
+  | 'cesto'
+  | 'molheira'
+  | 'taca'
+  | 'fruteira'
+  | 'copo'
+  | 'lata';
 export type ProdutoStock = { id: string; nome: string; categoria_medida: 'Peso' | 'Volume' | 'Unidade' | null; tipo_estoque: string | null };
 export type GrupoOpcoesPrato = {
   id: string;
@@ -837,6 +854,8 @@ export type GrupoOpcoesPrato = {
   minimo: number;
   maximo: number;
   ordem: number;
+  /** Recipiente do grupo no balcão (null = pelo nome); undefined = servidor ainda sem a coluna */
+  recipiente?: RecipienteBalcao | null;
   opcoes: OpcaoPrato[];
 };
 

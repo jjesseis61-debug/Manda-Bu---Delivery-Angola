@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, Switch, Text, View } from 'react-native';
 
 import { CampoCodigo } from '@/components/CampoCodigo';
+import { LinhaDoPedido } from '@/components/LinhaDoPedido';
 import { Aviso, Botao, Campo, Cartao, Ecra, Escolha, Linha, Paragrafo, Subtitulo } from '@/components/ui';
 import { faixasAgendamento } from '@/lib/agendar';
 import { cozinhasPertoParaPedir, criarPedido, lerCardapio, lerEnderecos, lerSaldo, meuPacote, minhaEmpresa, orcamento as pedirOrcamento, usarCredito, usarPacote } from '@/lib/api';
@@ -45,6 +46,8 @@ function CarrinhoConta() {
   const { perfil, ligada, parametros } = useSessao();
   const carrinho = useCarrinho();
   const [enderecos, setEnderecos] = useState<Endereco[] | null>(null);
+  /** Linha com a lista do prato aberta (tocando no prato) */
+  const [linhaAberta, setLinhaAberta] = useState<string | null>(null);
   const [pontoId, setPontoId] = useState<string | null>(null);
   const [orc, setOrc] = useState<Orcamento | null>(null);
   const [erroOrc, setErroOrc] = useState<string | null>(null);
@@ -227,20 +230,13 @@ function CarrinhoConta() {
       {faltam && <Aviso>Alguns pratos já não estão disponíveis e ficaram de fora: {faltam}. Confere o pedido.</Aviso>}
       {ligada('multi_cozinha') && carrinho.cozinhaActual && <Subtitulo>{carrinho.cozinhaActual.nome}</Subtitulo>}
       {carrinho.linhas.map((l) => (
-        <View key={l.chave} style={{ flexDirection: 'row', alignItems: 'center', gap: espaco.m }}>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 15 }}>{l.item.nome}</Text>
-            {l.opcoes.length > 0 && <Text style={{ color: cores.textoSuave }}>{l.opcoes.map((o) => o.nome).join(', ')}</Text>}
-            {l.tirados.length > 0 && <Text style={{ color: cores.textoSuave }}>Sem {l.tirados.map((c) => c.nome.toLowerCase()).join(', ')}</Text>}
-          </View>
-          <Pressable accessibilityLabel="Menos" onPress={() => carrinho.alterar(l.chave, l.qtd - 1)} hitSlop={8}>
-            <Text style={{ fontSize: 22, color: cores.marca, width: 24, textAlign: 'center' }}>−</Text>
-          </Pressable>
-          <Text style={{ fontSize: 16, fontWeight: '600', minWidth: 20, textAlign: 'center' }}>{l.qtd}</Text>
-          <Pressable accessibilityLabel="Mais" onPress={() => carrinho.alterar(l.chave, l.qtd + 1)} hitSlop={8}>
-            <Text style={{ fontSize: 22, color: cores.marca, width: 24, textAlign: 'center' }}>+</Text>
-          </Pressable>
-        </View>
+        <LinhaDoPedido
+          key={l.chave}
+          linha={l}
+          aberta={linhaAberta === l.chave}
+          aoTocarPrato={() => setLinhaAberta((c) => (c === l.chave ? null : l.chave))}
+          aoMudar={(qtd) => carrinho.alterar(l.chave, qtd)}
+        />
       ))}
 
       {/* Prahalad/Cialdini: uma linha discreta, sem janela; some quando há bebida ou o cliente dispensa */}
@@ -452,3 +448,4 @@ export default function Carrinho() {
   if (!sessao || !perfil) return <CarrinhoVisitante />;
   return <CarrinhoConta />;
 }
+

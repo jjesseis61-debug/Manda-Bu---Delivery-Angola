@@ -1,5 +1,6 @@
 // Regras do prato montável (I9) do lado da app: só para guiar o cliente e mostrar o preço.
 // O servidor volta a validar tudo e calcula o preço a pagar (orcamento_pedido).
+import { recipienteDaOpcao, zonaDaOpcao } from './balcaoPanelas';
 import type { ComponentePrato, GrupoOpcoes, OpcaoEscolhida } from './tipos';
 
 /** Escolher uma opção: num grupo de escolha única troca a anterior; nos outros liga/desliga até ao máximo */
@@ -26,10 +27,22 @@ export function gruposEsgotados(grupos: GrupoOpcoes[]): string[] {
   return grupos.filter((g) => g.minimo > 0 && g.opcoes.length === 0).map((g) => g.nome);
 }
 
-/** Opções escolhidas pela ordem dos grupos, com o preço extra */
+/**
+ * Opções escolhidas pela ordem dos grupos, com o preço extra e, para desenhar o prato no pedido,
+ * a fotografia, o sítio no prato e o recipiente
+ */
 export function opcoesEscolhidas(grupos: GrupoOpcoes[], escolhidas: string[]): OpcaoEscolhida[] {
   return grupos.flatMap((g) =>
-    g.opcoes.filter((o) => escolhidas.includes(o.id)).map(({ id, nome, preco_extra }) => ({ id, nome, preco_extra })),
+    g.opcoes
+      .filter((o) => escolhidas.includes(o.id))
+      .map((o) => ({
+        id: o.id,
+        nome: o.nome,
+        preco_extra: o.preco_extra,
+        foto_url: o.foto_url ?? null,
+        zona: zonaDaOpcao(g, o),
+        recipiente: recipienteDaOpcao(g, o),
+      })),
   );
 }
 

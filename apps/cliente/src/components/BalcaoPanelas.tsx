@@ -1,7 +1,8 @@
 import { type ReactNode, useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Animated, Image, Pressable, ScrollView, Text, View } from 'react-native';
+import { AccessibilityInfo, Animated, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { RecipienteDesenhado, Tabuleiro } from '@/components/Recipientes';
 import { Botao } from '@/components/ui';
 import {
   dicaDoPasso,
@@ -9,133 +10,21 @@ import {
   passosDoBalcao,
   perguntaDoPasso,
   recipienteDaOpcao,
-  type Recipiente,
   textoRestam,
   textoRestamOpcao,
   textoSeguinte,
+  pecasDoPrato,
+  zonaDaOpcao,
+  zonasDasPecas,
   zonasDoPrato,
 } from '@/lib/balcaoPanelas';
 import { formatarKz } from '@/lib/formatar';
-import { emojiOpcao } from '@/lib/opcoes';
 import { cores, espaco, raio } from '@/lib/tema';
-import type { ComponentePrato, GrupoOpcoes, Opcao } from '@/lib/tipos';
+import type { ComponentePrato, GrupoOpcoes } from '@/lib/tipos';
 
-/** Panelas e tigelas: grandes, para a fotografia ser o centro */
-const TAMANHO = 104;
-const DENTRO = 78;
 const PRATO = 150;
 const MADEIRA = '#F2E6D8';
 const GELEIRA = '#E3F0F7';
-
-const ESTILO_RECIPIENTE: Record<'panela' | 'barro' | 'tigela', { fundo: string; aro: string; asas: string | null }> = {
-  panela: { fundo: '#C9CDD1', aro: '#8D9297', asas: '#3A3A3A' },
-  barro: { fundo: '#9B5530', aro: '#6E3417', asas: '#5A2A10' },
-  tigela: { fundo: '#F7F3EE', aro: '#D9D2C8', asas: null },
-};
-
-/** Fotografia da opção (ou o emoji, sem fotografia), com o recorte pedido */
-function Comida({ opcao, largura, altura, raioCanto }: { opcao: Opcao; largura: number | `${number}%`; altura: number | `${number}%`; raioCanto: number }) {
-  return opcao.foto_url ? (
-    <Image source={{ uri: opcao.foto_url }} resizeMode="cover" style={{ width: largura, height: altura, borderRadius: raioCanto }} accessibilityIgnoresInvertColors />
-  ) : (
-    <View style={{ width: largura, height: altura, borderRadius: raioCanto, backgroundColor: '#FFF8F0', alignItems: 'center', justifyContent: 'center' }}>
-      <Text style={{ fontSize: typeof altura === 'number' ? Math.max(14, altura * 0.45) : 22 }}>{emojiOpcao(opcao.nome)}</Text>
-    </View>
-  );
-}
-
-/** Copo de sumo ou lata/garrafa de gasosa, vistos de frente */
-function Bebida({ tipo, opcao, escolhida, vazia, escala = 1 }: { tipo: 'copo' | 'lata'; opcao: Opcao | null; escolhida: boolean; vazia: boolean; escala?: number }) {
-  const largura = (tipo === 'lata' ? 58 : 66) * escala;
-  const altura = 92 * escala;
-  return (
-    <View style={{ width: largura, height: altura, alignItems: 'center' }}>
-      {tipo === 'lata' && <View style={{ width: largura - 8 * escala, height: 7 * escala, borderTopLeftRadius: 4, borderTopRightRadius: 4, backgroundColor: '#B8BEC4' }} />}
-      <View
-        style={{
-          flex: 1,
-          width: largura,
-          overflow: 'hidden',
-          borderWidth: escolhida ? 3 : 2,
-          borderColor: escolhida ? cores.marca : tipo === 'lata' ? '#9EA6AD' : '#B9D3E0',
-          backgroundColor: tipo === 'lata' ? '#DDE2E6' : 'rgba(255,255,255,0.7)',
-          borderTopLeftRadius: tipo === 'copo' ? 4 : 10 * escala,
-          borderTopRightRadius: tipo === 'copo' ? 4 : 10 * escala,
-          borderBottomLeftRadius: tipo === 'copo' ? 16 * escala : 10 * escala,
-          borderBottomRightRadius: tipo === 'copo' ? 16 * escala : 10 * escala,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}>
-        {vazia || !opcao ? (
-          <Text style={{ fontSize: 11 * escala, fontWeight: '700', color: '#5F6368' }}>{vazia ? 'vazia' : ''}</Text>
-        ) : (
-          <Comida opcao={opcao} largura="100%" altura="100%" raioCanto={0} />
-        )}
-      </View>
-    </View>
-  );
-}
-
-/** Panela, panela de barro ou tigela vista de cima, com a comida lá dentro (ou vazia, quando hoje não há) */
-function Recipiente({ tipo, opcao, escolhida, vazia }: { tipo: Recipiente; opcao: Opcao; escolhida: boolean; vazia: boolean }) {
-  if (tipo === 'copo' || tipo === 'lata') {
-    return (
-      <View style={{ height: TAMANHO, justifyContent: 'center' }}>
-        <Bebida tipo={tipo} opcao={opcao} escolhida={escolhida} vazia={vazia} escala={1.05} />
-      </View>
-    );
-  }
-  const e = ESTILO_RECIPIENTE[tipo];
-  return (
-    <View style={{ width: TAMANHO + 20, height: TAMANHO, alignItems: 'center', justifyContent: 'center' }}>
-      {e.asas && (
-        <>
-          <View style={{ position: 'absolute', left: 0, top: TAMANHO / 2 - 8, width: 18, height: 16, borderRadius: 6, backgroundColor: e.asas }} />
-          <View style={{ position: 'absolute', right: 0, top: TAMANHO / 2 - 8, width: 18, height: 16, borderRadius: 6, backgroundColor: e.asas }} />
-        </>
-      )}
-      <View
-        style={{
-          width: TAMANHO,
-          height: TAMANHO,
-          borderRadius: TAMANHO / 2,
-          backgroundColor: e.fundo,
-          borderWidth: escolhida ? 5 : 4,
-          borderColor: escolhida ? cores.marca : e.aro,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}>
-        {vazia ? (
-          <View style={{ width: DENTRO, height: DENTRO, borderRadius: DENTRO / 2, backgroundColor: '#B9BEC3', alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ fontSize: 13, fontWeight: '700', color: '#5F6368' }}>vazia</Text>
-          </View>
-        ) : (
-          <Comida opcao={opcao} largura={DENTRO} altura={DENTRO} raioCanto={DENTRO / 2} />
-        )}
-      </View>
-    </View>
-  );
-}
-
-/** Uma zona do prato: as fotografias enchem-na (empilhadas quando há mais do que uma); vazia fica tracejada */
-function Zona({ itens, largura, altura, rotulo }: { itens: Opcao[]; largura: number; altura: number; rotulo: string }) {
-  if (itens.length === 0) {
-    return (
-      <View
-        style={{ width: largura, height: altura, borderWidth: 1.5, borderStyle: 'dashed', borderColor: '#CFCFCF', alignItems: 'center', justifyContent: 'center' }}>
-        <Text style={{ fontSize: 10, color: '#9A9A9A' }}>{rotulo}</Text>
-      </View>
-    );
-  }
-  const cada = altura / itens.length;
-  return (
-    <View style={{ width: largura, height: altura }}>
-      {itens.map((o) => (
-        <Comida key={o.id} opcao={o} largura={largura} altura={cada} raioCanto={0} />
-      ))}
-    </View>
-  );
-}
 
 type Props = {
   grupos: GrupoOpcoes[];
@@ -175,11 +64,13 @@ export function BalcaoPanelas(p: Props) {
   const passo = passos[Math.min(indice, passos.length - 1)];
   const ultimo = indice >= passos.length - 1;
   const zonas = zonasDoPrato(p.grupos, p.escolhidas);
+  // Cada peça leva o seu recipiente (a sopa vai em malga, o pão no cesto, a gasosa em lata)
+  const comRecipiente = zonasDasPecas(pecasDoPrato(p.grupos, p.escolhidas));
   const noPrato = [...zonas.base, ...zonas.proteina, ...zonas.acompanhamento];
-  const todos = [...noPrato, ...zonas.bebida];
+  // Pela ordem em que se serve: prato, o que vai ao lado, sobremesa e bebida
+  const todos = [...noPrato, ...zonas.lado, ...zonas.sobremesa, ...zonas.bebida];
   const temBebidas = passos.some((x) => x.tipo === 'bebida');
-  const bebida = zonas.bebida[0] ?? null;
-  const tipoBebida = bebida ? (recipienteDaOpcao(p.grupos.find((g) => g.opcoes.some((o) => o.id === bebida.id)) ?? { nome: 'bebida', maximo: 1 }, bebida) as 'copo' | 'lata') : 'copo';
+  const temSobremesa = passos.some((x) => x.tipo === 'sobremesa');
   const restam = textoRestam(p.restantes);
 
   // Resposta a cada escolha (Skinner): o prato dá um pequeno salto quando recebe comida
@@ -204,7 +95,6 @@ export function BalcaoPanelas(p: Props) {
   if (!passo) return null;
   const feitos = passos.map((x) => passoFeito(x, p.escolhidas));
   const eBebida = passo.tipo === 'bebida';
-  const MEIO = (PRATO - 24) / 2;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: cores.fundo }} edges={['bottom', 'left', 'right']}>
@@ -256,15 +146,17 @@ export function BalcaoPanelas(p: Props) {
               const noGrupo = g.opcoes.filter((x) => p.escolhidas.includes(x.id)).length;
               const cheio = !escolhida && g.maximo > 1 && noGrupo >= g.maximo;
               const resta = textoRestamOpcao(p.unidades[o.id]);
+              const zona = zonaDaOpcao(g, o);
+              const noTabuleiro = zona === 'lado' || zona === 'sobremesa' || zona === 'bebida';
               return (
                 <Pressable
                   key={o.id}
                   accessibilityRole={g.maximo === 1 ? 'radio' : 'checkbox'}
                   accessibilityState={{ checked: escolhida, disabled: cheio }}
-                  accessibilityHint={escolhida ? (eBebida ? 'Toca para tirar do tabuleiro' : 'Toca para devolver') : eBebida ? 'Toca para pôr no tabuleiro' : 'Toca para pôr no prato'}
+                  accessibilityHint={escolhida ? (noTabuleiro ? 'Toca para tirar do tabuleiro' : 'Toca para devolver') : noTabuleiro ? 'Toca para pôr no tabuleiro' : 'Toca para pôr no prato'}
                   onPress={() => p.aoEscolher(g, o.id)}
                   style={{ width: '50%', alignItems: 'center', gap: 2, opacity: cheio ? 0.45 : 1 }}>
-                  <Recipiente tipo={recipienteDaOpcao(g, o)} opcao={o} escolhida={escolhida} vazia={false} />
+                  <RecipienteDesenhado tipo={recipienteDaOpcao(g, o)} opcao={o} escolhida={escolhida} />
                   <Text style={{ fontSize: 14, fontWeight: '700', color: cores.texto, textAlign: 'center' }} numberOfLines={2}>
                     {o.nome.trim()}
                   </Text>
@@ -276,7 +168,7 @@ export function BalcaoPanelas(p: Props) {
                   )}
                   {escolhida && (
                     <View style={{ backgroundColor: cores.marca, borderRadius: 8, paddingHorizontal: 6, paddingVertical: 1 }}>
-                      <Text style={{ color: '#fff', fontSize: 11, fontWeight: '800' }}>{eBebida ? '✓ no tabuleiro' : '🥄 no prato'}</Text>
+                      <Text style={{ color: '#fff', fontSize: 11, fontWeight: '800' }}>{noTabuleiro ? '✓ no tabuleiro' : '🥄 no prato'}</Text>
                     </View>
                   )}
                 </Pressable>
@@ -284,7 +176,7 @@ export function BalcaoPanelas(p: Props) {
             })}
             {(passo.grupo.acabaram ?? []).map((o) => (
               <View key={o.id} accessible accessibilityLabel={`${o.nome.trim()}: hoje não há`} style={{ width: '50%', alignItems: 'center', gap: 2 }}>
-                <Recipiente tipo={recipienteDaOpcao(passo.grupo as GrupoOpcoes, o)} opcao={o} escolhida={false} vazia />
+                <RecipienteDesenhado tipo={recipienteDaOpcao(passo.grupo as GrupoOpcoes, o)} opcao={o} vazia />
                 <Text style={{ fontSize: 14, fontWeight: '700', color: cores.textoSuave, textAlign: 'center' }} numberOfLines={2}>
                   {o.nome.trim()}
                 </Text>
@@ -343,59 +235,30 @@ export function BalcaoPanelas(p: Props) {
         </View>
       )}
 
-      {/* O tabuleiro na mão do cliente: o prato com as zonas, a bebida ao lado e a conta */}
+      {/* O tabuleiro na mão do cliente; a conta fica por baixo, sempre à vista (nunca tapada pelo tabuleiro) */}
       <View style={{ padding: espaco.m, gap: espaco.s, borderTopWidth: 2, borderTopColor: '#E0D3C3', backgroundColor: '#FFF8F0' }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: espaco.m }}>
-          <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: espaco.s, backgroundColor: MADEIRA, borderRadius: 14, padding: espaco.s }}>
-            <Pressable
-              onPress={() => setVerLista((v) => !v)}
-              accessibilityRole="button"
-              accessibilityLabel={noPrato.length > 0 ? `O teu prato: ${noPrato.map((o) => o.nome.trim()).join(', ')}. Toca para ver a lista` : 'O teu prato está vazio'}>
-              <Animated.View
-                style={{
-                  width: PRATO,
-                  height: PRATO,
-                  borderRadius: PRATO / 2,
-                  backgroundColor: '#fff',
-                  borderWidth: 6,
-                  borderColor: '#EDEDED',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  transform: [{ scale: salto }],
-                }}>
-                {/* Base à esquerda (metade), proteína e acompanhamentos à direita (um quarto cada) */}
-                <View style={{ width: PRATO - 24, height: PRATO - 24, borderRadius: (PRATO - 24) / 2, overflow: 'hidden', flexDirection: 'row', gap: 2 }}>
-                  <Zona itens={zonas.base} largura={MEIO - 1} altura={PRATO - 24} rotulo="base" />
-                  <View style={{ gap: 2 }}>
-                    <Zona itens={zonas.proteina} largura={MEIO - 1} altura={MEIO - 1} rotulo="proteína" />
-                    <Zona itens={zonas.acompanhamento} largura={MEIO - 1} altura={MEIO - 1} rotulo="acomp." />
-                  </View>
-                </View>
-              </Animated.View>
-            </Pressable>
-            {temBebidas &&
-              (bebida ? (
-                <View accessible accessibilityLabel={`No tabuleiro: ${bebida.nome.trim()}`}>
-                  <Bebida tipo={tipoBebida} opcao={bebida} escolhida={false} vazia={false} escala={0.7} />
-                </View>
-              ) : (
-                <View
-                  accessible
-                  accessibilityLabel="Sem bebida"
-                  style={{ width: 44, height: 64, borderRadius: 10, borderWidth: 1.5, borderStyle: 'dashed', borderColor: '#CFCFCF', alignItems: 'center', justifyContent: 'center' }}>
-                  <Text style={{ fontSize: 9, color: '#9A9A9A' }}>bebida</Text>
-                </View>
-              ))}
-          </View>
-          <View style={{ flex: 1, gap: 4 }}>
-            <Text style={{ fontSize: 22, fontWeight: '800', color: cores.texto }}>{formatarKz(p.total)}</Text>
-            <Text style={{ fontSize: 12, color: cores.textoSuave }}>
-              {todos.length === 0 ? 'o teu prato' : todos.length === 1 ? '1 item' : `${todos.length} itens`}
-              {todos.length > 0 ? (verLista ? ' · esconder' : ' · ver') : ''}
-            </Text>
-            {restam && <Text style={{ fontSize: 12, fontWeight: '700', color: cores.aviso }}>{restam}</Text>}
-          </View>
+        <View style={{ alignItems: 'flex-start' }}>
+          <Tabuleiro
+            zonas={comRecipiente}
+            prato={PRATO}
+            mostrarVazios={{ bebida: temBebidas, sobremesa: temSobremesa }}
+            aoTocar={() => setVerLista((v) => !v)}
+            rotuloAcessivel={noPrato.length > 0 ? `O teu prato: ${noPrato.map((o) => o.nome.trim()).join(', ')}. Toca para ver a lista` : 'O teu prato está vazio'}
+            salto={salto}
+          />
         </View>
+        <Pressable
+          onPress={() => setVerLista((v) => !v)}
+          disabled={todos.length === 0}
+          accessibilityRole="button"
+          style={{ flexDirection: 'row', alignItems: 'baseline', flexWrap: 'wrap', columnGap: espaco.s }}>
+          <Text style={{ fontSize: 22, fontWeight: '800', color: cores.texto }}>{formatarKz(p.total)}</Text>
+          <Text style={{ fontSize: 12, color: cores.textoSuave }}>
+            {todos.length === 0 ? 'o teu prato' : todos.length === 1 ? '1 item' : `${todos.length} itens`}
+            {todos.length > 0 ? (verLista ? ' · esconder' : ' · ver') : ''}
+          </Text>
+          {restam && <Text style={{ fontSize: 12, fontWeight: '700', color: cores.aviso }}>{restam}</Text>}
+        </Pressable>
         {ultimo ? (
           <Botao titulo={p.tituloAdicionar} desactivado={p.adicionarDesactivado} aoCarregar={p.aoAdicionar} />
         ) : (

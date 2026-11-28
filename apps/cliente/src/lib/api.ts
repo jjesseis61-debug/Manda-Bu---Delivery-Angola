@@ -208,26 +208,35 @@ export async function lerItemCardapio(id: string): Promise<ItemCardapio | null> 
 /** I9: grupos de opções dos pratos indicados, só com as opções disponíveis */
 export async function lerOpcoes(cardapioIds: string[]): Promise<GrupoOpcoes[]> {
   if (cardapioIds.length === 0) return [];
-  const r = await supabase
-    .from('opcoes_grupos')
-    .select('id, cardapio_id, nome, minimo, maximo, ordem, opcoes(id, nome, preco_extra, ordem, foto_url, disponivel, deletado_em)')
-    .in('cardapio_id', cardapioIds)
-    .is('deletado_em', null)
-    .order('ordem')
-    .order('nome');
+  // «recipiente» só existe depois do SQL dos recipientes: sem a coluna (42703), lê-se como antes
+  const ler = (comRecipiente: boolean) =>
+    supabase
+      .from('opcoes_grupos')
+      .select(
+        comRecipiente
+          ? 'id, cardapio_id, nome, minimo, maximo, ordem, recipiente, opcoes(id, nome, preco_extra, ordem, foto_url, recipiente, disponivel, deletado_em)'
+          : 'id, cardapio_id, nome, minimo, maximo, ordem, opcoes(id, nome, preco_extra, ordem, foto_url, disponivel, deletado_em)',
+      )
+      .in('cardapio_id', cardapioIds)
+      .is('deletado_em', null)
+      .order('ordem')
+      .order('nome');
+  let r = await ler(true);
+  if (r.error?.code === '42703') r = await ler(false);
   type Linha = Omit<GrupoOpcoes, 'opcoes'> & {
     opcoes: (GrupoOpcoes['opcoes'][number] & { disponivel: boolean; deletado_em: string | null })[];
   };
-  return (verificar(r) as Linha[]).map((g) => ({
+  return (verificar(r) as unknown as Linha[]).map((g) => ({
     ...g,
+    recipiente: g.recipiente ?? null,
     opcoes: g.opcoes
       .filter((o) => o.disponivel && !o.deletado_em)
       .sort((a, b) => a.ordem - b.ordem || a.nome.localeCompare(b.nome))
-      .map(({ id, nome, preco_extra, ordem, foto_url }) => ({ id, nome, preco_extra, ordem, foto_url })),
+      .map(({ id, nome, preco_extra, ordem, foto_url, recipiente }) => ({ id, nome, preco_extra, ordem, foto_url, recipiente: recipiente ?? null })),
     acabaram: g.opcoes
       .filter((o) => !o.disponivel && !o.deletado_em)
       .sort((a, b) => a.ordem - b.ordem || a.nome.localeCompare(b.nome))
-      .map(({ id, nome, preco_extra, ordem, foto_url }) => ({ id, nome, preco_extra, ordem, foto_url })),
+      .map(({ id, nome, preco_extra, ordem, foto_url, recipiente }) => ({ id, nome, preco_extra, ordem, foto_url, recipiente: recipiente ?? null })),
   }));
 }
 
@@ -635,7 +644,7 @@ export async function maisPedidosNaZona(ponto: string): Promise<MaisPedidoZona[]
  * ('A' = fotografia grande, 'B' = média); com segundos guarda o tempo até ao primeiro «Adicionar».
  * null = sem teste (interruptor desligado ou sem conta).
  */
-export async function visitaExperiencia(experiencia: 'fotos_inicio' | 'balcao_panelas', segundosAteAdicionar?: number): Promise<'A' | 'B' | null> {
+export async function visitaExperiencia(experiencia: 'fotos_inicio' | 'balcao_panelas' | 'balcao_recipientes', segundosAteAdicionar?: number): Promise<'A' | 'B' | null> {
   const args = segundosAteAdicionar == null ? { p_experiencia: experiencia } : { p_experiencia: experiencia, p_segundos_ate_adicionar: Math.round(segundosAteAdicionar) };
   return (verificar(await supabase.rpc('visita_experiencia', args)) as 'A' | 'B' | null) ?? null;
 }

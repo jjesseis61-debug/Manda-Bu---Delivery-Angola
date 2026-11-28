@@ -19,7 +19,7 @@ export type ResultadoExperiencia = {
   grupos: { A: GrupoExperiencia; B: GrupoExperiencia };
 };
 
-export type Experiencia = 'fotos_inicio' | 'balcao_panelas';
+export type Experiencia = 'fotos_inicio' | 'balcao_panelas' | 'balcao_recipientes';
 
 /** Textos de cada teste: o que A e B mostram e o que fica quando não há diferença clara */
 export type TextosExperiencia = {
@@ -39,6 +39,12 @@ export const TEXTOS: Record<Experiencia, TextosExperiencia> = {
   balcao_panelas: {
     a: 'A lista',
     b: 'O balcão de panelas',
+    semDiferenca: { vencedor: 'A', texto: 'Fica a lista: é a que os clientes já conhecem (Rogers) e é mais leve.' },
+  },
+  // Contagem nova desde o balcão com recipientes próprios, sobremesa e fruta (não se mistura com a versão anterior)
+  balcao_recipientes: {
+    a: 'A lista',
+    b: 'O balcão com recipientes',
     semDiferenca: { vencedor: 'A', texto: 'Fica a lista: é a que os clientes já conhecem (Rogers) e é mais leve.' },
   },
 };

@@ -22,7 +22,7 @@ describe('reverMontado', () => {
     const r = reverMontado(serve, grupos, pedidoServe([
       { id: 'arroz', nome: 'Arroz', preco_extra: 1000 }, { id: 'salada', nome: 'Salada', preco_extra: 700 },
     ]));
-    expect(r).toEqual({ opcoes: [{ id: 'arroz', nome: 'Arroz', preco_extra: 1000 }, { id: 'salada', nome: 'Salada', preco_extra: 700 }] });
+    expect(r).toEqual({ opcoes: [expect.objectContaining({ id: 'arroz', nome: 'Arroz', preco_extra: 1000 }), expect.objectContaining({ id: 'salada', nome: 'Salada', preco_extra: 700 })] });
   });
 
   test('uma opção acabou: vai rever, MESMO acima do mínimo (o arroz sozinho chega aos 500)', () => {
@@ -70,6 +70,6 @@ describe('montarRepeticao', () => {
   test('prato montado intacto volta com as opções (já não volta vazio)', async () => {
     const r = await montarRepeticao([pedidoServe([{ id: 'salada', nome: 'Salada', preco_extra: 700 }])]);
     expect(r.aMontar).toEqual([]);
-    expect(r.linhas[0].opcoes).toEqual([{ id: 'salada', nome: 'Salada', preco_extra: 700 }]);
+    expect(r.linhas[0].opcoes).toEqual([expect.objectContaining({ id: 'salada', nome: 'Salada', preco_extra: 700 })]);
   });
 });
