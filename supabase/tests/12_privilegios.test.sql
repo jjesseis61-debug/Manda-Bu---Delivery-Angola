@@ -128,6 +128,12 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 'cozinhas_perto_de', 'cardapio_fora_da_janela_em', 'cardapio_mais_tarde',
                 'registar_ausencia', 'meu_grupo_compromisso', 'confirmar_presenca', 'resultado_compromisso',
                 'receita_pratos_gerir', 'receita_guardar_pratos', 'receita_onde_pedir', 'receita_quero', 'receitas_metricas',
+                -- Junta Bué no trabalho (equipas, conta do mês, acordo e benefício)
+                'criar_equipa', 'editar_equipa', 'equipa_convidar', 'equipa_responder', 'equipa_autorizacoes', 'equipa_sair',
+                'minhas_equipas', 'pedir_por_colega', 'prato_habitual_colega', 'recusar_pedido_colega', 'pedir_refeicoes_extra',
+                'conta_mes', 'pagar_conta_mes', 'equipas_operador', 'equipa_operador', 'definir_equipa', 'decidir_extra',
+                'registar_dinheiro_conta_mes', 'decidir_pagamento_conta_mes', 'propor_acordo_equipa', 'aceitar_acordo_equipa',
+                'terminar_acordo_equipa', 'pagar_beneficio_equipa',
                 'meu_pagamento_antes', 'pagar_antes', 'pagamentos_antes_lista', 'decidir_pagamento_antes', 'devolver_pagamento_antes',
                 -- faixa de confiança (pontualidade agregada)
                 'pontualidade_entregas', 'visitante_prato', 'visitante_cardapio', 'visitante_cozinhas', 'visitante_zonas', 'visitante_precos', 'visitante_convida', 'funcionalidades_publicas',
