@@ -46,6 +46,8 @@ jobs:
       EXPO_PUBLIC_CONTACTO_TELEFONE: ${{ vars.CONTACTO_TELEFONE || '958077592' }}
       EXPO_PUBLIC_CONTACTO_WHATSAPP: ${{ vars.CONTACTO_WHATSAPP || '958077592' }}
       EXPO_PUBLIC_CONTACTO_HORARIO: ${{ vars.CONTACTO_HORARIO }}
+      # Endereço público da app web, nos links de partilha e convite (vazio: o endereço por defeito do código)
+      EXPO_PUBLIC_SITE_URL: ${{ vars.SITE_URL }}
       # Secret do repositório; sem ele o mapa do "Novo endereço" fica em branco.
       GOOGLE_MAPS_ANDROID_API_KEY: ${{ secrets.GOOGLE_MAPS_ANDROID_API_KEY }}
       # Notificações push: projecto de cada app em expo.dev. A entrega (FCM) é por projecto Expo: o

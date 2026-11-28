@@ -19,13 +19,13 @@ describe('linkConvite', () => {
 describe('linkPartilhaPrato', () => {
   const id = '6f1c2d3e-4a5b-4c6d-8e9f-0a1b2c3d4e5f';
   it('aponta para a página do prato no site da app', () => {
-    expect(linkPartilhaPrato(id)).toBe(`https://manda-bue.netlify.app/p/${id}`);
+    expect(linkPartilhaPrato(id)).toBe(`https://manda-bue.pages.dev/p/${id}`);
   });
   it('leva o código de convite (normalizado) no r', () => {
-    expect(linkPartilhaPrato(id, 'mb-4812')).toBe(`https://manda-bue.netlify.app/p/${id}?r=MB4812`);
+    expect(linkPartilhaPrato(id, 'mb-4812')).toBe(`https://manda-bue.pages.dev/p/${id}?r=MB4812`);
   });
   it('ignora um código inválido', () => {
-    expect(linkPartilhaPrato(id, 'xpto')).toBe(`https://manda-bue.netlify.app/p/${id}`);
+    expect(linkPartilhaPrato(id, 'xpto')).toBe(`https://manda-bue.pages.dev/p/${id}`);
   });
 });
 

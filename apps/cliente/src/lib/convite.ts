@@ -86,7 +86,7 @@ export function linkApp(): string {
 
 /** Endereço do site da app (PWA). Muda para o domínio próprio quando existir. */
 export function siteApp(): string {
-  return (process.env.EXPO_PUBLIC_SITE_URL || 'https://manda-bue.netlify.app').replace(/\/+$/, '');
+  return (process.env.EXPO_PUBLIC_SITE_URL || 'https://manda-bue.pages.dev').replace(/\/+$/, '');
 }
 
 /**
