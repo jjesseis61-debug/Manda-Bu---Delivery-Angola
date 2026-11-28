@@ -88,7 +88,7 @@ function Interruptor({
         <Text style={{ fontSize: 15, fontWeight: '600' }}>{rotulo}</Text>
         <Text style={{ fontSize: 13, color: cores.textoSuave }}>{detalhe}</Text>
       </View>
-      <Switch value={valor} onValueChange={aoMudar} trackColor={{ true: cores.marca, false: cores.linha }} />
+      <Switch thumbColor="#FFFFFF" value={valor} onValueChange={aoMudar} trackColor={{ true: cores.marca, false: cores.contorno }} />
     </View>
   );
 }

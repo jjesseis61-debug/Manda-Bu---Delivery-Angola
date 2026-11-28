@@ -8,6 +8,12 @@ export type Perfil = {
   pseudonimo: string | null;
   tem_ligacao: boolean;
   cliente_novo: boolean;
+  suspensa: boolean;
+  recuperar_ate: string | null;
+  /** Nível no programa de indicação: normal → embaixador (≥ limiar) → ouro */
+  nivel?: 'normal' | 'embaixador' | 'ouro';
+  /** Indicados activos (com ganho confirmado e vínculo vivo): para o painel */
+  indicados_activos?: number;
 };
 
 export type Parametros = {
@@ -17,11 +23,38 @@ export type Parametros = {
   limite_verificacao_semanal: number;
   levantamento_minimo: number;
   limite_parcelamento: number;
+  /** Comissão também no 1.º pedido do convidado (o do desconto)? Por defeito não: começa no 2.º */
+  comissao_primeiro_pedido?: boolean;
+  /** Subtotal mínimo para aplicar o desconto de indicação (anti-fraude) */
+  desconto_subtotal_minimo?: number;
   contador_minimo: number;
+  /** A partir de quantas pessoas se mostra "X pediram este mês" no cartão do prato */
+  limiar_pediram: number;
   tamanho_top: number;
+  /** Minutos até à hora de entrega prometida (o servidor marca-a em cada pedido) */
+  tempo_entrega_min?: number;
+  /** Comissão por pedido para embaixadores (≥ limiar_embaixador indicados activos) */
+  ganho_por_pedido_embaixador?: number;
+  /** Comissão por pedido para embaixadores Ouro (≥ limiar_ouro) */
+  ganho_por_pedido_ouro?: number;
+  /** Meses de validade de cada ganho do Convida */
+  validade_saldo_meses?: number;
+  /** Bónus de boas-vindas na 1.ª vitória do embaixador */
+  bonus_boas_vindas?: number;
+  /** Indicados activos para subir a Embaixador */
+  limiar_embaixador?: number;
+  /** Indicados activos para subir a Embaixador Ouro */
+  limiar_ouro?: number;
 };
 
 export type ChaveFuncionalidade =
+  | 'condominios'
+  | 'campanhas'
+  | 'teste_fotos_inicio'
+  | 'teste_balcao_panelas'
+  | 'teste_balcao_recipientes'
+  | 'equipas_trabalho'
+  | 'encomendas'
   | 'indicacao'
   | 'destaques'
   | 'pessoas_como_tu'
@@ -35,7 +68,44 @@ export type ChaveFuncionalidade =
   | 'pratos_montaveis'
   | 'como_chegar'
   | 'acompanhamento_entrega'
-  | 'pacotes';
+  | 'pacotes'
+  | 'agente_atendimento'
+  | 'mapa_google'
+  | 'rota_google'
+  | 'receitas'
+  | 'selos';
+
+export type MeusSelos = {
+  necessarios: number;
+  progresso: number;
+  tem_premio: boolean;
+  faltam: number;
+};
+
+export type ReceitaResumo = {
+  id: string;
+  titulo: string;
+  resumo: string | null;
+  foto_url: string | null;
+  cozinha_id: string | null;
+  cozinha_nome: string | null;
+};
+
+export type Receita = ReceitaResumo & { corpo: string };
+
+/** Onde pedir o prato de uma receita: no balcão escolhido, noutro perto, ou ninguém o faz */
+export type OndePedirReceita =
+  | {
+      estado: 'aqui' | 'perto';
+      cozinha_id: string;
+      cozinha_nome: string;
+      cardapio_id: string;
+      prato_nome: string;
+      preco: number;
+      distancia_km: number | null;
+      quero: boolean;
+    }
+  | { estado: 'ninguem'; quero: boolean; interessados: number };
 
 export type Funcionalidades = Partial<Record<ChaveFuncionalidade, boolean>>;
 
@@ -49,6 +119,10 @@ export type ItemCardapio = {
   do_dia: boolean;
   cozinha_id: string;
   prato_base_id: string | null;
+  /** Prova social: pessoas distintas que pediram nos últimos 30 dias (0 se poucas/nenhuma) */
+  pedidos_mes: number;
+  /** Prato montável: valor mínimo (base + extras) para servir; null/0 = sem mínimo */
+  minimo_montavel?: number | null;
 };
 
 export type ItemOrcamento = {
@@ -57,6 +131,10 @@ export type ItemOrcamento = {
   qtd: number;
   preco_unitario: number;
   prato_base_id?: string | null;
+  /** Prato montado: as opções escolhidas, tal como o servidor as gravou no pedido */
+  opcoes?: { id: string; nome: string; preco_extra: number }[] | null;
+  /** Ids dos ingredientes que o cliente tirou */
+  componentes_excluidos?: string[] | null;
 };
 
 /** Avaliação na lista pública (C10): sem ids */
@@ -81,12 +159,43 @@ export type Orcamento = {
   taxa_entrega: number;
   desconto: number;
   motivo_desconto: string | null;
+  /** Subtotal mínimo para o desconto de convite (0 = sem mínimo) */
+  desconto_subtotal_minimo?: number;
   total: number;
   /** Pedido de grupo: taxa por pessoa se o grupo fechasse agora (a taxa real é repartida no fecho) */
   taxa_grupo_estimada?: number | null;
+  /** A entrega ficou grátis por o pedido (depois dos descontos) chegar ao valor da zona */
+  entrega_gratis?: boolean;
+  /** Valor a partir do qual a entrega é grátis nesta zona (null = sem entrega grátis) */
+  entrega_gratis_acima?: number | null;
+  /** Quanto falta (depois dos descontos) para a entrega grátis; null = não se aplica */
+  falta_entrega_gratis?: number | null;
+  /** Promoção aplicada (o desconto já está no preço dos pratos e no subtotal) */
+  campanha?: { nome: string; poupanca: number } | null;
 };
 
 export type EstadoGrupo = 'aberto' | 'fechado' | 'em_preparacao' | 'entregue' | 'cancelado';
+
+/** Quem paga no grupo: cada um a sua parte (antes, por transferência), quem recebe tudo, ou a empresa */
+export type ModoGrupo = 'individual' | 'quem_recebe' | 'empresa' | 'conta_mes';
+export type TipoGrupo = 'trabalho' | 'familia' | 'vizinhos' | 'igreja';
+
+/** Pagar a parte antes da entrega (Multicaixa Express / Unitel Money), confirmado pelas Finanças */
+export type MetodoAntes = 'multicaixa_express' | 'unitel_money';
+export type PagamentoAntes = {
+  modo: ModoGrupo | null;
+  pode: boolean;
+  falta: number;
+  pago_antes: number;
+  ultimo: {
+    estado: 'pendente' | 'confirmado' | 'rejeitado' | 'devolvido';
+    valor: number;
+    metodo: MetodoAntes;
+    referencia: string;
+    motivo: string | null;
+    criado_em: string;
+  } | null;
+};
 
 /** C13: o grupo visto pelos colegas (primeiros nomes, sem ids de clientes) */
 export type GrupoDetalhe = {
@@ -97,7 +206,9 @@ export type GrupoDetalhe = {
   hora_entrega: string;
   prazo_adesao: string;
   estado: EstadoGrupo;
-  modo_pagamento: 'individual' | 'empresa';
+  modo_pagamento: ModoGrupo;
+  /** Onde se junta o grupo (desde 12/2026: também em casa) */
+  tipo?: TipoGrupo;
   local: string | null;
   organizador: string;
   sou_organizador: boolean;
@@ -140,9 +251,15 @@ export type Pedido = {
   motivo_cancelamento: string | null;
   hora_prometida: string | null;
   entregue_em: string | null;
+  agendado_para: string | null;
+  empresa_id: string | null;
+  valor_empresa: number;
 };
 
-export type Zona = { id: string; nome: string; taxa: number | null };
+/** Conta de empresa do cliente (se for membro activo) */
+export type MinhaEmpresa = { empresa_id: string; nome: string; limite_refeicao: number };
+
+export type Zona = { id: string; nome: string; taxa: number | null; centro_lat: number | null; centro_lng: number | null };
 
 export type Endereco = {
   id: string;
@@ -154,7 +271,10 @@ export type Endereco = {
     tipo: 'residencial' | 'empresa';
     referencia: string | null;
     zona_id: string | null;
-    zonas: { nome: string } | null;
+    /** Pino da morada (pode faltar em respostas antigas) */
+    lat?: number | null;
+    lng?: number | null;
+    zonas: { nome: string; centro_lat?: number | null; centro_lng?: number | null } | null;
   } | null;
 };
 
@@ -164,6 +284,12 @@ export type Saldo = {
   ganho_hoje: number;
   ganho_semana: number;
   total_recebido: number;
+  /** Saldo que expira nos próximos dias (ganhos com quase 12 meses ainda por usar) */
+  a_expirar_em_breve?: number;
+  /** Quando expira o próximo ganho ainda por usar */
+  proxima_expiracao?: string | null;
+  /** Total que já expirou */
+  total_expirado?: number;
 };
 
 export type Amigo = {
@@ -229,10 +355,27 @@ export type CozinhaParaPedir = {
   foto_url: string | null;
   historia: string | null;
   pratos: number;
+  /** Distância ao ponto de entrega do cliente (km), quando o balcão tem GPS. Só vem de cozinhas_perto. */
+  distancia_km?: number | null;
 };
 
 // I9 · Pratos montáveis
-export type Opcao = { id: string; nome: string; preco_extra: number; ordem: number };
+/** Onde a comida está servida no balcão (null: deduzido pelo nome) */
+export type Recipiente =
+  | 'panela'
+  | 'barro'
+  | 'tigela'
+  | 'cartucho'
+  | 'travessa'
+  | 'saladeira'
+  | 'malga'
+  | 'cesto'
+  | 'molheira'
+  | 'taca'
+  | 'fruteira'
+  | 'copo'
+  | 'lata';
+export type Opcao = { id: string; nome: string; preco_extra: number; ordem: number; foto_url?: string | null; recipiente?: Recipiente | null };
 export type GrupoOpcoes = {
   id: string;
   cardapio_id: string;
@@ -241,8 +384,22 @@ export type GrupoOpcoes = {
   maximo: number;
   ordem: number;
   opcoes: Opcao[];
+  /** Recipiente escolhido pela cozinha para o grupo (null: deduzido pelo nome) */
+  recipiente?: Recipiente | null;
+  /** Opções que a cozinha desligou hoje (só para o balcão mostrar a panela vazia; nunca se escolhem) */
+  acabaram?: Opcao[];
 };
-export type OpcaoEscolhida = { id: string; nome: string; preco_extra: number };
+/** Opção escolhida (no carrinho leva também a fotografia e o sítio no prato, para o desenhar) */
+export type OpcaoEscolhida = {
+  id: string;
+  nome: string;
+  preco_extra: number;
+  foto_url?: string | null;
+  zona?: 'base' | 'proteina' | 'acompanhamento' | 'lado' | 'sobremesa' | 'bebida';
+  recipiente?: Recipiente;
+};
+/** Ingrediente da receita que o cliente pode tirar; valor = o que deixa de pagar (calculado no servidor) */
+export type ComponentePrato = { cardapio_id: string; produto_id: string; nome: string; quantidade: number; unidade: string | null; valor: number };
 
 // I10 · Como chegar
 export type LocalizacaoCozinha = {
@@ -258,10 +415,16 @@ export type LocalizacaoCozinha = {
 export type Ponto = { lat: number; lng: number };
 export type PosicaoEntrega = {
   activo: boolean;
+  /** Primeiro nome do estafeta do pedido (vem mesmo antes de haver localização) */
+  estafeta_nome?: string | null;
   estafeta?: (Ponto & { actualizado_em: string }) | null;
   destino?: Ponto | null;
   distancia_km?: number | null;
   minutos?: number | null;
+  /** 'google' = rota por estrada com trânsito; 'estimativa' = distância em linha recta */
+  fonte?: 'google' | 'estimativa' | null;
+  /** Linha da rota (polyline codificada do Google), quando há rota por estrada */
+  polyline?: string | null;
 };
 
 // I12 · Pacotes pré-pagos
@@ -300,4 +463,52 @@ export type PacotesAMinhaVolta = {
   no_meu_local: number | null;
   na_minha_zona: number | null;
   poupanca_media_mes: number | null;
+};
+
+/** Atraso avisado num pedido: pela cozinha (com motivo) ou automaticamente */
+export type AtrasoPedido = {
+  minutos: number;
+  motivo: string | null;
+  mais_minutos: number | null;
+  motivo_em: string | null;
+  criado_em: string;
+};
+
+export type MinhaReclamacao = {
+  id: string;
+  pedido_id: string;
+  origem: 'avaliacao' | 'cliente';
+  texto: string | null;
+  estado: 'aberta' | 'resolvida';
+  resposta: string | null;
+  criado_em: string;
+  decidido_em: string | null;
+};
+
+export type MensagemAtendimento = {
+  id: string;
+  autor: 'cliente' | 'agente' | 'funcionario' | 'sistema';
+  texto: string;
+  criado_em: string;
+  quem: string | null;
+};
+
+export type ConversaAtendimento = {
+  conversa_id: string;
+  estado: 'agente' | 'humano' | 'fechada';
+  a_escrever: boolean;
+  mensagens: MensagemAtendimento[];
+};
+
+export type Contacto = {
+  telefone: string | null;
+  whatsapp: string | null;
+  email?: string | null;
+  horario: string | null;
+  morada?: string | null;
+};
+
+export type Contactos = {
+  geral: Contacto;
+  cozinhas: (Contacto & { id: string; nome: string; estado: 'activa' | 'pausada' })[];
 };

@@ -1,4 +1,4 @@
-# Manda Bué — app do operador
+# Manda Bué: app do operador
 
 Expo (SDK 57) com Expo Router e TypeScript; corre em Android e na web. Backend: o projecto Supabase descrito em
 `../../supabase/`.

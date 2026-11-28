@@ -1,5 +1,5 @@
 import type { Session } from '@supabase/supabase-js';
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AppState } from 'react-native';
 
 import { lerConfiguracao, meuPerfil } from './api';
@@ -27,15 +27,29 @@ export function SessaoProvider({ children, aoSair }: { children: ReactNode; aoSa
   const [funcionalidades, setFuncionalidades] = useState<Funcionalidades>({});
   const [carregado, setCarregado] = useState(false);
 
+  // Só a leitura mais recente conta: uma leitura antiga (ex.: ainda sem sessão) que acabe depois
+  // de uma mais nova não pode apagar o perfil acabado de carregar (era o que mandava quem já tinha
+  // conta para «Criar conta» logo depois de escrever o código).
+  const ultimaLeitura = useRef(0);
+
   const carregarDados = useCallback(async (s: Session | null) => {
+    const minha = ++ultimaLeitura.current;
+    const actual = () => minha === ultimaLeitura.current;
     if (!s) {
       setPerfil(null);
       setParametros(null);
-      setFuncionalidades({});
+      // Sem conta a app abre na mesma (Início do visitante): os interruptores vêm da leitura pública
+      try {
+        const r = await supabase.rpc('funcionalidades_publicas');
+        if (actual()) setFuncionalidades(r.error ? {} : ((r.data as Funcionalidades | null) ?? {}));
+      } catch {
+        if (actual()) setFuncionalidades({});
+      }
       return;
     }
     try {
       const [p, config] = await Promise.all([meuPerfil(), lerConfiguracao()]);
+      if (!actual()) return;
       setPerfil(p);
       setParametros(config.parametros);
       setFuncionalidades(config.funcionalidades);
@@ -60,10 +74,11 @@ export function SessaoProvider({ children, aoSair }: { children: ReactNode; aoSa
   // Interruptores e parâmetros: ao arrancar e sempre que a app volta ao primeiro plano
   useEffect(() => {
     const sub = AppState.addEventListener('change', (estado) => {
-      if (estado === 'active') void carregarDados(sessao);
+      // A sessão de agora (não a deste render): voltar de ler o SMS a meio do login não a perde
+      if (estado === 'active') void supabase.auth.getSession().then(({ data }) => carregarDados(data.session));
     });
     return () => sub.remove();
-  }, [sessao, carregarDados]);
+  }, [carregarDados]);
 
   const valor = useMemo<Sessao>(
     () => ({
@@ -73,7 +88,11 @@ export function SessaoProvider({ children, aoSair }: { children: ReactNode; aoSa
       parametros,
       funcionalidades,
       ligada: (chave) => funcionalidades[chave] === true,
-      actualizar: () => carregarDados(sessao),
+      // Sempre com a sessão de agora: quem chama pode ter sido desenhado antes do login
+      actualizar: async () => {
+        const { data } = await supabase.auth.getSession();
+        await carregarDados(data.session);
+      },
       sair: async () => {
         if (aoSair) await aoSair().catch(() => undefined);
         await supabase.auth.signOut();

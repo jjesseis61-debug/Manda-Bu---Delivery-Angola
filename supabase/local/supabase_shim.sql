@@ -19,8 +19,16 @@ create schema if not exists auth;
 create schema if not exists extensions;
 
 create table if not exists auth.users (
-  id     uuid primary key default gen_random_uuid(),
-  phone  text
+  id           uuid primary key default gen_random_uuid(),
+  phone        text,
+  created_at   timestamptz not null default now(),
+  banned_until timestamptz
+);
+
+-- Sessões (como no Supabase): apagar linhas aqui revoga as sessões do utilizador.
+create table if not exists auth.sessions (
+  id       uuid primary key default gen_random_uuid(),
+  user_id  uuid references auth.users(id) on delete cascade
 );
 
 -- Igual ao Supabase: o utilizador autenticado vem das claims do JWT.

@@ -17,7 +17,12 @@ export function PartilharCodigo({ mostrarCodigo = true }: { mostrarCodigo?: bool
 
   if (!ligada('indicacao') || !perfil?.codigo || !parametros) return null;
   const codigo = perfil.codigo;
-  const mensagem = mensagemConvite(codigo, parametros.desconto_indicado, linkConvite(codigo));
+  const mensagem = mensagemConvite(
+    codigo,
+    parametros.desconto_indicado,
+    linkConvite(codigo),
+    parametros.desconto_subtotal_minimo ?? 0,
+  );
 
   async function partilhar() {
     void registarPartilha().catch(() => undefined);
@@ -42,6 +47,11 @@ export function PartilharCodigo({ mostrarCodigo = true }: { mostrarCodigo?: bool
           <Text style={{ fontSize: 28, fontWeight: '800', letterSpacing: 2, color: cores.texto }}>{codigo}</Text>
           <Botao titulo={copiado ? 'Copiado' : 'Copiar'} variante="secundario" aoCarregar={copiar} />
         </View>
+      )}
+      {mostrarCodigo && /^MB\d+$/.test(codigo) && (
+        <Text style={{ color: cores.textoSuave, fontSize: 13, marginTop: -4 }}>
+          Os teus amigos podem escrever só {codigo.slice(2)}
+        </Text>
       )}
       <Botao titulo="Partilhar no WhatsApp" variante="whatsapp" aoCarregar={partilhar} />
     </View>

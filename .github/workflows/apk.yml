@@ -1,0 +1,210 @@
+# APKs Android das duas apps para testar no telemóvel, sem conta Expo (EAS).
+# O projecto nativo é gerado com `expo prebuild` e compilado com o Gradle do runner. O APK de
+# release fica assinado com a chave de debug: instala-se directamente, mas não serve para a Play Store.
+# Os APKs ficam nos "Artifacts" de cada execução (separador Actions), durante 14 dias, e na
+# Release "apk-teste" com um link fixo que não expira e aponta sempre para o último build:
+#   https://github.com/<dono>/<repo>/releases/download/apk-teste/manda-bue-cliente.apk
+name: APK Android
+
+# Só quando se pede (Actions → APK Android → Run workflow), para poupar os minutos do GitHub:
+# cada compilação das duas apps gasta cerca de 80 minutos.
+on:
+  workflow_dispatch:
+    inputs:
+      app:
+        description: 'Que app compilar'
+        type: choice
+        options: [ambas, cliente, operador, estafeta]
+        default: ambas
+
+concurrency:
+  group: apk-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    name: APK ${{ matrix.app }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        app: ${{ fromJSON(inputs.app == 'cliente' && '["cliente"]' || inputs.app == 'operador' && '["operador"]' || inputs.app == 'estafeta' && '["estafeta"]' || '["cliente","operador"]') }}
+    defaults:
+      run:
+        working-directory: apps/${{ matrix.app }}
+    env:
+      # Valores públicos da app (URL e chave publicável do Supabase); a segurança está nas políticas RLS.
+      EXPO_PUBLIC_SUPABASE_URL: https://laruvuambdovnkojwrzp.supabase.co
+      EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_VoD7AGU0YCNyTJjiNmwJ-Q_FaRL1-aM' }}
+      EXPO_PUBLIC_CONTACTO_PRIVACIDADE: ${{ vars.CONTACTO_PRIVACIDADE }}
+      EXPO_PUBLIC_INSTRUCOES_PAGAMENTO: ${{ vars.INSTRUCOES_PAGAMENTO }}
+      # Contacto de ajuda mostrado no ecrã de entrar (número público). Trocável por um var do repo.
+      EXPO_PUBLIC_CONTACTO_TELEFONE: ${{ vars.CONTACTO_TELEFONE || '958077592' }}
+      EXPO_PUBLIC_CONTACTO_WHATSAPP: ${{ vars.CONTACTO_WHATSAPP || '958077592' }}
+      EXPO_PUBLIC_CONTACTO_HORARIO: ${{ vars.CONTACTO_HORARIO }}
+      # Endereço público da app web, nos links de partilha e convite (vazio: o endereço por defeito do código)
+      EXPO_PUBLIC_SITE_URL: ${{ vars.SITE_URL }}
+      # Secret do repositório; sem ele o mapa do "Novo endereço" fica em branco.
+      GOOGLE_MAPS_ANDROID_API_KEY: ${{ secrets.GOOGLE_MAPS_ANDROID_API_KEY }}
+      # Notificações push: projecto de cada app em expo.dev. A entrega (FCM) é por projecto Expo: o
+      # Expo usa a credencial FCM do projecto do token. O estafeta usa o projecto Expo do CLIENTE de
+      # propósito, porque a app ao.mandabue.estafeta e a ao.mandabue.cliente estão no MESMO projecto
+      # Firebase (443044448859), e o projecto Expo do cliente já tem a chave FCM V1 desse projecto a
+      # funcionar — logo entrega também ao estafeta. (O projecto do operador usa outro Firebase, por
+      # isso não servia.) O google-services.json de cada app continua a ser o seu.
+      EXPO_PROJECT_ID: ${{ matrix.app == 'cliente' && secrets.EXPO_PROJECT_ID_CLIENTE || matrix.app == 'operador' && secrets.EXPO_PROJECT_ID_OPERADOR || matrix.app == 'estafeta' && secrets.EXPO_PROJECT_ID_ESTAFETA || '' }}
+      NODE_ENV: production
+    steps:
+      - uses: actions/checkout@v5
+      - name: Libertar disco (o runner enchia o disco a meio da compilação)
+        # Os builds morriam com "No space left on device" / "The runner has received a shutdown
+        # signal": as caches do Gradle e o código nativo de duas arquitecturas não cabiam no disco
+        # livre do runner. Apagam-se ferramentas pré-instaladas que estas apps não usam
+        # (.NET, Haskell, CodeQL, Swift, Boost); o SDK do Android e o Java ficam.
+        working-directory: .
+        run: |
+          df -h /
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL \
+                      /usr/share/swift /usr/local/share/boost /usr/local/lib/node_modules/@azure || true
+          sudo docker image prune --all --force >/dev/null 2>&1 || true
+          df -h /
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/${{ matrix.app }}/package-lock.json
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+      - run: npm ci
+      - name: Configuração Firebase (notificações push), se existir o segredo
+        # Cada app tem o seu próprio google-services.json (packages diferentes), escrito a partir do
+        # seu segredo: cliente -> GOOGLE_SERVICES_JSON, operador -> GOOGLE_SERVICES_JSON_OPERADOR.
+        # Sem o segredo da app, o passo não faz nada e a app compila sem push (não dá erro).
+        env:
+          GOOGLE_SERVICES_JSON: ${{ matrix.app == 'cliente' && secrets.GOOGLE_SERVICES_JSON || matrix.app == 'operador' && secrets.GOOGLE_SERVICES_JSON_OPERADOR || matrix.app == 'estafeta' && secrets.GOOGLE_SERVICES_JSON_ESTAFETA || '' }}
+          PACOTE_ESPERADO: ${{ matrix.app == 'cliente' && 'ao.mandabue.cliente' || matrix.app == 'operador' && 'ao.mandabue.operador' || 'ao.mandabue.estafeta' }}
+        run: |
+          if [ -n "$GOOGLE_SERVICES_JSON" ]; then
+            printf '%s' "$GOOGLE_SERVICES_JSON" > google-services.json
+            # JSON completo? (um segredo colado cortado passa nos grep mas rebenta no gradle)
+            if ! node -e 'JSON.parse(require("fs").readFileSync("google-services.json","utf8"))' 2>/dev/null; then
+              echo "::error::O segredo ${{ matrix.app == 'cliente' && 'GOOGLE_SERVICES_JSON' || matrix.app == 'operador' && 'GOOGLE_SERVICES_JSON_OPERADOR' || 'GOOGLE_SERVICES_JSON_ESTAFETA' }} não é um JSON completo — provavelmente foi colado cortado. Re-cola o ficheiro google-services.json INTEIRO (do início '{' ao fim '}')."
+              exit 1
+            fi
+            if ! grep -q '"project_info"' google-services.json; then
+              echo "::error::O segredo não é um google-services.json válido (falta 'project_info'). Confirma que colaste o ficheiro google-services.json do Firebase — NÃO a chave de conta de serviço (firebase-adminsdk-...json)."
+              exit 1
+            fi
+            if ! grep -q "\"$PACOTE_ESPERADO\"" google-services.json; then
+              echo "::error::O google-services.json não tem o package '$PACOTE_ESPERADO'. Descarrega o ficheiro da app Android certa no Firebase (a app '${{ matrix.app }}')."
+              exit 1
+            fi
+          fi
+      - name: Gerar o projecto Android
+        run: npx expo prebuild --platform android --no-install
+      - name: Mais memória para o Gradle (o default rebenta no lint/dex do release)
+        working-directory: apps/${{ matrix.app }}/android
+        # O prebuild gera um gradle.properties com heap pequeno (~2 GB) e o lintVitalAnalyzeRelease
+        # fica sem memória (Java heap space). O runner tem 16 GB; damos 6 GB ao Gradle. Em
+        # gradle.properties a última ocorrência de uma chave ganha, por isso basta acrescentar.
+        run: |
+          {
+            echo ""
+            echo "org.gradle.jvmargs=-Xmx6144m -XX:MaxMetaspaceSize=1024m -Dfile.encoding=UTF-8"
+            echo "org.gradle.workers.max=2"
+            # O daemon do Kotlin herda um heap grande por defeito; limita-se a 2 GB para não somar
+            # aos 6 GB do Gradle, ao CMake/ninja do código nativo e ao lint em paralelo.
+            echo "kotlin.daemon.jvmargs=-Xmx2048m"
+          } >> gradle.properties
+      - name: Sem o lint de release (era onde o runner morria)
+        working-directory: apps/${{ matrix.app }}/android
+        # Todas as builds que morreram com "The runner has received a shutdown signal" estavam no
+        # lintVitalAnalyzeRelease/lintVitalReport (o passo que mais memória gasta), mesmo com disco
+        # livre. Para APKs de teste o lint de release não é preciso: desliga-se no app/build.gradle
+        # gerado pelo prebuild (checkReleaseBuilds false), o que também tira o lint dos módulos.
+        run: |
+          printf '\nandroid { lint { checkReleaseBuilds false; abortOnError false } }\n' >> app/build.gradle
+          tail -n 3 app/build.gradle
+      - name: Cache da distribuição do Gradle (não voltar a descarregá-la a cada build)
+        # A cache do setup-gradle só grava no branch principal ("Cache is read-only"), por isso
+        # nos outros branches cada build descarregava ~130 MB de services.gradle.org — e quando o
+        # CDN falha (timeout, 504) a build parte. Esta cache grava em qualquer branch.
+        uses: actions/cache@v4
+        with:
+          path: ~/.gradle/wrapper/dists
+          key: gradle-dist-${{ runner.os }}-${{ hashFiles(format('apps/{0}/android/gradle/wrapper/gradle-wrapper.properties', matrix.app)) }}
+          restore-keys: gradle-dist-${{ runner.os }}-
+      - name: Dar mais tempo ao download do Gradle (CDN lento parte a build aos 10s)
+        working-directory: apps/${{ matrix.app }}/android
+        # O wrapper gerado pelo prebuild descarrega o Gradle de services.gradle.org com
+        # networkTimeout=10000 (10s). O CDN às vezes demora mais e a build parte com
+        # "org.gradle.wrapper.Install.forceFetch ... timeout (10000ms)". Subimos para 120s.
+        run: |
+          props=gradle/wrapper/gradle-wrapper.properties
+          if grep -q '^networkTimeout=' "$props"; then
+            sed -i 's/^networkTimeout=.*/networkTimeout=120000/' "$props"
+          else
+            printf '\nnetworkTimeout=120000\n' >> "$props"
+          fi
+          echo "gradle-wrapper.properties:"; cat "$props"
+      - name: Instalar o NDK com limite de tempo (o download às vezes fica pendurado)
+        # Em 16/11 o Gradle ficou 55 min em "Preparing Install NDK" (download parado) até o job
+        # chegar aos 60 min. Aqui instala-se antes, com 10 min por tentativa e 3 tentativas;
+        # se o NDK já existir no runner, não faz nada. Versão: a que o Expo pede no build.
+        run: |
+          NDK=27.1.12297006
+          SDK="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          if [ -f "$SDK/ndk/$NDK/source.properties" ]; then echo "NDK $NDK já instalado"; exit 0; fi
+          for tentativa in 1 2 3; do
+            echo "== NDK $NDK, tentativa $tentativa =="
+            if yes | timeout 600 "$SDK/cmdline-tools/latest/bin/sdkmanager" --install "ndk;$NDK" > /tmp/ndk.log 2>&1 \
+               && [ -f "$SDK/ndk/$NDK/source.properties" ]; then
+              tail -n 2 /tmp/ndk.log; exit 0
+            fi
+            tail -n 5 /tmp/ndk.log
+            echo "::warning::Download do NDK falhou ou passou de 10 min (tentativa $tentativa)."
+            sleep 30
+          done
+          echo "::error::Não foi possível instalar o NDK $NDK em 3 tentativas."
+          exit 1
+      - name: Compilar o APK
+        working-directory: apps/${{ matrix.app }}/android
+        # Só as CPUs de telemóveis reais (arm64 e arm 32-bit); deixa de fora x86/x86_64 (só
+        # emuladores), o que reduz bastante o tamanho do APK por causa das bibliotecas nativas.
+        # Retry: o download do wrapper e a rede do runner às vezes falham de forma transitória.
+        run: |
+          # 5 tentativas com espera crescente (30s, 60s, 90s, 120s): o CDN do Gradle às vezes
+          # fica minutos em baixo (timeout, 504) e recupera.
+          for tentativa in 1 2 3 4 5; do
+            echo "== Compilação, tentativa $tentativa =="
+            ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a,armeabi-v7a && exit 0
+            [ "$tentativa" -lt 5 ] || break
+            espera=$((tentativa * 30))
+            echo "::warning::Tentativa $tentativa falhou; a repetir em ${espera}s..."
+            sleep "$espera"
+          done
+          echo "::error::As 5 tentativas de compilação falharam."
+          exit 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: manda-bue-${{ matrix.app }}-apk
+          path: apps/${{ matrix.app }}/android/app/build/outputs/apk/release/*.apk
+          retention-days: 14
+      - name: Publicar na Release apk-teste (link fixo)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp android/app/build/outputs/apk/release/app-release.apk manda-bue-${{ matrix.app }}.apk
+          # As duas apps correm em paralelo: se a outra já criou a Release, este create falha e segue
+          gh release view apk-teste >/dev/null 2>&1 || \
+            gh release create apk-teste --prerelease --target "$GITHUB_SHA" --title "APKs de teste" \
+              --notes "APKs de teste das apps Manda Bué (assinados com a chave de debug)." || true
+          gh release upload apk-teste manda-bue-${{ matrix.app }}.apk --clobber
+          gh release edit apk-teste --notes "APKs de teste das apps Manda Bué (assinados com a chave de debug). Último build: ${GITHUB_REF_NAME} @ ${GITHUB_SHA::7}."

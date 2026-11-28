@@ -1,4 +1,10 @@
-import type { EstadoPedido, Parametros } from './tipos';
+import type { Amigo, EstadoPedido, MetodoAntes, ModoGrupo, Parametros, Saldo, TipoGrupo } from './tipos';
+
+/** 125 -> "2:05" (contagem decrescente, minutos:segundos) */
+export function minutosSegundos(segundos: number): string {
+  const s = Math.max(0, Math.round(segundos));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
 
 /** 1300 -> "1.300 Kz" (separador de milhares angolano) */
 export function formatarKz(valor: number | null | undefined): string {
@@ -37,14 +43,37 @@ export function tempoEmFalta(iso: string, agora: Date = new Date()): string | nu
   return `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, '0')} min`;
 }
 
+/** Onde se junta o grupo: o rótulo e a frase do convite (Cialdini, unidade: «a nossa família») */
+export const TIPOS_GRUPO: { valor: TipoGrupo; rotulo: string; convite: string }[] = [
+  { valor: 'trabalho', rotulo: '💼 Trabalho', convite: 'Vamos pedir juntos o almoço na Cozinha da Alexandra!' },
+  { valor: 'familia', rotulo: '👨‍👩‍👧 Família', convite: 'Almoço de família na Cozinha da Alexandra! Cada um escolhe o seu prato.' },
+  { valor: 'vizinhos', rotulo: '🏘️ Vizinhos', convite: 'Vizinhos, vamos pedir juntos na Cozinha da Alexandra e dividir a entrega!' },
+  { valor: 'igreja', rotulo: '⛪ Igreja', convite: 'Almoço do nosso grupo da igreja na Cozinha da Alexandra! Cada um escolhe o seu prato.' },
+];
+
 /** Mensagem de partilha do grupo (C12) */
-export function mensagemGrupo(hora: string, local: string | null, link: string): string {
-  return `Vamos pedir juntos o almoço no Manda Bué — Delivery Angola! Entrega às ${hora}${local ? ` em ${local}` : ''}. Junta o teu pedido: ${link}`;
+export function mensagemGrupo(hora: string, local: string | null, link: string, tipo: TipoGrupo = 'trabalho'): string {
+  const abertura = (TIPOS_GRUPO.find((t) => t.valor === tipo) ?? TIPOS_GRUPO[0]).convite;
+  return `${abertura} Entrega às ${hora}${local ? ` em ${local}` : ''}. Junta o teu pedido: ${link}`;
 }
 
+/** Quem paga no grupo, em poucas palavras */
+export const nomeModoGrupo: Record<ModoGrupo, string> = {
+  individual: 'cada um paga a sua parte',
+  quem_recebe: 'quem recebe paga tudo na entrega',
+  empresa: 'a empresa paga tudo',
+  conta_mes: 'cada um paga na conta do mês',
+};
+
+export const nomeMetodoAntes: Record<MetodoAntes, string> = {
+  multicaixa_express: 'Multicaixa Express',
+  unitel_money: 'Unitel Money',
+};
+
 /** "★ 4,5 · 12 avaliações" */
+/** Texto da média de avaliações (sem a estrela: essa é um ícone dourado, ver MediaAvaliacao) */
 export function formatarMedia(media: number, total: number): string {
-  return `★ ${media.toFixed(1).replace('.', ',')} · ${total} ${total === 1 ? 'avaliação' : 'avaliações'}`;
+  return `${media.toFixed(1).replace('.', ',')} · ${total} ${total === 1 ? 'avaliação' : 'avaliações'}`;
 }
 
 /** Valor na lista de destaques: exacto, em intervalo ("10.000–20.000 Kz") ou escondido (null) */
@@ -67,29 +96,65 @@ export function textoAmigo(nome: string, estado: string, diasRestantes: number |
 }
 
 /** N1: mensagem de partilha enviada pelo próprio cliente */
-export function mensagemConvite(codigo: string, descontoIndicado: number, link: string): string {
+export function mensagemConvite(codigo: string, descontoIndicado: number, link: string, minimo = 0): string {
+  const condicao = minimo > 0 ? ` (em pedidos acima de ${formatarKz(minimo)})` : '';
   return (
-    `Estou a pedir no Manda Bué — Delivery Angola e está bom! ` +
-    `Usa o meu código ${codigo} e ganhas ${formatarKz(descontoIndicado)} de desconto no primeiro pedido. ${link}`
+    `🍲 Peço na Cozinha da Alexandra e recomendo! ` +
+    `Usa o meu código ${codigo} e ganhas ${formatarKz(descontoIndicado)} de desconto no teu 1.º pedido${condicao}. ` +
+    `👉 ${link}`
   );
 }
 
-/** Texto das regras (secção 4.13), com os valores de `parametros` */
-export function textoRegras(p: Parametros): string[] {
+/** Texto das regras (secção 4.13, "Como funciona"), com os valores de `parametros` */
+/** Campos dos parâmetros que as regras do Convida usam (o visitante recebe só estes) */
+export type RegrasConvida = Pick<
+  Parametros,
+  | 'ganho_por_pedido'
+  | 'duracao_dias'
+  | 'comissao_primeiro_pedido'
+  | 'desconto_indicado'
+  | 'desconto_subtotal_minimo'
+  | 'levantamento_minimo'
+  | 'validade_saldo_meses'
+  | 'limite_verificacao_semanal'
+  | 'bonus_boas_vindas'
+  | 'limiar_embaixador'
+  | 'limiar_ouro'
+  | 'ganho_por_pedido_embaixador'
+  | 'ganho_por_pedido_ouro'
+>;
+
+export function textoRegras(p: RegrasConvida): string[] {
+  const minimo = p.desconto_subtotal_minimo ?? 0;
   return [
-    `Ganhas ${formatarKz(p.ganho_por_pedido)} por cada pedido dos amigos que convidares, durante ${p.duracao_dias} dias a contar do primeiro pedido deles. Não há limite de ganhos.`,
-    `O teu amigo ganha ${formatarKz(p.desconto_indicado)} de desconto no primeiro pedido.`,
-    `Levantas o saldo a partir de ${formatarKz(p.levantamento_minimo)} ou usas em refeições. Acima de ${formatarKz(p.limite_verificacao_semanal)} por semana, confirmamos os pedidos antes de pagar.`,
-    'Ganhos de contas falsas ou pedidos não pagos são anulados.',
-    'Os teus ganhos podem aparecer na lista de destaques com um nome fictício. Podes sair da lista quando quiseres.',
+    p.comissao_primeiro_pedido
+      ? `Ganhas ${formatarKz(p.ganho_por_pedido)} por cada pedido entregue e pago dos amigos que convidares, durante ${p.duracao_dias} dias a contar do primeiro pedido deles. Não há limite de ganhos.`
+      : `Ganhas ${formatarKz(p.ganho_por_pedido)} por cada pedido entregue e pago dos amigos que convidares, a partir do 2.º pedido deles, durante ${p.duracao_dias} dias a contar do primeiro. Não há limite de ganhos.`,
+    `O teu amigo também ganha: ${formatarKz(p.desconto_indicado)} de desconto no primeiro pedido, válido apenas para contas novas${
+      minimo > 0 ? ` e pedidos a partir de ${formatarKz(minimo)}` : ''
+    }.`,
+    `Usa ou levanta. Podes usar o saldo em refeições a qualquer momento, ou levantá-lo por Multicaixa Express ou Unitel Money a partir de ${formatarKz(p.levantamento_minimo)}, sem taxas.${
+      p.validade_saldo_meses ? ` O saldo é válido durante ${p.validade_saldo_meses} meses.` : ''
+    }`,
+    `Verificação. Se ganhares mais de ${formatarKz(p.limite_verificacao_semanal)} numa semana, confirmamos os pedidos antes de pagar. Isto demora até 6 horas.`,
+    'Lista de destaques. Se aceitares, os teus ganhos reais podem aparecer na lista com um pseudónimo. Podes sair quando quiseres.',
+    'Para ser justo para todos, não contam os ganhos de contas falsas nem de pedidos cancelados, reembolsados ou não pagos. Se um pedido for reembolsado depois, o valor correspondente é retirado do saldo.',
   ];
 }
 
-/** "mb-4821 " -> "MB-4821"; devolve null se não tiver o formato do código */
+/**
+ * "mb-4821 ", "MB 4821", "MB4821" ou só "4821" -> "MB4821" (o formato da plataforma, sem hífen;
+ * os links antigos com "MB-4821" continuam a valer). null se não tiver o formato do código.
+ */
 export function normalizarCodigo(texto: string | null | undefined): string | null {
-  const limpo = (texto ?? '').trim().toUpperCase().replace(/\s+/g, '');
-  const comPrefixo = /^\d{4,5}$/.test(limpo) ? `MB-${limpo}` : limpo.replace(/^MB(?=\d)/, 'MB-');
-  return /^MB-\d{4,5}$/.test(comPrefixo) ? comPrefixo : null;
+  const limpo = (texto ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (/^\d{4,6}$/.test(limpo)) return `MB${limpo}`;
+  return /^MB\d{4,6}$/.test(limpo) ? limpo : null;
+}
+
+/** Só os dígitos do código (para o campo com o «MB» fixo): "MB-4821" -> "4821" */
+export function digitosCodigo(texto: string | null | undefined): string {
+  return (texto ?? '').toUpperCase().replace(/^\s*MB/, '').replace(/\D/g, '').slice(0, 6);
 }
 
 /** "923 456 789" ou "+244923456789" -> "+244923456789"; null se não for um número angolano */
@@ -106,6 +171,17 @@ export const nomeEstadoPedido: Record<EstadoPedido, string> = {
   entregue_pago: 'Entregue',
   cancelado: 'Cancelado',
   estornado: 'Estornado',
+};
+
+/** Cor de cada estado, para um sinal visual na lista e no detalhe (sempre a par do texto, nunca só a cor) */
+export const corEstadoPedido: Record<EstadoPedido, string> = {
+  pendente: '#1565C0', // Recebido: azul
+  confirmado: '#00695C', // Confirmado: verde-azulado
+  em_preparacao: '#8A5A00', // Em preparação: âmbar
+  em_entrega: '#6A1B9A', // A caminho: roxo
+  entregue_pago: '#1E7D32', // Entregue: verde
+  cancelado: '#5F6368', // Cancelado: cinzento
+  estornado: '#5F6368', // Estornado: cinzento
 };
 
 export const nomeMetodo: Record<string, string> = {
@@ -130,6 +206,7 @@ const mensagens: Record<string, string> = {
   limite_local: 'Este convite já foi usado o número máximo de vezes nesta morada.',
   desconto_em_curso: 'O desconto já está num pedido em curso.',
   desconto_usado: 'O desconto de convite já foi usado.',
+  pedido_minimo: 'O desconto de convite é para pedidos a partir do valor mínimo.',
   // registo
   nome_invalido: 'Escreve o teu nome.',
   nif_obrigatorio: 'Para empresas, o NIF é obrigatório.',
@@ -138,8 +215,14 @@ const mensagens: Record<string, string> = {
   // pedidos
   pedido_vazio: 'O carrinho está vazio.',
   item_indisponivel: 'Um dos pratos já não está disponível. Actualiza o carrinho.',
+  endereco_repetido: 'Já tens esta morada guardada. Escolhe-a na lista.',
   opcao_invalida: 'Uma das opções escolhidas já não está disponível. Volta a montar o prato.',
-  opcoes_em_falta: 'Falta escolher uma opção obrigatória do prato.',
+  doses_esgotadas: 'Já não há doses suficientes de um dos pratos. Reduz a quantidade ou escolhe outro prato.',
+  opcao_esgotada: 'Acabou uma das escolhas do teu prato (por exemplo a bebida). Volta ao prato e escolhe outra.',
+  item_sem_preco: 'Um dos pratos tem de ser montado (escolhe as opções) antes de o pedires.',
+  componentes_todos_excluidos: 'Não podes tirar todos os ingredientes de um prato.',
+  componentes_invalidos: 'Um dos ingredientes que tiraste já não faz parte do prato. Volta a montá-lo.',
+  opcoes_em_falta: 'Falta escolher uma opção obrigatória de um prato montado, ou já não há nenhuma disponível. Volta a montar o prato.',
   opcoes_a_mais: 'Escolheste opções a mais para um dos pratos.',
   posicao_invalida: 'Localização inválida.',
   pacotes_inactivos: 'Os pacotes não estão disponíveis neste momento.',
@@ -149,6 +232,20 @@ const mensagens: Record<string, string> = {
   sem_pacote: 'Não tens um pacote activo com refeições disponíveis.',
   pausa_invalida: 'Não podes pausar tantos dias.',
   quantidade_invalida: 'Quantidade inválida.',
+  abaixo_do_minimo: 'Um dos pratos montados ainda não chega ao valor mínimo para servir. Volta a montá-lo e acrescenta opções.',
+  cozinha_indisponivel: 'Esta cozinha não está a aceitar pedidos neste momento. Tenta mais tarde ou escolhe outra cozinha.',
+  so_membros_condominio: 'Esta cozinha é só para os moradores da lista do condomínio.',
+  fora_do_condominio: 'A cozinha do condomínio só entrega dentro do condomínio. Escolhe o endereço da tua casa lá.',
+  condominio_sem_grupos: 'A cozinha do condomínio não aceita pedidos de grupo.',
+  lista_fechada: 'A lista deste condomínio está fechada (completa ou fora do prazo).',
+  casa_obrigatoria: 'Indica o bloco ou o número da casa.',
+  condominio_inexistente: 'Este link de condomínio já não é válido.',
+  itens_a_mais: 'O pedido tem pratos a mais. Divide-o em dois pedidos.',
+  itens_invalidos: 'O carrinho tem um prato inválido. Esvazia o carrinho e volta a escolher.',
+  prato_invalido: 'Um dos pratos já não existe. Esvazia o carrinho e volta a escolher.',
+  componentes_sem_prato: 'Um dos pratos já não permite tirar ingredientes. Volta a montá-lo.',
+  agendamento_invalido: 'A hora de entrega tem de ser entre 20 minutos e 14 dias a partir de agora. Escolhe outra hora.',
+  utilizador_bloqueado: 'Esta conta está bloqueada. Fala connosco pelos contactos da app.',
   ponto_obrigatorio: 'Escolhe o endereço de entrega.',
   ponto_invalido: 'Este endereço não é teu. Escolhe outro.',
   ponto_sem_zona: 'Este endereço não tem zona de entrega. Edita o endereço e escolhe o bairro.',
@@ -159,6 +256,10 @@ const mensagens: Record<string, string> = {
   // levantamentos (6.7)
   abaixo_minimo: 'O valor está abaixo do mínimo para levantar.',
   saldo_insuficiente: 'Não tens saldo suficiente.',
+  sem_compra_propria: 'Para levantar o saldo, faz primeiro um pedido teu (entregue e pago).',
+  prazo_terminado: 'Já passaram mais de 7 dias desde o pedido.',
+  texto_curto: 'Conta-nos um pouco mais sobre o que aconteceu.',
+  reclamacao_existente: 'Já enviaste uma reclamação sobre este pedido.',
   metodo_invalido: 'Escolhe Multicaixa Express ou Unitel Money.',
   numero_invalido: 'Número de telefone inválido.',
   token_invalido: 'Não foi possível activar as notificações.',
@@ -166,13 +267,45 @@ const mensagens: Record<string, string> = {
   prato_fora_do_pedido: 'Só podes avaliar os pratos deste pedido.',
   limite_fotos: 'Podes juntar no máximo 2 fotos.',
   // pedidos de grupo (C12, C13)
-  grupo_ponto_invalido: 'O grupo é entregue num dos teus endereços de trabalho. Escolhe um endereço do tipo Trabalho.',
+  grupo_ponto_invalido: 'Escolhe um dos teus endereços. Para a empresa pagar, tem de ser um endereço do tipo Trabalho.',
+  pagar_antes_indisponivel: 'Neste grupo paga-se na entrega.',
+  receita_inexistente: 'Esta receita já não está disponível.',
+  encomendas_inactivas: 'As encomendas ainda não estão abertas.',
+  encomenda_data: 'Escolhe um dia e hora com pelo menos 24 horas de antecedência (e até 30 dias).',
+  encomenda_pessoas: 'Há um mínimo de pessoas para encomendar: aumenta o número de pessoas.',
+  encomendas_a_mais: 'Já tens 3 encomendas à espera de resposta. Espera por elas ou cancela uma.',
+  encomenda_nao_aguarda_resposta: 'Esta encomenda já não está à espera da tua resposta.',
+  encomenda_nao_confirmada: 'Confirma primeiro a encomenda.',
+  encomenda_nao_cancelavel: 'Esta encomenda já não se pode cancelar aqui. Fala connosco.',
+  sinal_ja_pago: 'O sinal já está pago.',
+  pedido_ja_nao_aceita_pagamento: 'Este pedido já saiu para entrega: paga ao estafeta.',
+  pedido_ja_pago: 'Este pedido já está pago.',
+  pagamento_ja_enviado: 'Já enviaste um pagamento: está a ser confirmado.',
+  referencia_invalida: 'Escreve a referência da transferência (pelo menos 4 letras ou algarismos).',
+  referencia_ja_usada: 'Esta referência já foi usada noutro pagamento. Confirma-a no teu comprovativo.',
   grupo_horas_invalidas: 'O prazo para aderir tem de ser no futuro e pelo menos 15 minutos antes da entrega.',
   grupo_empresa_invalida: 'Só uma conta Empresa pode pagar o pedido de todo o grupo.',
   grupo_fechado: 'Este grupo já fechou. Já não é possível juntar pedidos.',
   grupo_em_preparacao: 'O grupo já está a ser preparado e não pode ser cancelado.',
   funcionalidade_inactiva: 'Esta funcionalidade não está disponível.',
-  sem_permissao: 'Não tens permissão para isto.',
+  // atendimento
+  texto_invalido: 'Escreve a mensagem (até 1000 caracteres).',
+  limite_diario: 'Chegaste ao limite de mensagens de hoje. Tenta amanhã.',
+  sem_conversa: 'Escreve primeiro a tua pergunta.',
+  sem_permissao: 'Esta opção não está disponível na tua conta.',
+  // Junta Bué no trabalho (equipas)
+  ja_tem_equipa: 'Já estás numa equipa. Sai dela primeiro para entrares noutra.',
+  codigo_invalido: 'Não encontrámos esse código. Pede ao colega o código dele (está em «Convida e Ganha»).',
+  codigo_proprio: 'Esse é o teu próprio código.',
+  sem_convite: 'Este convite já não está activo.',
+  responsavel_nao_sai: 'És a responsável: para parar, desliga a equipa.',
+  nao_e_da_equipa: 'Só os colegas da equipa podem pedir neste grupo.',
+  limite_refeicoes_dia: 'Já tens o teu almoço de hoje. Para mais refeições, pede «Mais refeições hoje» e espera pela cozinha.',
+  sem_autorizacao_do_colega: 'O colega ainda não te autorizou. Ele pode ligar a autorização na equipa dele.',
+  colega_ja_pediu: 'Este colega já pediu o almoço de hoje.',
+  ja_nao_se_pode_recusar: 'O prazo já passou: o almoço já está a ser preparado.',
+  referencia_repetida: 'Esta referência já foi usada noutro pagamento. Confirma-a no teu comprovativo.',
+  funcionalidade_desligada: 'Esta funcionalidade ainda não está disponível.',
 };
 
 /** Extrai o código de um erro do Supabase (mensagem = código) e devolve o texto para o cliente */
@@ -220,4 +353,93 @@ export function beneficiosPacote(p: {
   if (p.pausa_max_dias > 0) linhas.push(`Pausa até ${p.pausa_max_dias} dias (férias, doença)`);
   linhas.push('Reembolso das refeições que não usares');
   return linhas;
+}
+
+/**
+ * Mensagem para partilhar um prato no WhatsApp (I-partilha). Nome + preço + marca + link para
+ * instalar/abrir a app. O precoLabel já vem formatado ("2.500 Kz" ou "desde 2.500 Kz").
+ */
+export function mensagemPartilhaPrato(
+  nome: string,
+  marca: string,
+  link: string,
+  convite?: { codigo: string; desconto: number; minimo?: number } | null,
+): string {
+  // Enxuta: o cartão de pré-visualização do link já mostra foto + nome + preço. O texto fica com
+  // o nome (rede de segurança, se a pré-visualização não aparecer) e a chamada à acção; com
+  // código de convite, o benefício do amigo vem primeiro (negrito do WhatsApp).
+  // Sem espaços nas pontas: "*Bitoque *" não é negrito no WhatsApp e estraga o resto da frase.
+  nome = nome.trim();
+  if (convite && convite.desconto > 0) {
+    const cond = convite.minimo && convite.minimo > 0 ? ` (pedidos a partir de ${formatarKz(convite.minimo)})` : '';
+    return (
+      `🍲 Experimenta o *${nome}* da ${marca}! ` +
+      `Com o meu código *${convite.codigo}* ganhas *${formatarKz(convite.desconto)} de desconto* no teu 1.º pedido${cond} 👇\n${link}`
+    );
+  }
+  return `🍲 ${nome} · ${marca}\nInstala a app e faz o teu pedido 👇\n${link}`;
+}
+
+/** Prova social: "X pessoas pediram este mês" (singular quando é 1) */
+export function textoPediram(n: number): string {
+  return n === 1 ? '1 pessoa pediu este mês' : `${n} pessoas pediram este mês`;
+}
+
+/** Mostra um número angolano agrupado e com indicativo: "958077592" -> "+244 958 077 592" */
+export function formatarTelefone(t: string): string {
+  const d = t.replace(/\D/g, '');
+  const n = d.startsWith('244') ? d.slice(3) : d;
+  if (n.length === 9) return `+244 ${n.slice(0, 3)} ${n.slice(3, 6)} ${n.slice(6)}`;
+  return t;
+}
+
+/** Aviso no carrinho sobre a entrega grátis (null = não mostrar nada) */
+export function textoEntregaGratis(o: {
+  entrega_gratis?: boolean;
+  entrega_gratis_acima?: number | null;
+  falta_entrega_gratis?: number | null;
+}): string | null {
+  if (o.entrega_gratis) return '🎉 Entrega grátis neste pedido!';
+  if (o.falta_entrega_gratis && o.falta_entrega_gratis > 0 && o.entrega_gratis_acima)
+    return `Junta mais ${formatarKz(o.falta_entrega_gratis)} e a entrega fica grátis (pedidos a partir de ${formatarKz(o.entrega_gratis_acima)}, depois dos descontos).`;
+  return null;
+}
+
+/** Promoção no carrinho: o desconto já está nos preços; com convite, explica que este fica guardado */
+export function textoCampanha(c: { nome: string; poupanca: number }, motivoDesconto?: string | null): string {
+  return (
+    `🏷️ Promoção «${c.nome}»: já poupas ${formatarKz(c.poupanca)} neste pedido.` +
+    (motivoDesconto === 'campanha' ? ' O teu desconto de convite fica guardado para outro pedido (a promoção vale mais).' : '')
+  );
+}
+
+/** Cartaz de promoção no início */
+/** Abaixo disto o «pedido mínimo» de uma campanha não diz nada ao cliente e parece um preço errado (ex.: «2 Kz») */
+export const MINIMO_CAMPANHA_VISIVEL = 500;
+
+export function textoPromocao(p: { nome: string; descricao: string | null; tipo: string; valor: number; cozinha: string | null; minimo_pedido: number }): string {
+  const oferta = p.descricao ?? (p.tipo === 'percentagem' ? `${p.valor}% de desconto nos pratos` : `Preço especial: ${formatarKz(p.valor)}`);
+  // «pedidos a partir de»: é o mínimo do pedido, não o preço de um prato
+  const minimo = p.minimo_pedido >= MINIMO_CAMPANHA_VISIVEL ? ` · pedidos a partir de ${formatarKz(p.minimo_pedido)}` : '';
+  return `${oferta}${p.cozinha ? ` · ${p.cozinha}` : ''}${minimo}`;
+}
+
+/** Percentagem de desconto arredondada (ex.: 4.000 → 3.200 = 20) */
+export function percentagemDesconto(preco: number, promo: number): number {
+  if (!(preco > 0) || !(promo < preco)) return 0;
+  return Math.round(((preco - promo) / preco) * 100);
+}
+
+/** Ainda não ganhou nada (nem está nada em verificação ou já recebido) */
+export const semGanhos = (s: Saldo) =>
+  s.saldo_disponivel <= 0 && s.ganho_semana <= 0 && s.ganho_hoje <= 0 && s.em_verificacao <= 0 && s.total_recebido <= 0;
+
+/** O passo que falta para o primeiro ganho, com o nome do amigo que está mais perto dele */
+export function textoPrimeiroGanho(activos: Pick<Amigo, 'primeiro_nome' | 'estado'>[], comissaoPrimeiroPedido: boolean): string {
+  // Quem já fez o 1.º pedido está mais perto: o próximo pedido dele já dá ganho
+  const jaPediu = activos.find((a) => a.estado === 'activo');
+  if (jaPediu) return `O primeiro chega quando ${jaPediu.primeiro_nome} fizer o próximo pedido.`;
+  const aEspera = activos[0];
+  if (aEspera) return `O primeiro chega quando ${aEspera.primeiro_nome} fizer ${comissaoPrimeiroPedido ? 'o 1.º pedido' : 'o 2.º pedido'}.`;
+  return 'O primeiro chega quando um amigo teu usar o teu código e pedir. Partilha-o acima.';
 }

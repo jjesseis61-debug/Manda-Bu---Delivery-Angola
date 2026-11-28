@@ -23,7 +23,7 @@ select results_eq(format($$select nome, telefone, tipo from clientes where id = 
                   $$values ('Rui Manuel'::text, '923000111'::text, 'Particular'::text)$$,
                   'registo cria o cliente com o telefone confirmado (normalizado)');
 select is(testes.u('rui_2'), testes.u('rui'), 'registar de novo devolve o mesmo cliente');
-select ok(testes.v('perfil_rui')::jsonb ->> 'codigo' ~ '^MB-[0-9]{4,5}$'
+select ok(testes.v('perfil_rui')::jsonb ->> 'codigo' ~ '^MB[0-9]{4,6}$'
           and testes.v('perfil_rui')::jsonb ->> 'primeiro_nome' = 'Rui'
           and (testes.v('perfil_rui')::jsonb ->> 'cliente_novo')::boolean,
           'meu_perfil: código, primeiro nome e cliente novo');
@@ -181,12 +181,12 @@ select is((select activo from dispositivos_push where token = 'ExponentPushToken
 -- ---------------------------------------------------------------------------
 select is((select (texto_notificacao('N2', dados)).corpo from notificacoes_fila
             where codigo = 'N2' and cliente_id = testes.u('rui')),
-          'Ana entrou com o teu código! Ganhas 100 Kz em cada pedido durante 60 dias.',
+          'Ana entrou com o teu código! Ganhas 100 Kz em cada pedido a partir do 2.º, durante 60 dias.',
           'N2: nome do amigo e valores garantidos da ligação');
 select is((texto_notificacao('N3', '{"valor": 100, "indicado_nome": "João", "saldo_semana": 1300}')).corpo,
           '+100 Kz: o pedido de João foi entregue. Saldo desta semana: 1.300 Kz.', 'N3: texto da secção 11');
 select is((texto_notificacao('N4', '{"limite": 10000}')).corpo,
-          'Passaste os 10.000 Kz esta semana. Os próximos ganhos ficam em verificação e são pagos assim que confirmarmos os pedidos.',
+          'Grande semana: já ganhaste 10.000 Kz! A partir daqui confirmamos cada pedido antes de pagar. É só uma verificação: os teus ganhos continuam a contar.',
           'N4: texto da secção 11');
 select is((texto_notificacao('N8', '{"valor": 5000, "metodo": "multicaixa_express", "referencia": "MCX-1"}')).corpo,
           'Pagámos 5.000 Kz por Multicaixa Express. Referência: MCX-1.', 'N8: texto da secção 11');

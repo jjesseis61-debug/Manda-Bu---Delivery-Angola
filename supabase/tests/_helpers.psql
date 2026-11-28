@@ -6,6 +6,10 @@
 create extension if not exists pgtap with schema extensions;
 
 create schema testes;
+
+-- Os testes antigos do Convida foram escritos com comissão logo no 1.º pedido do convidado.
+-- Desde 11/2026 a regra (parâmetro) é não pagar no 1.º pedido; o teste 84 cobre a regra nova.
+update parametros set comissao_primeiro_pedido = true where unico;
 grant usage on schema testes to authenticated;
 
 -- Variáveis de teste (guardadas na transacção com set_config)
@@ -17,6 +21,13 @@ create function testes.v(p_nome text) returns text language sql stable as $$
 $$;
 create function testes.u(p_nome text) returns uuid language sql stable as $$
   select testes.v(p_nome)::uuid;
+$$;
+
+-- "Hoje" no fuso do negócio (Africa/Luanda, UTC+1). As funções agrupam os dados por data de
+-- Luanda; os testes semeiam dados com now() e têm de limitar as janelas pela mesma data, senão
+-- entre as 23h e a meia-noite UTC (quando em Luanda já é o dia seguinte) os dados caem fora.
+create function testes.hoje() returns date language sql stable as $$
+  select (now() at time zone 'Africa/Luanda')::date;
 $$;
 
 -- Cliente com utilizador autenticado associado
@@ -115,11 +126,13 @@ declare
   v_cozinha uuid := coalesce(p_cozinha, cozinha_padrao());
 begin
   select id into v from caixa
-   where posto = p_posto and cozinha_id = v_cozinha and data = current_date
+   where posto = p_posto and cozinha_id = v_cozinha and data = testes.hoje()
      and fechamento is null and deletado_em is null
    limit 1;
   if v is null then
-    insert into caixa (posto, cozinha_id, troco_inicial) values (p_posto, v_cozinha, 0) returning id into v;
+    -- Data de Luanda, como abrir_caixa (hoje_luanda); current_date é UTC e entre as 23h e as 24h UTC
+    -- (já o dia seguinte em Luanda) a caixa ficava no dia anterior e o fecho do dia não a via.
+    insert into caixa (posto, cozinha_id, troco_inicial, data) values (p_posto, v_cozinha, 0, testes.hoje()) returning id into v;
   end if;
   return v;
 end $$;

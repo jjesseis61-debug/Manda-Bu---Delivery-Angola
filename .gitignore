@@ -1,0 +1,6 @@
+
+# Firebase (escrito pelo workflow a partir de um segredo)
+google-services.json
+
+# Netlify (ligação local ao site)
+.netlify

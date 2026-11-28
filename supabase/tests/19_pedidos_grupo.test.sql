@@ -30,7 +30,7 @@ with g as (insert into pedidos_grupo (organizador_id, ponto_entrega_id, hora_ent
            returning id)
 select testes.def('grupo', id) from g;
 select testes.def('e_casa', testes.erro(format($$insert into pedidos_grupo (ponto_entrega_id, hora_entrega, prazo_adesao, modo_pagamento)
-  values (%L, now() + interval '3 hours', now() + interval '2 hours', 'individual')$$, testes.v('casa'))));
+  values (%L, now() + interval '3 hours', now() + interval '2 hours', 'empresa')$$, testes.v('casa'))));
 select testes.def('e_outro', testes.erro(format($$insert into pedidos_grupo (ponto_entrega_id, hora_entrega, prazo_adesao, modo_pagamento)
   values (%L, now() + interval '3 hours', now() + interval '2 hours', 'individual')$$, testes.v('outro'))));
 select testes.def('e_horas', testes.erro(format($$insert into pedidos_grupo (ponto_entrega_id, hora_entrega, prazo_adesao, modo_pagamento)
@@ -45,7 +45,7 @@ select results_eq(format($$select organizador_id, estado, empresa_id from pedido
                   format($$values (%L::uuid, 'aberto'::text, null::uuid)$$, testes.u('gil')),
                   'C12: o cliente cria o grupo; o organizador é quem está na sessão');
 select matches((select codigo_convite from pedidos_grupo where id = testes.u('grupo')), '^G-[0-9A-F]{6}$', 'C12: código do link');
-select is(testes.v('e_casa'), 'P0001:grupo_ponto_invalido', 'C12: só no local de trabalho (ponto empresa)');
+select is(testes.v('e_casa'), 'P0001:grupo_ponto_invalido', 'C12: pagamento da empresa só no local de trabalho (desde 12/2026 o grupo pode ser em casa)');
 select is(testes.v('e_outro'), 'P0001:grupo_ponto_invalido', 'C12: só num endereço do próprio cliente');
 select is(testes.v('e_horas'), 'P0001:grupo_horas_invalidas', 'C12: prazo de adesão no futuro e antes da hora de entrega');
 select is(testes.v('e_empresa'), 'P0001:grupo_empresa_invalida', 'C12: modo empresa só para clientes Empresa');

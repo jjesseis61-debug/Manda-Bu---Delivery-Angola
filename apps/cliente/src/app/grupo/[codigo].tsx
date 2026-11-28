@@ -6,7 +6,7 @@ import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Paragrafo, Subtitulo } fr
 import { cancelarGrupo, fecharGrupo, grupoDetalhe } from '@/lib/api';
 import { useCarrinho } from '@/lib/carrinho';
 import { linkGrupo } from '@/lib/convite';
-import { formatarKz, horaLuanda, mensagemErro, mensagemGrupo, nomeEstadoGrupo, nomeEstadoPedido, tempoEmFalta } from '@/lib/formatar';
+import { formatarKz, horaLuanda, mensagemErro, mensagemGrupo, nomeEstadoGrupo, nomeEstadoPedido, nomeModoGrupo, tempoEmFalta, TIPOS_GRUPO } from '@/lib/formatar';
 import { useSessao } from '@/lib/sessao';
 import { cores, espaco } from '@/lib/tema';
 import type { GrupoDetalhe } from '@/lib/tipos';
@@ -56,7 +56,7 @@ export default function Grupo() {
   const jaPedi = g.participantes.some((p) => p.sou_eu);
 
   async function partilhar() {
-    const mensagem = mensagemGrupo(horaLuanda(g.hora_entrega), g.local, linkGrupo(g.codigo_convite));
+    const mensagem = mensagemGrupo(horaLuanda(g.hora_entrega), g.local, linkGrupo(g.codigo_convite), g.tipo ?? 'trabalho');
     const whatsapp = `whatsapp://send?text=${encodeURIComponent(mensagem)}`;
     if (await Linking.canOpenURL(whatsapp).catch(() => false)) await Linking.openURL(whatsapp);
     else await Share.share({ message: mensagem });
@@ -94,13 +94,13 @@ export default function Grupo() {
         {g.local && <Text style={{ fontSize: 15 }}>{g.local}</Text>}
         {ligada('multi_cozinha') && <Text style={{ fontWeight: '600' }}>{g.cozinha_nome}</Text>}
         <Text style={{ color: cores.textoSuave }}>
-          Organizado por {g.sou_organizador ? 'ti' : g.organizador} ·{' '}
-          {g.modo_pagamento === 'empresa' ? 'a empresa paga tudo' : 'cada um paga o seu'}
+          {g.tipo && g.tipo !== 'trabalho' ? `${TIPOS_GRUPO.find((t) => t.valor === g.tipo)?.rotulo ?? ''} · ` : ''}
+          Organizado por {g.sou_organizador ? 'ti' : g.organizador} · {nomeModoGrupo[g.modo_pagamento] ?? g.modo_pagamento}
         </Text>
         <Text style={{ fontWeight: '700', color: aberto ? cores.marca : cores.textoSuave }}>
           {aberto ? `Fecha em ${falta} (às ${horaLuanda(g.prazo_adesao)})` : nomeEstadoGrupo[g.estado]}
         </Text>
-        {aberto && g.modo_pagamento === 'individual' && g.taxa_estimada !== null && (
+        {aberto && g.modo_pagamento !== 'empresa' && g.taxa_estimada !== null && (
           <Text style={{ color: cores.textoSuave, fontSize: 13 }}>
             Entrega dividida por todos: hoje seriam cerca de {formatarKz(g.taxa_estimada)} por pessoa. O valor final fica fixo quando o
             grupo fechar.
@@ -109,12 +109,12 @@ export default function Grupo() {
       </Cartao>
 
       {aberto && !jaPedi && <Botao titulo="Junta o teu pedido" aoCarregar={juntar} />}
-      {aberto && <Botao titulo="Convidar colegas no WhatsApp" variante="whatsapp" aoCarregar={partilhar} />}
+      {aberto && <Botao titulo="Convidar no WhatsApp" variante="whatsapp" aoCarregar={partilhar} />}
 
       <Subtitulo>
         Quem já pediu ({g.participantes.length})
       </Subtitulo>
-      {g.participantes.length === 0 && <Paragrafo suave>Ainda ninguém. Sê o primeiro e convida os colegas.</Paragrafo>}
+      {g.participantes.length === 0 && <Paragrafo suave>Ainda ninguém. Sê o primeiro e convida os outros.</Paragrafo>}
       {g.participantes.map((p, i) => (
         <View key={`${p.nome}-${i}`} style={{ flexDirection: 'row', justifyContent: 'space-between', gap: espaco.s }}>
           <Text style={{ fontSize: 15, fontWeight: p.sou_eu ? '700' : '400' }}>
@@ -130,7 +130,7 @@ export default function Grupo() {
         <>
           {aCancelar ? (
             <Cartao>
-              <Campo rotulo="Motivo (opcional, os colegas vêem-no no pedido)" value={motivo} onChangeText={setMotivo} />
+              <Campo rotulo="Motivo (opcional, os outros vêem-no no pedido)" value={motivo} onChangeText={setMotivo} />
               <Botao titulo="Cancelar o grupo" aCarregar={ocupado} aoCarregar={() => accao(() => cancelarGrupo(g.grupo_id, motivo.trim() || null))} />
               <Botao titulo="Voltar" variante="texto" aoCarregar={() => setACancelar(false)} />
             </Cartao>

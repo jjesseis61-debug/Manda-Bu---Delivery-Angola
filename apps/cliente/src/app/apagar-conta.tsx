@@ -3,6 +3,7 @@ import { useState } from 'react';
 
 import { Aviso, Botao, Ecra, Paragrafo, Subtitulo } from '@/components/ui';
 import { apagarConta } from '@/lib/api';
+import { useCadeado } from '@/lib/cadeadoContexto';
 import { useCarrinho } from '@/lib/carrinho';
 import { mensagemErro } from '@/lib/formatar';
 import { useSessao } from '@/lib/sessao';
@@ -13,18 +14,20 @@ export default function ApagarConta() {
   const { sair } = useSessao();
   const carrinho = useCarrinho();
   const [confirmar, setConfirmar] = useState(false);
+  const { confirmar: confirmarCadeado } = useCadeado();
   const [aApagar, setAApagar] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
   async function apagar() {
     setErro(null);
+    if (!(await confirmarCadeado('Confirma com o teu código para apagar a conta'))) return;
     setAApagar(true);
     try {
       await apagarConta();
       carrinho.limpar();
       // O utilizador já não existe no servidor: sair só limpa a sessão guardada no telemóvel
       await sair().catch(() => undefined);
-      router.replace('/entrar');
+      router.replace('/inicio'); // a app continua aberta (Início do visitante)
     } catch (e) {
       setErro(mensagemErro(e));
       setAApagar(false);
@@ -35,18 +38,20 @@ export default function ApagarConta() {
     <Ecra>
       <Subtitulo>O que acontece</Subtitulo>
       <Paragrafo>
-        Apagamos o teu nome, telefone, NIF, endereços e o registo deste telemóvel para notificações. Deixas de
-        aparecer nos destaques e não voltas a receber mensagens nossas.
+        A tua conta fica desativada e podes recuperá-la durante 60 dias, com o nome, o histórico e o saldo. Ao fim
+        de 60 dias é apagada definitivamente.
       </Paragrafo>
       <Paragrafo>
-        Os pedidos e pagamentos já feitos ficam guardados sem o teu nome, porque a empresa precisa deles para as
-        contas. O saldo do Convida e Ganha que ainda não levantaste perde-se.
+        Os pedidos e pagamentos já feitos ficam guardados (a empresa precisa deles para as contas, por lei). Deixas
+        de aparecer nos destaques e não voltas a receber mensagens nossas.
       </Paragrafo>
-      <Paragrafo suave>Não é possível desfazer. Podes criar uma conta nova mais tarde com o mesmo número.</Paragrafo>
+      <Paragrafo suave>
+        Ao apagar, sais de todos os dispositivos. Para voltar a entrar precisas do código SMS do teu número.
+      </Paragrafo>
       {erro && <Aviso tipo="erro">{erro}</Aviso>}
       {confirmar ? (
         <>
-          <Aviso>Tens a certeza? A conta é apagada já.</Aviso>
+          <Aviso>Tens a certeza? A conta fica desativada (podes recuperá-la durante 60 dias).</Aviso>
           <Botao titulo="Sim, apagar a minha conta" aoCarregar={apagar} aCarregar={aApagar} />
           <Botao titulo="Não, voltar" variante="texto" aoCarregar={() => router.back()} desactivado={aApagar} />
         </>

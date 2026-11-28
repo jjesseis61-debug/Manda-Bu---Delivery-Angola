@@ -7,11 +7,13 @@ import { apagarConta } from '@/lib/api';
 
 jest.mock('@/lib/api', () => ({ apagarConta: jest.fn() }));
 jest.mock('@/lib/sessao', () => ({ useSessao: () => ({ sair: async () => undefined }) }));
+jest.mock('@/lib/cadeadoContexto', () => ({ useCadeado: () => ({ confirmar: mockConfirmarCadeado }) }));
+const mockConfirmarCadeado = jest.fn().mockResolvedValue(true);
 jest.mock('@/lib/carrinho', () => ({ useCarrinho: () => ({ limpar: () => undefined }) }));
 const mockApagar = apagarConta as jest.Mock;
 
 function abrir() {
-  return renderRouter({ 'apagar-conta': ApagarConta, entrar: () => <Text>Entrar</Text> }, { initialUrl: '/apagar-conta' });
+  return renderRouter({ 'apagar-conta': ApagarConta, inicio: () => <Text>Início</Text> }, { initialUrl: '/apagar-conta' });
 }
 
 test('só apaga depois da segunda confirmação e volta à entrada', async () => {
@@ -23,7 +25,7 @@ test('só apaga depois da segunda confirmação e volta à entrada', async () =>
     fireEvent.press(ecra.getByText('Sim, apagar a minha conta'));
   });
   expect(mockApagar).toHaveBeenCalledTimes(1);
-  expect(ecra.getPathname()).toBe('/entrar');
+  expect(ecra.getPathname()).toBe('/inicio');
 });
 
 test('mostra o motivo quando o servidor recusa', async () => {

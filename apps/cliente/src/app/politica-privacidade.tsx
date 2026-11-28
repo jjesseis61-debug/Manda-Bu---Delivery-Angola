@@ -1,8 +1,21 @@
+import { useEffect, useState } from 'react';
+
 import { Aviso, Ecra, Paragrafo, Subtitulo } from '@/components/ui';
+import { lerContactos } from '@/lib/api';
 import { EMPRESA } from '@/lib/empresa';
 
 /** Política de privacidade: o que a app guarda, para quê, quem vê e como apagar (exigida pelas lojas) */
 export default function PoliticaPrivacidade() {
+  // Sem o contacto definido na app, usa o email ou o telefone gerais (Contactos), se houver sessão
+  const [geral, setGeral] = useState<string | null>(null);
+  useEffect(() => {
+    if (EMPRESA.contactoPrivacidade) return;
+    lerContactos()
+      .then((c) => setGeral(c.geral.email ?? c.geral.telefone ?? null))
+      .catch(() => undefined);
+  }, []);
+  const contacto = EMPRESA.contactoPrivacidade || geral;
+
   return (
     <Ecra>
       <Paragrafo suave>Última actualização: {EMPRESA.actualizadaEm}</Paragrafo>
@@ -13,11 +26,16 @@ export default function PoliticaPrivacidade() {
       </Paragrafo>
       <Paragrafo>
         Os endereços de entrega que gravas, com o ponto que marcas no mapa. Só usamos a localização do telemóvel
-        quando carregas em &quot;Usar a minha localização&quot;, e só para marcar esse ponto.
+        quando carregas em &quot;Usar a minha localização&quot;, e só para marcar esse ponto. Se procurares a
+        morada pelo nome da rua ou do bairro, só esse texto é enviado a um serviço de mapas (OpenStreetMap).
       </Paragrafo>
       <Paragrafo>
         Os teus pedidos, pagamentos, convites e ganhos do Convida e Ganha, as avaliações e fotos que envias, e um
         código do telemóvel para te enviarmos notificações.
+      </Paragrafo>
+      <Paragrafo>
+        Um identificador do telemóvel (e o modelo) em que entras na conta, usado só para evitar fraude nos convites
+        (muitas contas no mesmo telemóvel). Não te impede de pedir.
       </Paragrafo>
       <Paragrafo>
         Enquanto o teu pedido está a caminho, mostramos-te no mapa a posição do estafeta. A posição dele só fica
@@ -32,10 +50,12 @@ export default function PoliticaPrivacidade() {
 
       <Subtitulo>Quem vê</Subtitulo>
       <Paragrafo>
-        A equipa do Manda Bué que trata do teu pedido (cozinha, entrega, apoio), cada pessoa só no que precisa
+        A equipa da Cozinha da Alexandra que trata do teu pedido (cozinha, entrega, apoio), cada pessoa só no que precisa
         para o seu trabalho. Nas listas públicas (destaques e avaliações) aparece só o teu pseudónimo ou o primeiro
-        nome, se o escolheres. Os dados ficam guardados no Supabase; as notificações passam pela Expo e o SMS pelo
-        fornecedor de SMS.
+        nome, se o escolheres. Os teus dados ficam guardados numa base de dados em servidores seguros de um fornecedor
+        de alojamento (cloud), com acesso restrito à equipa. As notificações são entregues através dos serviços de
+        notificações do telemóvel (Google no Android, Apple no iOS) e o SMS através de um fornecedor de SMS. Não
+        guardamos dados de cartão de pagamento.
       </Paragrafo>
 
       <Subtitulo>Os teus direitos</Subtitulo>
@@ -46,8 +66,8 @@ export default function PoliticaPrivacidade() {
       </Paragrafo>
 
       <Subtitulo>Contacto</Subtitulo>
-      {EMPRESA.contactoPrivacidade ? (
-        <Paragrafo>{EMPRESA.contactoPrivacidade}</Paragrafo>
+      {contacto ? (
+        <Paragrafo>{contacto}</Paragrafo>
       ) : (
         <Aviso>Contacto por definir.</Aviso>
       )}

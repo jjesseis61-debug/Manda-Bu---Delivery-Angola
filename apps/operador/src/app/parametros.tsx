@@ -5,7 +5,7 @@ import { Switch, Text, View } from 'react-native';
 import { Guarda } from '@/components/Guarda';
 import { ACarregar, Aviso, Botao, Campo, Cartao, Ecra, Paragrafo, Subtitulo } from '@/components/ui';
 import { alterarFuncionalidade, alterarParametros, lerFuncionalidades, lerParametros } from '@/lib/api';
-import { mensagemErro } from '@/lib/formatar';
+import { emailValido, mensagemErro, telefoneValido } from '@/lib/formatar';
 import { cores, espaco } from '@/lib/tema';
 
 /** Parâmetros editáveis na app (secção 9). Valores em Kz, dias, metros ou contagens. */
@@ -14,12 +14,20 @@ const CAMPOS: { grupo: string; chaves: [string, string][] }[] = [
     grupo: 'Indicação',
     chaves: [
       ['ganho_por_pedido', 'Ganho por pedido (Kz)'],
+      ['ganho_por_pedido_embaixador', 'Ganho por pedido, Embaixador (Kz)'],
+      ['ganho_por_pedido_ouro', 'Ganho por pedido, Ouro (Kz)'],
+      ['bonus_boas_vindas', 'Bónus de boas-vindas, 1.ª vitória (Kz, 0 = desligado)'],
       ['duracao_dias', 'Duração do período (dias)'],
       ['desconto_indicado', 'Desconto do indicado (Kz)'],
       ['limite_verificacao_semanal', 'Limite semanal sem verificação (Kz)'],
       ['levantamento_minimo', 'Levantamento mínimo (Kz)'],
       ['limite_parcelamento', 'Parcelar acima de (Kz)'],
       ['limiar_embaixador', 'Indicados activos para Embaixador'],
+      ['limiar_ouro', 'Indicados activos para Embaixador Ouro'],
+      ['despromocao_carencia_dias', 'Descida de nível: dias mínimos no nível'],
+      ['despromocao_margem_pct', 'Descida de nível: só abaixo de % do limiar (50–100)'],
+      ['validade_saldo_meses', 'Validade do saldo (meses, 1–60)'],
+      ['aviso_expiracao_dias', 'Avisar o cliente N dias antes de expirar (0 = não avisa)'],
     ],
   },
   {
@@ -28,6 +36,8 @@ const CAMPOS: { grupo: string; chaves: [string, string][] }[] = [
       ['raio_mesmo_local_m', 'Raio do mesmo local (m)'],
       ['max_indicados_por_local', 'Máx. indicados por local'],
       ['max_descontos_por_local', 'Máx. descontos por local'],
+      ['desconto_subtotal_minimo', 'Pedido mínimo para o desconto (Kz, 0 = sem mínimo)'],
+      ['alerta_contas_por_aparelho', 'Alertar a partir de N contas no mesmo telemóvel'],
     ],
   },
   {
@@ -46,9 +56,42 @@ const CAMPOS: { grupo: string; chaves: [string, string][] }[] = [
     chaves: [
       ['prazo_avaliacao_dias', 'Prazo para avaliar (dias)'],
       ['avaliacoes_minimo', 'Avaliações mínimas para mostrar média'],
+      ['tempo_entrega_min', 'Tempo de entrega prometido ao cliente (min)'],
       ['tolerancia_entrega_min', 'Tolerância de entrega (min)'],
+      ['alerta_agendado_horas', 'Avisar agendado por confirmar (horas antes da entrega)'],
+      ['agendados_por_hora_max', 'Agendados na mesma hora a partir dos quais se avisa'],
     ],
   },
+  {
+    grupo: 'Entrega',
+    chaves: [['entrega_gratis_acima', 'Entrega grátis a partir de (Kz, depois dos descontos; 0 = desligado). Cada zona pode ter o seu valor em Zonas de entrega']],
+  },
+  {
+    grupo: 'Encomendas',
+    chaves: [
+      ['encomenda_antecedencia_horas', 'Antecedência mínima de uma encomenda (horas)'],
+      ['encomenda_minimo_pessoas', 'Mínimo de pessoas numa encomenda'],
+      ['encomenda_sinal_pct', 'Sinal pago antes (% do total)'],
+    ],
+  },
+  {
+    grupo: 'Cartão de selos',
+    chaves: [['selos_necessarios', 'Pedidos para ganhar frete grátis (liga o interruptor «selos»)']],
+  },
+];
+
+/** Parâmetros sim/não */
+const INTERRUPTORES: [string, string][] = [
+  ['despromocao_activa', 'Descida suave de nível do embaixador (semanal, um degrau de cada vez)'],
+];
+
+/** Contactos gerais mostrados aos clientes (Contactos e Política de privacidade); texto, em branco = não mostrar */
+const CONTACTOS: [string, string, 'telefone' | 'email' | 'texto', number][] = [
+  ['contacto_telefone', 'Telefone', 'telefone', 20],
+  ['contacto_whatsapp', 'WhatsApp', 'telefone', 20],
+  ['contacto_email', 'Email', 'email', 120],
+  ['contacto_horario', 'Horário de atendimento', 'texto', 120],
+  ['contacto_morada', 'Morada da loja', 'texto', 200],
 ];
 
 /** O5. Parâmetros e funcionalidades (interruptores), com confirmação */
@@ -65,18 +108,30 @@ export default function Parametros() {
     Promise.all([lerParametros(), lerFuncionalidades()])
       .then(([p, f]) => {
         setOriginais(p);
-        setValores(Object.fromEntries(Object.entries(p).map(([k, v]) => [k, String(v ?? '')])));
+        setValores(Object.fromEntries(Object.entries(p).map(([k, v]) => [k, v === null || v === undefined ? '' : String(v)])));
         setFuncs(f);
       })
       .catch((e) => setErro(mensagemErro(e)));
   }, []);
   useFocusEffect(carregar);
 
-  const alterados: Record<string, number> = {};
+  const alterados: Record<string, number | string | boolean | null> = {};
   for (const g of CAMPOS)
     for (const [k] of g.chaves)
-      if (originais && valores[k] !== String(originais[k])) alterados[k] = Number(valores[k]);
-  const invalidos = Object.values(alterados).some((v) => !Number.isInteger(v) || v < 0);
+      // Chaves que o servidor ainda não tem (migração por aplicar) não contam como alteradas
+      if (originais && k in originais && valores[k] !== String(originais[k])) alterados[k] = Number(valores[k]);
+  for (const [k] of INTERRUPTORES)
+    if (originais && valores[k] !== String(originais[k])) alterados[k] = valores[k] === 'true';
+  const numerosInvalidos = Object.values(alterados).some((v) => typeof v !== 'boolean' && (!Number.isInteger(v) || (v as number) < 0));
+  const contactosInvalidos = CONTACTOS.filter(([k, , tipo]) => {
+    const t = (valores[k] ?? '').trim();
+    return t !== '' && ((tipo === 'telefone' && !telefoneValido(t)) || (tipo === 'email' && !emailValido(t)));
+  }).map(([, rotulo]) => rotulo);
+  for (const [k] of CONTACTOS) {
+    const t = (valores[k] ?? '').trim();
+    if (originais && t !== String(originais[k] ?? '')) alterados[k] = t || null;
+  }
+  const invalidos = numerosInvalidos || contactosInvalidos.length > 0;
 
   async function aplicar() {
     if (!confirmar) return;
@@ -122,10 +177,10 @@ export default function Parametros() {
               {funcs.map((f) => (
                 <View key={f.chave} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                   <Text>{f.chave}</Text>
-                  <Switch
+                  <Switch thumbColor="#FFFFFF"
                     value={f.activa}
                     onValueChange={(v) => setConfirmar({ tipo: 'func', chave: f.chave, activa: v })}
-                    trackColor={{ true: cores.marca, false: cores.linha }}
+                    trackColor={{ true: cores.marca, false: cores.contorno }}
                   />
                 </View>
               ))}
@@ -144,8 +199,38 @@ export default function Parametros() {
                     onChangeText={(t) => setValores((v) => ({ ...v, [k]: t.replace(/\D/g, '') }))}
                   />
                 ))}
+                {g.grupo === 'Indicação' &&
+                  INTERRUPTORES.map(([k, rotulo]) => (
+                    <View key={k} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: espaco.s }}>
+                      <Text style={{ flex: 1 }}>{rotulo}</Text>
+                      <Switch thumbColor="#FFFFFF"
+                        accessibilityLabel={rotulo}
+                        value={valores[k] === 'true'}
+                        onValueChange={(v) => setValores((x) => ({ ...x, [k]: String(v) }))}
+                        trackColor={{ true: cores.marca, false: cores.contorno }}
+                      />
+                    </View>
+                  ))}
               </View>
             ))}
+            <View style={{ gap: espaco.s }}>
+              <Subtitulo>Contactos para os clientes</Subtitulo>
+              <Paragrafo suave>Aparecem em Contactos e na Política de privacidade. Deixa em branco o que não quiseres mostrar.</Paragrafo>
+              {CONTACTOS.map(([k, rotulo, tipo, max]) => (
+                <Campo
+                  key={k}
+                  rotulo={rotulo}
+                  value={valores[k] ?? ''}
+                  maxLength={max}
+                  keyboardType={tipo === 'telefone' ? 'phone-pad' : tipo === 'email' ? 'email-address' : 'default'}
+                  autoCapitalize={tipo === 'email' ? 'none' : 'sentences'}
+                  onChangeText={(t) => setValores((v) => ({ ...v, [k]: t }))}
+                />
+              ))}
+              {contactosInvalidos.length > 0 && (
+                <Aviso>{`Verifica: ${contactosInvalidos.join(', ')}. Telefones só com algarismos (9 a 20, + opcional); email com @.`}</Aviso>
+              )}
+            </View>
             {confirmar?.tipo === 'parametros' ? (
               caixaConfirmar
             ) : (

@@ -1,6 +1,7 @@
 // Regras do prato montável (I9) do lado da app: só para guiar o cliente e mostrar o preço.
 // O servidor volta a validar tudo e calcula o preço a pagar (orcamento_pedido).
-import type { GrupoOpcoes, OpcaoEscolhida } from './tipos';
+import { recipienteDaOpcao, zonaDaOpcao } from './balcaoPanelas';
+import type { ComponentePrato, GrupoOpcoes, OpcaoEscolhida } from './tipos';
 
 /** Escolher uma opção: num grupo de escolha única troca a anterior; nos outros liga/desliga até ao máximo */
 export function alternar(grupo: GrupoOpcoes, escolhidas: string[], opcaoId: string): string[] {
@@ -18,15 +19,44 @@ export function gruposEmFalta(grupos: GrupoOpcoes[], escolhidas: string[]): stri
     .map((g) => g.nome);
 }
 
-/** Opções escolhidas pela ordem dos grupos, com o preço extra */
+/**
+ * Grupos obrigatórios sem nenhuma opção disponível (ex.: acabaram todas as bases): o prato não se pode montar,
+ * porque o servidor recusaria o pedido. A app mostra-o como esgotado em vez de o deixar adicionar.
+ */
+export function gruposEsgotados(grupos: GrupoOpcoes[]): string[] {
+  return grupos.filter((g) => g.minimo > 0 && g.opcoes.length === 0).map((g) => g.nome);
+}
+
+/**
+ * Opções escolhidas pela ordem dos grupos, com o preço extra e, para desenhar o prato no pedido,
+ * a fotografia, o sítio no prato e o recipiente
+ */
 export function opcoesEscolhidas(grupos: GrupoOpcoes[], escolhidas: string[]): OpcaoEscolhida[] {
   return grupos.flatMap((g) =>
-    g.opcoes.filter((o) => escolhidas.includes(o.id)).map(({ id, nome, preco_extra }) => ({ id, nome, preco_extra })),
+    g.opcoes
+      .filter((o) => escolhidas.includes(o.id))
+      .map((o) => ({
+        id: o.id,
+        nome: o.nome,
+        preco_extra: o.preco_extra,
+        foto_url: o.foto_url ?? null,
+        zona: zonaDaOpcao(g, o),
+        recipiente: recipienteDaOpcao(g, o),
+      })),
   );
 }
 
-export function precoMontado(preco: number, opcoes: OpcaoEscolhida[]): number {
-  return preco + opcoes.reduce((s, o) => s + o.preco_extra, 0);
+/** Preço do prato montado: prato + extras das opções − valor dos ingredientes tirados (nunca abaixo de 0) */
+export function precoMontado(preco: number, opcoes: OpcaoEscolhida[], tirados: ComponentePrato[] = []): number {
+  return Math.max(0, preco + opcoes.reduce((s, o) => s + o.preco_extra, 0) - tirados.reduce((s, c) => s + c.valor, 0));
+}
+
+/** Preço mais baixo possível: o prato com a opção mais barata de cada grupo obrigatório ("desde ...") */
+export function precoMinimo(preco: number, grupos: GrupoOpcoes[]): number {
+  return grupos.reduce((total, g) => {
+    const baratas = g.opcoes.map((o) => o.preco_extra).sort((a, b) => a - b).slice(0, g.minimo);
+    return total + baratas.reduce((s, v) => s + v, 0);
+  }, preco);
 }
 
 /** "Escolhe 1", "Até 2 (opcional)", "De 1 a 3" */
@@ -36,7 +66,41 @@ export function regraGrupo(g: GrupoOpcoes): string {
   return `De ${g.minimo} a ${g.maximo}`;
 }
 
-/** Duas linhas do carrinho só se juntam se forem o mesmo prato com as mesmas opções */
-export function chaveLinha(itemId: string, opcoes: OpcaoEscolhida[]): string {
-  return [itemId, ...opcoes.map((o) => o.id).sort()].join('|');
+/** Duas linhas do carrinho só se juntam se forem o mesmo prato com as mesmas opções e os mesmos ingredientes tirados */
+export function chaveLinha(itemId: string, opcoes: OpcaoEscolhida[], tirados: ComponentePrato[] = []): string {
+  return [itemId, ...opcoes.map((o) => o.id).sort(), ...tirados.map((c) => `-${c.produto_id}`).sort()].join('|');
+}
+
+// Emoji por palavra-chave do nome da opção (as opções não têm imagem): só decorativo,
+// para dar o efeito visual do prato a montar-se. Ordem importa (do mais específico ao geral).
+const EMOJIS: [RegExp, string][] = [
+  [/funge|pirao|pirão/, '🍲'],
+  [/arroz/, '🍚'],
+  [/batata|mandioca|inhame/, '🥔'],
+  [/massa|esparguete|esparguette|macarr/, '🍝'],
+  [/muamba|galinha|frango|cabidela/, '🍗'],
+  [/calulu|peixe|bacalhau|carapau|dourada/, '🐟'],
+  [/camar|marisco|lagosta|gamba/, '🦐'],
+  [/feijoad|feij[aã]o|muteta|mutet/, '🫘'],
+  [/carne|bife|vaca|porco|cabrito|chouri/, '🥩'],
+  [/salada|alface|tomate/, '🥗'],
+  [/gimboa|quiabo|verdura|legume|couve|espinafre/, '🥬'],
+  [/banana/, '🍌'],
+  [/ovo/, '🍳'],
+  [/p[aã]o|broa/, '🍞'],
+  [/ging(u|ú)ba|amendoim/, '🥜'],
+  [/mel[aã]o|melancia/, '🍈'],
+  [/m[uú]cua|sumo|refresco|refriger|cola|gasosa|fanta|sprite|pepsi|blue|nocal/, '🥤'],
+  [/[aá]gua/, '💧'],
+  [/cocada|doce|sobremesa|gelado|bolo|pudim/, '🍮'],
+];
+
+/** Emoji decorativo a partir do nome da opção; 🍽️ quando nada combina. */
+export function emojiOpcao(nome: string): string {
+  const n = nome
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase();
+  for (const [re, emoji] of EMOJIS) if (re.test(n)) return emoji;
+  return '🍽️';
 }

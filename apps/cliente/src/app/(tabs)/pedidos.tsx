@@ -2,35 +2,64 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
-import { ACarregar, Aviso, Cartao, Ecra, Paragrafo } from '@/components/ui';
+import { ACarregar, Aviso, Botao, Cartao, Ecra, Paragrafo } from '@/components/ui';
 import { lerPedidos } from '@/lib/api';
-import { formatarKz, mensagemErro, nomeEstadoPedido } from '@/lib/formatar';
+import { rotuloAgendamento } from '@/lib/agendar';
+import { corEstadoPedido, formatarKz, mensagemErro, nomeEstadoPedido } from '@/lib/formatar';
+import { usePedirDeNovo } from '@/lib/pedirDeNovo';
+import { useSessao } from '@/lib/sessao';
 import { cores } from '@/lib/tema';
 import type { Pedido } from '@/lib/tipos';
+import { ConvidarEntrar } from '@/components/ConvidarEntrar';
 
-export default function Pedidos() {
+const TERMINADO = ['entregue_pago', 'cancelado', 'estornado'];
+
+function PedidosConta() {
   const router = useRouter();
+  const pedirDeNovoNoCarrinho = usePedirDeNovo();
+  const { perfil } = useSessao();
   const [pedidos, setPedidos] = useState<Pedido[] | null>(null);
   const [erro, setErro] = useState<string | null>(null);
+  const [aRepetir, setARepetir] = useState<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
-      lerPedidos()
+      lerPedidos(perfil?.cliente_id)
         .then(setPedidos)
         .catch((e) => setErro(mensagemErro(e)));
-    }, []),
+    }, [perfil?.cliente_id]),
   );
 
-  if (erro) return <Ecra><Aviso tipo="erro">{erro}</Aviso></Ecra>;
+  async function pedirDeNovo(p: Pedido) {
+    setErro(null);
+    setARepetir(p.id);
+    try {
+      if (!(await pedirDeNovoNoCarrinho(p.itens))) setErro('Os pratos deste pedido já não estão disponíveis.');
+    } catch (e) {
+      setErro(mensagemErro(e));
+    } finally {
+      setARepetir(null);
+    }
+  }
+
+  if (erro && !pedidos) return <Ecra><Aviso tipo="erro">{erro}</Aviso></Ecra>;
   if (!pedidos) return <ACarregar />;
   return (
     <Ecra>
-      {pedidos.length === 0 && <Paragrafo suave>Ainda não fizeste nenhum pedido.</Paragrafo>}
+      {erro && <Aviso tipo="erro">{erro}</Aviso>}
+      {pedidos.length === 0 && (
+        <Paragrafo suave>Faz o teu primeiro pedido: escolhe um prato no Início e recebe-o em casa ou no trabalho.</Paragrafo>
+      )}
       {pedidos.map((p) => (
         <Pressable key={p.id} onPress={() => router.push({ pathname: '/pedido/[id]', params: { id: p.id } })}>
           <Cartao>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Text style={{ fontWeight: '700', fontSize: 15 }}>{nomeEstadoPedido[p.estado]}</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 }}>
+                <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: corEstadoPedido[p.estado] }} />
+                <Text style={{ fontWeight: '700', fontSize: 15, color: corEstadoPedido[p.estado] }}>
+                  {nomeEstadoPedido[p.estado]}
+                </Text>
+              </View>
               <Text style={{ fontWeight: '700', fontSize: 15 }}>
                 {formatarKz(p.subtotal + p.taxa_entrega - p.desconto_indicacao)}
               </Text>
@@ -39,9 +68,47 @@ export default function Pedidos() {
               {new Date(p.criado_em).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' })} ·{' '}
               {p.itens.map((i) => `${i.qtd}× ${i.nome}`).join(', ')}
             </Text>
+            {p.agendado_para && !TERMINADO.includes(p.estado) && new Date(p.agendado_para) > new Date() && (
+              <Text style={{ color: corEstadoPedido.confirmado, fontWeight: '600' }}>
+                Agendado: {rotuloAgendamento(p.agendado_para)}
+              </Text>
+            )}
+            {p.estado === 'cancelado' && p.motivo_cancelamento ? (
+              <Text style={{ color: cores.textoSuave, fontSize: 13 }}>Motivo: {p.motivo_cancelamento}</Text>
+            ) : null}
+            {/* Repetir em destaque só nos entregues; num cancelado fica discreto (não é «o habitual») */}
+            {TERMINADO.includes(p.estado) &&
+              (p.estado === 'cancelado' ? (
+                <Pressable
+                  accessibilityRole="button"
+                  hitSlop={8}
+                  disabled={aRepetir === p.id}
+                  onPress={() => void pedirDeNovo(p)}
+                  style={{ alignSelf: 'flex-end' }}>
+                  <Text style={{ color: cores.textoSuave, fontWeight: '600', textDecorationLine: 'underline' }}>
+                    {aRepetir === p.id ? 'A preparar…' : 'Pedir de novo'}
+                  </Text>
+                </Pressable>
+              ) : (
+                <Botao titulo="Pedir de novo" variante="texto" aCarregar={aRepetir === p.id} aoCarregar={() => pedirDeNovo(p)} />
+              ))}
           </Cartao>
         </Pressable>
       ))}
     </Ecra>
   );
+}
+
+/** Sem conta: convite a entrar (não há pedidos para mostrar) */
+export default function Pedidos() {
+  const { sessao, perfil } = useSessao();
+  if (!sessao || !perfil)
+    return (
+      <ConvidarEntrar
+        titulo="Os teus pedidos"
+        destino="/pedidos"
+        texto="Entra para acompanhares os teus pedidos e a entrega, e repetires o teu habitual num toque."
+      />
+    );
+  return <PedidosConta />;
 }

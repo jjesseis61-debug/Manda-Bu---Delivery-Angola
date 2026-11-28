@@ -10,7 +10,7 @@ import { useSessao } from '@/lib/sessao';
 import { cores } from '@/lib/tema';
 import type { Destaque, MinhaPosicao } from '@/lib/tipos';
 
-/** C3. Destaques do mês */
+/** C3. Destaques do mês: o 1.º lugar é o «Kamba do Mês»; os seguintes ficam em «Também em destaque» */
 export default function Destaques() {
   const router = useRouter();
   const { carregado, ligada, parametros } = useSessao();
@@ -52,7 +52,27 @@ export default function Destaques() {
       {lista && lista.length === 0 && (
         <Paragrafo suave>Ainda ninguém entrou na lista este mês. Partilha o teu código e sê o primeiro.</Paragrafo>
       )}
-      {lista?.map((d) => {
+      {/* Kamba do Mês: o 1.º lugar em destaque (prova social e reconhecimento público, com o nome que a pessoa autorizou) */}
+      {lista && lista[0] && (
+        <View style={{ backgroundColor: '#1F1A17', borderRadius: 14, padding: 18, alignItems: 'center', gap: 4 }}>
+          <Text style={{ fontSize: 40 }}>🏆</Text>
+          <Text style={{ color: cores.destaqueFundo, fontWeight: '900', fontSize: 22 }}>Kamba do Mês</Text>
+          <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 19, textAlign: 'center' }}>
+            {lista[0].nome_exibido}
+            {lista[0].sou_eu ? ' (tu)' : ''}
+          </Text>
+          <Text style={{ color: '#FFFFFF', opacity: 0.85, textAlign: 'center' }}>
+            Trouxe {lista[0].amigos} {lista[0].amigos === 1 ? 'kamba' : 'kambas'} este mês
+          </Text>
+          {valorDestaque(lista[0].valor, lista[0].valor_min, lista[0].valor_max) && (
+            <View style={{ backgroundColor: cores.destaqueFundo, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 6, marginTop: 6 }}>
+              <Text style={{ color: cores.texto, fontWeight: '800' }}>Ganhou {valorDestaque(lista[0].valor, lista[0].valor_min, lista[0].valor_max)}</Text>
+            </View>
+          )}
+        </View>
+      )}
+      {lista && lista.length > 1 && <Subtitulo>Também em destaque</Subtitulo>}
+      {lista?.slice(1).map((d) => {
         const valor = valorDestaque(d.valor, d.valor_min, d.valor_max);
         return (
           <View
@@ -67,7 +87,7 @@ export default function Destaques() {
             }}>
             <Text style={{ fontSize: 15, fontWeight: d.sou_eu ? '700' : '400', flex: 1 }}>
               {d.posicao}. {d.nome_exibido}
-              {d.sou_eu ? ' (tu)' : ''} · {d.amigos} {d.amigos === 1 ? 'amigo' : 'amigos'}
+              {d.sou_eu ? ' (tu)' : ''} · {d.amigos} {d.amigos === 1 ? 'kamba' : 'kambas'}
             </Text>
             {valor && <Text style={{ fontSize: 15, fontWeight: '700', color: cores.sucesso }}>{valor}</Text>}
           </View>

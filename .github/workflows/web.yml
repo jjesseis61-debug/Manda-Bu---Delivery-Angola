@@ -1,0 +1,92 @@
+# App web do CLIENTE (PWA) no Cloudflare Pages: constrói no GitHub e envia para o Cloudflare.
+# Publica só a pedido, como no Netlify: commit com [publicar] na mensagem, ou Actions → «App web
+# (Cloudflare Pages)» → Run workflow.
+#
+# Precisa de dois Secrets do repositório (Settings → Secrets and variables → Actions):
+#   CLOUDFLARE_API_TOKEN   chave do Cloudflare com permissão só para «Cloudflare Pages: Edit»
+#   CLOUDFLARE_ACCOUNT_ID  o ID da conta Cloudflare
+# Sem eles, o workflow não faz nada (avisa e termina sem erro).
+# Variáveis opcionais (Settings → Variables): CLOUDFLARE_PAGES_PROJECT (nome do projecto, por
+# defeito manda-bue) e SITE_URL (endereço público da app, usado nos links de partilha e convite).
+name: App web (Cloudflare Pages)
+
+on:
+  push:
+    branches: [claude/projeto-crescimento-fase-i1-gy5bul]
+  workflow_dispatch:
+
+concurrency:
+  group: web-cloudflare
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  publicar:
+    name: Construir e publicar
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[publicar]')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: apps/cliente
+    env:
+      PROJECTO: ${{ vars.CLOUDFLARE_PAGES_PROJECT || 'manda-bue' }}
+      TEM_CHAVE: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
+      # Valores PÚBLICOS da app (os mesmos do netlify.toml e dos APKs); a segurança está no RLS.
+      EXPO_PUBLIC_SUPABASE_URL: https://laruvuambdovnkojwrzp.supabase.co
+      EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_VoD7AGU0YCNyTJjiNmwJ-Q_FaRL1-aM' }}
+      EXPO_PUBLIC_CONTACTO_TELEFONE: ${{ vars.CONTACTO_TELEFONE || '958077592' }}
+      EXPO_PUBLIC_CONTACTO_WHATSAPP: ${{ vars.CONTACTO_WHATSAPP || '958077592' }}
+      EXPO_PUBLIC_CONTACTO_PRIVACIDADE: ${{ vars.CONTACTO_PRIVACIDADE }}
+      EXPO_PUBLIC_INSTRUCOES_PAGAMENTO: ${{ vars.INSTRUCOES_PAGAMENTO }}
+      EXPO_PUBLIC_CONTACTO_HORARIO: ${{ vars.CONTACTO_HORARIO }}
+      EXPO_PUBLIC_SITE_URL: ${{ vars.SITE_URL }}
+      NODE_ENV: production
+    steps:
+      - name: Chave do Cloudflare
+        working-directory: .
+        run: |
+          if [ "$TEM_CHAVE" != "true" ]; then
+            echo "::warning::Faltam os Secrets CLOUDFLARE_API_TOKEN e/ou CLOUDFLARE_ACCOUNT_ID: nada publicado."
+          fi
+      - uses: actions/checkout@v5
+        if: env.TEM_CHAVE == 'true'
+      - uses: actions/setup-node@v5
+        if: env.TEM_CHAVE == 'true'
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/cliente/package-lock.json
+      - if: env.TEM_CHAVE == 'true'
+        run: npm ci
+      - name: Construir a app web
+        if: env.TEM_CHAVE == 'true'
+        run: npm run build:web
+      - name: Preparar para o Cloudflare
+        if: env.TEM_CHAVE == 'true'
+        # O Cloudflare Pages já abre qualquer endereço na app (sem 404.html, modo de página única);
+        # a regra «/* /index.html 200» do Netlify seria vista como um ciclo e ignorada com aviso.
+        # O script passa assets/node_modules para assets/nm (o wrangler ignora pastas node_modules,
+        # onde está a fonte dos ícones) e dá nome novo a cada ficheiro de /_expo/static/ que muda,
+        # para os browsers que já guardaram a versão antiga irem buscar a nova.
+        run: node scripts/cloudflare.mjs dist
+      - name: Criar o projecto no Cloudflare (só a primeira vez)
+        if: env.TEM_CHAVE == 'true'
+        continue-on-error: true
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: apps/cliente
+          command: pages project create ${{ env.PROJECTO }} --production-branch=main
+      - name: Publicar
+        if: env.TEM_CHAVE == 'true'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # A pasta functions/ (cartão do WhatsApp em /p/{prato}) é enviada com a app
+          workingDirectory: apps/cliente
+          command: pages deploy dist --project-name=${{ env.PROJECTO }} --branch=main --commit-dirty=true

@@ -2,6 +2,8 @@
 begin;
 \ir _helpers.psql
 select plan(11);
+-- pedidos pequenos de propósito: sem o subtotal mínimo do desconto
+update parametros set desconto_subtotal_minimo = 0 where unico;
 
 select testes.funcionalidade('indicacao', true);
 select testes.def('ana', testes.cliente('Ana Indicadora'));

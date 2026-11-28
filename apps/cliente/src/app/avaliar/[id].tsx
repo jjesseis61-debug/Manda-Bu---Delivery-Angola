@@ -43,7 +43,7 @@ export default function Avaliar() {
 
   useEffect(() => {
     if (!ligada('avaliacoes')) return;
-    Promise.all([lerPedido(String(id)), minhaAvaliacao(String(id)), avaliacaoPermitida(String(id))])
+    Promise.all([lerPedido(String(id), perfil?.cliente_id), minhaAvaliacao(String(id)), avaliacaoPermitida(String(id))])
       .then(([p, minha, permitida]) => {
         setPedido(p);
         setEstado(minha ? 'feita' : permitida ? 'pode' : 'fora_do_prazo');
@@ -170,7 +170,7 @@ export default function Avaliar() {
       )}
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Text style={{ fontSize: 15, flex: 1 }}>Publicar com o meu pseudónimo em vez do nome</Text>
-        <Switch value={pseudonimo} onValueChange={setPseudonimo} trackColor={{ true: cores.marca, false: cores.linha }} />
+        <Switch thumbColor="#FFFFFF" value={pseudonimo} onValueChange={setPseudonimo} trackColor={{ true: cores.marca, false: cores.contorno }} />
       </View>
       {erro && <Aviso tipo="erro">{erro}</Aviso>}
       <Botao titulo="Enviar avaliação" desactivado={estrelas === 0} aCarregar={aEnviar} aoCarregar={enviar} />

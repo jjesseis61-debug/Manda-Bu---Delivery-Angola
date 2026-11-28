@@ -2,14 +2,20 @@
 
 import {
   formatarKz,
+  textoEntregaGratis,
   formatarMedia,
+  formatarTelefone,
   horaLuanda,
   mensagemGrupo,
   tempoEmFalta,
   mensagemCodigo,
   mensagemConvite,
+  mensagemPartilhaPrato,
+  minutosSegundos,
+  textoPediram,
   mensagemErro,
   normalizarCodigo,
+  digitosCodigo,
   telefoneInternacional,
   textoAmigo,
   textoAmigosEmFalta,
@@ -26,6 +32,7 @@ const parametros: Parametros = {
   levantamento_minimo: 2000,
   limite_parcelamento: 20000,
   contador_minimo: 10,
+  limiar_pediram: 20,
   tamanho_top: 10,
 };
 
@@ -54,41 +61,81 @@ describe('textoAmigo (C1)', () => {
   });
 });
 
+describe('minutosSegundos (contagem do OTP)', () => {
+  it('formata minutos:segundos com dois dígitos', () => {
+    expect(minutosSegundos(600)).toBe('10:00');
+    expect(minutosSegundos(125)).toBe('2:05');
+    expect(minutosSegundos(9)).toBe('0:09');
+  });
+  it('nunca é negativo', () => {
+    expect(minutosSegundos(-5)).toBe('0:00');
+  });
+});
+
 describe('mensagemConvite (N1)', () => {
   it('leva a marca, o código, o desconto em vigor e o link', () => {
     expect(mensagemConvite('MB-4821', 500, 'mandabue://convite/MB-4821')).toBe(
-      'Estou a pedir no Manda Bué — Delivery Angola e está bom! Usa o meu código MB-4821 e ganhas 500 Kz de desconto no primeiro pedido. mandabue://convite/MB-4821',
+      '🍲 Peço na Cozinha da Alexandra e recomendo! Usa o meu código MB-4821 e ganhas 500 Kz de desconto no teu 1.º pedido. 👉 mandabue://convite/MB-4821',
     );
   });
   it('usa o valor dos parâmetros, não um valor fixo', () => {
     expect(mensagemConvite('MB-4821', 800, 'x')).toContain('ganhas 800 Kz de desconto');
   });
+  it('inclui o pedido mínimo quando há um', () => {
+    expect(mensagemConvite('MB-4821', 1000, 'x', 5000)).toContain('em pedidos acima de 5.000 Kz');
+  });
+  it('omite o mínimo quando é 0', () => {
+    expect(mensagemConvite('MB-4821', 1000, 'x', 0)).not.toContain('em pedidos acima de');
+  });
 });
 
 describe('textoRegras (4.13)', () => {
   it('preenche as frases com os parâmetros', () => {
-    const regras = textoRegras(parametros);
+    const regras = textoRegras({ ...parametros, desconto_subtotal_minimo: 5000 });
     expect(regras[0]).toBe(
-      'Ganhas 100 Kz por cada pedido dos amigos que convidares, durante 60 dias a contar do primeiro pedido deles. Não há limite de ganhos.',
+      'Ganhas 100 Kz por cada pedido entregue e pago dos amigos que convidares, a partir do 2.º pedido deles, durante 60 dias a contar do primeiro. Não há limite de ganhos.',
     );
-    expect(regras[1]).toBe('O teu amigo ganha 500 Kz de desconto no primeiro pedido.');
-    expect(regras[2]).toContain('a partir de 2.000 Kz');
-    expect(regras[2]).toContain('Acima de 10.000 Kz por semana');
+    expect(textoRegras({ ...parametros, comissao_primeiro_pedido: true })[0]).toBe(
+      'Ganhas 100 Kz por cada pedido entregue e pago dos amigos que convidares, durante 60 dias a contar do primeiro pedido deles. Não há limite de ganhos.',
+    );
+    expect(regras[1]).toBe(
+      'O teu amigo também ganha: 500 Kz de desconto no primeiro pedido, válido apenas para contas novas e pedidos a partir de 5.000 Kz.',
+    );
+    expect(textoRegras(parametros)[1]).toBe('O teu amigo também ganha: 500 Kz de desconto no primeiro pedido, válido apenas para contas novas.');
+    expect(regras[2]).toContain('a partir de 2.000 Kz, sem taxas');
+    expect(regras[2]).not.toContain('válido durante');
+    expect(textoRegras({ ...parametros, validade_saldo_meses: 12 })[2]).toContain('O saldo é válido durante 12 meses.');
+    expect(regras[3]).toContain('mais de 10.000 Kz numa semana');
+    // A regra das contas falsas fica no fim, dita como garantia de justiça e não como ameaça
+    expect(regras.at(-1)).toMatch(/^Para ser justo para todos/);
   });
 });
 
 describe('normalizarCodigo', () => {
-  it('aceita variações e devolve MB-dddd', () => {
-    expect(normalizarCodigo(' mb-4821 ')).toBe('MB-4821');
-    expect(normalizarCodigo('MB4821')).toBe('MB-4821');
-    expect(normalizarCodigo('4821')).toBe('MB-4821');
-    expect(normalizarCodigo('MB-48210')).toBe('MB-48210');
+  it('aceita variações e devolve MBdddd (sem hífen)', () => {
+    expect(normalizarCodigo(' mb-4821 ')).toBe('MB4821');
+    expect(normalizarCodigo('MB4821')).toBe('MB4821');
+    expect(normalizarCodigo('MB 4821')).toBe('MB4821');
+    expect(normalizarCodigo('4821')).toBe('MB4821');
+    expect(normalizarCodigo('MB-48210')).toBe('MB48210');
+    expect(normalizarCodigo('482100')).toBe('MB482100');
+    expect(normalizarCodigo('0042')).toBe('MB0042');
   });
-  it('recusa o que não é um código', () => {
+  it('recusa o que não é código', () => {
     expect(normalizarCodigo('MB-48')).toBeNull();
+    expect(normalizarCodigo('1234567')).toBeNull();
     expect(normalizarCodigo('ABC-1234')).toBeNull();
     expect(normalizarCodigo('')).toBeNull();
     expect(normalizarCodigo(null)).toBeNull();
+  });
+});
+
+describe('digitosCodigo', () => {
+  it('fica só com o número do código', () => {
+    expect(digitosCodigo('MB-4821')).toBe('4821');
+    expect(digitosCodigo('mb4821')).toBe('4821');
+    expect(digitosCodigo('48 21')).toBe('4821');
+    expect(digitosCodigo('1234567')).toBe('123456');
   });
 });
 
@@ -108,7 +155,12 @@ describe('mensagens de erro', () => {
   it('traduz os códigos do servidor', () => {
     expect(mensagemCodigo('proprio_codigo')).toBe('Não podes usar o teu próprio código.');
     expect(mensagemCodigo('limite_local')).toBe('Este convite já foi usado o número máximo de vezes nesta morada.');
+    expect(mensagemCodigo('sem_compra_propria')).toBe('Para levantar o saldo, faz primeiro um pedido teu (entregue e pago).');
     expect(mensagemErro({ message: 'item_indisponivel' })).toBe('Um dos pratos já não está disponível. Actualiza o carrinho.');
+  });
+  it('traduz a recusa do valor mínimo do prato montado (não parece erro de ligação)', () => {
+    expect(mensagemErro(new Error('abaixo_do_minimo'))).toMatch(/valor mínimo/);
+    expect(mensagemErro(new Error('agendamento_invalido'))).toMatch(/20 minutos e 14 dias/);
   });
   it('tem uma mensagem genérica para erros desconhecidos', () => {
     expect(mensagemErro(new Error('boom'))).toBe('Não foi possível concluir. Verifica a ligação e tenta outra vez.');
@@ -130,8 +182,8 @@ describe('destaques (C3)', () => {
 
 describe('avaliações (C10)', () => {
   it('média com vírgula e plural', () => {
-    expect(formatarMedia(4.5, 12)).toBe('★ 4,5 · 12 avaliações');
-    expect(formatarMedia(5, 1)).toBe('★ 5,0 · 1 avaliação');
+    expect(formatarMedia(4.5, 12)).toBe('4,5 · 12 avaliações');
+    expect(formatarMedia(5, 1)).toBe('5,0 · 1 avaliação');
   });
 });
 
@@ -151,7 +203,10 @@ describe('pedidos de grupo (C12, C13)', () => {
 
   it('mensagem de partilha do grupo', () => {
     expect(mensagemGrupo('12h30', 'Edifício Kilamba', 'mandabue://grupo/G-ABC123')).toBe(
-      'Vamos pedir juntos o almoço no Manda Bué — Delivery Angola! Entrega às 12h30 em Edifício Kilamba. Junta o teu pedido: mandabue://grupo/G-ABC123',
+      'Vamos pedir juntos o almoço na Cozinha da Alexandra! Entrega às 12h30 em Edifício Kilamba. Junta o teu pedido: mandabue://grupo/G-ABC123',
+    );    // Em família: a frase do convite muda (unidade)
+    expect(mensagemGrupo('13h00', 'Casa da avó', 'mandabue://grupo/G-F1', 'familia')).toBe(
+      'Almoço de família na Cozinha da Alexandra! Cada um escolhe o seu prato. Entrega às 13h00 em Casa da avó. Junta o teu pedido: mandabue://grupo/G-F1',
     );
   });
 });
@@ -168,4 +223,119 @@ test('I12: benefícios do pacote', () => {
     'Pausa até 5 dias (férias, doença)',
     'Reembolso das refeições que não usares',
   ]);
+});
+
+describe('mensagemPartilhaPrato', () => {
+  it('tira os espaços das pontas do nome (senão o negrito do WhatsApp parte)', () => {
+    const msg = mensagemPartilhaPrato('Bitoque ', 'Cozinha da Alexandra', 'https://x/p/1', { codigo: 'MB-4812', desconto: 1000, minimo: 5000 });
+    expect(msg).toContain('*Bitoque* da Cozinha da Alexandra');
+    expect(msg).not.toContain('Bitoque *');
+  });
+  it('inclui nome, marca, chamada à ação e link (sem repetir o preço: vem no cartão)', () => {
+    const msg = mensagemPartilhaPrato('Choco frito', 'Cozinha da Alexandra', 'https://x/prato?id=1');
+    expect(msg).toContain('Choco frito');
+    expect(msg).toContain('Cozinha da Alexandra');
+    expect(msg).toContain('Instala a app e faz o teu pedido');
+    expect(msg).toContain('https://x/prato?id=1');
+    expect(msg).not.toContain('Kz');
+  });
+
+  it('com código de convite: diz o desconto do amigo e o código, em negrito do WhatsApp', () => {
+    const msg = mensagemPartilhaPrato('Choco frito', 'Cozinha da Alexandra', 'https://x/p/1?r=MB-4812', {
+      codigo: 'MB-4812',
+      desconto: 1000,
+      minimo: 5000,
+    });
+    expect(msg).toContain('*Choco frito*');
+    expect(msg).toContain('*MB-4812*');
+    expect(msg).toContain('*1.000 Kz de desconto*');
+    expect(msg).toContain('a partir de 5.000 Kz');
+    expect(msg.endsWith('https://x/p/1?r=MB-4812')).toBe(true);
+  });
+
+  it('com desconto 0 volta à mensagem simples', () => {
+    const msg = mensagemPartilhaPrato('Choco frito', 'M', 'L', { codigo: 'MB-4812', desconto: 0 });
+    expect(msg).toContain('Instala a app');
+  });
+});
+
+describe('textoPediram', () => {
+  it('plural e singular', () => {
+    expect(textoPediram(285)).toBe('285 pessoas pediram este mês');
+    expect(textoPediram(1)).toBe('1 pessoa pediu este mês');
+    expect(textoPediram(20)).toBe('20 pessoas pediram este mês');
+  });
+});
+
+describe('formatarTelefone', () => {
+  it('agrupa número angolano com indicativo', () => {
+    expect(formatarTelefone('958077592')).toBe('+244 958 077 592');
+    expect(formatarTelefone('244958077592')).toBe('+244 958 077 592');
+    expect(formatarTelefone('958 077 592')).toBe('+244 958 077 592');
+  });
+  it('deixa como está o que não encaixa', () => {
+    expect(formatarTelefone('12345')).toBe('12345');
+  });
+});
+
+describe('textoEntregaGratis', () => {
+  it('entrega já grátis', () => {
+    expect(textoEntregaGratis({ entrega_gratis: true, entrega_gratis_acima: 10000, falta_entrega_gratis: null })).toBe(
+      '🎉 Entrega grátis neste pedido!',
+    );
+  });
+  it('diz quanto falta', () => {
+    const t = textoEntregaGratis({ entrega_gratis: false, entrega_gratis_acima: 10000, falta_entrega_gratis: 750 });
+    expect(t).toContain('Junta mais');
+    expect(t).toContain('depois dos descontos');
+  });
+  it('sem entrega grátis na zona: nada', () => {
+    expect(textoEntregaGratis({ entrega_gratis: false, entrega_gratis_acima: null, falta_entrega_gratis: null })).toBeNull();
+    expect(textoEntregaGratis({})).toBeNull();
+  });
+});
+
+describe('promoções', () => {
+  const { textoCampanha, textoPromocao } = jest.requireActual('../formatar');
+  it('carrinho: poupança e convite guardado', () => {
+    expect(textoCampanha({ nome: 'Sexta no Jardim', poupanca: 1400 })).toBe('🏷️ Promoção «Sexta no Jardim»: já poupas 1.400 Kz neste pedido.');
+    expect(textoCampanha({ nome: 'X', poupanca: 1400 }, 'campanha')).toContain('desconto de convite fica guardado');
+  });
+  it('cartaz no início', () => {
+    expect(textoPromocao({ nome: 'S', descricao: null, tipo: 'percentagem', valor: 20, cozinha: 'Viana', minimo_pedido: 5000 })).toBe(
+      '20% de desconto nos pratos · Viana · pedidos a partir de 5.000 Kz',
+    );
+    // Um mínimo simbólico (ex.: 2 Kz) não aparece: parecia um preço errado
+    expect(textoPromocao({ nome: 'S', descricao: 'Promoção maluca', tipo: 'percentagem', valor: 50, cozinha: 'Viana', minimo_pedido: 2 })).toBe(
+      'Promoção maluca · Viana',
+    );
+  });
+});
+
+describe('Convida e Ganha sem ganhos', () => {
+  const { semGanhos, textoPrimeiroGanho } = jest.requireActual('../formatar');
+  const zero = { saldo_disponivel: 0, em_verificacao: 0, ganho_hoje: 0, ganho_semana: 0, total_recebido: 0 };
+  it('três «0 Kz» passam a uma meta próxima', () => {
+    expect(semGanhos(zero)).toBe(true);
+    expect(semGanhos({ ...zero, em_verificacao: 600 })).toBe(false);
+    expect(semGanhos({ ...zero, total_recebido: 1200 })).toBe(false);
+  });
+  it('diz o passo que falta, com o amigo mais perto', () => {
+    expect(textoPrimeiroGanho([], false)).toBe('O primeiro chega quando um amigo teu usar o teu código e pedir. Partilha-o acima.');
+    expect(textoPrimeiroGanho([{ primeiro_nome: 'Milhões', estado: 'aguarda_primeiro_pedido' }], false)).toBe(
+      'O primeiro chega quando Milhões fizer o 2.º pedido.',
+    );
+    expect(textoPrimeiroGanho([{ primeiro_nome: 'Milhões', estado: 'aguarda_primeiro_pedido' }], true)).toBe(
+      'O primeiro chega quando Milhões fizer o 1.º pedido.',
+    );
+    expect(
+      textoPrimeiroGanho(
+        [
+          { primeiro_nome: 'Milhões', estado: 'aguarda_primeiro_pedido' },
+          { primeiro_nome: 'Alexandra', estado: 'activo' },
+        ],
+        false,
+      ),
+    ).toBe('O primeiro chega quando Alexandra fizer o próximo pedido.');
+  });
 });

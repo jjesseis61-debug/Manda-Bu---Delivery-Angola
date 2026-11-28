@@ -5,7 +5,8 @@ import { Image, Text, View } from 'react-native';
 import { ACarregar, Aviso, Cartao, Ecra, Paragrafo, Subtitulo } from '@/components/ui';
 import { avaliacoesPublicas, mediasAvaliacoes } from '@/lib/api';
 import { enderecosFotos } from '@/lib/fotos';
-import { formatarData, formatarMedia, mensagemErro } from '@/lib/formatar';
+import { MediaAvaliacao } from '@/components/MediaAvaliacao';
+import { formatarData, mensagemErro } from '@/lib/formatar';
 import { useSessao } from '@/lib/sessao';
 import { cores, raio } from '@/lib/tema';
 import type { AvaliacaoPublica, Media } from '@/lib/tipos';
@@ -43,7 +44,7 @@ export default function Avaliacoes() {
   return (
     <Ecra>
       {nome && <Subtitulo>{nome}</Subtitulo>}
-      {media && <Paragrafo>{formatarMedia(media.media, media.total)}</Paragrafo>}
+      {media && <MediaAvaliacao media={media.media} total={media.total} />}
       {erro && <Aviso tipo="erro">{erro}</Aviso>}
       {lista && lista.length === 0 && <Paragrafo suave>Ainda não há avaliações.</Paragrafo>}
       {lista?.map((a, i) => (

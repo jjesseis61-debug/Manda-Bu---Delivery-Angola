@@ -32,7 +32,12 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 'metricas_turno', 'meu_desconto_indicacao', 'minha_posicao', 'moderar_foto',
                 'mudar_estado_pedido', 'ocultar_avaliacao', 'pedir_levantamento', 'pessoas_como_tu',
                 'pontos_entrega_proximos', 'registar_partilha', 'rejeitar_levantamento',
-                'relatorio_cozinha', 'rever_ganho', 'total_pago_mes', 'usar_credito',
+                'relatorio_cozinha', 'relatorio_cozinha_detalhado', 'definir_comissao_cozinha', 'definir_convida_cozinha',
+                'acertos_semana', 'fechar_acerto', 'registar_pagamento_acerto', 'definir_fatura_acerto', 'conta_corrente_cozinha',
+                'acerto_caminho_valido', 'registar_fatura_pedido', 'vendas_sem_fatura', 'definir_faturacao_cozinha',
+                'compensacoes_lista', 'definir_cargo_compensacao', 'pagar_compensacao', 'contas_empresas', 'emitir_fatura_empresa', 'pagar_fatura_empresa',
+                'estafetas_pagamentos', 'definir_remuneracao_estafeta', 'definir_dias_estafeta', 'pagar_estafeta_mes',
+                'fornecedores_entrega_lista', 'guardar_fornecedor_entrega', 'pagar_fornecedor_entrega', 'resultados_mes', 'obrigacoes_resumo', 'rever_ganho', 'total_pago_mes', 'usar_credito',
                 -- API da app do cliente (I2)
                 'registar_cliente', 'meu_perfil', 'orcamento_pedido', 'meus_amigos',
                 'registar_token_push', 'remover_token_push',
@@ -48,14 +53,125 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
                 -- I7: fotos (foto_pode_* nas políticas do storage; fotos_da_avaliacao no trigger da app)
                 'lista_avaliacoes', 'fotos_pendentes', 'foto_pode_enviar', 'foto_pode_ver', 'fotos_da_avaliacao',
                 -- I8: rede de cozinhas (cozinha_aceita_pedidos no trigger da criação de grupos)
-                'cozinhas_para_pedir', 'relatorio_comparativo', 'cozinha_aceita_pedidos',
-                -- apagar a conta pela app (exigido pelas lojas)
-                'apagar_conta',
+                'cozinhas_para_pedir', 'cozinhas_perto', 'relatorio_comparativo', 'cozinha_aceita_pedidos',
+                -- apagar/recuperar a conta pela app (exigido pelas lojas)
+                'apagar_conta', 'recuperar_conta',
                 -- I10 e I11: localização da cozinha e acompanhamento da entrega
-                'localizacao_cozinha', 'registar_posicao_entrega', 'posicao_entrega',
+                'localizacao_cozinha', 'registar_posicao_entrega', 'posicao_entrega', 'posicao_pedido',
                 -- I12: pacotes pré-pagos
                 'aderir_pacote', 'cancelar_adesao_pacote', 'usar_pacote', 'pausar_pacote', 'meu_pacote',
                 'pacotes_a_minha_volta', 'confirmar_pagamento_pacote', 'reembolsar_pacote', 'adesoes_operador',
+                -- caixa na app do operador
+                'abrir_caixa', 'resumo_caixa', 'registar_sangria', 'fechar_caixa',
+                -- comprovativos dos pagamentos electrónicos (conferir; as outras duas são usadas nas políticas do Storage)
+                'conferir_comprovativo', 'comprovativo_caminho_valido', 'comprovativo_visivel',
+                -- conferência financeira (extratos, fechos, histórico do pedido)
+                'criar_extrato', 'confirmar_extrato', 'pedir_nova_leitura', 'registar_movimento_extrato',
+                'apagar_movimento_extrato', 'ligar_movimento', 'relatorio_conciliacao', 'fecho_diario',
+                'fecho_mensal', 'historico_pedido', 'extrato_caminho_valido',
+                -- alertas de pedidos parados ou atrasados
+                'informar_atraso', 'alertas_abertos',
+                -- reclamações (análise automática) e estímulos mensais
+                'fazer_reclamacao', 'minhas_reclamacoes', 'reclamacoes_lista', 'decidir_reclamacao',
+                'relatorio_reclamacoes', 'gerar_estimulos', 'estimulos_do_mes', 'decidir_estimulo', 'pedir_nova_analise',
+                -- agente investigador financeiro (as ferramentas do agente são só do serviço)
+                'abrir_investigacoes', 'casos_investigacao_lista', 'decidir_caso', 'investigar_de_novo',
+                -- analista do administrador
+                'perguntar_analista', 'pedir_relatorio_analista', 'perguntas_analista_lista',
+                -- vigilante do Convida e Ganha
+                'abrir_vigilancia', 'casos_convida_lista', 'decidir_caso_convida', 'vigiar_de_novo',
+                -- gerente de turno
+                'propostas_turno_lista', 'decidir_proposta_turno',
+                -- stock e compras
+                'planos_compras_lista', 'pedir_plano_compras', 'marcar_compra',
+                -- atendimento ao cliente
+                'enviar_mensagem_atendimento', 'minha_conversa_atendimento', 'pedir_pessoa_atendimento',
+                'conversas_atendimento_lista', 'conversa_atendimento', 'responder_atendimento', 'mudar_conversa_atendimento',
+                -- contactos públicos
+                'contactos',
+                -- ingredientes que o cliente pode tirar (pratos montáveis)
+                'componentes_dos_pratos',
+                -- doses do dia que restam de cada prato
+                'doses_cardapio',
+                -- quem pode gerir a foto de um prato/cozinha (usada nas políticas do bucket)
+                'foto_prato_pode_gerir',
+                -- rasto de alterações do cardápio por cozinha
+                'auditoria_cardapio',
+                -- impacto de preço de um prato (pedidos atendidos por preço e movimento)
+                'impacto_preco_prato', 'movimento_preco_prato',
+                -- justificação do cancelamento (o cliente só lê a dos seus pedidos)
+                'justificacao_cancelamento',
+                -- cadastro de pessoal (só administrador principal) e mapa de estafetas (despacho)
+                'listar_pessoal', 'criar_funcionario', 'editar_funcionario', 'posicoes_estafetas',
+                -- gestão de permissões e cozinhas do pessoal (só administrador principal)
+                'permissoes_catalogo', 'definir_permissoes_funcionario', 'definir_cozinhas_funcionario',
+                -- pedidos agendados (fila do que vem)
+                'pedidos_agendados', 'agendados_operador',
+                -- aparelhos por conta (antifraude do Convida)
+                'registar_aparelho', 'aparelhos_partilhados',
+                -- avisos do cliente (sino) e push na web (PWA)
+                'meus_avisos', 'contar_avisos_novos', 'marcar_avisos_vistos', 'registar_push_web', 'remover_push_web',
+                'chave_publica_push_web',
+                -- relatório: custos dos pratos, despesas e rentabilidade
+                'custos_da_cozinha', 'definir_custo_item', 'despesas_cozinha', 'lancar_despesa', 'apagar_despesa', 'rentabilidade_cozinha', 'tempos_etapas_cozinha', 'marcar_pedido_pronto', 'painel_vigilancia', 'alertas_agendados', 'reagendar_pedido', 'indicadores_agendados', 'saldo_a_expirar', 'proxima_expiracao_saldo', 'relatorio_saldos_expirados', 'pratos_por_zona_cozinha', 'vendas_por_zona', 'mais_pedidos_na_zona',
+                -- cozinha de condomínio e abrir/fechar cozinha
+                'abrir_fechar_cozinha', 'guardar_condominio', 'apagar_condominio', 'condominios_lista', 'condominio_membros_lista',
+                'condominio_adicionar_membro', 'condominio_decidir_membro', 'condominio_pelo_codigo', 'condominio_pedir_entrada',
+                'condominio_aqui', 'meus_condominios',
+                -- condomínios fase 2: campanhas e relatório
+                'guardar_campanha', 'apagar_campanha', 'campanhas_lista', 'campanha_avisar', 'campanhas_para_mim', 'precos_para_mim', 'relatorio_condominio',
+                -- recursos humanos
+                'rh_lista', 'rh_ficha', 'rh_guardar_ficha', 'rh_guardar_documento', 'rh_apagar_documento', 'rh_guardar_contrato',
+                'rh_terminar_contrato', 'rh_guardar_equipamento', 'rh_devolver_equipamento', 'rh_parametros_ler', 'rh_parametros_guardar',
+                'rh_simular_salario', 'rh_folha', 'rh_folha_ajustar', 'rh_folha_fechar', 'rh_folha_pagar', 'visita_experiencia', 'resultado_experiencia', 'unidades_opcoes',
+                'encomendar', 'minhas_encomendas', 'encomenda_responder', 'encomenda_pagar_sinal', 'encomenda_cancelar_cliente', 'encomendas_lista', 'encomenda_enviar_cozinha', 'encomenda_resposta_cozinha', 'encomenda_aprovar', 'encomenda_cancelar',
+                'cozinhas_perto_de', 'cardapio_fora_da_janela_em', 'cardapio_mais_tarde',
+                'registar_ausencia', 'meu_grupo_compromisso', 'confirmar_presenca', 'resultado_compromisso',
+                'receita_pratos_gerir', 'receita_guardar_pratos', 'receita_onde_pedir', 'receita_quero', 'receitas_metricas',
+                -- Junta Bué no trabalho (equipas, conta do mês, acordo e benefício)
+                'criar_equipa', 'editar_equipa', 'equipa_convidar', 'equipa_responder', 'equipa_autorizacoes', 'equipa_sair',
+                'minhas_equipas', 'pedir_por_colega', 'prato_habitual_colega', 'recusar_pedido_colega', 'pedir_refeicoes_extra',
+                'conta_mes', 'pagar_conta_mes', 'equipas_operador', 'equipa_operador', 'definir_equipa', 'decidir_extra',
+                'registar_dinheiro_conta_mes', 'decidir_pagamento_conta_mes', 'propor_acordo_equipa', 'aceitar_acordo_equipa',
+                'terminar_acordo_equipa', 'pagar_beneficio_equipa',
+                'meu_pagamento_antes', 'pagar_antes', 'pagamentos_antes_lista', 'decidir_pagamento_antes', 'devolver_pagamento_antes',
+                -- faixa de confiança (pontualidade agregada)
+                'pontualidade_entregas', 'visitante_prato', 'visitante_cardapio', 'visitante_cozinhas', 'visitante_zonas', 'visitante_precos', 'visitante_convida', 'funcionalidades_publicas',
+                -- prato montável a partir do modelo (cozinhas.gerir)
+                'criar_montavel_do_modelo',
+                -- sugestão de despacho por proximidade
+                'sugestao_despacho',
+                -- conta de empresa (B2B)
+                'criar_empresa', 'editar_empresa', 'listar_empresas', 'empresa_adicionar_membro',
+                'empresa_remover_membro', 'empresa_membros_lista', 'relatorio_empresa', 'minha_empresa',
+                -- feira (consignação)
+                'criar_feira', 'feira_adicionar_item', 'feira_vender', 'feira_fechar', 'feira_resumo', 'listar_feiras',
+                -- central de avisos (avisos_destinatarios é revogada de authenticated)
+                'enviar_aviso', 'pre_visualizar_aviso', 'listar_avisos',
+                'caixas_geridas',
+                -- atribuição explícita de entregas
+                'atribuir_entrega', 'recusar_entrega', 'estafetas_para_atribuir',
+                -- resumo do dia do estafeta (entregas feitas hoje)
+                'entregas_feitas_hoje',
+                -- sino de notificações do funcionário
+                'minhas_notificacoes', 'contar_notificacoes_novas', 'marcar_notificacoes_vistas',
+                -- reconquista de clientes inativos
+                'clientes_inativos', 'clientes_inativos_resumo', 'enviar_campanha_reconquista',
+                'campanha_reconquista_resultado', 'listar_campanhas_reconquista',
+                -- ecrã de utilizadores: procurar e bloquear (telefone_bloqueado é usada no registo)
+                'procurar_utilizadores', 'telefone_bloqueado', 'bloquear_utilizador', 'desbloquear_utilizador',
+                'utilizadores_bloqueados_lista',
+                -- OTP manual: a lista, a entrega, a limpeza e o fecho automático ao entrar
+                -- (o hook enviar_sms_otp é só do supabase_auth_admin)
+                'otp_pendentes_lista', 'otp_marcar_entregue', 'otp_limpar', 'otp_confirmar',
+                -- receitas (Cozinha de casa): leitura pública, métricas e aviso de nova receita
+                'receitas_publicas', 'receita_publica', 'receita_abriu', 'receita_tocou_pedir', 'avisar_nova_receita',
+                -- cartão de selos: progresso do cliente
+                'meus_selos',
+                -- agendamento do cardápio: janela por data/hora e lista de horários (leitura que fura a RLS)
+                'cardapio_fora_da_janela', 'cardapio_aberto_agora',
+                -- ecrã geral de auditoria (gated por auditoria.ver)
+                'auditoria_lista',
                 -- auxiliares usadas em políticas RLS, valores por defeito ou triggers SECURITY INVOKER
                 'cliente_actual', 'cozinha_padrao', 'e_funcionario', 'funcionalidade_activa',
                 'funcionario_actual', 'membro_da_cozinha', 'tem_permissao', 'e_administrador', 'pode_na_cozinha')),
@@ -66,7 +182,8 @@ select is((select string_agg(p.proname, ', ' order by p.proname)
             where p.pronamespace = 'public'::regnamespace and p.prosecdef
               and p.proname <> 'rls_auto_enable'
               and has_function_privilege('anon', p.oid, 'execute')),
-          null, 'nenhuma função SECURITY DEFINER nossa é chamável sem sessão (anon)');
+          'funcionalidades_publicas, visitante_cardapio, visitante_convida, visitante_cozinhas, visitante_prato, visitante_precos, visitante_zonas',
+          'sem sessão (anon) só as leituras do visitante do link partilhado (prato e cardápio visíveis na app)');
 
 -- ---------------------------------------------------------------------------
 -- 3. O que dependia das funções revogadas continua a funcionar

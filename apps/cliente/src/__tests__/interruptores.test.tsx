@@ -17,6 +17,7 @@ const parametros: Parametros = {
   levantamento_minimo: 2000,
   limite_parcelamento: 10000,
   contador_minimo: 10,
+  limiar_pediram: 20,
   tamanho_top: 10,
 };
 

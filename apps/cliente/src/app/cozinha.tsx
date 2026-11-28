@@ -1,17 +1,20 @@
 import { Redirect, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Image } from 'react-native';
+import { Image, Text, View } from 'react-native';
 
+import { BlocoContactos, temContacto } from '@/components/BlocoContactos';
 import { ComoChegar } from '@/components/ComoChegar';
+import { MediaAvaliacao } from '@/components/MediaAvaliacao';
 import { ACarregar, Botao, Cartao, Ecra, Linha, Paragrafo, Subtitulo, Titulo } from '@/components/ui';
-import { lerCardapio, lerCozinhaPublica, mediasAvaliacoes, type Cozinha } from '@/lib/api';
-import { formatarKz, formatarMedia } from '@/lib/formatar';
+import { lerCardapio, lerContactos, lerCozinhaPublica, mediasAvaliacoes, type Cozinha } from '@/lib/api';
+import { formatarKz } from '@/lib/formatar';
 import { useCarrinho } from '@/lib/carrinho';
 import { useSessao } from '@/lib/sessao';
-import { raio } from '@/lib/tema';
-import type { ItemCardapio } from '@/lib/tipos';
+import { cores, raio } from '@/lib/tema';
+import type { Contacto, ItemCardapio } from '@/lib/tipos';
 
-/** C8. Perfil da cozinha: só com o interruptor e o consentimento público da responsável */
+/** C8. Perfil da cozinha: só com o interruptor e o consentimento público da responsável.
+ * «Kota da Cozinha»: selo de respeito dado pelo operador (Cialdini: autoridade de quem cozinha há anos). */
 export default function PerfilCozinha() {
   const router = useRouter();
   const { carregado, ligada } = useSessao();
@@ -20,6 +23,7 @@ export default function PerfilCozinha() {
   const [cozinha, setCozinha] = useState<Cozinha | null | undefined>(undefined);
   const [doDia, setDoDia] = useState<ItemCardapio[]>([]);
   const [media, setMedia] = useState<{ media: number; total: number } | null>(null);
+  const [contacto, setContacto] = useState<Contacto | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -28,12 +32,14 @@ export default function PerfilCozinha() {
         .then(async (c) => {
           setCozinha(c);
           if (!c) return;
-          const [itens, m] = await Promise.all([
+          const [itens, m, cs] = await Promise.all([
             lerCardapio(c.id),
             ligada('avaliacoes') ? mediasAvaliacoes(c.id).catch(() => null) : Promise.resolve(null),
+            lerContactos().catch(() => null),
           ]);
           setDoDia(itens.filter((i) => i.do_dia));
           setMedia(m?.cozinha ?? null);
+          setContacto(cs?.cozinhas.find((x) => x.id === c.id) ?? null);
         })
         .catch(() => setCozinha(null));
     }, [ligada, cozinhaId]),
@@ -49,9 +55,15 @@ export default function PerfilCozinha() {
       {cozinha.foto_url && (
         <Image source={{ uri: cozinha.foto_url }} style={{ width: '100%', height: 200, borderRadius: raio }} accessibilityLabel={cozinha.nome} />
       )}
+      {cozinha.selo_kota && (
+        <View style={{ alignSelf: 'flex-start', backgroundColor: cores.destaqueFundo, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 }}>
+          <Text style={{ color: cores.texto, fontWeight: '800', fontSize: 12, letterSpacing: 0.5 }}>KOTA DA COZINHA</Text>
+        </View>
+      )}
       <Titulo>{cozinha.nome}</Titulo>
+      {cozinha.selo_kota && <Paragrafo suave>Cozinheira de casa com muitos anos de panela, reconhecida pela Manda Bué.</Paragrafo>}
       {/* A média só aparece com o mínimo de avaliações (o servidor não a devolve abaixo disso) */}
-      {media && <Paragrafo suave>{formatarMedia(media.media, media.total)}</Paragrafo>}
+      {media && <MediaAvaliacao media={media.media} total={media.total} suave />}
       {cozinha.historia && <Paragrafo>{cozinha.historia}</Paragrafo>}
       {doDia.length > 0 && (
         <>
@@ -63,6 +75,7 @@ export default function PerfilCozinha() {
           </Cartao>
         </>
       )}
+      {temContacto(contacto) && <BlocoContactos titulo="Contactos da cozinha" contacto={contacto} />}
       {ligada('como_chegar') && <ComoChegar cozinhaId={cozinha.id} comMapa />}
       {ligada('avaliacoes') && (
         <Botao

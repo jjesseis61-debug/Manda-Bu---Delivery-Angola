@@ -68,7 +68,7 @@ export default function Verificacao() {
                   </Text>
                   <Text>Indicado: {g.indicado_nome}</Text>
                   <Text style={{ color: cores.textoSuave }}>
-                    {formatarData(g.criado_em, true)} · dispositivo {g.pedido_dispositivo ?? '—'}
+                    {formatarData(g.criado_em, true)} · dispositivo {g.pedido_dispositivo ?? '-'}
                     {g.pagador_distinto ? ' · pago por outra pessoa' : ''}
                   </Text>
                   {g.numero_indicado && <Text>Número de levantamento do indicado: {g.numero_indicado}</Text>}

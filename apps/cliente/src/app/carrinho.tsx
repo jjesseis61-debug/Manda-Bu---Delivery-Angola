@@ -1,16 +1,25 @@
-import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, Switch, Text, View } from 'react-native';
 
 import { CampoCodigo } from '@/components/CampoCodigo';
+import { LinhaDoPedido } from '@/components/LinhaDoPedido';
 import { Aviso, Botao, Campo, Cartao, Ecra, Escolha, Linha, Paragrafo, Subtitulo } from '@/components/ui';
-import { criarPedido, lerEnderecos, lerSaldo, meuPacote, orcamento as pedirOrcamento, usarCredito, usarPacote } from '@/lib/api';
+import { faixasAgendamento } from '@/lib/agendar';
+import { cozinhasPertoParaPedir, criarPedido, lerCardapio, lerEnderecos, lerSaldo, meuPacote, minhaEmpresa, orcamento as pedirOrcamento, usarCredito, usarPacote } from '@/lib/api';
+import { bebidaSugerida, textoBebidaSugerida } from '@/lib/bebidas';
+import { balcaoLonge, cardapioMaisTarde, pratoDoErro, textoQuandoVolta, type PratoMaisTarde } from '@/lib/balcao';
 import { type LinhaCarrinho, useCarrinho } from '@/lib/carrinho';
+import { moradaComPinoLonge, textoFicaA } from '@/lib/pinZona';
 import { novoId } from '@/lib/dispositivo';
-import { formatarKz, mensagemCodigo, mensagemErro } from '@/lib/formatar';
+import { formatarKz, mensagemCodigo, mensagemErro, textoCampanha, textoEntregaGratis } from '@/lib/formatar';
 import { useSessao } from '@/lib/sessao';
+import { limparDestino } from '@/lib/visitante';
 import { cores, espaco } from '@/lib/tema';
-import type { Endereco, MeuPacote, Orcamento } from '@/lib/tipos';
+import type { CozinhaParaPedir, Endereco, ItemCardapio, MeuPacote, MinhaEmpresa, Orcamento } from '@/lib/tipos';
+import { CarrinhoVisitante } from '@/components/CarrinhoVisitante';
+import { textoDistancia } from '@/components/EscolherBalcao';
+import { ACarregar as ACarregarVisitante } from '@/components/ui';
 
 /** I12: quantas refeições o pacote vai pagar (o valor exacto é calculado no servidor) */
 function textoPacoteCarrinho(pacote: MeuPacote | null, linhas: LinhaCarrinho[], emGrupo: boolean): string {
@@ -21,17 +30,24 @@ function textoPacoteCarrinho(pacote: MeuPacote | null, linhas: LinhaCarrinho[], 
   return `${n} ${n === 1 ? 'refeição' : 'refeições'}${entrega}`;
 }
 
-/** O que segue para o servidor: o prato, a quantidade e os ids das opções (o preço é calculado lá) */
+/** O que segue para o servidor: o prato, a quantidade, os ids das opções e dos ingredientes tirados (o preço é calculado lá) */
 function itemDoPedido(l: LinhaCarrinho) {
-  return { cardapio_id: l.item.id, qtd: l.qtd, ...(l.opcoes.length > 0 ? { opcoes: l.opcoes.map((o) => o.id) } : {}) };
+  return {
+    cardapio_id: l.item.id,
+    qtd: l.qtd,
+    ...(l.opcoes.length > 0 ? { opcoes: l.opcoes.map((o) => o.id) } : {}),
+    ...(l.tirados.length > 0 ? { componentes_excluidos: l.tirados.map((c) => c.produto_id) } : {}),
+  };
 }
 
 /** Checkout: endereço, orçamento do servidor, código de convite (C2) e saldo do programa */
-export default function Carrinho() {
+function CarrinhoConta() {
   const router = useRouter();
-  const { perfil, ligada } = useSessao();
+  const { perfil, ligada, parametros } = useSessao();
   const carrinho = useCarrinho();
   const [enderecos, setEnderecos] = useState<Endereco[] | null>(null);
+  /** Linha com a lista do prato aberta (tocando no prato) */
+  const [linhaAberta, setLinhaAberta] = useState<string | null>(null);
   const [pontoId, setPontoId] = useState<string | null>(null);
   const [orc, setOrc] = useState<Orcamento | null>(null);
   const [erroOrc, setErroOrc] = useState<string | null>(null);
@@ -40,16 +56,36 @@ export default function Carrinho() {
   const [pacote, setPacote] = useState<MeuPacote | null>(null);
   const [comPacote, setComPacote] = useState(true);
   const [observacoes, setObservacoes] = useState('');
+  const { faltam } = useLocalSearchParams<{ faltam?: string }>();
+  const faixas = useMemo(() => faixasAgendamento(), []);
+  const [agendarMaisTarde, setAgendarMaisTarde] = useState(false);
+  const [agendadoPara, setAgendadoPara] = useState<string | null>(null);
+  const [empresa, setEmpresa] = useState<MinhaEmpresa | null>(null);
+  const [contaEmpresa, setContaEmpresa] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [aEnviar, setAEnviar] = useState(false);
   const [versao, setVersao] = useState(0);
+  // Prato que o servidor recusou (fora do horário ou já não disponível): o carrinho diz qual é
+  const [pratoRecusado, setPratoRecusado] = useState<string | null>(null);
+  // Pratos fora do horário agora (com a hora a que voltam), para avisar antes de confirmar
+  const [maisTarde, setMaisTarde] = useState<PratoMaisTarde[]>([]);
+  // Bebidas sozinhas da cozinha do carrinho (para «Falta a bebida?»); o cliente pode dispensar
+  const [cardapioCozinha, setCardapioCozinha] = useState<ItemCardapio[]>([]);
+  const [semBebida, setSemBebida] = useState(false);
+  // Balcões ordenados pela morada escolhida: avisa se há um bem mais perto dela
+  const [balcoesMorada, setBalcoesMorada] = useState<CozinhaParaPedir[]>([]);
+  const [mudarPendente, setMudarPendente] = useState<CozinhaParaPedir | null>(null);
+  // Chegou aqui depois de entrar (carrinho montado como visitante): o destino já foi cumprido
+  useEffect(() => {
+    void limparDestino();
+  }, []);
   // Id do pedido, mantido entre tentativas: retentar depois de uma falha de rede não cria outro pedido.
   // Muda quando mudam os pratos, o endereço ou o grupo, porque passa a ser outro pedido.
   const idPedido = useRef<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
-      lerEnderecos()
+      lerEnderecos(perfil?.cliente_id)
         .then((e) => {
           setEnderecos(e);
           setPontoId((actual) => actual ?? e[0]?.ponto_entrega_id ?? null);
@@ -66,6 +102,10 @@ export default function Carrinho() {
           .then((m) => setPacote(m?.em_vigor ? m : null))
           .catch(() => setPacote(null));
       }
+      // Conta de empresa (B2B), se o cliente for membro
+      minhaEmpresa()
+        .then(setEmpresa)
+        .catch(() => setEmpresa(null));
     }, [perfil, ligada]),
   );
 
@@ -89,9 +129,40 @@ export default function Carrinho() {
 
   useEffect(() => {
     idPedido.current = null;
+    setPratoRecusado(null);
   }, [carrinho.linhas, pontoId, grupo]);
 
+  // Pratos do balcão fora do horário agora (falha em silêncio: o servidor confirma na mesma)
+  const cozinhaDoCarrinho = carrinho.cozinhaActual?.id ?? null;
+  useEffect(() => {
+    if (!cozinhaDoCarrinho) return setMaisTarde([]);
+    cardapioMaisTarde(cozinhaDoCarrinho)
+      .then(setMaisTarde)
+      .catch(() => setMaisTarde([]));
+  }, [cozinhaDoCarrinho]);
+
+  useEffect(() => {
+    if (!cozinhaDoCarrinho) return setCardapioCozinha([]);
+    lerCardapio(cozinhaDoCarrinho)
+      .then(setCardapioCozinha)
+      .catch(() => setCardapioCozinha([]));
+  }, [cozinhaDoCarrinho]);
+
+  // Trocar de morada volta a medir os balcões a partir dela
+  useEffect(() => {
+    if (!pontoId || grupo || !ligada('multi_cozinha')) return setBalcoesMorada([]);
+    cozinhasPertoParaPedir(pontoId)
+      .then(setBalcoesMorada)
+      .catch(() => setBalcoesMorada([]));
+  }, [pontoId, grupo, ligada]);
+
   const pagarComPacote = !!pacote && comPacote;
+  // Morada com o pino longe do bairro: as distâncias dela não são de confiança, não se propõe outro balcão
+  const moradaEscolhida = (enderecos ?? []).find((e) => e.ponto_entrega_id === pontoId);
+  const longe = !grupo && !moradaComPinoLonge(moradaEscolhida) ? balcaoLonge(balcoesMorada, carrinho.cozinhaActual?.id ?? null) : null;
+  const foraDoHorario = maisTarde.filter((p) => carrinho.linhas.some((l) => l.item.id === p.cardapio_id));
+  const bebida = semBebida ? null : bebidaSugerida(cardapioCozinha, carrinho.linhas);
+  const nomeRecusado = pratoRecusado ? (carrinho.linhas.find((l) => l.item.id === pratoRecusado)?.item.nome ?? null) : null;
   const valorSaldo = orc && usarSaldo ? Math.min(saldo, orc.total) : 0;
 
   async function confirmar() {
@@ -108,6 +179,8 @@ export default function Carrinho() {
         cozinhaId: grupo ? null : (carrinho.cozinhaActual?.id ?? null),
         itens: carrinho.linhas.map(itemDoPedido),
         observacoes,
+        agendadoPara: grupo ? null : agendarMaisTarde ? agendadoPara : null,
+        empresaId: !grupo && empresa && contaEmpresa ? empresa.empresa_id : null,
       });
       // O pacote paga primeiro; o saldo cobre só o que faltar
       let pagoPacote = 0;
@@ -129,16 +202,24 @@ export default function Carrinho() {
       if (grupo) router.replace({ pathname: '/grupo/[codigo]', params: { codigo: grupo.codigo } });
       else router.replace({ pathname: '/pedido/[id]', params: { id, fim: '1', ...(saldoFalhou ? { saldo: 'falhou' } : {}), ...(pacoteFalhou ? { pacote: 'falhou' } : {}) } });
     } catch (e) {
-      setErro(mensagemErro(e));
+      const id = pratoDoErro(e);
+      if (id && carrinho.linhas.some((l) => l.item.id === id)) setPratoRecusado(id);
+      else setErro(mensagemErro(e));
     } finally {
       setAEnviar(false);
     }
   }
 
+  /** Tira todas as linhas de um prato do carrinho */
+  function tirar(id: string) {
+    for (const l of carrinho.linhas.filter((x) => x.item.id === id)) carrinho.alterar(l.chave, 0);
+    setPratoRecusado(null);
+  }
+
   if (carrinho.linhas.length === 0) {
     return (
       <Ecra>
-        <Paragrafo suave>O carrinho está vazio.</Paragrafo>
+        <Paragrafo suave>O carrinho está vazio. Escolhe um prato do dia para começar.</Paragrafo>
         <Botao titulo="Ver o cardápio" aoCarregar={() => router.replace('/inicio')} />
       </Ecra>
     );
@@ -146,27 +227,36 @@ export default function Carrinho() {
 
   return (
     <Ecra>
+      {faltam && <Aviso>Alguns pratos já não estão disponíveis e ficaram de fora: {faltam}. Confere o pedido.</Aviso>}
       {ligada('multi_cozinha') && carrinho.cozinhaActual && <Subtitulo>{carrinho.cozinhaActual.nome}</Subtitulo>}
       {carrinho.linhas.map((l) => (
-        <View key={l.chave} style={{ flexDirection: 'row', alignItems: 'center', gap: espaco.m }}>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 15 }}>{l.item.nome}</Text>
-            {l.opcoes.length > 0 && <Text style={{ color: cores.textoSuave }}>{l.opcoes.map((o) => o.nome).join(', ')}</Text>}
-          </View>
-          <Pressable accessibilityLabel="Menos" onPress={() => carrinho.alterar(l.chave, l.qtd - 1)} hitSlop={8}>
-            <Text style={{ fontSize: 22, color: cores.marca, width: 24, textAlign: 'center' }}>−</Text>
+        <LinhaDoPedido
+          key={l.chave}
+          linha={l}
+          aberta={linhaAberta === l.chave}
+          aoTocarPrato={() => setLinhaAberta((c) => (c === l.chave ? null : l.chave))}
+          aoMudar={(qtd) => carrinho.alterar(l.chave, qtd)}
+        />
+      ))}
+
+      {/* Prahalad/Cialdini: uma linha discreta, sem janela; some quando há bebida ou o cliente dispensa */}
+      {bebida && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: espaco.s, backgroundColor: '#E3F0F7', borderRadius: 10, padding: espaco.s }}>
+          <Text style={{ fontSize: 18 }}>🥤</Text>
+          <Text style={{ flex: 1, fontSize: 13, color: cores.texto }}>{textoBebidaSugerida(bebida, formatarKz(bebida.preco))}</Text>
+          <Pressable accessibilityRole="button" accessibilityLabel={`Juntar ${bebida.nome.trim()}`} onPress={() => carrinho.adicionar(bebida)} hitSlop={6}>
+            <Text style={{ color: cores.marca, fontWeight: '800', fontSize: 14 }}>Juntar</Text>
           </Pressable>
-          <Text style={{ fontSize: 16, fontWeight: '600', minWidth: 20, textAlign: 'center' }}>{l.qtd}</Text>
-          <Pressable accessibilityLabel="Mais" onPress={() => carrinho.alterar(l.chave, l.qtd + 1)} hitSlop={8}>
-            <Text style={{ fontSize: 22, color: cores.marca, width: 24, textAlign: 'center' }}>+</Text>
+          <Pressable accessibilityRole="button" accessibilityLabel="Não, obrigado" onPress={() => setSemBebida(true)} hitSlop={6}>
+            <Text style={{ color: cores.textoSuave, fontSize: 16, paddingHorizontal: 4 }}>✕</Text>
           </Pressable>
         </View>
-      ))}
+      )}
 
       {grupo && (
         <Cartao>
           <Text style={{ fontWeight: '700' }}>Pedido de grupo · entrega às {grupo.hora}</Text>
-          <Paragrafo suave>Chega com os pedidos dos colegas, no local do grupo.</Paragrafo>
+          <Paragrafo suave>Chega com os pedidos dos outros, no local do grupo.</Paragrafo>
           <Botao titulo="Pedir só para mim" variante="texto" aoCarregar={() => carrinho.definirGrupo(null)} />
         </Cartao>
       )}
@@ -185,6 +275,29 @@ export default function Carrinho() {
         />
       )}
       {!grupo && <Botao titulo="Adicionar endereço" variante="texto" aoCarregar={() => router.push('/enderecos/novo')} />}
+      {longe && (
+        <Cartao>
+          <Text style={{ color: cores.texto }}>
+            {`📍 ${longe.actual.nome} ${textoFicaA(longe.actual.distancia_km ?? 0, textoDistancia)} desta morada. ${longe.perto.nome} ${textoFicaA(longe.perto.distancia_km ?? 0, textoDistancia)}.`}
+          </Text>
+          {mudarPendente ? (
+            <>
+              <Paragrafo suave>{`Os pratos do carrinho são de ${longe.actual.nome} e saem do carrinho.`}</Paragrafo>
+              <Botao
+                titulo="Mudar e esvaziar"
+                aoCarregar={() => {
+                  carrinho.definirCozinha({ id: mudarPendente.cozinha_id, nome: mudarPendente.nome });
+                  setMudarPendente(null);
+                  router.replace('/inicio');
+                }}
+              />
+              <Botao titulo="Ficar" variante="texto" aoCarregar={() => setMudarPendente(null)} />
+            </>
+          ) : (
+            <Botao titulo={`Pedir em ${longe.perto.nome}`} variante="secundario" aoCarregar={() => setMudarPendente(longe.perto)} />
+          )}
+        </Cartao>
+      )}
 
       {/* C2: no checkout do 1.º pedido; depois de ligar, o orçamento é pedido de novo ao servidor */}
       <CampoCodigo aoLigar={() => setVersao((v) => v + 1)} />
@@ -199,7 +312,13 @@ export default function Carrinho() {
               direita={orc.taxa_grupo_estimada ? `cerca de ${formatarKz(orc.taxa_grupo_estimada)}` : formatarKz(0)}
             />
           ) : (
-            <Linha esquerda={`Entrega${orc.zona_nome ? ` (${orc.zona_nome})` : ''}`} direita={formatarKz(orc.taxa_entrega)} />
+            <Linha
+              esquerda={`Entrega${orc.zona_nome ? ` (${orc.zona_nome})` : ''}`}
+              direita={orc.entrega_gratis ? 'Grátis' : formatarKz(orc.taxa_entrega)}
+            />
+          )}
+          {!grupo && textoEntregaGratis(orc) && (
+            <Text style={{ color: orc.entrega_gratis ? cores.marca : cores.aviso, fontSize: 13 }}>{textoEntregaGratis(orc)}</Text>
           )}
           {orc.desconto > 0 && (
             <Linha esquerda="Desconto de convite" direita={`−${formatarKz(orc.desconto)}`} />
@@ -214,8 +333,18 @@ export default function Carrinho() {
           ) : (
             <Linha esquerda="A pagar na entrega" direita={formatarKz(orc.total - valorSaldo)} forte />
           )}
+          {orc.campanha && (
+            <Text style={{ color: cores.marca, fontSize: 13, fontWeight: '600' }}>{textoCampanha(orc.campanha, orc.motivo_desconto)}</Text>
+          )}
           {orc.motivo_desconto === 'limite_local' && (
             <Text style={{ color: cores.aviso, fontSize: 13 }}>{mensagemCodigo('limite_local')}</Text>
+          )}
+          {orc.motivo_desconto === 'pedido_minimo' && (
+            <Text style={{ color: cores.aviso, fontSize: 13 }}>
+              {orc.desconto_subtotal_minimo
+                ? `Junta mais ${formatarKz(Math.max(orc.desconto_subtotal_minimo - orc.subtotal, 0))} ao pedido para usares o teu desconto de convite (pedidos a partir de ${formatarKz(orc.desconto_subtotal_minimo)}, sem a taxa de entrega).`
+                : mensagemCodigo('pedido_minimo')}
+            </Text>
           )}
         </Cartao>
       )}
@@ -225,14 +354,55 @@ export default function Carrinho() {
           <Text style={{ fontSize: 15, flex: 1 }}>
             Pagar com o pacote ({pacote.refeicoes_restantes} {pacote.refeicoes_restantes === 1 ? 'refeição' : 'refeições'})
           </Text>
-          <Switch value={comPacote} onValueChange={setComPacote} trackColor={{ true: cores.marca }} />
+          <Switch thumbColor="#FFFFFF" value={comPacote} onValueChange={setComPacote} trackColor={{ true: cores.marca, false: cores.contorno }} />
         </View>
       )}
       {ligada('indicacao') && saldo > 0 && orc && (
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <Text style={{ fontSize: 15, flex: 1 }}>Usar saldo do Convida e Ganha ({formatarKz(saldo)})</Text>
-          <Switch value={usarSaldo} onValueChange={setUsarSaldo} trackColor={{ true: cores.marca }} />
+          <Switch thumbColor="#FFFFFF" value={usarSaldo} onValueChange={setUsarSaldo} trackColor={{ true: cores.marca, false: cores.contorno }} />
         </View>
+      )}
+
+      {!grupo && empresa && (
+        <Cartao>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text style={{ fontSize: 15, flex: 1 }}>
+              Pôr na conta da {empresa.nome} (a empresa paga até {formatarKz(empresa.limite_refeicao)})
+            </Text>
+            <Switch
+              thumbColor="#FFFFFF"
+              value={contaEmpresa}
+              onValueChange={setContaEmpresa}
+              trackColor={{ true: cores.marca, false: cores.contorno }}
+            />
+          </View>
+        </Cartao>
+      )}
+
+      {!grupo && (
+        <Cartao>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text style={{ fontSize: 15, flex: 1 }}>Entregar mais tarde</Text>
+            <Switch
+              thumbColor="#FFFFFF"
+              value={agendarMaisTarde}
+              onValueChange={(v) => {
+                setAgendarMaisTarde(v);
+                setAgendadoPara(v ? (faixas[0]?.valor ?? null) : null);
+              }}
+              trackColor={{ true: cores.marca, false: cores.contorno }}
+            />
+          </View>
+          {agendarMaisTarde && faixas.length > 0 && (
+            <Escolha
+              opcoes={faixas.map((f) => ({ valor: f.valor, rotulo: f.rotulo }))}
+              valor={agendadoPara ?? faixas[0].valor}
+              aoMudar={setAgendadoPara}
+            />
+          )}
+          {agendarMaisTarde && faixas.length === 0 && <Paragrafo suave>Sem horários disponíveis de momento.</Paragrafo>}
+        </Cartao>
       )}
 
       <Campo
@@ -242,13 +412,40 @@ export default function Carrinho() {
         multiline
         maxLength={300}
       />
+      {foraDoHorario.map((p) => (
+        <Cartao key={p.cardapio_id}>
+          <Text style={{ color: cores.texto }}>
+            {`⏰ «${p.nome}» só está à venda ${textoQuandoVolta(p.proxima)}.`}
+            {agendarMaisTarde ? ' Escolhe uma hora a partir dessa.' : ' Liga «Entregar mais tarde» para essa hora, ou tira-o do carrinho.'}
+          </Text>
+          <Botao titulo={`Tirar «${p.nome}» do carrinho`} variante="texto" aoCarregar={() => tirar(p.cardapio_id)} />
+        </Cartao>
+      ))}
+      {nomeRecusado && pratoRecusado && (
+        <Aviso tipo="erro">
+          {`«${nomeRecusado}» não está à venda ${agendarMaisTarde ? 'à hora escolhida' : 'agora'}.`}{' '}
+          <Text style={{ fontWeight: '700' }} onPress={() => tirar(pratoRecusado)}>
+            {`Tirar «${nomeRecusado}» do carrinho`}
+          </Text>
+        </Aviso>
+      )}
       {erro && <Aviso tipo="erro">{erro}</Aviso>}
       <Botao titulo="Confirmar pedido" aoCarregar={confirmar} aCarregar={aEnviar} desactivado={!orc || (!pontoId && !grupo)} />
       <Paragrafo suave>
         {grupo
           ? 'Pagas na entrega. A tua parte da entrega fica fixa quando o grupo fechar.'
-          : 'Pagas na entrega. O valor final é confirmado pelo servidor.'}
+          : `${parametros?.tempo_entrega_min ? `Entrega em cerca de ${parametros.tempo_entrega_min} min. ` : ''}Pagas na entrega. O valor final é confirmado pelo servidor.`}
       </Paragrafo>
+      <Paragrafo suave>Preços com IVA incluído, quando aplicável. A fatura é emitida na cozinha, na entrega.</Paragrafo>
     </Ecra>
   );
 }
+
+/** Sem conta: o carrinho do visitante (o número só é pedido no «Pedir»); com conta: o checkout */
+export default function Carrinho() {
+  const { carregado, sessao, perfil } = useSessao();
+  if (!carregado) return <ACarregarVisitante />;
+  if (!sessao || !perfil) return <CarrinhoVisitante />;
+  return <CarrinhoConta />;
+}
+
