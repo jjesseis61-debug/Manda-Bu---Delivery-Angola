@@ -64,7 +64,9 @@ select testes.def('e_2x', testes.erro(format($$select pagar_estafeta_mes(%L, %L,
 select testes.def('e_dias', testes.erro(format($$select definir_dias_estafeta(%L, %L, 1)$$, testes.v('carlos'), testes.v('mes'))));
 select definir_remuneracao_estafeta(testes.u('carlos'), 99999, 0, 0);  -- muda depois de pagar: o mês pago não muda
 select testes.def('folha3', estafetas_pagamentos(testes.v('mes')::date)::text);
-select testes.def('e_atual', testes.erro(format($$select pagar_estafeta_mes(%L, %L, 'Dinheiro')$$, testes.v('carlos'), current_date)));
+-- Um mês que ainda não acabou não se paga. O próprio mês em curso já se pode pagar nos últimos 5 dias
+-- (fecho do mês), por isso o teste usa o mês seguinte, para não falhar no fim de cada mês.
+select testes.def('e_atual', testes.erro(format($$select pagar_estafeta_mes(%L, %L, 'Dinheiro')$$, testes.v('carlos'), (current_date + interval '1 month')::date)));
 select testes.def('pago_f', pagar_fornecedor_entrega(testes.u('forn'), testes.v('mes')::date, 'Transferência', 'TRF-MOTO-1', 'ft m/7')::text);
 select testes.def('res', resultados_mes(testes.v('mes')::date)::text);
 select testes.def('obr', obrigacoes_resumo()::text);
@@ -78,7 +80,7 @@ select matches(testes.v('e_2x'), 'mes_ja_pago', 'o mesmo mês não se paga duas 
 select matches(testes.v('e_dias'), 'mes_ja_pago', 'depois de pago, os dias não mudam');
 select is((select (e ->> 'a_pagar')::int from jsonb_array_elements(testes.v('folha3')::jsonb -> 'estafetas') e
             where e ->> 'funcionario_id' = testes.v('carlos')), 56300, 'mudar o salário depois não altera o mês já pago');
-select matches(testes.v('e_atual'), 'mes_em_curso', 'o mês em curso ainda não se paga');
+select matches(testes.v('e_atual'), 'mes_em_curso', 'um mês que ainda não acabou não se paga');
 select is(testes.v('pago_f'), '11000', 'serviço contratado pago: 11.000');
 select is((select numero_fatura from fornecedores_entrega_mes where fornecedor_id = testes.u('forn')), 'FT M/7', 'fatura do serviço guardada');
 
