@@ -27,16 +27,23 @@ function ConvidaCliente() {
     void limparDestino();
   }, []);
 
+  // Ao voltar ao separador lê outra vez; um erro antigo desaparece quando a leitura volta a correr bem
+  const carregar = useCallback(() => {
+    if (!perfil) return;
+    Promise.all([lerSaldo(perfil.cliente_id), meusAmigos()])
+      .then(([s, a]) => {
+        setSaldo(s);
+        setAmigos(a);
+        setErro(null);
+      })
+      .catch((e) => setErro(mensagemErro(e)));
+  }, [perfil]);
+
   useFocusEffect(
     useCallback(() => {
       if (!perfil || !ligada('indicacao')) return;
-      Promise.all([lerSaldo(perfil.cliente_id), meusAmigos()])
-        .then(([s, a]) => {
-          setSaldo(s);
-          setAmigos(a);
-        })
-        .catch((e) => setErro(mensagemErro(e)));
-    }, [perfil, ligada]),
+      carregar();
+    }, [perfil, ligada, carregar]),
   );
 
   // Aberto por link ou notificação: espera pelos interruptores antes de decidir
@@ -86,7 +93,13 @@ function ConvidaCliente() {
         </Cartao>
       )}
 
-      {erro && <Aviso tipo="erro">{erro}</Aviso>}
+      {/* Só sem dados nenhuns: com números de antes, mantêm-se e tenta-se de novo ao voltar (sem alarmar) */}
+      {erro && !amigos && (
+        <View style={{ gap: 6 }}>
+          <Aviso tipo="erro">{erro}</Aviso>
+          <Botao titulo="Tentar outra vez" variante="secundario" aoCarregar={carregar} />
+        </View>
+      )}
 
       {saldo && semGanhos(saldo) && (
         <Cartao>

@@ -62,13 +62,13 @@ export async function limparCodigoPendente(): Promise<void> {
 const PACOTE_ANDROID = 'ao.mandabue.cliente';
 
 /**
- * Link de convite: a página da Play Store com o código no `referrer`. É um https (clicável no
- * WhatsApp) e, ao instalar pela Play Store, a Google entrega o código à app no 1.º arranque
- * (Install Referrer: Fase 2). Quem já tem a app continua a poder usar o código em texto.
+ * Link de convite: `{site}/c/{código}`. É um https clicável no WhatsApp, com cartão próprio (o desconto
+ * do amigo); ao tocar, abre a app web com o código guardado (pré-preenchido ao criar conta). Não depende
+ * da Play Store: muda sozinho para o domínio próprio quando houver (EXPO_PUBLIC_SITE_URL).
  */
 export function linkConvite(codigo: string): string {
   const normalizado = normalizarCodigo(codigo) ?? codigo;
-  return `https://play.google.com/store/apps/details?id=${PACOTE_ANDROID}&referrer=${encodeURIComponent(normalizado)}`;
+  return `${siteApp()}/c/${encodeURIComponent(normalizado)}`;
 }
 
 /** Link do pedido de grupo: abre a app em /grupo/G-ABC123 */

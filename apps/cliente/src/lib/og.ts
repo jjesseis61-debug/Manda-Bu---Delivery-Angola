@@ -46,22 +46,54 @@ export function textosCartao(p: PratoPartilhado): { titulo: string; descricao: s
   return { titulo, descricao: `${kz(p.preco)} · Comida de casa, entregue quente 🍲` };
 }
 
-/** Acrescenta as etiquetas Open Graph ao HTML da app (e troca o <title>) */
-export function injectarOg(html: string, p: PratoPartilhado, url: string): string {
-  const { titulo, descricao } = textosCartao(p);
+/** Etiquetas Open Graph de um cartão qualquer (prato, convite) no HTML da app (e troca o <title>) */
+export function injectarMeta(
+  html: string,
+  c: { titulo: string; descricao: string; imagem: string | null; url: string; marca: string },
+): string {
   const meta = [
-    `<meta property="og:title" content="${esc(titulo)}">`,
-    `<meta property="og:description" content="${esc(descricao)}">`,
-    `<meta name="description" content="${esc(descricao)}">`,
+    `<meta property="og:title" content="${esc(c.titulo)}">`,
+    `<meta property="og:description" content="${esc(c.descricao)}">`,
+    `<meta name="description" content="${esc(c.descricao)}">`,
     `<meta property="og:type" content="website">`,
-    `<meta property="og:site_name" content="${esc(p.marca)}">`,
-    `<meta property="og:url" content="${esc(url)}">`,
-    p.foto_url ? `<meta property="og:image" content="${esc(p.foto_url)}">` : '',
-    `<meta name="twitter:card" content="${p.foto_url ? 'summary_large_image' : 'summary'}">`,
+    `<meta property="og:site_name" content="${esc(c.marca)}">`,
+    `<meta property="og:url" content="${esc(c.url)}">`,
+    c.imagem ? `<meta property="og:image" content="${esc(c.imagem)}">` : '',
+    `<meta name="twitter:card" content="${c.imagem ? 'summary_large_image' : 'summary'}">`,
   ]
     .filter(Boolean)
     .join('\n');
   const semTitulo = html.replace(/<title>[\s\S]*?<\/title>/i, '');
-  const cabeca = `<title>${esc(titulo)}</title>\n${meta}\n`;
+  const cabeca = `<title>${esc(c.titulo)}</title>\n${meta}\n`;
   return /<\/head>/i.test(semTitulo) ? semTitulo.replace(/<\/head>/i, `${cabeca}</head>`) : cabeca + semTitulo;
+}
+
+/** Acrescenta as etiquetas Open Graph do prato ao HTML da app */
+export function injectarOg(html: string, p: PratoPartilhado, url: string): string {
+  const { titulo, descricao } = textosCartao(p);
+  return injectarMeta(html, { titulo, descricao, imagem: p.foto_url, url, marca: p.marca });
+}
+
+/** Código do caminho /c/{código} (MB4812 ou MB-4812), ou null */
+export function codigoDoCaminho(caminho: string): string | null {
+  const m = /^\/c\/([^/]+)\/?$/i.exec(caminho);
+  return m ? codigoDoLink(decodeURIComponent(m[1])) : null;
+}
+
+/** Textos do cartão do convite: o que o amigo ganha primeiro (Cialdini), sem dados de quem convida */
+export function textosConvite(
+  codigo: string,
+  marca: string,
+  p: { desconto_indicado?: number; desconto_subtotal_minimo?: number } | null,
+): { titulo: string; descricao: string } {
+  const desconto = Number(p?.desconto_indicado ?? 0);
+  const minimo = Number(p?.desconto_subtotal_minimo ?? 0);
+  if (desconto > 0) {
+    const cond = minimo > 0 ? ` (pedidos a partir de ${kz(minimo)})` : '';
+    return {
+      titulo: `Ganha ${kz(desconto)} no teu 1.º pedido · ${marca}`,
+      descricao: `Um amigo convidou-te. Usa o código ${codigo}${cond}. Comida de casa, entregue quente 🍲`,
+    };
+  }
+  return { titulo: `Um amigo convidou-te · ${marca}`, descricao: `Usa o código ${codigo}. Comida de casa, entregue quente 🍲` };
 }

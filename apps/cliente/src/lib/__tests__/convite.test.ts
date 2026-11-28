@@ -5,14 +5,12 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 import { esquecerProprioCodigo, guardarCodigoPendente, lerCodigoPendente, linkConvite, linkPartilhaPrato } from '../convite';
 
 describe('linkConvite', () => {
-  it('monta o link da Play Store com o código no referrer', () => {
-    expect(linkConvite('MB4812')).toBe(
-      'https://play.google.com/store/apps/details?id=ao.mandabue.cliente&referrer=MB4812',
-    );
+  it('aponta para o site da app (não para a Play Store), com o código no caminho', () => {
+    expect(linkConvite('MB4812')).toBe('https://manda-bue.pages.dev/c/MB4812');
   });
 
   it('normaliza o código antes de o pôr no link', () => {
-    expect(linkConvite('mb-4812')).toContain('referrer=MB4812');
+    expect(linkConvite('mb-4812')).toBe('https://manda-bue.pages.dev/c/MB4812');
   });
 });
 
