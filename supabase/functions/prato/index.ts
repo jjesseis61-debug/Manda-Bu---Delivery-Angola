@@ -2,13 +2,14 @@
 // Lê com a chave de serviço só informação pública (nome, preço, foto) e, se o link trouxer um
 // código de convite válido, o desconto do 1.º pedido (parâmetros públicos do Convida).
 //
-//  * ?formato=json&id=…[&r=MB1234] → dados do prato em JSON (usados pela página do Netlify,
-//    que monta o cartão Open Graph — o Supabase serve HTML como text/plain, por isso o cartão
-//    não pode ser feito aqui).
+//  * ?formato=json&id=…[&r=MB1234] → dados do prato em JSON (usados pela página do site da app,
+//    Cloudflare Pages ou Netlify, que monta o cartão Open Graph; o Supabase serve HTML como
+//    text/plain, por isso o cartão não pode ser feito aqui).
 //  * ?id=…[&r=…] (links antigos) → reencaminha (302) para a página do prato no site da app.
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
-const SITE = (Deno.env.get('SITE_URL') ?? 'https://manda-bue.netlify.app').replace(/\/+$/, '');
+// Endereço público da app web: o segredo SITE_URL das funções; por defeito o Cloudflare Pages
+const SITE = (Deno.env.get('SITE_URL') ?? 'https://manda-bue.pages.dev').replace(/\/+$/, '');
 const MARCA = 'Cozinha da Alexandra';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 // MB4812 (e o antigo MB-4812, dos links já partilhados) -> MB4812
