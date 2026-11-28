@@ -15,6 +15,6 @@ funcionalidade, aplicar a checklist desse ficheiro antes de a dar por terminada.
 
 - Não gerar APKs nem aplicar SQL em produção sem autorização explícita para essa acção.
 - O SQL de produção é aplicado pelo utilizador no SQL Editor (entregar numa caixa de código, em partes se for grande).
-- Netlify: o site principal só publica com `[publicar]` na mensagem do commit; não publicar sem autorização.
+- Web (Cloudflare Pages, www.mandabue.com.ao): só publica com `[publicar]` na mensagem do commit ou a pedido no workflow `web.yml`; não publicar sem autorização. O Netlify está desligado.
 - Pedidos de "análise" são só análise, sem implementar.
 - Sem segredos no repositório.

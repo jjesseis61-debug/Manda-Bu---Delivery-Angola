@@ -5,8 +5,8 @@
   base = "apps/cliente"
   command = "npm run build:web"
   publish = "dist"
-  # Créditos: sem pré-visualizações de PR e o site principal só se publica a pedido
-  # (commit com [publicar] na mensagem). Ver scripts/netlify-ignorar.sh.
+  # Netlify DESLIGADO (28/11/2026): a app publica-se no Cloudflare Pages (web.yml).
+  # O script cancela sempre a build. Ver scripts/netlify-ignorar.sh.
   ignore = "bash ../../scripts/netlify-ignorar.sh"
 
 # Valores PÚBLICOS da app (os mesmos dos APKs, em .github/workflows/apk.yml):
