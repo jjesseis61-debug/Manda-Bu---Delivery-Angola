@@ -8,8 +8,8 @@
 //  * ?id=…[&r=…] (links antigos) → reencaminha (302) para a página do prato no site da app.
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
-// Endereço público da app web: o segredo SITE_URL das funções; por defeito o Cloudflare Pages
-const SITE = (Deno.env.get('SITE_URL') ?? 'https://manda-bue.pages.dev').replace(/\/+$/, '');
+// Endereço público da app web: o segredo SITE_URL das funções; por defeito o domínio próprio (Cloudflare Pages)
+const SITE = (Deno.env.get('SITE_URL') ?? 'https://www.mandabue.com.ao').replace(/\/+$/, '');
 const MARCA = 'Cozinha da Alexandra';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 // MB4812 (e o antigo MB-4812, dos links já partilhados) -> MB4812

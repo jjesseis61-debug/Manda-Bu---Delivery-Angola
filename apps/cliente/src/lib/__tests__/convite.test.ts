@@ -6,24 +6,24 @@ import { esquecerProprioCodigo, guardarCodigoPendente, lerCodigoPendente, linkCo
 
 describe('linkConvite', () => {
   it('aponta para o site da app (não para a Play Store), com o código no caminho', () => {
-    expect(linkConvite('MB4812')).toBe('https://manda-bue.pages.dev/c/MB4812');
+    expect(linkConvite('MB4812')).toBe('https://www.mandabue.com.ao/c/MB4812');
   });
 
   it('normaliza o código antes de o pôr no link', () => {
-    expect(linkConvite('mb-4812')).toBe('https://manda-bue.pages.dev/c/MB4812');
+    expect(linkConvite('mb-4812')).toBe('https://www.mandabue.com.ao/c/MB4812');
   });
 });
 
 describe('linkPartilhaPrato', () => {
   const id = '6f1c2d3e-4a5b-4c6d-8e9f-0a1b2c3d4e5f';
   it('aponta para a página do prato no site da app', () => {
-    expect(linkPartilhaPrato(id)).toBe(`https://manda-bue.pages.dev/p/${id}`);
+    expect(linkPartilhaPrato(id)).toBe(`https://www.mandabue.com.ao/p/${id}`);
   });
   it('leva o código de convite (normalizado) no r', () => {
-    expect(linkPartilhaPrato(id, 'mb-4812')).toBe(`https://manda-bue.pages.dev/p/${id}?r=MB4812`);
+    expect(linkPartilhaPrato(id, 'mb-4812')).toBe(`https://www.mandabue.com.ao/p/${id}?r=MB4812`);
   });
   it('ignora um código inválido', () => {
-    expect(linkPartilhaPrato(id, 'xpto')).toBe(`https://manda-bue.pages.dev/p/${id}`);
+    expect(linkPartilhaPrato(id, 'xpto')).toBe(`https://www.mandabue.com.ao/p/${id}`);
   });
 });
 

@@ -181,7 +181,7 @@ function formatarKzSimples(v: number): string {
 
 /** Link para os moradores pedirem para entrar (abre a app do cliente) */
 export function linkCondominio(codigo: string): string {
-  const site = (process.env.EXPO_PUBLIC_SITE_URL || 'https://manda-bue.pages.dev').replace(/\/+$/, '');
+  const site = (process.env.EXPO_PUBLIC_SITE_URL || 'https://www.mandabue.com.ao').replace(/\/+$/, '');
   return `${site}/condominio/${encodeURIComponent(codigo)}`;
 }
 
