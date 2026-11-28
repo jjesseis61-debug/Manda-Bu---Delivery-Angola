@@ -733,7 +733,7 @@ begin
     g := equipa_grupo_hoje(e.id);
     a := acordo_activo(e.id);
     r := r || jsonb_build_object(
-      'id', e.id, 'nome', e.nome, 'sou_responsavel', v_resp, 'estado', m.estado,
+      'id', e.id, 'nome', e.nome, 'sou_responsavel', v_resp, 'estado', m.estado, 'cozinha_id', e.cozinha_id,
       'responsavel', nome_curto(e.responsavel_id),
       'cozinha', (select nome from cozinhas where id = e.cozinha_id),
       'local', (select ec.nome from enderecos_cliente ec where ec.ponto_entrega_id = e.ponto_entrega_id and ec.cliente_id = e.responsavel_id and ec.deletado_em is null limit 1),

@@ -45,6 +45,8 @@ export default function LayoutRaiz() {
         <Stack.Screen name="analista" options={{ title: 'Analista' }} />
         <Stack.Screen name="teste-fotos" options={{ title: 'Teste das fotografias' }} />
         <Stack.Screen name="teste-balcao" options={{ title: 'Teste do balcão de panelas' }} />
+        <Stack.Screen name="equipas/index" options={{ title: 'Equipas no trabalho' }} />
+        <Stack.Screen name="equipas/[id]" options={{ title: 'Equipa' }} />
         <Stack.Screen name="teste-compromisso" options={{ title: 'Teste do compromisso' }} />
         <Stack.Screen name="pagamentos-antes" options={{ title: 'Pagamentos antes' }} />
         <Stack.Screen name="encomendas" options={{ title: 'Encomendas' }} />

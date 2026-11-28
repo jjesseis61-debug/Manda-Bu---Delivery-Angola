@@ -63,6 +63,7 @@ export const ecras: EntradaMenu[] = [
   { rota: '/teste-balcao', grupos: ['controlo'], titulo: 'Teste do balcão de panelas', descricao: 'Servir o prato: lista ou balcão de panelas, qual dá mais pedidos (com grupo de controlo)', permissoes: ['analista.usar'] },
   { rota: '/teste-compromisso', grupos: ['controlo'], titulo: 'Teste do compromisso', descricao: 'Agendados: «Vais estar em … às …?» reduz as ausências? (com grupo de controlo)', permissoes: ['analista.usar'] },
   { rota: '/reclamacoes', grupos: ['operacao'], titulo: 'Reclamações', descricao: 'Análise automática, resposta ao cliente e resumo do mês', permissoes: ['pedidos.gerir', 'clientes.gerir'] },
+  { rota: '/equipas', grupos: ['clientes'], titulo: 'Equipas no trabalho', descricao: 'Junta Bué no trabalho: refeições extra, contas do mês, acordo e benefício da responsável', permissoes: ['pedidos.gerir', 'financas.acertos', 'clientes.gerir'] },
   { rota: '/empresas', grupos: ['clientes'], titulo: 'Empresas (B2B)', descricao: 'Contas de empresa: almoços dos funcionários e fatura mensal', permissoes: ['clientes.gerir'] },
   { rota: '/feiras', grupos: ['cozinhas'], titulo: 'Feiras', descricao: 'Vendas por consignação em feiras (preço fixo, fora da app)', permissoes: ['feira.gerir'] },
   { rota: '/avisos', grupos: ['clientes'], titulo: 'Avisos', descricao: 'Enviar notificações a clientes e à equipa (por zona, cozinha, função)', permissoes: ['avisos.enviar'] },

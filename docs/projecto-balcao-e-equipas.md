@@ -1,6 +1,8 @@
 # Balcão de panelas (fase 2) e Junta Bué no trabalho
 
-> Estado: **análise aprovada para implementar no futuro** (25/11/2026). Nada disto está implementado.
+> Estado (28/11/2026): **implementado**, à espera do SQL em produção e dos APKs. Secções 0, 1, 2 e 3 feitas;
+> o piloto está preparado em [`piloto-equipas.md`](piloto-equipas.md). As decisões da secção 3.6 ficaram com
+> os valores propostos (configuráveis no acordo de cada equipa).
 > Imagens de referência em [`projecto-balcao-e-equipas/`](projecto-balcao-e-equipas/) (ilustrações, não ecrãs reais).
 > Tudo passa pelas cinco lentes de [`especialistas.md`](especialistas.md) antes de se dar por terminado.
 

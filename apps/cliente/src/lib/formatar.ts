@@ -62,6 +62,7 @@ export const nomeModoGrupo: Record<ModoGrupo, string> = {
   individual: 'cada um paga a sua parte',
   quem_recebe: 'quem recebe paga tudo na entrega',
   empresa: 'a empresa paga tudo',
+  conta_mes: 'cada um paga na conta do mês',
 };
 
 export const nomeMetodoAntes: Record<MetodoAntes, string> = {
@@ -292,6 +293,19 @@ const mensagens: Record<string, string> = {
   limite_diario: 'Chegaste ao limite de mensagens de hoje. Tenta amanhã.',
   sem_conversa: 'Escreve primeiro a tua pergunta.',
   sem_permissao: 'Esta opção não está disponível na tua conta.',
+  // Junta Bué no trabalho (equipas)
+  ja_tem_equipa: 'Já estás numa equipa. Sai dela primeiro para entrares noutra.',
+  codigo_invalido: 'Não encontrámos esse código. Pede ao colega o código dele (está em «Convida e Ganha»).',
+  codigo_proprio: 'Esse é o teu próprio código.',
+  sem_convite: 'Este convite já não está activo.',
+  responsavel_nao_sai: 'És a responsável: para parar, desliga a equipa.',
+  nao_e_da_equipa: 'Só os colegas da equipa podem pedir neste grupo.',
+  limite_refeicoes_dia: 'Já tens o teu almoço de hoje. Para mais refeições, pede «Mais refeições hoje» e espera pela cozinha.',
+  sem_autorizacao_do_colega: 'O colega ainda não te autorizou. Ele pode ligar a autorização na equipa dele.',
+  colega_ja_pediu: 'Este colega já pediu o almoço de hoje.',
+  ja_nao_se_pode_recusar: 'O prazo já passou: o almoço já está a ser preparado.',
+  referencia_repetida: 'Esta referência já foi usada noutro pagamento. Confirma-a no teu comprovativo.',
+  funcionalidade_desligada: 'Esta funcionalidade ainda não está disponível.',
 };
 
 /** Extrai o código de um erro do Supabase (mensagem = código) e devolve o texto para o cliente */

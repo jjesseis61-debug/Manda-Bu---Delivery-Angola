@@ -53,6 +53,7 @@ export type ChaveFuncionalidade =
   | 'teste_fotos_inicio'
   | 'teste_balcao_panelas'
   | 'teste_balcao_recipientes'
+  | 'equipas_trabalho'
   | 'encomendas'
   | 'indicacao'
   | 'destaques'
@@ -176,7 +177,7 @@ export type Orcamento = {
 export type EstadoGrupo = 'aberto' | 'fechado' | 'em_preparacao' | 'entregue' | 'cancelado';
 
 /** Quem paga no grupo: cada um a sua parte (antes, por transferência), quem recebe tudo, ou a empresa */
-export type ModoGrupo = 'individual' | 'quem_recebe' | 'empresa';
+export type ModoGrupo = 'individual' | 'quem_recebe' | 'empresa' | 'conta_mes';
 export type TipoGrupo = 'trabalho' | 'familia' | 'vizinhos' | 'igreja';
 
 /** Pagar a parte antes da entrega (Multicaixa Express / Unitel Money), confirmado pelas Finanças */

@@ -263,6 +263,11 @@ const mensagens: Record<string, string> = {
   texto_invalido: 'Escreve a resposta (até 1500 caracteres).',
   texto_curto: 'Escreve a pergunta com um pouco mais de detalhe.',
   funcionalidade_inactiva: 'Esta funcionalidade está desligada. Liga-a em Parâmetros e interruptores.',
+  // Equipas no trabalho
+  ja_decidido: 'Este pedido já foi decidido (ou o prazo passou).',
+  so_cozinha_exige_origem_cozinha: '«Só a cozinha» é só para equipas trazidas pela cozinha. Muda primeiro a origem da equipa.',
+  acordo_inexistente: 'Este acordo já não está à espera de resposta.',
+  equipa_inexistente: 'A equipa já não existe.',
 };
 
 export function mensagemErro(erro: unknown): string {
