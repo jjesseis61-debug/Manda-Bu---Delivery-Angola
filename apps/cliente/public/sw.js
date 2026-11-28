@@ -38,7 +38,10 @@ self.addEventListener('fetch', (e) => {
   if (url.pathname.startsWith('/_expo/static/') || url.pathname.startsWith('/assets/') || url.pathname.startsWith('/icons/')) {
     e.respondWith(
       caches.match(req).then((em) => em || fetch(req).then((r) => {
-        if (r.ok) { const copia = r.clone(); caches.open(CACHE).then((c) => c.put(req, copia)); }
+        // Só se guarda o ficheiro verdadeiro: se faltar, o servidor responde com a página da app
+        // (text/html), e guardá-la no lugar de uma fonte deixava os ícones em caixas para sempre
+        const tipo = r.headers.get('content-type') || '';
+        if (r.ok && !tipo.includes('text/html')) { const copia = r.clone(); caches.open(CACHE).then((c) => c.put(req, copia)); }
         return r;
       })),
     );

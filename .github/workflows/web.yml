@@ -68,25 +68,10 @@ jobs:
         if: env.TEM_CHAVE == 'true'
         # O Cloudflare Pages já abre qualquer endereço na app (sem 404.html, modo de página única);
         # a regra «/* /index.html 200» do Netlify seria vista como um ciclo e ignorada com aviso.
-        # O envio do Cloudflare (wrangler) ignora pastas node_modules, e é lá que o Expo põe a fonte
-        # dos ícones (Ionicons) e as imagens da navegação: sem isto os ícones aparecem como caixas.
-        # A pasta passa a assets/nm e os caminhos nos ficheiros construídos acompanham.
-        run: |
-          set -euo pipefail
-          rm -f dist/_redirects
-          antes=$(find dist -type f | wc -l)
-          if [ -d dist/assets/node_modules ]; then
-            mv dist/assets/node_modules dist/assets/nm
-            grep -rl '/assets/node_modules/' dist --include='*.js' --include='*.html' --include='*.css' --include='*.json' \
-              | xargs -r sed -i 's#/assets/node_modules/#/assets/nm/#g'
-          fi
-          if find dist -path '*node_modules*' | grep -q . || grep -rq 'node_modules' dist --include='*.js' --include='*.html' --include='*.css'; then
-            echo "::error::Ainda há node_modules na app construída: o Cloudflare não os enviaria."
-            exit 1
-          fi
-          depois=$(find dist -type f | wc -l)
-          echo "Ficheiros para enviar: $depois"
-          [ "$antes" -eq "$depois" ] || { echo "::error::Perderam-se ficheiros na preparação."; exit 1; }
+        # O script passa assets/node_modules para assets/nm (o wrangler ignora pastas node_modules,
+        # onde está a fonte dos ícones) e dá nome novo a cada ficheiro de /_expo/static/ que muda,
+        # para os browsers que já guardaram a versão antiga irem buscar a nova.
+        run: node scripts/cloudflare.mjs dist
       - name: Criar o projecto no Cloudflare (só a primeira vez)
         if: env.TEM_CHAVE == 'true'
         continue-on-error: true
